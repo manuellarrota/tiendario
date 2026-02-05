@@ -1,0 +1,22 @@
+# Basics
+.DS_Store
+.env
+.idea
+.vscode
+*.log
+
+# Maven / Java
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Node / JS
+node_modules/
+dist/
+build/
+coverage/
+
+# OS
+Thumbs.db

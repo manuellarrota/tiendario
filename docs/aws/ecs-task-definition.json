@@ -1,0 +1,56 @@
+{
+    "family": "tiendario-backend-task",
+    "containerDefinitions": [
+        {
+            "name": "tiendario-backend",
+            "image": "<AWS_ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/tiendario-backend:latest",
+            "cpu": 512,
+            "memory": 1024,
+            "essential": true,
+            "portMappings": [
+                {
+                    "containerPort": 8080,
+                    "hostPort": 8080,
+                    "protocol": "tcp"
+                }
+            ],
+            "environment": [
+                {
+                    "name": "SPRING_DATASOURCE_URL",
+                    "value": "jdbc:postgresql://<RDS_ENDPOINT>:5432/tiendario"
+                },
+                {
+                    "name": "SPRING_DATASOURCE_USERNAME",
+                    "value": "admin"
+                },
+                {
+                    "name": "SPRING_DATASOURCE_PASSWORD",
+                    "value": "<DB_PASSWORD>"
+                },
+                {
+                    "name": "SPRING_ELASTICSEARCH_URIS",
+                    "value": "https://<OPENSEARCH_ENDPOINT>"
+                },
+                {
+                    "name": "APP_JWT_SECRET",
+                    "value": "<YOUR_SECURE_JWT_SECRET>"
+                }
+            ],
+            "logConfiguration": {
+                "logDriver": "awslogs",
+                "options": {
+                    "awslogs-group": "/ecs/tiendario-backend",
+                    "awslogs-region": "<REGION>",
+                    "awslogs-stream-prefix": "ecs"
+                }
+            }
+        }
+    ],
+    "requiresCompatibilities": [
+        "FARGATE"
+    ],
+    "networkMode": "awsvpc",
+    "cpu": "512",
+    "memory": "1024",
+    "executionRoleArn": "arn:aws:iam::<AWS_ACCOUNT_ID>:role/ecsTaskExecutionRole"
+}

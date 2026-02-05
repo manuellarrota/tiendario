@@ -1,0 +1,218 @@
+/* Sidebar Base Styles */
+.admin-sidebar {
+    background: #ffffff;
+    border-right: 1px solid rgba(0, 0, 0, 0.05);
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: visible;
+    /* Changed to visible to allow toggle button overlap */
+    position: sticky;
+    /* Sticky on desktop to stay visible while scrolling content */
+    top: 0;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.02);
+}
+
+/* Sidebar Header */
+.sidebar-header {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+    margin-bottom: 10px;
+}
+
+.sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: #1a1a1a;
+    font-weight: 800;
+    font-size: 1.4rem;
+    letter-spacing: -0.5px;
+}
+
+.logo-icon {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, #0d6efd 0%, #0a58ca 100%);
+    color: white;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
+}
+
+/* Navigation Links */
+.nav-group-label {
+    padding: 20px 20px 10px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: #adb5bd;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+
+.sidebar-nav-link {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    color: #6c757d;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    margin: 4px 12px;
+    border-radius: 10px;
+}
+
+.sidebar-nav-link:hover {
+    color: #0d6efd;
+    background: rgba(13, 110, 253, 0.05);
+}
+
+.sidebar-nav-link.active {
+    color: #0d6efd;
+    background: rgba(13, 110, 253, 0.1);
+    font-weight: 600;
+}
+
+.nav-icon {
+    font-size: 1.1rem;
+    width: 20px;
+}
+
+.notification-count {
+    background: #dc3545;
+    color: white;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 700;
+}
+
+/* Footer & Buttons */
+.sidebar-footer {
+    padding: 20px;
+    border-top: 1px solid rgba(0, 0, 0, 0.03);
+}
+
+.btn-logout-sidebar {
+    width: 100%;
+    padding: 12px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    color: #dc3545;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.btn-logout-sidebar:hover {
+    background: #fee2e2;
+    border-color: #fecaca;
+}
+
+/* DESKTOP COLLAPSED MODE */
+.admin-sidebar.collapsed-mode .nav-group-label {
+    display: none;
+}
+
+.admin-sidebar.collapsed-mode .sidebar-logo span {
+    display: none;
+}
+
+/* MOBILE RESPONSIVENESS */
+/* DESKTOP TOGGLE BUTTON */
+.desktop-sidebar-toggle {
+    display: none;
+    /* Hidden by default, shown via JS/Media Query on desktop */
+    width: 32px;
+    height: 32px;
+    background: #0d6efd;
+    color: white;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    position: absolute;
+    top: 32px;
+    /* Adjusted to align with logo center */
+    right: -16px;
+    z-index: 10000;
+    /* Max z-index */
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(13, 110, 253, 0.3);
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Match sidebar transition */
+}
+
+.desktop-sidebar-toggle:hover {
+    transform: scale(1.1);
+    background: #0b5ed7;
+    box-shadow: 0 6px 16px rgba(13, 110, 253, 0.4);
+}
+
+/* MOBILE RESPONSIVENESS */
+.mobile-sidebar-toggle {
+    display: none;
+    /* Hidden on desktop by default */
+    position: fixed;
+    top: 16px;
+    left: 16px;
+    z-index: 2000;
+    background: white;
+    padding: 12px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    color: #333;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.mobile-sidebar-toggle:active {
+    transform: scale(0.95);
+}
+
+@media (max-width: 991px) {
+    .mobile-sidebar-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .desktop-sidebar-toggle {
+        display: none !important;
+    }
+
+    .admin-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 280px !important;
+        /* Force width on mobile */
+        transform: translateX(-105%);
+        /* Hidden by default */
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        z-index: 2001;
+        /* Higher than toggle */
+    }
+
+    .admin-sidebar.mobile-open {
+        transform: translateX(0);
+        /* Slide in */
+        box-shadow: 10px 0 50px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Hide toggle when sidebar is open to avoid overlap/confusion, or keep it */
+    .admin-sidebar.mobile-open+.mobile-sidebar-toggle {
+        opacity: 0;
+        pointer-events: none;
+    }
+}
