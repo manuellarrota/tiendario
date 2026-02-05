@@ -1,0 +1,128 @@
+name: Tiendario CI/CD
+
+on:
+  push:
+    branches: [ "master", "test", "dev" ]
+  pull_request:
+    branches: [ "master", "test", "dev" ]
+
+env:
+  AWS_REGION: us-east-1                  # set this to your preferred AWS region, e.g. us-west-1
+  ECR_REPOSITORY: tiendario-backend      # set this to your Amazon ECR repository name
+  ECS_SERVICE: tiendario-service         # set this to your Amazon ECS service name
+  ECS_CLUSTER: tiendario-cluster         # set this to your Amazon ECS cluster name
+  ECS_TASK_DEFINITION: docs/aws/ecs-task-definition.json # path to your Amazon ECS task definition file
+
+jobs:
+  # 1. Build & Test Backend (Java/Spring Boot)
+  build-backend:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up JDK 11
+      uses: actions/setup-java@v3
+      with:
+        java-version: '11'
+        distribution: 'temurin'
+        cache: maven
+        
+    - name: Build with Maven
+      run: |
+        cd backend
+        mvn clean install -DskipTests
+        
+    - name: Run Tests
+      run: |
+        cd backend
+        mvn test
+
+  # 2. Build Frontend Admin (React)
+  build-frontend-admin:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/admin/package-lock.json
+        
+    - name: Install & Build Admin
+      run: |
+        cd frontend/admin
+        npm ci
+        npm run build
+
+  # 3. Build Frontend Market (React)
+  build-frontend-market:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/market/package-lock.json
+        
+    - name: Install & Build Market
+      run: |
+        cd frontend/market
+        npm ci
+        npm run build
+
+  # 4. Deploy to DEV (Runs only on 'dev' branch)
+  deploy-dev:
+    needs: [build-backend, build-frontend-admin, build-frontend-market]
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Deploy to DEV Environment
+      run: echo "🚀 Simulating Deployment to DEV environment (ECS Cluster Dev / S3 Dev)"
+
+  # 5. Deploy to TEST (Runs only on 'test' branch)
+  deploy-test:
+    needs: [build-backend, build-frontend-admin, build-frontend-market]
+    if: github.ref == 'refs/heads/test'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Deploy to TEST Environment
+      run: echo "🧪 Simulating Deployment to TEST environment (ECS Cluster Test / S3 Test)"
+
+  # 6. Deploy to PROD (Runs only on 'master' branch)
+  deploy-prod:
+    needs: [build-backend, build-frontend-admin, build-frontend-market]
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    # Placeholder for Docker Build, Push and ECS Deploy
+    - name: Build and Push Docker Image
+      run: |
+        echo "Docker build and push would happen here using secrets"
+        # docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG backend/
+        # docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+    # Placeholder for S3 Deploy
+    - name: Deploy Frontends to S3
+      run: |
+        echo "S3 Sync would happen here"
+        # aws s3 sync frontend/admin/dist s3://tiendario-admin-prod
+        # aws s3 sync frontend/market/dist s3://tiendario-market-prod
