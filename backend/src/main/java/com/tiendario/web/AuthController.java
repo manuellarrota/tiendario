@@ -85,19 +85,33 @@ public class AuthController {
         Set<String> strRoles = signUpRequest.getRole();
         String roleStr = (strRoles != null && !strRoles.isEmpty()) ? strRoles.iterator().next() : "client";
 
-        if ("admin".equals(roleStr)) {
-            user.setRole(Role.ROLE_ADMIN);
-        } else if ("manager".equals(roleStr)) {
+        // Prevent Super Admin creation via public API
+        if ("admin".equalsIgnoreCase(roleStr)) {
+            return ResponseEntity
+                    .badRequest()
+                    .body(new MessageResponse("Error: Super Admin registration is not allowed via public API."));
+        }
+
+        if ("manager".equalsIgnoreCase(roleStr)) {
+            // Manager ALWAYS needs a Company
+            if (signUpRequest.getCompanyName() == null || signUpRequest.getCompanyName().isEmpty()) {
+                return ResponseEntity
+                        .badRequest()
+                        .body(new MessageResponse("Error: Company Name is required for Managers."));
+            }
             user.setRole(Role.ROLE_MANAGER);
+
             // Create Company
             Company company = new Company();
-            company.setName(signUpRequest.getCompanyName() != null ? signUpRequest.getCompanyName() : "My Company");
+            company.setName(signUpRequest.getCompanyName());
             company.setSubscriptionStatus(SubscriptionStatus.FREE);
-            company.setLatitude(signUpRequest.getLatitude());
-            company.setLongitude(signUpRequest.getLongitude());
+            // Default location if missing (or could be 0.0)
+            company.setLatitude(signUpRequest.getLatitude() != null ? signUpRequest.getLatitude() : 0.0);
+            company.setLongitude(signUpRequest.getLongitude() != null ? signUpRequest.getLongitude() : 0.0);
             companyRepository.save(company);
             user.setCompany(company);
         } else {
+            // Default to Client
             user.setRole(Role.ROLE_CLIENT);
         }
 
