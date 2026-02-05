@@ -19,12 +19,17 @@ const LoginPage = () => {
                 window.location.reload();
             },
             (error) => {
-                const resMessage =
+                let resMessage =
                     (error.response &&
                         error.response.data &&
                         error.response.data.message) ||
                     error.message ||
                     error.toString();
+
+                if (error.response && error.response.status === 401) {
+                    resMessage = "Usuario o contraseña incorrectos.";
+                }
+
                 setError(resMessage);
             }
         );

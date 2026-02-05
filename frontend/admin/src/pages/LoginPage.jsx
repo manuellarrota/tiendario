@@ -23,12 +23,17 @@ const LoginPage = () => {
                 window.location.reload();
             },
             (error) => {
-                const resMessage =
+                let resMessage =
                     (error.response &&
                         error.response.data &&
                         error.response.data.message) ||
                     error.message ||
                     error.toString();
+
+                // Custom handling for 401
+                if (error.response && error.response.status === 401) {
+                    resMessage = "Usuario o contraseña incorrectos.";
+                }
 
                 setLoading(false);
                 setMessage(resMessage);
