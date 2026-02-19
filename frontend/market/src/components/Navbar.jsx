@@ -4,7 +4,7 @@ import { FaStore, FaUserCircle } from 'react-icons/fa';
 import AuthService from '../services/auth.service';
 import { useNavigate, Link } from 'react-router-dom';
 
-const MarketplaceNavbar = () => {
+const MarketplaceNavbar = ({ onLoginClick, onRegisterClick }) => {
     const user = AuthService.getCurrentUser();
     const navigate = useNavigate();
 
@@ -13,7 +13,8 @@ const MarketplaceNavbar = () => {
 
     const handleLogout = () => {
         AuthService.logout();
-        navigate('/login');
+        navigate('/');
+        window.location.reload();
     };
 
     return (
@@ -43,8 +44,8 @@ const MarketplaceNavbar = () => {
                             </Dropdown>
                         ) : (
                             <>
-                                <Link to="/login" className="btn btn-link text-decoration-none fw-bold text-dark">Iniciar Sesión</Link>
-                                <Link to="/register" className="btn btn-primary rounded-pill px-4 fw-bold shadow-sm">Registrarse</Link>
+                                <Button variant="link" className="text-decoration-none fw-bold text-dark" onClick={onLoginClick}>Iniciar Sesión</Button>
+                                <Button variant="primary" className="rounded-pill px-4 fw-bold shadow-sm" onClick={onRegisterClick}>Registrarse</Button>
                             </>
                         )}
                         <div className="vr d-none d-lg-block mx-2"></div>

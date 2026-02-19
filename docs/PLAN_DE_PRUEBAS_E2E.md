@@ -22,8 +22,8 @@
 
 ### URLs
 - **Backend API**: http://localhost:8080/api
-- **Frontend Admin**: http://localhost:5173
-- **Frontend Marketplace**: http://localhost:5174
+- **Frontend Admin**: http://localhost:8081
+- **Frontend Marketplace**: http://localhost:8082
 
 ### Credenciales de Prueba (crear durante pruebas)
 ```
@@ -113,7 +113,7 @@ Cliente:
 |----|----------------|-------|-------------------|
 | SALE-01 | Ver historial de ventas | 1. Ir a Ventas | Lista de ventas con fecha y total |
 | SALE-02 | Ver detalle de venta | 1. Click en venta | Detalle con productos vendidos |
-| SALE-03 | Cambiar estado de venta | 1. Cambiar estado (PAID/PENDING/CANCELLED) | Estado actualizado |
+| SALE-03 | Registrar Pago de Venta | 1. Cambiar estado a PAID 2. Seleccionar método pago (Efectivo/Transferencia) en modal | Estado PENDIENTE -> PAID, Método guardado |
 
 ### 2.6 Gestión de Clientes
 | ID | Caso de Prueba | Pasos | Resultado Esperado |
@@ -208,8 +208,8 @@ Cliente:
 ### 5.2 Registro de Cliente
 | ID | Caso de Prueba | Pasos | Resultado Esperado |
 |----|----------------|-------|-------------------|
-| MARKET-05 | Registro de cliente | 1. Click "Crear cuenta" 2. Llenar datos | Cliente registrado |
-| MARKET-06 | Login de cliente | 1. Login con credenciales | Acceso a dashboard cliente |
+| MARKET-05 | Registro de cliente | 1. Click "Registrarse" en Navbar 2. Completar formulario en Modal 3. Click "Registrarse" | Registro exitoso, sesión iniciada automáticamente sin recarga |
+| MARKET-06 | Login de cliente | 1. Click "Iniciar Sesión" en Navbar 2. Ingresar credenciales en Modal 3. Click "Ingresar" | Modal cierra, acceso a dashboard cliente, navbar muestra usuario |
 
 ### 5.3 Dashboard Cliente
 | ID | Caso de Prueba | Pasos | Resultado Esperado |
@@ -223,7 +223,7 @@ Cliente:
 | MARKET-09 | Agregar producto al carrito | 1. Click "Agregar" en producto | Producto en carrito |
 | MARKET-10 | Ver comparación de vendedores | 1. Click en producto con varios vendedores | Lista de vendedores con precios |
 | MARKET-11 | Seleccionar vendedor preferido | 1. Elegir vendedor | Producto de ese vendedor agregado |
-| MARKET-12 | Completar pedido | 1. Ir a checkout 2. Confirmar | Pedido creado |
+| MARKET-12 | Completar pedido (Solo Reserva) | 1. Ir a checkout 2. Confirmar (Sin pago online) | Pedido creado con estado PENDIENTE |
 
 ---
 
@@ -274,8 +274,8 @@ Cliente:
 
 ### Pre-requisitos
 - [ ] Backend ejecutándose en puerto 8080
-- [ ] Frontend Admin en puerto 5173
-- [ ] Frontend Market en puerto 5174
+- [ ] Frontend Admin en puerto 8081
+- [ ] Frontend Market en puerto 8082
 - [ ] Base de datos H2 limpia (o PostgreSQL configurada)
 
 ### Durante las Pruebas

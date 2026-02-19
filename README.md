@@ -92,13 +92,29 @@ npm install && npm run dev
 - ✅ **Suscripciones**: Sistema completo de planes (FREE, TRIAL, PAID) con gestión de estados (Vencido, Suspendido), simulación de pagos y restricciones de acceso.
 - ✅ **Restricciones Inteligentes**: Bloqueo automático de creación de productos y ventas según el plan y estado de la cuenta.
 - ✅ **Lealtad**: Sistema automático de acumulación de puntos por compras.
+- ✅ **Experiencia Unificada**: Login y Registro integrados directamente en el Marketplace sin redirecciones.
 - ✅ **Diseño Premium**: Interfaz fluida y profesional en todos los dispositivos.
 
 ---
 
-Servicio	Estado	URL de Acceso
-Backend API	✅ Up (Started)	http://localhost:8080
-Base de Datos	✅ Healthy	Puerto 5432 (Interno)
-Elasticsearch	✅ Healthy	http://localhost:9200
-Frontend Admin	✅ Up (Started)	http://localhost:8081
-Frontend Market	✅ Up (Started)	http://localhost:8082
+Servicio | Estado | URL de Acceso
+---|---|---
+Backend API | ✅ Up (Started) | http://localhost:8080
+Base de Datos | ✅ Healthy | Puerto 5432 (Interno)
+Elasticsearch | ✅ Healthy | http://localhost:9200
+Frontend Admin | ✅ Up (Started) | http://localhost:8081
+Frontend Market | ✅ Up (Started) | http://localhost:8082
+
+---
+
+## 🔐 Credenciales de Prueba (Entorno Local)
+Utiliza estas cuentas pre-cargadas para probar los diferentes roles y planes del sistema:
+
+| Rol | Usuario | Contraseña | Descripción |
+| :--- | :--- | :--- | :--- |
+| **Tienda Premium** | `manager_pro` | `123456` | Acceso total, plan PAID. |
+| **Tienda Gratuita** | `manager_free` | `123456` | Plan FREE, límite de 5 productos. |
+| **Cliente** | `cliente@tiendario.com` | `123456` | Comprador del Marketplace. |
+| **Super Admin** | `admin` | `123456` | Acceso global. |
+
+> **Importante**: Si registras **nuevas** tiendas desde el formulario, recuerda que se crean **inactivas**. Para activarlas en desarrollo, abre el archivo `backend/verification_links.txt` y copia el enlace de validación.

@@ -11,6 +11,8 @@ const POSPage = () => {
     const [cart, setCart] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [message, setMessage] = useState("");
+    const [paymentMethod, setPaymentMethod] = useState("CASH");
+    const [customerName, setCustomerName] = useState("");
 
     // Subscription status check
     const user = AuthService.getCurrentUser();
@@ -94,18 +96,23 @@ const POSPage = () => {
 
         const saleData = {
             totalAmount: total,
+            paymentMethod: paymentMethod,
             items: cart.map(item => ({
                 product: { id: item.product.id },
                 quantity: item.quantity,
                 unitPrice: item.unitPrice,
                 subtotal: item.subtotal
-            }))
+            })),
+            customerName: customerName,
+            status: 'PAID'
         };
 
         SaleService.createSale(saleData).then(
             () => {
                 setMessage("¡Venta realizada con éxito!");
                 setCart([]);
+                setPaymentMethod("CASH");
+                setCustomerName("");
                 // Refresh product stock
                 ProductService.getCompanyProducts().then(r => setProducts(r.data));
                 setTimeout(() => setMessage(""), 3000);
@@ -270,6 +277,28 @@ const POSPage = () => {
                                         <h4>Total:</h4>
                                         <h4 className="text-primary">${total.toFixed(2)}</h4>
                                     </div>
+
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Cliente (Opcional)</Form.Label>
+                                        <Form.Control
+                                            placeholder="Nombre del cliente..."
+                                            value={customerName}
+                                            onChange={(e) => setCustomerName(e.target.value)}
+                                        />
+                                    </Form.Group>
+
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Método de Pago</Form.Label>
+                                        <Form.Select
+                                            value={paymentMethod}
+                                            onChange={(e) => setPaymentMethod(e.target.value)}
+                                            className="mb-2"
+                                        >
+                                            <option value="CASH">Efectivo 💵</option>
+                                            <option value="CARD">Tarjeta 💳</option>
+                                            <option value="TRANSFER">Transferencia 🏦</option>
+                                        </Form.Select>
+                                    </Form.Group>
                                     <Button
                                         variant="success"
                                         size="lg"

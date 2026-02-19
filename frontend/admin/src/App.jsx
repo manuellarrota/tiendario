@@ -1,8 +1,7 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 import LandingPage from './pages/LandingPage';
-import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardHome from './pages/DashboardHome';
 import InventoryPage from './pages/InventoryPage';
@@ -21,6 +20,7 @@ import AdminPaymentsPage from './pages/AdminPaymentsPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import AdminConfigPage from './pages/AdminConfigPage';
 import SalesHistoryPage from './pages/SalesHistoryPage';
+import DailyClosingPage from './pages/DailyClosingPage';
 
 
 import OfflineAlert from './components/OfflineAlert';
@@ -33,7 +33,7 @@ function App() {
         <OfflineAlert />
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
+          <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/dashboard" element={<DashboardHome />} />
           <Route path="/inventory" element={<InventoryPage />} />
@@ -46,6 +46,7 @@ function App() {
           <Route path="/reports" element={<ReportsPage />} />
           <Route path="/company" element={<CompanyPage />} />
           <Route path="/sales/history" element={<SalesHistoryPage />} />
+          <Route path="/daily-closing" element={<DailyClosingPage />} />
 
           <Route path="/notifications" element={<NotificationsPage />} />
           <Route path="/admin/companies" element={<AdminCompaniesPage />} />

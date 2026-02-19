@@ -17,10 +17,21 @@ const createSale = (saleData) => {
     });
 };
 
-const updateStatus = (id, status) => {
+const updateStatus = (id, status, paymentMethod = null) => {
     const user = AuthService.getCurrentUser();
+    const params = { status };
+    if (paymentMethod) {
+        params.paymentMethod = paymentMethod;
+    }
     return axios.put(API_URL + id + "/status", null, {
-        params: { status },
+        params,
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+const getDailySummary = () => {
+    const user = AuthService.getCurrentUser();
+    return axios.get(API_URL + "daily-summary", {
         headers: { Authorization: 'Bearer ' + user.token }
     });
 };
@@ -28,7 +39,8 @@ const updateStatus = (id, status) => {
 const SaleService = {
     getSales,
     createSale,
-    updateStatus
+    updateStatus,
+    getDailySummary
 };
 
 export default SaleService;

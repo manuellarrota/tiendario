@@ -40,9 +40,11 @@ Configura estas variables en tu 'Task Definition' de ECS (o usa AWS Secrets Mana
 | `SPRING_DATASOURCE_PASSWORD` | Contraseña RDS | `******` |
 | `SPRING_ELASTICSEARCH_URIS` | URL de OpenSearch | `https://<opensearch-endpoint>` |
 | `APP_JWT_SECRET` | Llave secreta para tokens (Min 64 chars) | `(Generar cadena segura aleatoria)` |
-| `STRIPE_API_KEY` | Llave privada de Stripe (Live) | `sk_live_...` |
-| `STRIPE_SUCCESS_URL` | Retorno de pago exitoso | `https://admin.tudominio.com/dashboard?success=true` |
-| `STRIPE_CANCEL_URL` | Retorno de pago cancelado | `https://admin.tudominio.com/dashboard?canceled=true` |
+| `STRIPE_API_KEY` | Llave privada de Stripe (Live) | `sk_live_...` (Opcional por ahora) |
+| `STRIPE_SUCCESS_URL` | Retorno de pago exitoso | `https://admin.tudominio.com/dashboard?success=true` (Opcional) |
+| `STRIPE_CANCEL_URL` | Retorno de pago cancelado | `https://admin.tudominio.com/dashboard?canceled=true` (Opcional) |
+
+> **Nota**: Las variables de STRIPE son opcionales en la fase actual de "Solo Pedido / Pago Manual". Se requerirán cuando se active la pasarela de pagos online.
 
 ---
 

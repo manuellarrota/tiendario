@@ -46,7 +46,7 @@ const MarketplacePage = () => {
         if (user && user.email) {
             SearchService.getCustomerPoints(user.email).then(
                 res => setUserPoints(res.data.points || 0),
-                err => console.error("Error loading points", err)
+                err => { if (process.env.NODE_ENV === 'development') console.error("Error loading points", err); }
             );
         }
     }, [user]);
@@ -59,7 +59,7 @@ const MarketplacePage = () => {
     const loadConfig = () => {
         SearchService.getPlatformConfig().then(
             (response) => setPlatformConfig(response.data),
-            (error) => console.error("Error loading config", error)
+            (error) => { if (process.env.NODE_ENV === 'development') console.error("Error loading config", error); }
         );
     };
 
@@ -390,7 +390,7 @@ const MarketplacePage = () => {
 
     return (
         <div className="bg-light min-vh-100 pb-5">
-            <MarketplaceNavbar />
+            <MarketplaceNavbar onLoginClick={() => setShowLoginModal(true)} onRegisterClick={() => setShowRegisterModal(true)} />
             {platformConfig?.announcementMessage && (
                 <div className="bg-primary text-white py-2 text-center small fw-bold shadow-sm announce-bar">
                     <FaInfoCircle className="me-2" /> {platformConfig.announcementMessage}
@@ -713,7 +713,7 @@ const MarketplacePage = () => {
                                 <h3 className="fw-bold text-success mb-0">${cartTotal.toFixed(2)}</h3>
                             </div>
                             <Button variant="primary" className="w-100 mt-3 py-2 fw-bold" onClick={handleCheckout}>
-                                Proceder al Pago
+                                Continuar con el Pedido
                             </Button>
                         </div>
                     )}
@@ -1051,60 +1051,19 @@ const MarketplacePage = () => {
                                 </Col>
                             </Row>
 
-                            <h6 className="fw-bold mb-3 d-flex align-items-center">
-                                <span className="bg-primary bg-opacity-10 text-primary rounded-circle px-2 me-2">2</span> Método de Pago
-                            </h6>
-                            <Row className="g-2 mb-4">
-                                <Col xs={6} md={3}>
-                                    <div className={`p-3 border rounded-4 text-center cursor-pointer h-100 d-flex flex-column justify-content-center align-items-center ${customerData.paymentMethod === 'pago_movil' ? 'border-primary bg-primary bg-opacity-10' : ''}`}
-                                        onClick={() => setCustomerData({ ...customerData, paymentMethod: 'pago_movil' })} style={{ cursor: 'pointer' }}>
-                                        <FaMobileAlt size={20} className="mb-2 text-primary" />
-                                        <small className="fw-bold lh-1">Pago Móvil</small>
-                                    </div>
-                                </Col>
-                                <Col xs={6} md={3}>
-                                    <div className={`p-3 border rounded-4 text-center cursor-pointer h-100 d-flex flex-column justify-content-center align-items-center ${customerData.paymentMethod === 'binance' ? 'border-primary bg-primary bg-opacity-10' : ''}`}
-                                        onClick={() => setCustomerData({ ...customerData, paymentMethod: 'binance' })} style={{ cursor: 'pointer' }}>
-                                        <FaBitcoin size={20} className="mb-2 text-warning" />
-                                        <small className="fw-bold lh-1">Binance Pay</small>
-                                    </div>
-                                </Col>
-                                <Col xs={6} md={3}>
-                                    <div className={`p-3 border rounded-4 text-center cursor-pointer h-100 d-flex flex-column justify-content-center align-items-center ${customerData.paymentMethod === 'credit_card' ? 'border-primary bg-primary bg-opacity-10' : ''}`}
-                                        onClick={() => setCustomerData({ ...customerData, paymentMethod: 'credit_card' })} style={{ cursor: 'pointer' }}>
-                                        <FaCreditCard size={20} className="mb-2 text-secondary" />
-                                        <small className="fw-bold lh-1">Tarjeta</small>
-                                    </div>
-                                </Col>
-                                <Col xs={6} md={3}>
-                                    <div className={`p-3 border rounded-4 text-center cursor-pointer h-100 d-flex flex-column justify-content-center align-items-center ${customerData.paymentMethod === 'transfer' ? 'border-primary bg-primary bg-opacity-10' : ''}`}
-                                        onClick={() => setCustomerData({ ...customerData, paymentMethod: 'transfer' })} style={{ cursor: 'pointer' }}>
-                                        <FaTruck size={20} className="mb-2 text-success" />
-                                        <small className="fw-bold lh-1">Efectivo</small>
-                                    </div>
-                                </Col>
-                            </Row>
-
-                            {/* Payment Instructions (Conditional) */}
-                            {customerData.paymentMethod === 'pago_movil' && (
-                                <Alert variant="info" className="small">
-                                    <strong>Pago Móvil:</strong> Envíe el pago al <code>0414-1234567</code> - V29.123.456 (Banesco). Ingrese la referencia al confirmar.
-                                </Alert>
-                            )}
-                            {customerData.paymentMethod === 'binance' && (
-                                <Alert variant="warning" className="small">
-                                    <strong>Binance Pay:</strong> ID de Pay: <code>123456789</code> (Tiendario Official).
-                                </Alert>
-                            )}
+                            <Alert variant="info" className="rounded-4 mb-4 border-0">
+                                <strong>💡 Nota Importante:</strong>
+                                <br />
+                                Estás registrando un pedido. El pago se coordinará y confirmará directamente con la tienda.
+                            </Alert>
 
                             <Button variant="primary" type="submit" className="w-100 py-3 rounded-4 fw-bold shadow" disabled={orderStatus.loading}>
                                 {orderStatus.loading ? (
-                                    <><Spinner size="sm" animation="border" className="me-2" /> Procesando Pago Seguro...</>
+                                    <><Spinner size="sm" animation="border" className="me-2" /> Procesando Pedido...</>
                                 ) : (
-                                    <>Pagar Ahora ${cartTotal.toFixed(2)}</>
+                                    <>Confirmar Pedido (Pago en Tienda) (${cartTotal.toFixed(2)})</>
                                 )}
                             </Button>
-                            <p className="text-center text-muted small mt-3 mb-0">🔒 Pago encriptado punto a punto</p>
                         </Form>
                     )}
                 </Modal.Body>

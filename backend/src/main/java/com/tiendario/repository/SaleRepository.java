@@ -26,4 +26,6 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
     Long countActiveCompaniesSince(LocalDateTime sinceDate);
 
     long countByCompanyIdAndStatus(Long companyId, com.tiendario.domain.SaleStatus status);
+
+    List<Sale> findByCompanyIdAndDateBetween(Long companyId, LocalDateTime start, LocalDateTime end);
 }

@@ -48,9 +48,14 @@ Este documento une el plan estratégico original con los avances técnicos actua
 3.  [x] Validar flujo de Compra en Marketplace -> Acumulación de Puntos -> Panel de Cliente.
 4.  [x] Validar funcionalidad de Reportes de Compras (Inventory Input).
 5.  [x] Verificar Dashboard de KPIs y reportes financieros automáticos.
+6.  [x] **Implementar Flujo "Solo Pedido"**:
+    - [x] Marketplace: Eliminar pasarela de pago, solo registrar pedido.
+    - [x] Admin: Notificación de nuevo pedido.
+    - [x] Admin: Flujo de cambio de estado (Pendiente -> Listo -> Pagado).
+    - [x] Admin: Modal de confirmación de pago manual (Efectivo, Transferencia, etc.).
 
 ---
-*Ultima actualización: 2026-02-03 - MVP Completado y Validado.*
+*Ultima actualización: 2026-02-18 - Flujo "Solo Pedido" y Confirmación Manual Completados.*
 
 ## 8. Fase 3: Preparación para Producción
 - [ ] **Despliegue (Infraestructura)**:
@@ -64,20 +69,20 @@ Este documento une el plan estratégico original con los avances técnicos actua
     - [ ] CI/CD Pipeline para despliegues automáticos.
     - [ ] Backup automático de Base de Datos.
     - [ ] Monitoreo de logs y salud del servidor.
-- [ ] **Integraciones Fintech (Real)**:
-    - [ ] Stripe / MercadoPago para suscripciones.
-    - [ ] Pasarela de pagos para Marketplace.
+- [ ] **Futuras Expansiones**:
+    - [ ] Integración de Delivery (Rastreo y asignación).
+    - [ ] Pasarela de pagos online (Stripe/MercadoPago) - *Actualmente se usa confirmación manual*.
 
 ## 5. Reglas de Marketplace (Detalle)
 ### **FREE Plan**
 - [x] Ver catálogo de productos.
 - [x] Búsqueda de productos (Elasticsearch).
-- [x] **Bloqueo**: No puede agregar al carrito ni comprar (Solo Exhibición).
+- [x] **Bloqueo**: No puede agregar al carrito ni recibir pedidos (Solo Exhibición).
 
 ### **PAID Plan**
 - [x] Ver catálogo de productos.
 - [x] Búsqueda de productos.
-- [x] Agregar al carrito y realizar compras.
+- [x] Agregar al carrito y realizar **Pedidos** (Click & Collect / ACordar con tienda).
 - [x] Acceso a KPIs y Dashboard avanzado.
 
 ## 7. Módulo SuperAdmin (SaaS Manager)
@@ -102,9 +107,10 @@ Este documento une el plan estratégico original con los avances técnicos actua
 ### Confirmación de Funcionalidades
 Se confirma que el sistema cumple con:
 1.  **Multitenancy**: Cada empresa gestiona su inventario y clientes.
-2.  **Marketplace**: Búsqueda global de productos con carrito dinámico premium.
+2.  **Marketplace**: Búsqueda global de productos con carrito unificado.
 3.  **Modelo Freemium**: Restricciones automáticas y planes de suscripción.
 4.  **Sistema de Lealtad**: Acumulación automática de puntos para incentivar compras.
 5.  **Experiencia de Usuario**: Portal de cliente y Admin con estética de vanguardia.
 6.  **SaaS Management**: Gestión global operativa por parte del SuperAdmin.
 7.  **Operación Unificada**: Control de Ventas (Salidas) y Registro de Compras (Entradas) integrados con stock.
+8.  **Gestión de Pedidos**: Flujo "Click & Collect" donde la tienda confirma el pago y la entrega.

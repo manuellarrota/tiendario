@@ -15,9 +15,11 @@ const LandingPage = () => {
     const [showRegisterModal, setShowRegisterModal] = useState(false);
     const [regCompanyName, setRegCompanyName] = useState("");
     const [regUsername, setRegUsername] = useState("");
+    const [regEmail, setRegEmail] = useState("");
     const [regPassword, setRegPassword] = useState("");
     const [regMessage, setRegMessage] = useState("");
     const [regSuccessful, setRegSuccessful] = useState(false);
+    const [regPhone, setRegPhone] = useState("");
     const [regPlan, setRegPlan] = useState("free");
 
     const handleLogin = (e) => {
@@ -31,9 +33,23 @@ const LandingPage = () => {
                 window.location.reload();
             },
             (error) => {
-                const resMessage = (error.response && error.response.data && error.response.data.message) || error.message || error.toString();
+                const message = (error.response && error.response.data && error.response.data.message) || error.message || error.toString();
+                let userFriendlyMessage = message;
+
+                if (error.response && error.response.status === 401) {
+                    if (message && message.includes("Error:")) {
+                        userFriendlyMessage = message;
+                    } else {
+                        userFriendlyMessage = "Usuario o contraseña incorrectos.";
+                    }
+                } else if (message.includes("401")) {
+                    userFriendlyMessage = "Usuario o contraseña incorrectos.";
+                } else if (message.includes("Network Error")) {
+                    userFriendlyMessage = "Error de conexión. Verifique que el servidor esté activo.";
+                }
+
                 setLoading(false);
-                setMessage(resMessage);
+                setMessage(userFriendlyMessage);
             }
         );
     };
@@ -43,7 +59,7 @@ const LandingPage = () => {
         setRegMessage("");
         setRegSuccessful(false);
 
-        AuthService.register(regUsername, regPassword, "manager", regCompanyName).then(
+        AuthService.register(regUsername, regEmail, regPassword, "manager", regCompanyName, regPhone).then(
             (response) => {
                 setRegMessage(response.data.message);
                 setRegSuccessful(true);
@@ -267,6 +283,18 @@ const LandingPage = () => {
                                     />
                                 </Form.Group>
 
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Email</Form.Label>
+                                    <Form.Control
+                                        type="email"
+                                        placeholder="tu@email.com"
+                                        value={regEmail}
+                                        onChange={(e) => setRegEmail(e.target.value)}
+                                        required
+                                        className="rounded-3"
+                                    />
+                                </Form.Group>
+
                                 <Form.Group className="mb-4">
                                     <Form.Label>Contraseña</Form.Label>
                                     <Form.Control
@@ -274,6 +302,18 @@ const LandingPage = () => {
                                         placeholder="Min 6 caracteres"
                                         value={regPassword}
                                         onChange={(e) => setRegPassword(e.target.value)}
+                                        required
+                                        className="rounded-3"
+                                    />
+                                </Form.Group>
+
+                                <Form.Group className="mb-4">
+                                    <Form.Label>Teléfono</Form.Label>
+                                    <Form.Control
+                                        type="tel"
+                                        placeholder="+58 412 1234567"
+                                        value={regPhone}
+                                        onChange={(e) => setRegPhone(e.target.value)}
                                         required
                                         className="rounded-3"
                                     />
@@ -290,8 +330,8 @@ const LandingPage = () => {
                                         Registrar y Comenzar
                                     </Button>
                                 ) : (
-                                    <Button variant="success" className="w-100 rounded-pill fw-bold" onClick={() => { setShowRegisterModal(false); window.location.href = '/login'; }}>
-                                        Ir al Panel de Control
+                                    <Button variant="secondary" className="w-100 rounded-pill fw-bold" onClick={() => setShowRegisterModal(false)}>
+                                        Cerrar
                                     </Button>
                                 )}
                             </Form>

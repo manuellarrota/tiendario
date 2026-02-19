@@ -32,6 +32,16 @@ public class Sale {
     @Enumerated(EnumType.STRING)
     private SaleStatus status;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
+    private User user;
+
+    @Enumerated(EnumType.STRING)
+    private PaymentMethod paymentMethod;
+
+    private String customerName; // For POS quick sales
+
     @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SaleItem> items;
 }

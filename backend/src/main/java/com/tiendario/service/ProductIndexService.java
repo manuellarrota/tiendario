@@ -45,4 +45,25 @@ public class ProductIndexService {
         }
         return List.of();
     }
+
+    @Autowired
+    com.tiendario.repository.ProductRepository productRepository;
+
+    public void reindexCompanyProducts(Long companyId) {
+        if (productSearchRepository != null) {
+            try {
+                // Fetch all products for this company
+                List<Product> products = productRepository.findByCompanyId(companyId);
+
+                // Save them all to Elasticsearch (simulating bulk update)
+                for (Product product : products) {
+                    productSearchRepository.save(product);
+                }
+                System.out.println("Re-indexed " + products.size() + " products for company " + companyId);
+            } catch (Exception e) {
+                System.err.println(
+                        "Warning: Could not re-index products for company " + companyId + ": " + e.getMessage());
+            }
+        }
+    }
 }

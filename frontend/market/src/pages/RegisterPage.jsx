@@ -18,7 +18,17 @@ const RegisterPage = () => {
         e.preventDefault();
         AuthService.register(name, email, password).then(
             () => {
-                setSuccessful(true);
+                // Auto login after successful registration
+                AuthService.login(email, password).then(
+                    () => {
+                        navigate("/");
+                        window.location.reload();
+                    },
+                    (error) => {
+                        // If login fails, show success but ask to login manually
+                        setSuccessful(true);
+                    }
+                );
             },
             (error) => {
                 const resMessage =
@@ -44,7 +54,7 @@ const RegisterPage = () => {
                             </div>
                             <h2 className="mb-3 fw-bold text-success">¡Registro Exitoso!</h2>
                             <p className="text-muted mb-4">
-                                Tu cuenta ha sido creada correctamente. Ahora puedes navegar y comprar en todas las tiendas del marketplace.
+                                Tu cuenta ha sido creada. Ya puedes iniciar sesión.
                             </p>
                             <div className="d-grid gap-2">
                                 <Button variant="primary" onClick={() => navigate("/login")} className="rounded-pill">

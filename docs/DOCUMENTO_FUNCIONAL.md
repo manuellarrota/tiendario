@@ -6,7 +6,12 @@ Tiendario es una plataforma **SaaS (Software as a Service)** diseñada para mode
 
 ## 1. Módulos del Sistema
 
-### 🔐 Gestión de Identidad y Suscripción (Identity & Subscription)
+### 1. Registro y Autenticación
+- **Registro de Tienda**:
+    - Campos obligatorios: Nombre de la Empresa, Usuario Administrador, Contraseña, **Teléfono de Contacto**.
+    - **Validación de Identidad**: El registro inicial deja la cuenta en estado `PENDING`. Se envía un correo (simulado en DEV) con un enlace de activación.
+    - El usuario no puede iniciar sesión hasta validar su cuenta.
+- **Login**: Acceso seguro con JWT. Roles: `ADMIN`, `MANAGER`, `CLIENT`.
 - **Roles Diferenciados**:
     - **SuperAdmin**: Control total del SaaS, gestión de planes (activación/suspensión) y validación de pagos.
     - **Manager (Tienda)**: Administrador de un comercio local. Gestiona inventario, ventas y empleados.
@@ -24,8 +29,9 @@ Tiendario es una plataforma **SaaS (Software as a Service)** diseñada para mode
 
 ### 💰 Control de Ventas (Sales/POS)
 - **Venta Presencial**: Interfaz para registrar ventas en el mostrador del local.
+- **Gestión de Pedidos**: Recepción de pedidos del Marketplace. Flujo de estados: Pendiente -> Listo para Retiro -> Pagado/Entregado.
 - **Despacho Automático**: Al registrar una venta, el sistema descuenta el stock del producto de forma inmediata.
-- **Historial de Transacciones**: Consulta detallada de todas las ventas realizadas por fecha y monto.
+- **Historial de Transacciones**: Consulta detallada de todas las ventas y pedidos por fecha, monto y método de pago (Efectivo/Transferencia/Otros).
 
 ### 🌐 Marketplace Sincronizado
 - **Catálogo Global**: Coexistencia de productos de múltiples tiendas clasificados por categorías globales y personalizadas.
@@ -47,8 +53,8 @@ Tiendario es una plataforma **SaaS (Software as a Service)** diseñada para mode
     - **SuperAdmin** valida el pago y activa el plan.
     - Si el pago no se procesa a tiempo, el SuperAdmin marca la cuenta como `PAST_DUE`, activando la **Pantalla de Bloqueo** en el dashboard del comerciante.
 4.  **Venta**: 
-    - Si es **local**, el vendedor registra la venta en el panel de control.
-    - Si es **online**, el pedido llega al panel, descontando stock automáticamente.
+    - Si es **local**, el vendedor registra la venta y el pago en el panel de control.
+    - Si es **online (Marketplace)**, el pedido llega al panel como **PENDIENTE**. El vendedor prepara el pedido, notifica que está listo, y registra el **PAGO** manualmente al momento de la entrega (Efectivo, Transferencia, etc.).
 5.  **KPIs**: El dashboard muestra en tiempo real ingresos, márgenes y rendimiento del negocio (Exclusivo Plan Premium).
 
 ---

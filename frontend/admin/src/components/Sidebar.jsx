@@ -5,7 +5,7 @@ import AuthService from '../services/auth.service';
 import {
     FaHome, FaBox, FaShoppingBag, FaChartLine, FaSignOutAlt,
     FaTruck, FaHistory, FaTags, FaUsers, FaCog, FaBell, FaStore, FaBars, FaTimes, FaMoneyBillWave,
-    FaChevronLeft, FaChevronRight // Added icons
+    FaChevronLeft, FaChevronRight, FaCashRegister // Added icons
 } from 'react-icons/fa';
 import NotificationService from '../services/notification.service';
 import './Sidebar.css';
@@ -160,7 +160,8 @@ const Sidebar = () => {
                                 <NavItem to="/notifications" icon={FaBell} label="Notificaciones" badge={unreadCount} />
 
                                 {!collapsed && <div className="nav-group-label">Operación Diaria</div>}
-                                <NavItem to="/pos" icon={FaShoppingBag} label="Control de Ventas" />
+                                <NavItem to="/pos" icon={FaShoppingBag} label="Registro de Ventas" />
+                                <NavItem to="/daily-closing" icon={FaCashRegister} label="Cierre de Caja / Turno" />
                                 <NavItem to="/inventory" icon={FaBox} label="Stock e Inventario" />
                                 <NavItem to="/categories" icon={FaTags} label="Categorías" />
 
@@ -168,7 +169,7 @@ const Sidebar = () => {
                                 <NavItem to="/purchases/new" icon={FaHistory} label="Registro de Compras" />
                                 <NavItem to="/purchases/history" icon={FaHistory} label="Historial de Compras" />
                                 <NavItem to="/suppliers" icon={FaTruck} label="Proveedores" />
-                                <NavItem to="/customers" icon={FaUsers} label="Base de Datos Clientes" />
+
 
                                 {!collapsed && <div className="nav-group-label">Configuración y Auditoría</div>}
                                 <NavItem to="/sales/history" icon={FaHistory} label="Gestión de Ventas" />

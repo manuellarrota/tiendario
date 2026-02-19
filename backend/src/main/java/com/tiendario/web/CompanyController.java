@@ -16,48 +16,57 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/company")
 public class CompanyController {
 
-    @Autowired
-    CompanyRepository companyRepository;
+        @Autowired
+        CompanyRepository companyRepository;
 
-    @GetMapping("/profile")
-    @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<?> getCompanyProfile() {
-        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
-                .getPrincipal();
+        @GetMapping("/profile")
+        @PreAuthorize("hasRole('MANAGER')")
+        public ResponseEntity<?> getCompanyProfile() {
+                UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
+                                .getPrincipal();
 
-        Company company = companyRepository.findById(userDetails.getCompanyId())
-                .orElseThrow(() -> new RuntimeException("Error: Company not found."));
+                Company company = companyRepository.findById(userDetails.getCompanyId())
+                                .orElseThrow(() -> new RuntimeException("Error: Company not found."));
 
-        return ResponseEntity.ok(company);
-    }
+                return ResponseEntity.ok(company);
+        }
 
-    @PostMapping("/subscribe")
-    @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<?> upgradeSubscription() {
-        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
-                .getPrincipal();
+        @Autowired
+        com.tiendario.service.ProductIndexService productIndexService;
 
-        Company company = companyRepository.findById(userDetails.getCompanyId())
-                .orElseThrow(() -> new RuntimeException("Error: Company not found."));
+        @PostMapping("/subscribe")
+        @PreAuthorize("hasRole('MANAGER')")
+        public ResponseEntity<?> upgradeSubscription() {
+                UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
+                                .getPrincipal();
 
-        company.setSubscriptionStatus(SubscriptionStatus.PAID);
-        companyRepository.save(company);
+                Company company = companyRepository.findById(userDetails.getCompanyId())
+                                .orElseThrow(() -> new RuntimeException("Error: Company not found."));
 
-        return ResponseEntity.ok(new MessageResponse("Subscription upgraded to PAID!"));
-    }
+                company.setSubscriptionStatus(SubscriptionStatus.PAID);
+                companyRepository.save(company);
 
-    @PostMapping("/unsubscribe")
-    @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<?> downgradeSubscription() {
-        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
-                .getPrincipal();
+                // TRIGGER RE-INDEXING
+                productIndexService.reindexCompanyProducts(company.getId());
 
-        Company company = companyRepository.findById(userDetails.getCompanyId())
-                .orElseThrow(() -> new RuntimeException("Error: Company not found."));
+                return ResponseEntity.ok(new MessageResponse("Subscription upgraded to PAID!"));
+        }
 
-        company.setSubscriptionStatus(SubscriptionStatus.FREE);
-        companyRepository.save(company);
+        @PostMapping("/unsubscribe")
+        @PreAuthorize("hasRole('MANAGER')")
+        public ResponseEntity<?> downgradeSubscription() {
+                UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
+                                .getPrincipal();
 
-        return ResponseEntity.ok(new MessageResponse("Subscription downgraded to FREE."));
-    }
+                Company company = companyRepository.findById(userDetails.getCompanyId())
+                                .orElseThrow(() -> new RuntimeException("Error: Company not found."));
+
+                company.setSubscriptionStatus(SubscriptionStatus.FREE);
+                companyRepository.save(company);
+
+                // TRIGGER RE-INDEXING
+                productIndexService.reindexCompanyProducts(company.getId());
+
+                return ResponseEntity.ok(new MessageResponse("Subscription downgraded to FREE."));
+        }
 }

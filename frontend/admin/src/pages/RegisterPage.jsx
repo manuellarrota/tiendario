@@ -5,8 +5,10 @@ import AuthService from "../services/auth.service";
 
 const RegisterPage = () => {
     const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [companyName, setCompanyName] = useState("");
+    const [phoneNumber, setPhoneNumber] = useState("");
     const [successful, setSuccessful] = useState(false);
     const [message, setMessage] = useState("");
 
@@ -21,23 +23,31 @@ const RegisterPage = () => {
         setSuccessful(false);
 
         // Default role is manager for new registers via this form
-        AuthService.register(username, password, "manager", companyName).then(
+        AuthService.register(username, email, password, "manager", companyName, phoneNumber).then(
             (response) => {
-                setMessage("✅ Registro exitoso. Redirigiendo al login...");
+                setMessage("✅ Registro exitoso. Cuenta creada pero INACTIVA. Revisa 'backend/verification_links.txt' para activar tu cuenta antes de iniciar sesión.");
                 setSuccessful(true);
                 setTimeout(() => {
                     navigate("/");
                 }, 2000);
             },
             (error) => {
-                const resMessage =
+                const message =
                     (error.response &&
                         error.response.data &&
                         error.response.data.message) ||
                     error.message ||
                     error.toString();
 
-                setMessage(resMessage);
+                let userFriendlyMessage = message;
+
+                if (message.includes("400")) {
+                    userFriendlyMessage = "Error en el registro. Verifique que el usuario no exista ya.";
+                } else if (message.includes("Network Error")) {
+                    userFriendlyMessage = "Error de conexión. Intente más tarde.";
+                }
+
+                setMessage(userFriendlyMessage);
                 setSuccessful(false);
             }
         );
@@ -48,7 +58,7 @@ const RegisterPage = () => {
             {/* Header */}
             <div className="bg-white py-3 shadow-sm border-bottom">
                 <Container className="d-flex align-items-center">
-                    <div className="d-flex align-items-center gap-2 text-decoration-none text-dark" style={{ cursor: 'pointer' }} onClick={() => window.location.href = 'http://localhost:8080'}>
+                    <div className="d-flex align-items-center gap-2 text-decoration-none text-dark" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>
                         <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white" style={{ width: 35, height: 35 }}>
                             <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 576 512" height="18" width="18" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M528 128V16c0-8.8-7.2-16-16-16H64c-8.8 0-16 7.2-16 16v112H8c-4.4 0-8 3.6-8 8v16c0 4.4 3.6 8 8 8h24v304c0 17.7 14.3 32 32 32h448c17.7 0 32-14.3 32-32V160h24c4.4 0 8-3.6 8-8v-16c0-4.4-3.6-8-8-8h-40zM112 448V160h352v288H112zM96 48h384v64H96V48zm336 176v160H144V224h288z"></path>
@@ -61,7 +71,7 @@ const RegisterPage = () => {
 
             <Container className="d-flex justify-content-center align-items-center flex-grow-1">
                 <Card className="glass-panel p-4 shadow border-0" style={{ width: "400px" }}>
-                    <h2 className="text-center mb-2">Crear Tienda</h2>
+                    <h2 className="text-center mb-2">Registrar Nueva Tienda</h2>
                     <p className="text-center text-secondary mb-4">Plan Seleccionado: <strong className="text-uppercase text-primary">{plan}</strong></p>
 
                     <Form onSubmit={handleRegister}>
@@ -89,6 +99,18 @@ const RegisterPage = () => {
                             />
                         </Form.Group>
 
+                        <Form.Group className="mb-3" controlId="formBasicEmailAddr">
+                            <Form.Label>Correo Electrónico</Form.Label>
+                            <Form.Control
+                                type="email"
+                                placeholder="tu@email.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                className="bg-white text-dark border"
+                            />
+                        </Form.Group>
+
                         <Form.Group className="mb-3" controlId="formBasicPassword">
                             <Form.Label>Contraseña</Form.Label>
                             <Form.Control
@@ -96,6 +118,18 @@ const RegisterPage = () => {
                                 placeholder="Contraseña segura"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
+                                required
+                                className="bg-white text-dark border"
+                            />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3" controlId="formPhoneNumber">
+                            <Form.Label>Teléfono de Contacto</Form.Label>
+                            <Form.Control
+                                type="tel"
+                                placeholder="+58 412 1234567"
+                                value={phoneNumber}
+                                onChange={(e) => setPhoneNumber(e.target.value)}
                                 required
                                 className="bg-white text-dark border"
                             />
@@ -113,7 +147,7 @@ const RegisterPage = () => {
                     </Form>
 
                     <div className="text-center mt-3">
-                        <small>¿Ya tienes una cuenta? <span className="text-primary fw-bold" style={{ cursor: 'pointer' }} onClick={() => navigate('/login')}>Inicia Sesión</span></small>
+                        <small>¿Ya tienes una cuenta? <span className="text-primary fw-bold" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>Inicia Sesión</span></small>
                     </div>
                 </Card>
             </Container>

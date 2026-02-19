@@ -65,18 +65,18 @@ Implementación del modelo de negocio Freemium.
 Asegúrate de que los servicios estén corriendo:
 - Backend: `mvn spring-boot:run`
 - Frontend Admin: `npm run dev`
-- Frontend Market: `npm run dev` (puerto 3001 usualmente)
+- Frontend Market: `npm run dev` (puerto 8082 por defecto)
 - Elasticsearch: Debe estar corriendo en puerto 9200.
 
 ### 2. Verificar Módulo de Clientes
-1. Entra al **Admin** (`localhost:3000`).
+1. Entra al **Admin** (`localhost:8081`).
 2. Ve a **Clientes**. Crea un nuevo cliente.
 3. Edítalo y verifica que los cambios persistan.
 
 ### 3. Verificar Reglas de Marketplace
 1. En **Admin**, ve a **Mi Empresa**.
 2. Asegúrate de que tu plan sea **GRATUITO (FREE)**.
-3. Abre el **Marketplace** (`localhost:3001`). Busca tus productos.
+3. Abre el **Marketplace** (`localhost:8082`). Busca tus productos.
 4. Verifica que aparezcan como **"Solo Exhibición"**.
 5. Vuelve al **Admin** -> **Mi Empresa** y actualiza a **PREMIUM**.
 6. Recarga el **Marketplace**. Verifica que ahora aparezca el botón **"Comprar"**.
@@ -89,7 +89,7 @@ Asegúrate de que los servicios estén corriendo:
 
 ## 6. Nuevo: Portal de Clientes Finales
 Los clientes ahora pueden registrarse para llevar un control de sus compras.
-1. En **Market**, haz clic en "Registrarse".
+1. En **Market** (`localhost:8082`), haz clic en "Registrarse" (se abrirá un modal).
 2. Una vez registrado e iniciado sesión, el sistema autocompletará tus datos al comprar.
 3. Ve a "Mi Panel" (Dashboard) para ver:
     - Gastado Total.

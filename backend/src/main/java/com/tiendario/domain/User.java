@@ -14,6 +14,9 @@ public class User {
     @Column(unique = true)
     private String username;
 
+    @Column(unique = true)
+    private String email;
+
     private String password;
 
     @Enumerated(EnumType.STRING)
@@ -26,4 +29,6 @@ public class User {
     private boolean enabled = true;
 
     private Integer points = 0;
+
+    private String verificationCode;
 }

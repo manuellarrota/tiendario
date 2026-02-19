@@ -28,4 +28,6 @@ public class Company {
 
     private String description;
     private String imageUrl;
+
+    private String phoneNumber;
 }

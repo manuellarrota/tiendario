@@ -174,3 +174,30 @@ const handleLogout = () => {
 2. Agregar tests unitarios para componentes críticos
 3. Implementar analytics para tracking de uso
 4. Agregar más gráficos en el dashboard (charts.js o recharts)
+
+---
+
+#### 8. **Verificación de Reglas de Plan (Free)** ✅
+- **Fecha**: 2026-02-19
+- **Estado**: Funcional
+- **Prueba Realizada**:
+  1. Login como `manager_free` (Plan Gratuito).
+  2. Creación de producto "Producto Prueba Free".
+  3. Verificación en Marketplace (localhost:8082).
+  4. Resultado: El producto aparece pero **SIN botón de compra** (Solo "Consultar Precio"), validando la restricción del plan.
+
+**Evidencia**: Screenshots capturados por el agente de navegación (`market_result_free.png`).
+
+#### 9. **Verificación de Flujo de Compra Completo (Premium)** 🟢
+- **Fecha**: 2026-02-19
+- **Estado**: Funcional (Con observación de UI)
+- **Prueba Realizada**:
+  1. Login como `manager_pro` (Plan Premium).
+  2. Creación de producto "Auriculares Sony Test".
+  3. Compra desde Marketplace (`localhost:8082`) con cuenta de cliente nuevo.
+  4. Método de Pago: "Pago en Tienda" (Cash).
+  5. Verificación en Admin (`localhost:8081`): Pedido recibido como `PENDIENTE`.
+  6. Actualización de estado: `PENDIENTE` -> `LISTO PARA RETIRO` -> `PAGADO`.
+  7. Verificación final Cliente: El pedido aparece como `ENTREGADO/PAGADO`.
+
+**Observación**: La actualización de estado en el admin requiere refrescar la página en algunos casos para reflejar el cambio visualmente, aunque la lógica backend funciona.

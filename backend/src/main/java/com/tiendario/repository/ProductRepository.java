@@ -8,7 +8,6 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-@Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findByCompanyId(Long companyId);
 
