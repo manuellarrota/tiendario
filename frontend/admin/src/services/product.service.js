@@ -35,13 +35,21 @@ const getSuggestedSku = (name, category, variant) => {
     });
 };
 
+const searchCatalog = (query) => {
+    return axios.get(API_URL + "catalog-search", {
+        params: { q: query },
+        headers: getAuthHeader()
+    });
+};
+
 const ProductService = {
     getAll,
     getCompanyProducts: getAll,
     create,
     update,
     remove,
-    getSuggestedSku
+    getSuggestedSku,
+    searchCatalog
 };
 
 export default ProductService;

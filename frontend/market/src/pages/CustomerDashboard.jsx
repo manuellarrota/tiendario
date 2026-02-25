@@ -130,7 +130,7 @@ const CustomerDashboard = () => {
                                                 </Badge>
                                             )}
                                         </td>
-                                        <td className="py-3 text-end fw-bold text-success">${order.totalAmount.toFixed(2)}</td>
+                                        <td className="py-3 text-end fw-bold text-success">${(order.totalAmount || 0).toFixed(2)}</td>
                                         <td className="px-4 py-3">
                                             {order.items?.map(item => (
                                                 <div key={item.id} className="small text-muted border-bottom py-1 last-child-border-0">
@@ -142,7 +142,7 @@ const CustomerDashboard = () => {
                                 ))}
                                 {orders.length === 0 && (
                                     <tr>
-                                        <td colSpan="5" className="text-center py-5 text-muted">
+                                        <td colSpan="6" className="text-center py-5 text-muted">
                                             <div className="opacity-50 fs-2 mb-2">🛍️</div>
                                             <h5>Aún no has realizado pedidos</h5>
                                             <small>¡Explora el marketplace y acumula tus primeros puntos!</small>

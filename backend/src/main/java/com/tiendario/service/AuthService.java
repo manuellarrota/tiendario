@@ -69,7 +69,9 @@ public class AuthService {
             // Create Company
             Company company = new Company();
             company.setName(signUpRequest.getCompanyName());
-            company.setSubscriptionStatus(SubscriptionStatus.FREE);
+            company.setSubscriptionStatus(SubscriptionStatus.TRIAL);
+            company.setTrialStartDate(java.time.LocalDateTime.now());
+            company.setSubscriptionEndDate(java.time.LocalDateTime.now().plusDays(15));
             // Default location if missing (or could be 0.0)
             company.setLatitude(signUpRequest.getLatitude() != null ? signUpRequest.getLatitude() : 0.0);
             company.setLongitude(signUpRequest.getLongitude() != null ? signUpRequest.getLongitude() : 0.0);

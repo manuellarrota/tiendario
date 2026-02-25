@@ -66,9 +66,30 @@ const getPlatformConfig = () => {
     });
 };
 
-const updatePlatformConfig = (config) => {
+const updatePlatformConfig = (data) => {
     const user = AuthService.getCurrentUser();
-    return axios.put(API_URL + "config", config, {
+    return axios.put(API_URL + "config", data, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+const getAllCatalogProducts = () => {
+    const user = AuthService.getCurrentUser();
+    return axios.get(API_URL + "catalog", {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+const updateCatalogProduct = (id, data) => {
+    const user = AuthService.getCurrentUser();
+    return axios.put(API_URL + `catalog/${id}`, data, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+const deleteCatalogProduct = (id) => {
+    const user = AuthService.getCurrentUser();
+    return axios.delete(API_URL + `catalog/${id}`, {
         headers: { Authorization: 'Bearer ' + user.token }
     });
 };
@@ -83,7 +104,10 @@ const AdminService = {
     getAllUsers,
     toggleUser,
     getPlatformConfig,
-    updatePlatformConfig
+    updatePlatformConfig,
+    getAllCatalogProducts,
+    updateCatalogProduct,
+    deleteCatalogProduct
 };
 
 export default AdminService;

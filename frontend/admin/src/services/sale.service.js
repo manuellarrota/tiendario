@@ -10,6 +10,13 @@ const getSales = () => {
     });
 };
 
+const getSaleById = (id) => {
+    const user = AuthService.getCurrentUser();
+    return axios.get(API_URL + id, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
 const createSale = (saleData) => {
     const user = AuthService.getCurrentUser();
     return axios.post(API_URL, saleData, {

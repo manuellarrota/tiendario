@@ -1,12 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Card, ListGroup, Button, Badge } from 'react-bootstrap';
-import { FaBell, FaCheck, FaTrash } from 'react-icons/fa';
+import { Container, Card, ListGroup, Button, Badge, Modal, Row, Col, Form } from 'react-bootstrap';
+import { FaBell, FaCheck, FaEye, FaUser, FaPhoneAlt, FaMapMarkerAlt, FaClock, FaCheckCircle, FaTrash } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import NotificationService from '../services/notification.service';
+import SaleService from '../services/sale.service';
 
 const NotificationsPage = () => {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedSale, setSelectedSale] = useState(null);
+    const [showSaleModal, setShowSaleModal] = useState(false);
+    const [saleLoading, setSaleLoading] = useState(false);
+
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [paymentMethod, setPaymentMethod] = useState('CASH');
+    const [saleToPay, setSaleToPay] = useState(null);
 
     useEffect(() => {
         loadNotifications();
@@ -29,6 +37,74 @@ const NotificationsPage = () => {
         NotificationService.markAsRead(id).then(() => {
             loadNotifications();
         });
+    };
+
+    const handleViewDetails = (notif) => {
+        if (notif.type === 'SALE' && notif.referenceId) {
+            setSaleLoading(true);
+            SaleService.getSaleById(notif.referenceId).then(
+                res => {
+                    setSelectedSale(res.data);
+                    setShowSaleModal(true);
+                    setSaleLoading(false);
+                    // Mark as read automatically when opened
+                    if (!notif.readStatus) {
+                        markAsRead(notif.id);
+                    }
+                },
+                err => {
+                    alert("Error al cargar los detalles de la venta.");
+                    setSaleLoading(false);
+                }
+            );
+        } else {
+            // Just mark as read if it has no details
+            markAsRead(notif.id);
+        }
+    };
+
+    const handleStatusUpdate = (id, status) => {
+        if (status === 'PAID') {
+            setSaleToPay(id);
+            setPaymentMethod('CASH');
+            setShowPaymentModal(true);
+            return;
+        }
+
+        if (window.confirm(`¿Seguro que quieres cambiar el estado a ${status}?`)) {
+            performStatusUpdate(id, status);
+        }
+    };
+
+    const confirmPayment = () => {
+        if (saleToPay) {
+            performStatusUpdate(saleToPay, 'PAID', paymentMethod);
+            setShowPaymentModal(false);
+            setSaleToPay(null);
+        }
+    };
+
+    const performStatusUpdate = (id, status, method = null) => {
+        SaleService.updateStatus(id, status, method).then(
+            () => {
+                // Update selected sale if detail modal is open
+                if (selectedSale && selectedSale.id === id) {
+                    setSelectedSale(prev => ({ ...prev, status: status, paymentMethod: method || prev.paymentMethod }));
+                }
+            },
+            (error) => alert("Error al actualizar estado")
+        );
+    };
+
+    const getStatusBadge = (status) => {
+        switch (status) {
+            case 'PAID': return <Badge bg="success" className="rounded-pill px-3">PAGADO</Badge>;
+            case 'PREPARING': return <Badge bg="primary" className="rounded-pill px-3">EN PREPARACIÓN</Badge>;
+            case 'READY_FOR_PICKUP': return <Badge bg="info" text="white" className="rounded-pill px-3">LISTO PARA RECOGER</Badge>;
+            case 'PENDING': return <Badge bg="warning" text="dark" className="rounded-pill px-3">PENDIENTE</Badge>;
+            case 'CANCELLED': return <Badge bg="danger" className="rounded-pill px-3">CANCELADO</Badge>;
+            default: return <Badge bg="secondary">{status}</Badge>;
+        }
     };
 
     return (
@@ -54,28 +130,40 @@ const NotificationsPage = () => {
                                 <div className="text-center py-5 text-muted">No tienes notificaciones nuevas.</div>
                             ) : (
                                 notifications.map(notif => (
-                                    <ListGroup.Item key={notif.id} className={`py-4 px-4 ${!notif.readStatus ? 'bg-primary bg-opacity-10' : ''}`}>
+                                    <ListGroup.Item
+                                        key={notif.id}
+                                        className={`py-4 px-4 notification-item-hover ${!notif.readStatus ? 'bg-primary bg-opacity-10 border-start border-4 border-primary' : ''}`}
+                                        style={{ cursor: 'pointer' }}
+                                        onClick={() => handleViewDetails(notif)}
+                                    >
                                         <div className="d-flex justify-content-between align-items-start">
                                             <div className="flex-grow-1">
                                                 <h6 className={`fw-bold mb-1 ${!notif.readStatus ? 'text-primary' : ''}`}>
-                                                    {!notif.readStatus && '🔵 '}
                                                     {notif.title}
                                                 </h6>
                                                 <p className="mb-1 text-secondary">{notif.message}</p>
-                                                <small className="text-muted">
-                                                    {new Date(notif.createdAt).toLocaleString()}
-                                                </small>
+                                                <div className="d-flex align-items-center gap-2">
+                                                    <small className="text-muted">
+                                                        {new Date(notif.createdAt).toLocaleString()}
+                                                    </small>
+                                                    {notif.type === 'SALE' && <Badge bg="info" size="sm">Pedido</Badge>}
+                                                </div>
                                             </div>
-                                            {!notif.readStatus && (
-                                                <Button
-                                                    variant="light"
-                                                    size="sm"
-                                                    className="rounded-circle"
-                                                    onClick={() => markAsRead(notif.id)}
-                                                    title="Marcar como leída"
-                                                >
-                                                    <FaCheck className="text-success" />
+                                            {notif.type === 'SALE' ? (
+                                                <Button variant="outline-primary" size="sm" className="rounded-pill px-3">
+                                                    <FaEye className="me-1" /> Gestionar
                                                 </Button>
+                                            ) : (
+                                                !notif.readStatus && (
+                                                    <Button
+                                                        variant="light"
+                                                        size="sm"
+                                                        className="rounded-circle"
+                                                        onClick={(e) => { e.stopPropagation(); markAsRead(notif.id); }}
+                                                    >
+                                                        <FaCheck className="text-success" />
+                                                    </Button>
+                                                )
                                             )}
                                         </div>
                                     </ListGroup.Item>
@@ -85,6 +173,105 @@ const NotificationsPage = () => {
                     </Card>
                 </Container>
             </div>
+
+            {/* Modal de Detalle de Venta */}
+            <Modal show={showSaleModal} onHide={() => setShowSaleModal(false)} size="lg" centered className="rounded-4 overflow-hidden">
+                <Modal.Header closeButton>
+                    <Modal.Title className="fw-bold">Gestión de Pedido #{selectedSale?.id}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="p-4">
+                    {selectedSale && (
+                        <Row>
+                            <Col md={6}>
+                                <h6 className="text-uppercase fw-bold text-muted small mb-3">Información del Cliente</h6>
+                                <div className="bg-light p-3 rounded-4 mb-4">
+                                    <p className="mb-2"><FaUser className="me-2 text-primary" /> <strong>Cliente:</strong> {selectedSale.customerName || selectedSale.customer?.name || 'Cliente Mostrador'}</p>
+                                    <p className="mb-2"><FaPhoneAlt className="me-2 text-primary" /> <strong>Teléfono:</strong> {selectedSale.customer?.phone || 'N/A'}</p>
+                                    <p className="mb-0"><FaMapMarkerAlt className="me-2 text-primary" /> <strong>Dirección:</strong> {selectedSale.customer?.address || 'Retiro en Local'}</p>
+                                </div>
+                            </Col>
+                            <Col md={6}>
+                                <h6 className="text-uppercase fw-bold text-muted small mb-3">Resumen del Pedido</h6>
+                                <div className="bg-light p-3 rounded-4 mb-4">
+                                    <p className="mb-2"><strong>Estado Actual:</strong> {getStatusBadge(selectedSale.status)}</p>
+                                    <p className="mb-2"><strong>Fecha:</strong> {new Date(selectedSale.date).toLocaleString()}</p>
+                                    <h4 className="fw-bold text-success mb-0 mt-3">Total: ${selectedSale.totalAmount?.toLocaleString()}</h4>
+                                </div>
+                            </Col>
+                            <Col md={12}>
+                                <h6 className="text-uppercase fw-bold text-muted small mb-3">Productos</h6>
+                                <ListGroup variant="flush" className="border rounded-4 overflow-hidden">
+                                    {selectedSale.items?.map((item, idx) => (
+                                        <ListGroup.Item key={idx} className="d-flex justify-content-between align-items-center p-3">
+                                            <div>
+                                                <div className="fw-bold">{item.product?.name}</div>
+                                                <small className="text-muted">{item.quantity} unidades x ${item.unitPrice}</small>
+                                            </div>
+                                            <div className="fw-bold">${item.subtotal}</div>
+                                        </ListGroup.Item>
+                                    ))}
+                                </ListGroup>
+
+                                <div className="mt-4 p-3 bg-warning bg-opacity-10 rounded-4 border border-warning border-opacity-25">
+                                    <h6 className="fw-bold mb-3">Flujo de Seguimiento:</h6>
+                                    <div className="d-flex flex-wrap gap-2">
+                                        {selectedSale.status === 'PENDING' && (
+                                            <Button variant="primary" className="rounded-pill px-3" onClick={() => handleStatusUpdate(selectedSale.id, 'PREPARING')}>
+                                                1. En Preparación
+                                            </Button>
+                                        )}
+                                        {(selectedSale.status === 'PENDING' || selectedSale.status === 'PREPARING') && (
+                                            <Button variant="info" className="rounded-pill px-3 text-white" onClick={() => handleStatusUpdate(selectedSale.id, 'READY_FOR_PICKUP')}>
+                                                2. Listo para Retiro
+                                            </Button>
+                                        )}
+                                        {selectedSale.status === 'READY_FOR_PICKUP' && (
+                                            <Button variant="success" className="rounded-pill px-3" onClick={() => handleStatusUpdate(selectedSale.id, 'PAID')}>
+                                                3. Entregado y Pagado
+                                            </Button>
+                                        )}
+                                        {selectedSale.status !== 'PAID' && selectedSale.status !== 'CANCELLED' && (
+                                            <Button variant="outline-danger" className="rounded-pill px-3" onClick={() => handleStatusUpdate(selectedSale.id, 'CANCELLED')}>
+                                                Cancelar Pedido
+                                            </Button>
+                                        )}
+                                    </div>
+                                </div>
+                            </Col>
+                        </Row>
+                    )}
+                </Modal.Body>
+                <Modal.Footer className="border-0 p-4">
+                    <Button variant="light" className="rounded-pill px-4" onClick={() => setShowSaleModal(false)}>
+                        Cerrar
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Confirm Payment Modal */}
+            <Modal show={showPaymentModal} onHide={() => setShowPaymentModal(false)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title className="fw-bold">Confirmar Pago</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="p-4">
+                    <p className="mb-3">Selecciona el método de pago con el que el cliente ha cancelado la orden:</p>
+                    <Form.Select
+                        value={paymentMethod}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="mb-3 py-3 rounded-3 shadow-sm"
+                    >
+                        <option value="CASH">Efectivo 💵</option>
+                        <option value="CARD">Tarjeta de Débito/Crédito 💳</option>
+                        <option value="TRANSFER">Transferencia / Pago Móvil 📲</option>
+                        <option value="OTHER">Otro 📝</option>
+                    </Form.Select>
+                    <div className="d-grid gap-2">
+                        <Button variant="primary" size="lg" className="rounded-pill fw-bold" onClick={confirmPayment}>
+                            Confirmar Pago
+                        </Button>
+                    </div>
+                </Modal.Body>
+            </Modal>
         </div>
     );
 };

@@ -1,7 +1,15 @@
 package com.tiendario.config;
 
-import com.tiendario.domain.*;
-import com.tiendario.repository.*;
+import com.tiendario.domain.Company;
+import com.tiendario.domain.Category;
+import com.tiendario.domain.Product;
+import com.tiendario.domain.User;
+import com.tiendario.domain.Role;
+import com.tiendario.domain.SubscriptionStatus;
+import com.tiendario.repository.CompanyRepository;
+import com.tiendario.repository.CategoryRepository;
+import com.tiendario.repository.ProductRepository;
+import com.tiendario.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;

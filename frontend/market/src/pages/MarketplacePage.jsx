@@ -170,7 +170,7 @@ const MarketplacePage = () => {
     };
 
     const handleBuyFromSeller = (seller) => {
-        if (seller.subscriptionStatus !== 'PAID') {
+        if (!['PAID', 'TRIAL'].includes(seller.subscriptionStatus)) {
             setExhibitionStore(seller.companyName);
             setShowExhibitionModal(true);
             return;
@@ -624,7 +624,7 @@ const MarketplacePage = () => {
                                                 <Card.Body className="p-4">
                                                     <div className="d-flex justify-content-between align-items-center mb-2">
                                                         <h6 className="fw-bold mb-0 text-truncate">{product.name}</h6>
-                                                        {product.subscriptionStatus === 'PAID' ? (
+                                                        {['PAID', 'TRIAL'].includes(product.subscriptionStatus) ? (
                                                             <span className="text-success fw-bold">Desde ${product.price}</span>
                                                         ) : (
                                                             <span className="text-muted small">Consultar Precio</span>
@@ -748,9 +748,8 @@ const MarketplacePage = () => {
 
                                 {(() => {
                                     const mainSeller = sellers.find(s => s.companyId === selectedProduct.companyId);
-                                    // Only show detailed price/stock if the store is PAID (Premium)
-                                    // If sellers are loading or not found yet, we might fallback to selectedProduct.subscriptionStatus if available
-                                    const showDetails = mainSeller ? mainSeller.subscriptionStatus === 'PAID' : selectedProduct.subscriptionStatus === 'PAID';
+                                    // Only show detailed price/stock if the store is PAID or TRIAL
+                                    const showDetails = mainSeller ? ['PAID', 'TRIAL'].includes(mainSeller.subscriptionStatus) : ['PAID', 'TRIAL'].includes(selectedProduct.subscriptionStatus);
 
                                     return showDetails ? (
                                         <div className="bg-light p-3 rounded-4 mb-4">
@@ -791,15 +790,15 @@ const MarketplacePage = () => {
                                                     <small className="text-muted">🏆 Mejor Precio del Marketplace</small>
                                                 </div>
                                             </div>
-                                            {mainSeller?.subscriptionStatus === 'PAID' ? (
+                                            {['PAID', 'TRIAL'].includes(mainSeller?.subscriptionStatus) ? (
                                                 <Button variant="success" className="rounded-pill px-4 py-2 fw-bold shadow-sm"
                                                     onClick={(e) => { e.stopPropagation(); handleBuyFromSeller(mainSeller); }}>
                                                     <FaShoppingCart className="me-2" /> Agregar al carrito
                                                 </Button>
                                             ) : (
-                                                <Button variant="outline-secondary" className="rounded-pill px-4 py-2 fw-bold"
+                                                <Button variant="outline-primary" className="rounded-pill px-4 py-2 fw-bold"
                                                     onClick={(e) => { e.stopPropagation(); handleBuyFromSeller(mainSeller); }}>
-                                                    <FaInfoCircle className="me-2" /> Ver
+                                                    <FaInfoCircle className="me-2" /> Ver Catálogo
                                                 </Button>
                                             )}
                                         </div>
@@ -827,9 +826,9 @@ const MarketplacePage = () => {
                                                         >
                                                             {seller.companyName}
                                                         </h6>
-                                                        {seller.subscriptionStatus === 'PAID' && <Badge bg="success" className="rounded-circle p-1"><FaGem size={8} /></Badge>}
+                                                        {['PAID', 'TRIAL'].includes(seller.subscriptionStatus) && <Badge bg="primary" className="rounded-circle p-1" style={{ fontSize: '0.6rem' }}><FaStar size={8} /></Badge>}
                                                     </div>
-                                                    {seller.subscriptionStatus === 'PAID' ? (
+                                                    {['PAID', 'TRIAL'].includes(seller.subscriptionStatus) ? (
                                                         <div className="d-flex align-items-center gap-2 mt-1">
                                                             <span className={seller.stock > 0 ? 'text-success small fw-bold' : 'text-danger small fw-bold'}>
                                                                 {seller.stock > 0 ? 'Disponible' : 'Agotado'}
@@ -838,27 +837,27 @@ const MarketplacePage = () => {
                                                             <span className="text-primary fw-bold">${seller.price}</span>
                                                         </div>
                                                     ) : (
-                                                        <small className="text-muted mt-1 d-block">Consultar Disponibilidad</small>
+                                                        <small className="text-muted mt-1 d-block">Consultar Precio</small>
                                                     )}
                                                 </div>
                                                 <Button
-                                                    variant={seller.subscriptionStatus === 'PAID' ? "primary" : "outline-secondary"}
+                                                    variant={['PAID', 'TRIAL'].includes(seller.subscriptionStatus) ? "primary" : "outline-primary"}
                                                     size="sm"
                                                     className="rounded-pill px-3 fw-bold"
                                                     disabled={seller.stock === 0}
                                                     onClick={() => handleBuyFromSeller(seller)}
                                                 >
-                                                    {seller.subscriptionStatus === 'PAID' ? (
-                                                        <><FaShoppingCart className="me-1" /> Agregar al carrito</>
+                                                    {['PAID', 'TRIAL'].includes(seller.subscriptionStatus) ? (
+                                                        <><FaShoppingCart className="me-1" /> Comprar</>
                                                     ) : (
-                                                        <><FaInfoCircle className="me-1" /> Ver</>
+                                                        <><FaInfoCircle className="me-1" /> Ver Catálogo</>
                                                     )}
                                                 </Button>
                                             </div>
                                         ))}
                                         {sellers.length === 0 && <div className="text-center py-4 text-muted small">Cargando ofertas...</div>}
                                     </div>
-                                    <div className="mt-3 small text-muted">* Los productos en modo 'Ver' pertenecen a tiendas bajo el plan gratuito (solo exhibición).</div>
+                                    <div className="mt-3 small text-muted opacity-75">* Las tiendas verificadas permiten compras directas y checkout online.</div>
                                 </div>
                             </Col>
                         </Row>
@@ -878,8 +877,8 @@ const MarketplacePage = () => {
                             <Row className="g-0">
                                 <Col lg={6}>
                                     <div className="p-4 p-lg-5">
-                                        <Badge bg="success" className="mb-2 px-3 py-2 rounded-pill fw-bold shadow-sm">
-                                            🌟 Tienda Premium Verificada
+                                        <Badge bg="primary" className="mb-2 px-3 py-2 rounded-pill fw-bold shadow-sm">
+                                            🌟 Tienda Verificada
                                         </Badge>
                                         <h2 className="fw-bold mb-3">{selectedStore?.companyName}</h2>
                                         <p className="text-muted mb-4" style={{ fontSize: '0.9rem' }}>
@@ -940,7 +939,7 @@ const MarketplacePage = () => {
                                 <div className="mb-4 d-inline-block p-4 rounded-circle bg-light shadow-sm">
                                     <FaStore size={40} className="text-secondary" />
                                 </div>
-                                <Badge bg="secondary" className="mb-3 px-3 py-2 rounded-pill fw-bold">Tienda en Exhibición</Badge>
+                                <Badge bg="secondary" className="mb-3 px-3 py-2 rounded-pill fw-bold">Catálogo Digital</Badge>
                                 <h2 className="fw-bold mb-2">{selectedStore?.companyName}</h2>
                                 <p className="text-muted mb-5 mx-auto" style={{ maxWidth: '400px' }}>Esta tienda utiliza el catálogo digital para mostrar sus productos. Visítalos en su ubicación física en San Cristóbal.</p>
 
@@ -955,7 +954,7 @@ const MarketplacePage = () => {
                                                 <div style="font-size:50px;margin-bottom:15px;">📍</div>
                                                 <b style="font-size:18px;color:#374151;">Ubicación en San Cristóbal</b>
                                                 <p style="color:#6b7280;margin:10px 0;">Punto referencial: ${selectedStore?.latitude}, ${selectedStore?.longitude}</p>
-                                                <p style="font-size:12px;color:#9ca3af;margin-top:20px;">Vendedor bajo plan básico de exhibición.</p>
+                                                <p style="font-size:12px;color:#9ca3af;margin-top:20px;">Contacto directo para compras y pedidos.</p>
                                             </div>
                                         `}
                                     ></iframe>
@@ -980,7 +979,7 @@ const MarketplacePage = () => {
                     <h3 className="fw-bold mb-3 text-gradient">Modo Exhibición</h3>
                     <p className="lead text-secondary mb-4">
                         La tienda <span className="fw-bold text-dark">{exhibitionStore}</span> utiliza nuestra plataforma como
-                        catálogo digital (Plan Gratuito).
+                        catálogo digital.
                     </p>
                     <div className="alert alert-primary border-0 rounded-4 py-3 mb-4">
                         <small className="fw-bold">

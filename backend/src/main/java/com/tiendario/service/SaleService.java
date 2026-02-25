@@ -40,6 +40,14 @@ public class SaleService {
         return saleRepository.findByCompanyIdOrderByDateDesc(userDetails.getCompanyId());
     }
 
+    public Sale getSaleById(Long id, UserDetailsImpl userDetails) {
+        Sale sale = saleRepository.findById(id).orElse(null);
+        if (sale == null || !sale.getCompany().getId().equals(userDetails.getCompanyId())) {
+            throw new RuntimeException("Error: Sale not found or access denied.");
+        }
+        return sale;
+    }
+
     @Transactional
     public void createSale(Sale sale, UserDetailsImpl userDetails) {
         if (userDetails.getCompanyId() == null) {

@@ -198,14 +198,25 @@ const POSPage = () => {
                                                         </span>
                                                     </td>
                                                     <td>
-                                                        <Button
-                                                            variant="primary"
-                                                            size="sm"
-                                                            onClick={() => openQuantityModal(p)}
-                                                            disabled={p.stock < 1}
+                                                        <OverlayTrigger
+                                                            placement="left"
+                                                            overlay={(props) => (
+                                                                <Tooltip id={`tooltip-add-${p.id}`} {...props}>
+                                                                    {p.stock < 1 ? "Producto sin stock disponible" : "Agregar este producto al carrito"}
+                                                                </Tooltip>
+                                                            )}
                                                         >
-                                                            <FaPlus /> Agregar
-                                                        </Button>
+                                                            <span className="d-inline-block">
+                                                                <Button
+                                                                    variant="primary"
+                                                                    size="sm"
+                                                                    onClick={() => openQuantityModal(p)}
+                                                                    disabled={p.stock < 1}
+                                                                >
+                                                                    <FaPlus /> Agregar
+                                                                </Button>
+                                                            </span>
+                                                        </OverlayTrigger>
                                                     </td>
                                                 </tr>
                                             ))}

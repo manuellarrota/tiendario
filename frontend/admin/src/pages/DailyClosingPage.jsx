@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Card, Table, Alert, Button } from 'react-bootstrap';
+import { Container, Card, Table, Alert, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import Sidebar from '../components/Sidebar';
 import SaleService from '../services/sale.service';
 import { FaCashRegister, FaMoneyBillWave, FaCreditCard, FaUniversity } from 'react-icons/fa';
@@ -66,7 +66,16 @@ const DailyClosingPage = () => {
             <div className="flex-grow-1 p-4" style={{ overflowY: 'auto' }}>
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <h2><FaCashRegister className="me-2" /> Cierre de Caja Diario</h2>
-                    <Button variant="outline-primary" onClick={fetchSummary}>Actualizar</Button>
+                    <OverlayTrigger
+                        placement="left"
+                        overlay={(props) => (
+                            <Tooltip id="tooltip-refresh-closing" {...props}>
+                                Actualizar el resumen del día actual
+                            </Tooltip>
+                        )}
+                    >
+                        <Button variant="outline-primary" onClick={fetchSummary}>Actualizar</Button>
+                    </OverlayTrigger>
                 </div>
 
                 {error && <Alert variant="danger">{error}</Alert>}

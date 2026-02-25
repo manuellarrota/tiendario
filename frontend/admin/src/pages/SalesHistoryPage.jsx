@@ -13,10 +13,17 @@ const SalesHistoryPage = () => {
 
     useEffect(() => {
         loadSales();
+
+        // 30 Seconds Polling for live updates (market orders)
+        const interval = setInterval(() => {
+            loadSales(true); // silent refresh
+        }, 30000);
+
+        return () => clearInterval(interval);
     }, []);
 
-    const loadSales = () => {
-        setLoading(true);
+    const loadSales = (silent = false) => {
+        if (!silent) setLoading(true);
         SaleService.getSales().then(
             (response) => {
                 setSales(response.data);
@@ -67,8 +74,8 @@ const SalesHistoryPage = () => {
                     setSelectedSale(prev => ({ ...prev, status: status, paymentMethod: method || prev.paymentMethod }));
                 }
 
-                // Reload from server to ensure consistency
-                loadSales();
+                // Reload from server to ensure consistency (silently to avoid disrupt)
+                loadSales(true);
             },
             (error) => alert("Error al actualizar estado")
         );
@@ -82,7 +89,8 @@ const SalesHistoryPage = () => {
     const getStatusBadge = (status) => {
         switch (status) {
             case 'PAID': return <Badge bg="success" className="rounded-pill px-3">PAGADO</Badge>;
-            case 'READY_FOR_PICKUP': return <Badge bg="info" text="white" className="rounded-pill px-3">LISTO POR BUSCAR</Badge>;
+            case 'PREPARING': return <Badge bg="primary" className="rounded-pill px-3">EN PREPARACIÓN</Badge>;
+            case 'READY_FOR_PICKUP': return <Badge bg="info" text="white" className="rounded-pill px-3">LISTO PARA RECOGER</Badge>;
             case 'PENDING': return <Badge bg="warning" text="dark" className="rounded-pill px-3">PENDIENTE</Badge>;
             case 'CANCELLED': return <Badge bg="danger" className="rounded-pill px-3">CANCELADO</Badge>;
             default: return <Badge bg="secondary">{status}</Badge>;
@@ -101,7 +109,7 @@ const SalesHistoryPage = () => {
 
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <div>
-                        <h2 className="fw-bold mb-0">Gestión de Pedidos y Ventas</h2>
+                        <h2 className="fw-bold mb-0">Seguimiento de Pedidos</h2>
                         <p className="text-muted">Administra tus ventas del local y pedidos del Marketplace</p>
                     </div>
                     <div className="d-flex gap-2">
@@ -113,6 +121,7 @@ const SalesHistoryPage = () => {
                         >
                             <option value="ALL">Todos los estados</option>
                             <option value="PENDING">Pendientes</option>
+                            <option value="PREPARING">En Preparación</option>
                             <option value="READY_FOR_PICKUP">Listos para Retiro</option>
                             <option value="PAID">Pagados / Completados</option>
                         </Form.Select>
@@ -154,7 +163,7 @@ const SalesHistoryPage = () => {
                                                 <FaEye className="text-primary" />
                                             </Button>
                                             {sale.status === 'PENDING' && (
-                                                <Button variant="light" size="sm" className="rounded-circle" title="Marcar Listo para Retiro" onClick={() => handleStatusUpdate(sale.id, 'READY_FOR_PICKUP')}>
+                                                <Button variant="light" size="sm" className="rounded-circle" title="Marcar Listo para Recoger" onClick={() => handleStatusUpdate(sale.id, 'READY_FOR_PICKUP')}>
                                                     <FaClock className="text-info" />
                                                 </Button>
                                             )}

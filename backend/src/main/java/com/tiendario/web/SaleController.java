@@ -33,6 +33,14 @@ public class SaleController {
         return saleService.getCompanySales(userDetails);
     }
 
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+    public Sale getSaleById(@PathVariable Long id) {
+        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
+                .getPrincipal();
+        return saleService.getSaleById(id, userDetails);
+    }
+
     @PostMapping
     public ResponseEntity<?> createSale(@RequestBody Sale sale) {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()

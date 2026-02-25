@@ -82,6 +82,12 @@ public class ProductController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/catalog-search")
+    @PreAuthorize("hasRole('MANAGER')")
+    public List<com.tiendario.domain.CatalogProduct> searchCatalog(@RequestParam String q) {
+        return catalogProductRepository.findByNameContainingIgnoreCase(q);
+    }
+
     @GetMapping
     @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
     public List<Product> getCompanyProducts() {
@@ -108,7 +114,6 @@ public class ProductController {
         if (product.getCompany() != null) {
             com.tiendario.domain.SubscriptionStatus status = product.getCompany().getSubscriptionStatus();
 
-            // Check for PAST_DUE or SUSPENDED - they cannot create new products
             if (com.tiendario.domain.SubscriptionStatus.PAST_DUE.equals(status)) {
                 return ResponseEntity.status(403)
                         .body(new MessageResponse(
@@ -120,7 +125,6 @@ public class ProductController {
                                 "Tu cuenta está suspendida. Contacta al administrador para reactivarla."));
             }
 
-            // Enforce limit logic for FREE accounts
             if (com.tiendario.domain.SubscriptionStatus.FREE.equals(status)) {
                 long currentCount = productRepository.countByCompanyId(userDetails.getCompanyId());
                 if (currentCount >= 10) {
@@ -130,6 +134,23 @@ public class ProductController {
                 }
             }
         }
+
+        // --- CATALOG UNIFICATION LOGIC ---
+        com.tiendario.domain.CatalogProduct catalog = catalogProductRepository.findBySku(product.getSku()).orElse(null);
+        if (catalog == null) {
+            catalog = new com.tiendario.domain.CatalogProduct();
+            catalog.setSku(product.getSku());
+            catalog.setName(product.getName());
+            catalog.setDescription(product.getDescription());
+            catalog.setImageUrl(product.getImageUrl());
+            // Optional: catalog.setCategory(product.getCategory());
+            catalog = catalogProductRepository.save(catalog);
+        }
+        product.setCatalogProduct(catalog);
+        // Ensure local fields match catalog source of truth
+        product.setName(catalog.getName());
+        product.setDescription(catalog.getDescription());
+        product.setImageUrl(catalog.getImageUrl());
 
         Product savedProduct = productRepository.save(product);
 

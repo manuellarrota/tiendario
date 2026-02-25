@@ -16,6 +16,8 @@ public class Notification {
     private String message;
     private LocalDateTime createdAt;
     private boolean readStatus;
+    private String type;
+    private Long referenceId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")

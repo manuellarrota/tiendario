@@ -42,9 +42,14 @@ public class PublicController {
 
     @GetMapping("/products")
     public List<PublicProductDTO> getAllProducts() {
-        // Return unique products by Name (Normalized) for better unification
+        // Return unique products grouped by Catalog ID or normalized name
         return productRepository.findAll().stream()
-                .collect(java.util.stream.Collectors.groupingBy(p -> p.getName().trim().toLowerCase()))
+                .collect(java.util.stream.Collectors.groupingBy(p -> {
+                    if (p.getCatalogProduct() != null) {
+                        return "CAT-" + p.getCatalogProduct().getId();
+                    }
+                    return "NAME-" + p.getName().trim().toLowerCase();
+                }))
                 .values().stream()
                 .map(list -> {
                     // Find product with minimum price to represent the group
@@ -104,7 +109,12 @@ public class PublicController {
         }
 
         return results.stream()
-                .collect(java.util.stream.Collectors.groupingBy(p -> p.getName().trim().toLowerCase()))
+                .collect(java.util.stream.Collectors.groupingBy(p -> {
+                    if (p.getCatalogProduct() != null) {
+                        return "CAT-" + p.getCatalogProduct().getId();
+                    }
+                    return "NAME-" + p.getName().trim().toLowerCase();
+                }))
                 .values().stream()
                 .map(list -> {
                     Product bestPriceProduct = list.stream()
@@ -170,6 +180,8 @@ public class PublicController {
         // Create Notification for the seller
         com.tiendario.domain.Notification notification = new com.tiendario.domain.Notification();
         notification.setCompany(company);
+        notification.setReferenceId(sale.getId());
+        notification.setType("SALE");
         notification.setTitle("¡Nueva Venta!");
         notification.setMessage("Has recibido un pedido de " + customer.getName() + " por $" + sale.getTotalAmount());
         notification.setCreatedAt(java.time.LocalDateTime.now());

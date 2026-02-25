@@ -19,6 +19,7 @@ import AdminCompaniesPage from './pages/AdminCompaniesPage';
 import AdminPaymentsPage from './pages/AdminPaymentsPage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import AdminConfigPage from './pages/AdminConfigPage';
+import AdminCatalogPage from './pages/AdminCatalogPage';
 import SalesHistoryPage from './pages/SalesHistoryPage';
 import DailyClosingPage from './pages/DailyClosingPage';
 
@@ -53,6 +54,7 @@ function App() {
           <Route path="/admin/payments" element={<AdminPaymentsPage />} />
           <Route path="/admin/users" element={<AdminUsersPage />} />
           <Route path="/admin/config" element={<AdminConfigPage />} />
+          <Route path="/admin/catalog" element={<AdminCatalogPage />} />
         </Routes>
       </div>
     </Router>

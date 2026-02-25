@@ -21,6 +21,10 @@ const ReportsPage = () => {
         );
     }, []);
 
+    const fetchReports = () => {
+        fetchSales(); // Re-fetch sales data
+    };
+
     const totalSales = sales.reduce((acc, s) => acc + s.totalAmount, 0);
     const salesCount = sales.length;
     const averageSale = salesCount > 0 ? totalSales / salesCount : 0;
@@ -29,7 +33,19 @@ const ReportsPage = () => {
         <div className="d-flex" style={{ height: '100vh', overflow: 'hidden' }}>
             <Sidebar />
             <div className="flex-grow-1 p-4" style={{ overflowY: 'auto' }}>
-                <h2 className="mb-4">Reportes de Ventas</h2>
+                <div className="d-flex justify-content-between align-items-center mb-4">
+                    <h2><FaChartLine className="me-2" /> Reportes de Ventas</h2>
+                    <OverlayTrigger
+                        placement="left"
+                        overlay={(props) => (
+                            <Tooltip id="tooltip-refresh-reports" {...props}>
+                                Actualizar datos de ventas y transacciones
+                            </Tooltip>
+                        )}
+                    >
+                        <Button variant="outline-primary" onClick={fetchReports}>Actualizar</Button>
+                    </OverlayTrigger>
+                </div>
 
                 <Row className="g-4 mb-4">
                     <Col md={4}>

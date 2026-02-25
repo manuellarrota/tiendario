@@ -28,4 +28,14 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
     long countByCompanyIdAndStatus(Long companyId, com.tiendario.domain.SaleStatus status);
 
     List<Sale> findByCompanyIdAndDateBetween(Long companyId, LocalDateTime start, LocalDateTime end);
+
+    @Query("SELECT si.product.name, SUM(si.quantity) as totalSold " +
+            "FROM SaleItem si " +
+            "WHERE si.sale.company.id = :companyId " +
+            "GROUP BY si.product.name " +
+            "ORDER BY totalSold DESC")
+    List<Object[]> findTopSellingProductsByCompany(Long companyId, org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT DISTINCT s.company.id FROM Sale s WHERE s.date >= :sinceDate")
+    List<Long> findUniqueCompanyIdsSince(LocalDateTime sinceDate);
 }

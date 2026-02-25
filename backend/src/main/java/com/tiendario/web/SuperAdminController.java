@@ -11,6 +11,8 @@ import com.tiendario.repository.SaleRepository;
 import com.tiendario.repository.GlobalConfigRepository;
 import com.tiendario.repository.SubscriptionPaymentRepository;
 import com.tiendario.repository.UserRepository;
+import com.tiendario.repository.CatalogProductRepository;
+import com.tiendario.domain.CatalogProduct;
 import com.tiendario.service.SubscriptionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -47,6 +49,9 @@ public class SuperAdminController {
 
         @Autowired
         GlobalConfigRepository configRepository;
+
+        @Autowired
+        CatalogProductRepository catalogProductRepository;
 
         @GetMapping("/stats")
         @PreAuthorize("hasRole('ADMIN')")
@@ -105,6 +110,16 @@ public class SuperAdminController {
                                 ? globalGmv.divide(BigDecimal.valueOf(totalOrders), 2, java.math.RoundingMode.HALF_UP)
                                 : BigDecimal.ZERO;
                 stats.put("globalAov", aov);
+
+                // 10. Conversion Rate (Paid / Total)
+                double conversionRate = totalCompanies > 0 ? (double) paidPlanCount / totalCompanies * 100 : 0;
+                stats.put("conversionRate", Math.round(conversionRate * 100.0) / 100.0);
+
+                // 11. Potential Churn (No sales in last 15 days)
+                java.time.LocalDateTime fifteenDaysAgo = java.time.LocalDateTime.now().minusDays(15);
+                List<Long> companiesWithRecentSales = saleRepository.findUniqueCompanyIdsSince(fifteenDaysAgo);
+                long churnedShops = totalCompanies - companiesWithRecentSales.size();
+                stats.put("churnedShops", churnedShops);
 
                 return ResponseEntity.ok(stats);
         }
@@ -217,5 +232,37 @@ public class SuperAdminController {
 
                 configRepository.save(current);
                 return ResponseEntity.ok(new MessageResponse("Configuration updated successfully"));
+        }
+
+        // --- CATALOG MANAGEMENT ---
+
+        @GetMapping("/catalog")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<?> getAllCatalogProducts() {
+                return ResponseEntity.ok(catalogProductRepository.findAll());
+        }
+
+        @PutMapping("/catalog/{id}")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<?> updateCatalogProduct(@PathVariable Long id, @RequestBody CatalogProduct details) {
+                CatalogProduct cp = catalogProductRepository.findById(id)
+                                .orElseThrow(() -> new RuntimeException("Catalog product not found"));
+                cp.setName(details.getName());
+                cp.setDescription(details.getDescription());
+                cp.setImageUrl(details.getImageUrl());
+                // Also update all local products pointing to this catalog product for
+                // consistency in search
+                CatalogProduct saved = catalogProductRepository.save(cp);
+
+                // Optional: Trigger a background task to sync all local products or just rely
+                // on the link
+                return ResponseEntity.ok(saved);
+        }
+
+        @DeleteMapping("/catalog/{id}")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<?> deleteCatalogProduct(@PathVariable Long id) {
+                catalogProductRepository.deleteById(id);
+                return ResponseEntity.ok(new MessageResponse("Catalog item deleted"));
         }
 }

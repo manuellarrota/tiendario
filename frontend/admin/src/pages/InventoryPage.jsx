@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
-import { Container, Table, Button, Modal, Form, Alert, Badge, Image } from "react-bootstrap";
+import { Container, Table, Button, Modal, Form, Alert, Badge, Image, OverlayTrigger, Tooltip } from "react-bootstrap";
 import Sidebar from "../components/Sidebar";
 import ProductService from "../services/product.service";
 import CategoryService from "../services/category.service";
 import AuthService from "../services/auth.service";
-import { FaPlus, FaTrash, FaBoxOpen, FaExclamationTriangle, FaLock, FaImage } from "react-icons/fa";
+import InventoryService from "../services/inventory.service";
+import { FaPlus, FaTrash, FaBoxOpen, FaExclamationTriangle, FaLock, FaImage, FaFileExcel, FaFilePdf, FaUpload } from "react-icons/fa";
 
 const InventoryPage = () => {
+    // ... (logic remains same)
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [showModal, setShowModal] = useState(false);
@@ -28,11 +30,19 @@ const InventoryPage = () => {
     const [costPrice, setCostPrice] = useState("");
     const [imageUrl, setImageUrl] = useState("");
     const [isGeneratingSku, setIsGeneratingSku] = useState(false);
+    const [catalogSuggestions, setCatalogSuggestions] = useState([]);
+    const [showCatalogSuggestions, setShowCatalogSuggestions] = useState(false);
 
     useEffect(() => {
         loadProducts();
         loadCategories();
     }, []);
+
+    const renderTooltip = (props, text) => (
+        <Tooltip id="button-tooltip" {...props}>
+            {text}
+        </Tooltip>
+    );
 
     const loadCategories = () => {
         CategoryService.getAll().then(
@@ -57,6 +67,35 @@ const InventoryPage = () => {
             return () => clearTimeout(delayDebounceFn);
         }
     }, [name, category, variant, editingProduct]);
+
+    // Search Catalog when name changes
+    useEffect(() => {
+        if (name.length > 2 && !editingProduct) {
+            const delayDebounceFn = setTimeout(() => {
+                ProductService.searchCatalog(name).then(
+                    (res) => {
+                        setCatalogSuggestions(res.data);
+                        setShowCatalogSuggestions(res.data.length > 0);
+                    },
+                    (err) => console.error("Error searching catalog", err)
+                );
+            }, 500);
+            return () => clearTimeout(delayDebounceFn);
+        } else {
+            setCatalogSuggestions([]);
+            setShowCatalogSuggestions(false);
+        }
+    }, [name, editingProduct]);
+
+    const handleSelectCatalogProduct = (cp) => {
+        setName(cp.name);
+        setSku(cp.sku);
+        setImageUrl(cp.imageUrl || "");
+        if (cp.description) {
+            // If we had a description field in the form, we'd set it here
+        }
+        setShowCatalogSuggestions(false);
+    };
 
     const loadProducts = () => {
         ProductService.getAll().then(
@@ -146,6 +185,45 @@ const InventoryPage = () => {
         }
     };
 
+    const handleExportExcel = () => {
+        InventoryService.exportExcel().then(response => {
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'inventario.xlsx');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        }).catch(err => setMessage("Error exportando a Excel"));
+    };
+
+    const handleExportPdf = () => {
+        InventoryService.exportPdf().then(response => {
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'inventario.pdf');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        }).catch(err => setMessage("Error exportando a PDF"));
+    };
+
+    const handleImportExcel = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setMessage("Importando productos...");
+        InventoryService.importExcel(file).then(response => {
+            setMessage(response.data.join("\n"));
+            loadProducts();
+            e.target.value = null;
+        }).catch(err => {
+            setMessage("Error importando productos");
+            e.target.value = null;
+        });
+    };
+
     // Predefined global categories
     const globalCategories = ["Ropa", "Tecnología", "Alimentos", "Hogar", "Deportes", "Salud y Belleza", "Juguetes", "Libros"];
 
@@ -173,14 +251,37 @@ const InventoryPage = () => {
                                 </div>
                             )}
                         </div>
-                        <Button
-                            className="btn-primary px-4 py-2 shadow-lg w-auto"
-                            onClick={() => { resetForm(); setShowModal(true); }}
-                            disabled={isBlocked || (!isPremium && products.length >= 10)}
-                        >
-                            <FaPlus className="me-2" />
-                            {isBlocked ? 'Acceso Bloqueado' : (!isPremium && products.length >= 10 ? 'Límite Alcanzado' : 'Nuevo Producto')}
-                        </Button>
+                        <div className="d-flex flex-wrap gap-2">
+                            <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Descarga toda tu lista de productos en formato Excel")}>
+                                <Button variant="outline-success" className="px-3 shadow-sm d-flex align-items-center gap-2" onClick={handleExportExcel}>
+                                    <FaFileExcel /> Descargar en Excel
+                                </Button>
+                            </OverlayTrigger>
+
+                            <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Genera un reporte PDF de tu inventario actual")}>
+                                <Button variant="outline-danger" className="px-3 shadow-sm d-flex align-items-center gap-2" onClick={handleExportPdf}>
+                                    <FaFilePdf /> Descargar en PDF
+                                </Button>
+                            </OverlayTrigger>
+
+                            <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Sube un archivo Excel para cargar productos masivamente")}>
+                                <label className="btn btn-outline-primary px-3 shadow-sm mb-0 d-flex align-items-center gap-2">
+                                    <FaUpload /> Importar
+                                    <input type="file" hidden accept=".xlsx, .xls" onChange={handleImportExcel} />
+                                </label>
+                            </OverlayTrigger>
+
+                            <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Añadir un nuevo producto a tu catálogo")}>
+                                <Button
+                                    className="btn-primary px-4 py-2 shadow-lg w-auto"
+                                    onClick={() => { resetForm(); setShowModal(true); }}
+                                    disabled={isBlocked || (!isPremium && products.length >= 10)}
+                                >
+                                    <FaPlus className="me-2" />
+                                    {isBlocked ? 'Acceso Bloqueado' : (!isPremium && products.length >= 10 ? 'Límite Alcanzado' : 'Nuevo Producto')}
+                                </Button>
+                            </OverlayTrigger>
+                        </div>
                     </div>
 
                     {/* Subscription Status Alerts */}
@@ -295,7 +396,7 @@ const InventoryPage = () => {
                                 </div>
 
                                 <div className="col-md-8">
-                                    <Form.Group className="mb-3">
+                                    <Form.Group className="mb-3 position-relative">
                                         <Form.Label>Nombre del Producto <span className="text-danger">*</span></Form.Label>
                                         <Form.Control
                                             type="text"
@@ -303,7 +404,28 @@ const InventoryPage = () => {
                                             placeholder="Ej: Zapatillas Running"
                                             value={name}
                                             onChange={(e) => setName(e.target.value)}
+                                            onFocus={() => catalogSuggestions.length > 0 && setShowCatalogSuggestions(true)}
+                                            onBlur={() => setTimeout(() => setShowCatalogSuggestions(false), 200)}
                                         />
+                                        {showCatalogSuggestions && (
+                                            <div className="list-group position-absolute w-100 shadow-lg" style={{ zIndex: 1000, top: '100%' }}>
+                                                {catalogSuggestions.map(cp => (
+                                                    <button
+                                                        key={cp.id}
+                                                        type="button"
+                                                        className="list-group-item list-group-item-action d-flex align-items-center gap-2"
+                                                        onClick={() => handleSelectCatalogProduct(cp)}
+                                                    >
+                                                        {cp.imageUrl && <img src={cp.imageUrl} alt="" style={{ width: '30px', height: '30px', objectFit: 'cover' }} className="rounded" />}
+                                                        <div>
+                                                            <div className="fw-bold small">{cp.name}</div>
+                                                            <small className="text-muted">SKU: {cp.sku}</small>
+                                                        </div>
+                                                        <Badge bg="info" className="ms-auto small">Sugerencia Global</Badge>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        )}
                                     </Form.Group>
                                 </div>
                                 <div className="col-md-4">
