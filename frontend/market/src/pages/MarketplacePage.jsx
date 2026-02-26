@@ -1262,6 +1262,8 @@ const MarketplacePage = () => {
                     </Form>
                     <div className="text-center mt-3">
                         <small className="text-secondary">¿No tienes cuenta? <span className="fw-bold text-primary" onClick={openRegister} style={{ cursor: 'pointer' }}>Regístrate gratis</span></small>
+                        <br />
+                        <small><a href="/login" className="text-muted">¿Olvidaste tu contraseña?</a></small>
                     </div>
                 </Modal.Body>
             </Modal>
