@@ -2,12 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { Container, Card, Table, Alert, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import Sidebar from '../components/Sidebar';
 import SaleService from '../services/sale.service';
+import PublicService from '../services/public.service';
 import { FaCashRegister, FaMoneyBillWave, FaCreditCard, FaUniversity } from 'react-icons/fa';
 
 const DailyClosingPage = () => {
     const [summary, setSummary] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [platformConfig, setPlatformConfig] = useState(null);
+
+    const formatSecondary = (amount) => {
+        if (!platformConfig || !platformConfig.enableSecondaryCurrency) return null;
+        const converted = amount * platformConfig.exchangeRate;
+        return `${platformConfig.secondaryCurrencySymbol} ${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
 
     const fetchSummary = () => {
         setLoading(true);
@@ -26,6 +34,10 @@ const DailyClosingPage = () => {
 
     useEffect(() => {
         fetchSummary();
+        PublicService.getPlatformConfig().then(
+            (res) => setPlatformConfig(res.data),
+            (err) => console.error('Error loading config', err)
+        );
     }, []);
 
     // Process data to group by user
@@ -99,10 +111,30 @@ const DailyClosingPage = () => {
                                     {report.map(r => (
                                         <tr key={r.user} className="text-center align-middle">
                                             <td className="fw-bold text-start ps-4">{r.user}</td>
-                                            <td>${r.totalCash.toFixed(2)}</td>
-                                            <td>${r.totalCard.toFixed(2)}</td>
-                                            <td>${r.totalTransfer.toFixed(2)}</td>
-                                            <td className="fw-bold bg-light">${r.grandTotal.toFixed(2)}</td>
+                                            <td>
+                                                ${r.totalCash.toFixed(2)}
+                                                {platformConfig?.enableSecondaryCurrency && r.totalCash > 0 && (
+                                                    <div className="text-muted" style={{ fontSize: '0.7rem' }}>{formatSecondary(r.totalCash)}</div>
+                                                )}
+                                            </td>
+                                            <td>
+                                                ${r.totalCard.toFixed(2)}
+                                                {platformConfig?.enableSecondaryCurrency && r.totalCard > 0 && (
+                                                    <div className="text-muted" style={{ fontSize: '0.7rem' }}>{formatSecondary(r.totalCard)}</div>
+                                                )}
+                                            </td>
+                                            <td>
+                                                ${r.totalTransfer.toFixed(2)}
+                                                {platformConfig?.enableSecondaryCurrency && r.totalTransfer > 0 && (
+                                                    <div className="text-muted" style={{ fontSize: '0.7rem' }}>{formatSecondary(r.totalTransfer)}</div>
+                                                )}
+                                            </td>
+                                            <td className="fw-bold bg-light">
+                                                ${r.grandTotal.toFixed(2)}
+                                                {platformConfig?.enableSecondaryCurrency && r.grandTotal > 0 && (
+                                                    <div className="text-muted" style={{ fontSize: '0.75rem' }}>{formatSecondary(r.grandTotal)}</div>
+                                                )}
+                                            </td>
                                         </tr>
                                     ))}
                                     {report.length === 0 && !loading && (
@@ -118,7 +150,12 @@ const DailyClosingPage = () => {
                                             <td>${report.reduce((acc, r) => acc + r.totalCash, 0).toFixed(2)}</td>
                                             <td>${report.reduce((acc, r) => acc + r.totalCard, 0).toFixed(2)}</td>
                                             <td>${report.reduce((acc, r) => acc + r.totalTransfer, 0).toFixed(2)}</td>
-                                            <td className="fw-bold fs-5">${grandTotalAll.toFixed(2)}</td>
+                                            <td className="fw-bold fs-5">
+                                                ${grandTotalAll.toFixed(2)}
+                                                {platformConfig?.enableSecondaryCurrency && grandTotalAll > 0 && (
+                                                    <div style={{ fontSize: '0.8rem' }}>{formatSecondary(grandTotalAll)}</div>
+                                                )}
+                                            </td>
                                         </tr>
                                     </tfoot>
                                 )}

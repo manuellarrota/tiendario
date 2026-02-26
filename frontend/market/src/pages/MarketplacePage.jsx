@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import SearchService from '../services/search.service';
 import AuthService from '../services/auth.service';
 import MarketplaceNavbar from '../components/Navbar';
+import { getCategoryEmoji } from '../utils/categoryEmoji';
 
 const MarketplacePage = () => {
     const [loginData, setLoginData] = useState({ email: '', password: '' });
@@ -489,16 +490,7 @@ const MarketplacePage = () => {
                                             onClick={() => setSelectedCategory(cat)}
                                             className="mb-2 rounded-3 text-capitalize"
                                         >
-                                            {cat === 'Alimentos' ? '🍎' :
-                                                cat === 'Ferretería' ? '🛠️' :
-                                                    cat === 'Supermercado' ? '🛒' :
-                                                        cat === 'Tecnología' ? '💻' :
-                                                            cat === 'Hogar' ? '🏠' :
-                                                                cat === 'Belleza' ? '💄' :
-                                                                    cat === 'Deportes' ? '⚽' :
-                                                                        cat === 'Mascotas' ? '🐾' :
-                                                                            cat === 'Moda' ? '👕' :
-                                                                                cat === 'Juguetería' ? '🧸' : '📦'} {cat}
+                                            {getCategoryEmoji(cat)} {cat}
                                         </Nav.Link>
                                     ))}
                                 </Nav>
@@ -615,14 +607,7 @@ const MarketplacePage = () => {
                                                 <div className="position-relative">
                                                     <div className="bg-light d-flex align-items-center justify-content-center" style={{ height: '200px' }}>
                                                         <span style={{ fontSize: '70px' }}>
-                                                            {product.category === 'Alimentos' ? '🍎' :
-                                                                product.category === 'Ferretería' ? '🛠️' :
-                                                                    product.category === 'Supermercado' ? '🛒' :
-                                                                        product.category === 'Tecnología' ? '💻' :
-                                                                            product.category === 'Hogar' ? '🏠' :
-                                                                                product.category === 'Belleza' ? '💄' :
-                                                                                    product.category === 'Deportes' ? '⚽' :
-                                                                                        product.category === 'Mascotas' ? '🐾' : '📦'}
+                                                            {getCategoryEmoji(product.category)}
                                                         </span>
                                                     </div>
                                                     {/* Status badge removed as it is now store-specific and shown in details */}
@@ -747,14 +732,7 @@ const MarketplacePage = () => {
                         <Row className="g-0">
                             <Col md={5} className="bg-light d-flex align-items-center justify-content-center p-5">
                                 <div style={{ fontSize: '150px' }}>
-                                    {selectedProduct.category === 'Alimentos' ? '🍎' :
-                                        selectedProduct.category === 'Ferretería' ? '🛠️' :
-                                            selectedProduct.category === 'Supermercado' ? '🛒' :
-                                                selectedProduct.category === 'Tecnología' ? '💻' :
-                                                    selectedProduct.category === 'Hogar' ? '🏠' :
-                                                        selectedProduct.category === 'Belleza' ? '💄' :
-                                                            selectedProduct.category === 'Deportes' ? '⚽' :
-                                                                selectedProduct.category === 'Mascotas' ? '🐾' : '📦'}
+                                    {getCategoryEmoji(selectedProduct.category)}
                                 </div>
                             </Col>
                             <Col md={7} className="p-5">

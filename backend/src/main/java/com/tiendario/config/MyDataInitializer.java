@@ -72,6 +72,7 @@ public class MyDataInitializer implements CommandLineRunner {
             // Categories for company2
             createCategory("Ropa", company2);
             createCategory("Alimentos", company2);
+            createCategory("Deportes", company2);
 
             System.err.println("DEBUG: Categories created.");
 

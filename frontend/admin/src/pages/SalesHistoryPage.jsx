@@ -3,6 +3,7 @@ import { Container, Row, Col, Card, Table, Badge, Button, Modal, ListGroup, Form
 import { FaHistory, FaEye, FaCheckCircle, FaClock, FaUser, FaPhoneAlt, FaMapMarkerAlt } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import SaleService from '../services/sale.service';
+import PublicService from '../services/public.service';
 
 const SalesHistoryPage = () => {
     const [sales, setSales] = useState([]);
@@ -10,9 +11,20 @@ const SalesHistoryPage = () => {
     const [showDetail, setShowDetail] = useState(false);
     const [selectedSale, setSelectedSale] = useState(null);
     const [filterStatus, setFilterStatus] = useState('ALL');
+    const [platformConfig, setPlatformConfig] = useState(null);
+
+    const formatSecondary = (amount) => {
+        if (!platformConfig || !platformConfig.enableSecondaryCurrency) return null;
+        const converted = amount * platformConfig.exchangeRate;
+        return `${platformConfig.secondaryCurrencySymbol} ${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
 
     useEffect(() => {
         loadSales();
+        PublicService.getPlatformConfig().then(
+            (res) => setPlatformConfig(res.data),
+            (err) => console.error('Error loading config', err)
+        );
 
         // 30 Seconds Polling for live updates (market orders)
         const interval = setInterval(() => {
@@ -157,6 +169,9 @@ const SalesHistoryPage = () => {
                                         <td className="text-center">{getStatusBadge(sale.status)}</td>
                                         <td className="text-end fw-bold text-success">
                                             ${sale.totalAmount ? sale.totalAmount.toLocaleString() : '0'}
+                                            {platformConfig?.enableSecondaryCurrency && sale.totalAmount > 0 && (
+                                                <div className="text-muted fw-normal" style={{ fontSize: '0.75rem' }}>{formatSecondary(sale.totalAmount)}</div>
+                                            )}
                                         </td>
                                         <td className="text-center px-4">
                                             <Button variant="light" size="sm" className="rounded-circle me-1" onClick={() => openDetail(sale)}>
@@ -211,6 +226,9 @@ const SalesHistoryPage = () => {
                                         <p className="mb-2"><strong>Fecha:</strong> {selectedSale.date ? new Date(selectedSale.date).toLocaleString() : 'N/A'}</p>
                                         <p className="mb-2"><strong>Método:</strong> {selectedSale.paymentMethod || 'Pendiente'}</p>
                                         <h4 className="fw-bold text-success mb-0 mt-3">Total: ${selectedSale.totalAmount ? selectedSale.totalAmount.toLocaleString() : '0'}</h4>
+                                        {platformConfig?.enableSecondaryCurrency && selectedSale.totalAmount > 0 && (
+                                            <h5 className="text-muted mt-1 mb-0">{formatSecondary(selectedSale.totalAmount)}</h5>
+                                        )}
                                     </div>
                                 </Col>
                                 <Col md={12}>
