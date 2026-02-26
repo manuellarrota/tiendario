@@ -144,10 +144,15 @@ public class MyDataInitializer implements CommandLineRunner {
     }
 
     private void createUsers(Company company1, Company company2) {
-        createUser("admin", "123456", Role.ROLE_ADMIN, null);
-        createUser("manager_pro", "123456", Role.ROLE_MANAGER, company1);
-        createUser("manager_free", "123456", Role.ROLE_MANAGER, company2);
-        createUser("cliente", "123456", Role.ROLE_CLIENT, null);
+        String adminPass = java.util.UUID.randomUUID().toString().substring(0, 12);
+        createUser("admin", adminPass, Role.ROLE_ADMIN, null);
+        System.err.println("═══════════════════════════════════════════");
+        System.err.println("  ADMIN PASSWORD (first boot): " + adminPass);
+        System.err.println("═══════════════════════════════════════════");
+        createUser("manager_pro", java.util.UUID.randomUUID().toString().substring(0, 12), Role.ROLE_MANAGER, company1);
+        createUser("manager_free", java.util.UUID.randomUUID().toString().substring(0, 12), Role.ROLE_MANAGER,
+                company2);
+        createUser("cliente", java.util.UUID.randomUUID().toString().substring(0, 12), Role.ROLE_CLIENT, null);
     }
 
     private void createUser(String username, String password, Role role, Company company) {

@@ -126,6 +126,20 @@ public class SaleService {
             throw new RuntimeException("Error: Sale not found or access denied.");
         }
 
+        // Restore stock if cancelling an order that had reserved stock
+        if (com.tiendario.domain.SaleStatus.CANCELLED.equals(status)
+                && !com.tiendario.domain.SaleStatus.CANCELLED.equals(sale.getStatus())) {
+            if (sale.getItems() != null) {
+                for (SaleItem item : sale.getItems()) {
+                    Product product = item.getProduct();
+                    if (product != null) {
+                        product.setStock(product.getStock() + item.getQuantity());
+                        productRepository.save(product);
+                    }
+                }
+            }
+        }
+
         sale.setStatus(status);
 
         // If updating to PAID, set the payment method if provided
@@ -143,8 +157,13 @@ public class SaleService {
         List<Sale> sales = saleRepository.findByCompanyIdAndDateBetween(
                 userDetails.getCompanyId(), startOfDay, endOfDay);
 
+        // Only count completed (PAID) sales in the daily summary
+        List<Sale> paidSales = sales.stream()
+                .filter(s -> SaleStatus.PAID.equals(s.getStatus()))
+                .collect(Collectors.toList());
+
         // Group by User and PaymentMethod
-        Map<String, Map<PaymentMethod, List<Sale>>> grouped = sales.stream()
+        Map<String, Map<PaymentMethod, List<Sale>>> grouped = paidSales.stream()
                 .collect(Collectors.groupingBy(
                         s -> s.getUser() != null ? s.getUser().getUsername() : "Unknown",
                         Collectors.groupingBy(sale -> sale.getPaymentMethod() != null ? sale.getPaymentMethod()

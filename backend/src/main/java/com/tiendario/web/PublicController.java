@@ -137,7 +137,8 @@ public class PublicController {
         }
 
         Company company = product.getCompany();
-        if (company.getSubscriptionStatus() != com.tiendario.domain.SubscriptionStatus.PAID) {
+        if (company.getSubscriptionStatus() != com.tiendario.domain.SubscriptionStatus.PAID
+                && company.getSubscriptionStatus() != com.tiendario.domain.SubscriptionStatus.TRIAL) {
             return ResponseEntity.badRequest().body(
                     new com.tiendario.payload.response.MessageResponse("Seller cannot accept orders (FREE Plan)"));
         }

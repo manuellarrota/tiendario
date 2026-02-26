@@ -18,5 +18,10 @@ dist/
 build/
 coverage/
 
+# Sensitive / Generated
+backend/verification_links.txt
+backend/logs/
+backend/build_errors*.txt
+
 # OS
 Thumbs.db
