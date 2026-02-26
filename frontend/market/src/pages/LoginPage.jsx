@@ -132,7 +132,7 @@ const LoginPage = () => {
                         {forgotMsg && <Alert variant={forgotOk ? "success" : "danger"} className="small py-2">{forgotMsg}</Alert>}
                         {!forgotOk ? (
                             <Button variant="primary" type="submit" className="w-100 rounded-pill" disabled={forgotLoading}>
-                                {forgotLoading ? <Spinner size="sm" animation="border" /> : "Enviar Instrucciones"}
+                                {forgotLoading ? <Spinner size="sm" animation="border" /> : "Recuperar Contraseña"}
                             </Button>
                         ) : (
                             <Button variant="secondary" className="w-100 rounded-pill" onClick={() => setShowForgot(false)}>Cerrar</Button>

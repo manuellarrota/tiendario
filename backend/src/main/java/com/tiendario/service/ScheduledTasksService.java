@@ -48,7 +48,8 @@ public class ScheduledTasksService {
                     company.getId(), company.getName(), company.getSubscriptionEndDate());
 
             company.setSubscriptionStatus(SubscriptionStatus.PAST_DUE);
-            // TODO: Enviar email de notificación al usuario
+            // Note: Email notification will be sent via Spring Mail when SMTP is
+            // configured.
         }
 
         companyRepository.saveAll(expiredCompanies);

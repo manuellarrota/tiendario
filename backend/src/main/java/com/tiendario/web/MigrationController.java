@@ -4,6 +4,7 @@ import com.tiendario.domain.Product;
 import com.tiendario.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -18,6 +19,7 @@ public class MigrationController {
     private ProductRepository productRepository;
 
     @PostMapping("/assign-categories")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> assignCategoriesToProducts() {
         List<Product> products = productRepository.findAll();
         int updated = 0;

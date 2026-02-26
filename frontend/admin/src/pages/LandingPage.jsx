@@ -441,7 +441,7 @@ const LandingPage = () => {
                         )}
                         {!forgotSuccess ? (
                             <Button variant="primary" type="submit" className="w-100 rounded-pill fw-bold" disabled={forgotLoading}>
-                                {forgotLoading ? <Spinner size="sm" animation="border" /> : "Enviar Instrucciones"}
+                                {forgotLoading ? <Spinner size="sm" animation="border" /> : "Recuperar Contraseña"}
                             </Button>
                         ) : (
                             <Button variant="secondary" className="w-100 rounded-pill" onClick={() => setShowForgotModal(false)}>

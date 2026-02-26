@@ -145,15 +145,18 @@ public class MyDataInitializer implements CommandLineRunner {
     }
 
     private void createUsers(Company company1, Company company2) {
-        String adminPass = java.util.UUID.randomUUID().toString().substring(0, 12);
-        createUser("admin", adminPass, Role.ROLE_ADMIN, null);
+        createUser("admin", "admin123", Role.ROLE_ADMIN, null);
+        createUser("manager_pro", "manager123", Role.ROLE_MANAGER, company1);
+        createUser("manager_free", "manager123", Role.ROLE_MANAGER, company2);
+        createUser("cliente", "cliente123", Role.ROLE_CLIENT, null);
+
         System.err.println("═══════════════════════════════════════════");
-        System.err.println("  ADMIN PASSWORD (first boot): " + adminPass);
+        System.err.println("  DEV CREDENTIALS (H2 in-memory DB only):");
+        System.err.println("  admin       / admin123     (Super Admin)");
+        System.err.println("  manager_pro / manager123   (Tienda Demo Premium)");
+        System.err.println("  manager_free/ manager123   (Tienda Egar)");
+        System.err.println("  cliente     / cliente123   (Cliente marketplace)");
         System.err.println("═══════════════════════════════════════════");
-        createUser("manager_pro", java.util.UUID.randomUUID().toString().substring(0, 12), Role.ROLE_MANAGER, company1);
-        createUser("manager_free", java.util.UUID.randomUUID().toString().substring(0, 12), Role.ROLE_MANAGER,
-                company2);
-        createUser("cliente", java.util.UUID.randomUUID().toString().substring(0, 12), Role.ROLE_CLIENT, null);
     }
 
     private void createUser(String username, String password, Role role, Company company) {

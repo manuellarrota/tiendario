@@ -41,6 +41,9 @@ public class AuthController {
     private final LoginRateLimiter rateLimiter;
     private final PasswordEncoder passwordEncoder;
 
+    @org.springframework.beans.factory.annotation.Value("${app.frontend.url:http://localhost:8081}")
+    private String frontendUrl;
+
     @Autowired
     public AuthController(AuthenticationManager authenticationManager,
             UserRepository userRepository,
@@ -166,7 +169,7 @@ public class AuthController {
         userRepository.save(user);
 
         // In production, send email. For now, write to file.
-        String resetLink = "http://localhost:8081/reset-password?token=" + token;
+        String resetLink = frontendUrl + "/reset-password?token=" + token;
         try {
             java.nio.file.Files.writeString(
                     java.nio.file.Path.of("password_reset_links.txt"),

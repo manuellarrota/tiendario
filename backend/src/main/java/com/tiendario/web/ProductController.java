@@ -193,8 +193,9 @@ public class ProductController {
             catalog.setName(productDetails.getName());
             catalog.setDescription(productDetails.getDescription());
             catalog.setImageUrl(productDetails.getImageUrl());
-            // catalog.setCategory(productDetails.getCategory()); // TODO: Fix catalog
-            // category handling
+            // Note: catalog.category is a @ManyToOne entity, product.category is a String.
+            // Category sync between catalog and product is handled at the Product level,
+            // not here.
             catalog = catalogProductRepository.save(catalog);
         } else {
             // If updating common info, we update the catalog (making it the source of truth
@@ -202,8 +203,9 @@ public class ProductController {
             catalog.setName(productDetails.getName());
             catalog.setDescription(productDetails.getDescription());
             catalog.setImageUrl(productDetails.getImageUrl());
-            // catalog.setCategory(productDetails.getCategory()); // TODO: Fix catalog
-            // category handling
+            // Note: catalog.category is a @ManyToOne entity, product.category is a String.
+            // Category sync between catalog and product is handled at the Product level,
+            // not here.
             catalog = catalogProductRepository.save(catalog);
 
             // Sync local fields too for compatibility

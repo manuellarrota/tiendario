@@ -110,11 +110,14 @@ Frontend Market | ✅ Up (Started) | http://localhost:8082
 ## 🔐 Credenciales de Prueba (Entorno Local)
 Utiliza estas cuentas pre-cargadas para probar los diferentes roles y planes del sistema:
 
-| Rol | Usuario | Contraseña | Descripción |
-| :--- | :--- | :--- | :--- |
-| **Tienda Premium** | `manager_pro` | `123456` | Acceso total, plan PAID. |
-| **Tienda Gratuita** | `manager_free` | `123456` | Plan FREE, límite de 5 productos. |
-| **Cliente** | `cliente@tiendario.com` | `123456` | Comprador del Marketplace. |
-| **Super Admin** | `admin` | `123456` | Acceso global. |
+| Rol | Usuario | Contraseña | Acceso | Descripción |
+| :--- | :--- | :--- | :--- | :--- |
+| **Super Admin** | `admin` | `admin123` | [Admin Panel](http://localhost:8081) | Acceso global, gestión de plataforma. |
+| **Tienda Premium** | `manager_pro` | `manager123` | [Admin Panel](http://localhost:8081) | Plan PAID, Tienda Demo Premium. Acceso total. |
+| **Tienda Gratuita** | `manager_free` | `manager123` | [Admin Panel](http://localhost:8081) | Plan PAID, Tienda Egar. |
+| **Cliente** | `cliente` | `cliente123` | [Marketplace](http://localhost:8082) | Comprador del Marketplace, acumula puntos. |
 
-> **Importante**: Si registras **nuevas** tiendas desde el formulario, recuerda que se crean **inactivas**. Para activarlas en desarrollo, abre el archivo `backend/verification_links.txt` y copia el enlace de validación.
+> **Nota**: Estas credenciales solo aplican para la base de datos en memoria (H2) de desarrollo.
+> En producción con PostgreSQL se deben crear usuarios reales.
+
+> **Importante**: Si registras **nuevas** tiendas desde el formulario, se crean **inactivas**. Para activarlas en desarrollo, abre el archivo `backend/verification_links.txt` y copia el enlace de validación.

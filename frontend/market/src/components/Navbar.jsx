@@ -49,7 +49,7 @@ const MarketplaceNavbar = ({ onLoginClick, onRegisterClick }) => {
                             </>
                         )}
                         <div className="vr d-none d-lg-block mx-2"></div>
-                        <Button variant="outline-dark" size="sm" className="rounded-pill px-3" onClick={() => window.location.href = 'http://localhost:8081/register'}>
+                        <Button variant="outline-dark" size="sm" className="rounded-pill px-3" onClick={() => window.location.href = (import.meta.env.VITE_ADMIN_URL || 'http://localhost:8081') + '/register'}>
                             Soy Vendedor
                         </Button>
                     </div>
