@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Form, Button, Alert, Spinner, InputGroup } from 'react-bootstrap';
-import { FaCogs, FaSave, FaExclamationTriangle, FaEnvelope, FaPhone, FaBullhorn, FaCreditCard } from 'react-icons/fa';
+import { FaCogs, FaSave, FaExclamationTriangle, FaEnvelope, FaPhone, FaBullhorn, FaCreditCard, FaMoneyBillWave } from 'react-icons/fa';
 import AdminService from '../services/admin.service';
 import Sidebar from '../components/Sidebar';
 
@@ -12,7 +12,11 @@ const AdminConfigPage = () => {
         maintenanceMode: false,
         announcementMessage: "",
         contactEmail: "",
-        contactPhone: ""
+        contactPhone: "",
+        exchangeRate: 36.50,
+        enableSecondaryCurrency: true,
+        secondaryCurrencyLabel: "VES",
+        secondaryCurrencySymbol: "Bs."
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -42,7 +46,7 @@ const AdminConfigPage = () => {
         const { name, value, type, checked } = e.target;
         setConfig(prev => ({
             ...prev,
-            [name]: type === 'checkbox' ? checked : value
+            [name]: (type === 'checkbox' || type === 'switch') ? checked : value
         }));
     };
 
@@ -192,6 +196,66 @@ const AdminConfigPage = () => {
                                                 </Form.Group>
                                             </Col>
                                         </Row>
+                                    </Card.Body>
+                                </Card>
+
+                                {/* Configuración de Moneda */}
+                                <Card className="border-0 shadow-sm rounded-4 mb-4">
+                                    <Card.Body className="p-4">
+                                        <h5 className="fw-bold mb-4 d-flex align-items-center">
+                                            <FaMoneyBillWave className="me-2 text-success" /> Configuración de Moneda (Múltiples Divisas)
+                                        </h5>
+                                        <div className="mb-4 p-3 bg-success bg-opacity-10 rounded-3">
+                                            <Form.Check
+                                                type="switch"
+                                                id="secondary-currency-switch"
+                                                label="Habilitar Segunda Moneda"
+                                                name="enableSecondaryCurrency"
+                                                checked={config.enableSecondaryCurrency}
+                                                onChange={handleChange}
+                                                className="fw-bold text-success"
+                                            />
+                                            <p className="small text-muted mb-0 mt-2">Permite mostrar precios duales (ej: USD y VES) en el POS y Marketplace.</p>
+                                        </div>
+
+                                        {config.enableSecondaryCurrency && (
+                                            <Row>
+                                                <Col md={6}>
+                                                    <Form.Group className="mb-3">
+                                                        <Form.Label className="small fw-bold text-muted">TASA DE CAMBIO (1 USD = ?)</Form.Label>
+                                                        <Form.Control
+                                                            type="number"
+                                                            step="0.01"
+                                                            name="exchangeRate"
+                                                            value={config.exchangeRate}
+                                                            onChange={handleChange}
+                                                        />
+                                                    </Form.Group>
+                                                </Col>
+                                                <Col md={3}>
+                                                    <Form.Group className="mb-3">
+                                                        <Form.Label className="small fw-bold text-muted">ETIQUETA (EJ: VES)</Form.Label>
+                                                        <Form.Control
+                                                            type="text"
+                                                            name="secondaryCurrencyLabel"
+                                                            value={config.secondaryCurrencyLabel}
+                                                            onChange={handleChange}
+                                                        />
+                                                    </Form.Group>
+                                                </Col>
+                                                <Col md={3}>
+                                                    <Form.Group className="mb-3">
+                                                        <Form.Label className="small fw-bold text-muted">SÍMBOLO (EJ: BS.)</Form.Label>
+                                                        <Form.Control
+                                                            type="text"
+                                                            name="secondaryCurrencySymbol"
+                                                            value={config.secondaryCurrencySymbol}
+                                                            onChange={handleChange}
+                                                        />
+                                                    </Form.Group>
+                                                </Col>
+                                            </Row>
+                                        )}
                                     </Card.Body>
                                 </Card>
                             </Col>

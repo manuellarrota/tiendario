@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Form, Button, ListGroup, InputGroup, Table, Modal, Alert } from 'react-bootstrap';
+import { Container, Row, Col, Card, Form, Button, ListGroup, InputGroup, Table, Modal, Alert, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaSearch, FaPlus, FaTrash, FaShoppingCart, FaEdit, FaLock, FaExclamationTriangle } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import ProductService from '../services/product.service';
 import SaleService from '../services/sale.service';
 import AuthService from '../services/auth.service';
+import PublicService from '../services/public.service';
 
 const POSPage = () => {
     const [products, setProducts] = useState([]);
@@ -13,6 +14,7 @@ const POSPage = () => {
     const [message, setMessage] = useState("");
     const [paymentMethod, setPaymentMethod] = useState("CASH");
     const [customerName, setCustomerName] = useState("");
+    const [platformConfig, setPlatformConfig] = useState(null);
 
     // Subscription status check
     const user = AuthService.getCurrentUser();
@@ -29,7 +31,18 @@ const POSPage = () => {
             (response) => setProducts(response.data),
             (error) => console.error("Error fetching products", error)
         );
+
+        PublicService.getPlatformConfig().then(
+            (response) => setPlatformConfig(response.data),
+            (error) => console.error("Error fetching platform config", error)
+        );
     }, []);
+
+    const formatSecondary = (amount) => {
+        if (!platformConfig || !platformConfig.enableSecondaryCurrency) return null;
+        const converted = amount * platformConfig.exchangeRate;
+        return `${platformConfig.secondaryCurrencySymbol} ${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
 
     const openQuantityModal = (product) => {
         setSelectedProduct(product);
@@ -191,7 +204,12 @@ const POSPage = () => {
                                                 <tr key={p.id}>
                                                     <td>{p.name}</td>
                                                     <td><small className="text-muted">{p.sku}</small></td>
-                                                    <td>${p.price}</td>
+                                                    <td>
+                                                        <div>${p.price}</div>
+                                                        {platformConfig?.enableSecondaryCurrency && (
+                                                            <small className="text-success fw-bold">{formatSecondary(p.price)}</small>
+                                                        )}
+                                                    </td>
                                                     <td>
                                                         <span className={`badge ${p.stock < 5 ? 'bg-danger' : 'bg-success'}`}>
                                                             {p.stock}
@@ -239,7 +257,12 @@ const POSPage = () => {
                                             <div className="d-flex justify-content-between align-items-start mb-2">
                                                 <div className="flex-grow-1">
                                                     <h6 className="mb-1">{item.product.name}</h6>
-                                                    <small className="text-muted">${item.unitPrice} c/u</small>
+                                                    <small className="text-muted">
+                                                        ${item.unitPrice} c/u
+                                                        {platformConfig?.enableSecondaryCurrency && (
+                                                            <span className="ms-2 text-success">({formatSecondary(item.unitPrice)})</span>
+                                                        )}
+                                                    </small>
                                                 </div>
                                                 <Button variant="outline-danger" size="sm" onClick={() => removeFromCart(item.product.id)}>
                                                     <FaTrash />
@@ -270,7 +293,12 @@ const POSPage = () => {
                                                         +
                                                     </Button>
                                                 </div>
-                                                <span className="fw-bold text-primary">${item.subtotal.toFixed(2)}</span>
+                                                <div className="text-end">
+                                                    <div className="fw-bold text-primary">${item.subtotal.toFixed(2)}</div>
+                                                    {platformConfig?.enableSecondaryCurrency && (
+                                                        <small className="text-success">{formatSecondary(item.subtotal)}</small>
+                                                    )}
+                                                </div>
                                             </div>
                                         </ListGroup.Item>
                                     ))}
@@ -284,9 +312,14 @@ const POSPage = () => {
                                 )}
 
                                 <div className="border-top pt-3">
-                                    <div className="d-flex justify-content-between mb-3">
-                                        <h4>Total:</h4>
-                                        <h4 className="text-primary">${total.toFixed(2)}</h4>
+                                    <div className="d-flex justify-content-between mb-3 align-items-end">
+                                        <h4 className="mb-0">Total:</h4>
+                                        <div className="text-end">
+                                            {platformConfig?.enableSecondaryCurrency && (
+                                                <h5 className="text-success mb-0">{formatSecondary(total)}</h5>
+                                            )}
+                                            <h4 className="text-primary mb-0">${total.toFixed(2)}</h4>
+                                        </div>
                                     </div>
 
                                     <Form.Group className="mb-3">

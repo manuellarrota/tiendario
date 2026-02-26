@@ -24,4 +24,10 @@ public class GlobalConfig {
     // Support info
     private String contactEmail = "soporte@tiendario.com";
     private String contactPhone = "+58 412 0000000";
+
+    // Currency Settings (e.g., USD to VES)
+    private BigDecimal exchangeRate = new BigDecimal("36.50");
+    private boolean enableSecondaryCurrency = true;
+    private String secondaryCurrencyLabel = "VES";
+    private String secondaryCurrencySymbol = "Bs.";
 }

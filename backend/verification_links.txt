@@ -1,3 +1,4 @@
 To: test_manager@example.com | Link: http://localhost:8080/api/auth/verify?code=2bd43e5a-d5e5-4af6-b27d-c6d352b6c14c
 To: test_manager3@example.com | Link: http://localhost:8080/api/auth/verify?code=abfc4bde-a26b-47f9-861a-a2ecdf08034f
 To: test_manager6@example.com | Link: http://localhost:8080/api/auth/verify?code=e8b8c0c2-8911-46e9-94c8-146cd827a4a3
+Email: testadmin@test.com | Link: http://localhost:8081/verify?code=c1fa2270-13c9-417b-bc32-6fe4c34a2419

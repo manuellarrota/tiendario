@@ -63,6 +63,12 @@ const MarketplacePage = () => {
         );
     };
 
+    const formatSecondary = (amount) => {
+        if (!platformConfig || !platformConfig.enableSecondaryCurrency) return null;
+        const converted = amount * platformConfig.exchangeRate;
+        return `${platformConfig.secondaryCurrencySymbol} ${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
+
     useEffect(() => {
         applyFilters();
     }, [searchQuery, products, priceRange, selectedStores, sortBy, selectedCategory]);
@@ -625,7 +631,12 @@ const MarketplacePage = () => {
                                                     <div className="d-flex justify-content-between align-items-center mb-2">
                                                         <h6 className="fw-bold mb-0 text-truncate">{product.name}</h6>
                                                         {['PAID', 'TRIAL'].includes(product.subscriptionStatus) ? (
-                                                            <span className="text-success fw-bold">Desde ${product.price}</span>
+                                                            <div className="text-end">
+                                                                <div className="text-success fw-bold">Desde ${product.price}</div>
+                                                                {platformConfig?.enableSecondaryCurrency && (
+                                                                    <div className="text-muted" style={{ fontSize: '0.7rem' }}>{formatSecondary(product.price)}</div>
+                                                                )}
+                                                            </div>
                                                         ) : (
                                                             <span className="text-muted small">Consultar Precio</span>
                                                         )}
@@ -697,7 +708,12 @@ const MarketplacePage = () => {
                                         <div className="bg-light rounded p-2">📦</div>
                                         <div>
                                             <h6 className="mb-0 fw-bold">{item.name}</h6>
-                                            <small className="text-muted">${item.price} c/u</small>
+                                            <small className="text-muted">
+                                                ${item.price} c/u
+                                                {platformConfig?.enableSecondaryCurrency && (
+                                                    <span className="ms-2 text-success">({formatSecondary(item.price)})</span>
+                                                )}
+                                            </small>
                                         </div>
                                     </div>
                                     <div className="d-flex align-items-center gap-2">
@@ -708,9 +724,14 @@ const MarketplacePage = () => {
                                     </div>
                                 </div>
                             ))}
-                            <div className="d-flex justify-content-between align-items-center mt-4">
+                            <div className="d-flex justify-content-between align-items-end mt-4">
                                 <h5 className="fw-bold mb-0">Total:</h5>
-                                <h3 className="fw-bold text-success mb-0">${cartTotal.toFixed(2)}</h3>
+                                <div className="text-end">
+                                    {platformConfig?.enableSecondaryCurrency && (
+                                        <h5 className="text-success mb-1">{formatSecondary(cartTotal)}</h5>
+                                    )}
+                                    <h3 className="fw-bold text-success mb-0">${cartTotal.toFixed(2)}</h3>
+                                </div>
                             </div>
                             <Button variant="primary" className="w-100 mt-3 py-2 fw-bold" onClick={handleCheckout}>
                                 Continuar con el Pedido
@@ -755,7 +776,12 @@ const MarketplacePage = () => {
                                         <div className="bg-light p-3 rounded-4 mb-4">
                                             <div className="d-flex justify-content-between align-items-center">
                                                 <span className="text-muted">Precio Unitario</span>
-                                                <h3 className="fw-bold text-success mb-0">${selectedProduct.price}</h3>
+                                                <div className="text-end">
+                                                    <h3 className="fw-bold text-success mb-0">${selectedProduct.price}</h3>
+                                                    {platformConfig?.enableSecondaryCurrency && (
+                                                        <h6 className="text-muted mb-0">{formatSecondary(selectedProduct.price)}</h6>
+                                                    )}
+                                                </div>
                                             </div>
                                             <div className="d-flex justify-content-between align-items-center mt-2 small">
                                                 <span className="text-muted">Stock</span>
@@ -1024,9 +1050,14 @@ const MarketplacePage = () => {
                                         <span className="small fw-bold">${(item.price * item.quantity).toFixed(2)}</span>
                                     </div>
                                 ))}
-                                <div className="d-flex justify-content-between mt-3 pt-2 border-top">
+                                <div className="d-flex justify-content-between mt-3 pt-2 border-top align-items-end">
                                     <span className="fw-bold">Total a Pagar</span>
-                                    <h5 className="fw-bold text-success mb-0">${cartTotal.toFixed(2)}</h5>
+                                    <div className="text-end">
+                                        {platformConfig?.enableSecondaryCurrency && (
+                                            <h5 className="text-success mb-1">{formatSecondary(cartTotal)}</h5>
+                                        )}
+                                        <h5 className="fw-bold text-success mb-0">${cartTotal.toFixed(2)}</h5>
+                                    </div>
                                 </div>
                             </div>
 

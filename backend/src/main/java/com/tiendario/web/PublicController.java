@@ -207,12 +207,17 @@ public class PublicController {
                     map.put("maintenanceMode", config.isMaintenanceMode());
                     map.put("contactEmail", config.getContactEmail());
                     map.put("contactPhone", config.getContactPhone());
+                    map.put("exchangeRate", config.getExchangeRate());
+                    map.put("enableSecondaryCurrency", config.isEnableSecondaryCurrency());
+                    map.put("secondaryCurrencyLabel", config.getSecondaryCurrencyLabel());
+                    map.put("secondaryCurrencySymbol", config.getSecondaryCurrencySymbol());
                     return map;
                 })
                 .orElseGet(() -> {
                     java.util.Map<String, Object> map = new java.util.HashMap<>();
                     map.put("announcementMessage", "");
                     map.put("maintenanceMode", false);
+                    map.put("enableSecondaryCurrency", false);
                     return map;
                 }));
     }

@@ -229,6 +229,10 @@ public class SuperAdminController {
                 current.setAnnouncementMessage(newConfig.getAnnouncementMessage());
                 current.setContactEmail(newConfig.getContactEmail());
                 current.setContactPhone(newConfig.getContactPhone());
+                current.setExchangeRate(newConfig.getExchangeRate());
+                current.setEnableSecondaryCurrency(newConfig.isEnableSecondaryCurrency());
+                current.setSecondaryCurrencyLabel(newConfig.getSecondaryCurrencyLabel());
+                current.setSecondaryCurrencySymbol(newConfig.getSecondaryCurrencySymbol());
 
                 configRepository.save(current);
                 return ResponseEntity.ok(new MessageResponse("Configuration updated successfully"));
