@@ -20,6 +20,7 @@ coverage/
 
 # Sensitive / Generated
 backend/verification_links.txt
+backend/password_reset_links.txt
 backend/logs/
 backend/build_errors*.txt
 

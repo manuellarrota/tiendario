@@ -31,4 +31,7 @@ public class User {
     private Integer points = 0;
 
     private String verificationCode;
+
+    private String resetToken;
+    private java.time.LocalDateTime resetTokenExpiry;
 }

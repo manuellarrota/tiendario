@@ -18,7 +18,6 @@ import java.util.List;
 import java.math.BigDecimal; // Added import
 import java.time.LocalDateTime; // Added import
 
-@CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/payments")
 public class SubscriptionPaymentController {

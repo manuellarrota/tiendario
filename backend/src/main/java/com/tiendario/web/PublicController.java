@@ -14,7 +14,6 @@ import org.springframework.http.ResponseEntity;
 import java.util.List;
 import com.tiendario.payload.response.PublicProductDTO;
 
-@CrossOrigin(origins = "*", maxAge = 3600)
 @RestController
 @RequestMapping("/api/public")
 public class PublicController {

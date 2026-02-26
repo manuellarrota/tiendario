@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { Container, Row, Col, Badge, Form, Button, Alert, Card } from 'react-bootstrap';
-import { Link, useNavigate } from 'react-router-dom';
-import { FaCheck, FaRocket, FaStore, FaChartLine, FaLock, FaUser } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { Container, Row, Col, Badge, Form, Button, Alert, Card, Modal, Spinner } from 'react-bootstrap';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { FaCheck, FaRocket, FaStore, FaChartLine, FaLock, FaUser, FaEnvelope } from 'react-icons/fa';
 import AuthService from '../services/auth.service';
+import axios from 'axios';
 
 const LandingPage = () => {
     const [username, setUsername] = useState("");
@@ -21,6 +22,34 @@ const LandingPage = () => {
     const [regSuccessful, setRegSuccessful] = useState(false);
     const [regPhone, setRegPhone] = useState("");
     const [regPlan, setRegPlan] = useState("free");
+
+    // Forgot Password State
+    const [showForgotModal, setShowForgotModal] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState("");
+    const [forgotMessage, setForgotMessage] = useState("");
+    const [forgotSuccess, setForgotSuccess] = useState(false);
+    const [forgotLoading, setForgotLoading] = useState(false);
+
+    // Reset Password State
+    const [showResetModal, setShowResetModal] = useState(false);
+    const [resetToken, setResetToken] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [resetMessage, setResetMessage] = useState("");
+    const [resetSuccess, setResetSuccess] = useState(false);
+    const [resetLoading, setResetLoading] = useState(false);
+
+    const [searchParams] = useSearchParams();
+    const API_URL = import.meta.env.VITE_API_URL;
+
+    // Check URL for reset token on mount
+    useEffect(() => {
+        const token = searchParams.get('token');
+        if (token) {
+            setResetToken(token);
+            setShowResetModal(true);
+        }
+    }, [searchParams]);
 
     const handleLogin = (e) => {
         e.preventDefault();
@@ -79,6 +108,51 @@ const LandingPage = () => {
     const openRegister = (planType = "free") => {
         setRegPlan(planType);
         setShowRegisterModal(true);
+    };
+
+    const handleForgotPassword = (e) => {
+        e.preventDefault();
+        setForgotLoading(true);
+        setForgotMessage("");
+
+        axios.post(API_URL + '/auth/forgot-password', { email: forgotEmail })
+            .then((res) => {
+                setForgotMessage(res.data.message);
+                setForgotSuccess(true);
+                setForgotLoading(false);
+            })
+            .catch((err) => {
+                setForgotMessage(err.response?.data?.message || "Error al procesar la solicitud.");
+                setForgotSuccess(false);
+                setForgotLoading(false);
+            });
+    };
+
+    const handleResetPassword = (e) => {
+        e.preventDefault();
+        if (newPassword !== confirmPassword) {
+            setResetMessage("Las contraseñas no coinciden.");
+            return;
+        }
+        if (newPassword.length < 6) {
+            setResetMessage("La contraseña debe tener al menos 6 caracteres.");
+            return;
+        }
+
+        setResetLoading(true);
+        setResetMessage("");
+
+        axios.post(API_URL + '/auth/reset-password', { token: resetToken, newPassword })
+            .then((res) => {
+                setResetMessage(res.data.message);
+                setResetSuccess(true);
+                setResetLoading(false);
+            })
+            .catch((err) => {
+                setResetMessage(err.response?.data?.message || "Error al restablecer la contraseña.");
+                setResetSuccess(false);
+                setResetLoading(false);
+            });
     };
 
     return (
@@ -162,7 +236,7 @@ const LandingPage = () => {
                                 </Button>
                             </Form>
                             <div className="text-center mt-3">
-                                <small className="text-secondary">¿Olvidaste tu contraseña? <Link to="/recover">Recuperar</Link></small>
+                                <small className="text-secondary">¿Olvidaste tu contraseña? <a href="#" onClick={(e) => { e.preventDefault(); setShowForgotModal(true); setForgotMessage(''); setForgotEmail(''); setForgotSuccess(false); }}>Recuperar</a></small>
                             </div>
                         </Card>
                     </Col>
@@ -339,6 +413,91 @@ const LandingPage = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Forgot Password Modal */}
+            <Modal show={showForgotModal} onHide={() => setShowForgotModal(false)} centered>
+                <Modal.Header closeButton className="border-0 pb-0">
+                    <Modal.Title className="fw-bold"><FaEnvelope className="me-2 text-primary" />Recuperar Contraseña</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="p-4">
+                    <p className="text-muted small mb-3">
+                        Ingresa tu email o nombre de usuario y te enviaremos instrucciones para restablecer tu contraseña.
+                    </p>
+                    <Form onSubmit={handleForgotPassword}>
+                        <Form.Group className="mb-3">
+                            <Form.Control
+                                type="text"
+                                placeholder="Email o nombre de usuario"
+                                value={forgotEmail}
+                                onChange={(e) => setForgotEmail(e.target.value)}
+                                required
+                                className="rounded-3 py-2"
+                            />
+                        </Form.Group>
+                        {forgotMessage && (
+                            <Alert variant={forgotSuccess ? "success" : "danger"} className="small py-2">
+                                {forgotMessage}
+                            </Alert>
+                        )}
+                        {!forgotSuccess ? (
+                            <Button variant="primary" type="submit" className="w-100 rounded-pill fw-bold" disabled={forgotLoading}>
+                                {forgotLoading ? <Spinner size="sm" animation="border" /> : "Enviar Instrucciones"}
+                            </Button>
+                        ) : (
+                            <Button variant="secondary" className="w-100 rounded-pill" onClick={() => setShowForgotModal(false)}>
+                                Cerrar
+                            </Button>
+                        )}
+                    </Form>
+                </Modal.Body>
+            </Modal>
+
+            {/* Reset Password Modal */}
+            <Modal show={showResetModal} onHide={() => setShowResetModal(false)} centered>
+                <Modal.Header closeButton className="border-0 pb-0">
+                    <Modal.Title className="fw-bold"><FaLock className="me-2 text-primary" />Nueva Contraseña</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="p-4">
+                    <Form onSubmit={handleResetPassword}>
+                        <Form.Group className="mb-3">
+                            <Form.Label className="small fw-bold">Nueva Contraseña</Form.Label>
+                            <Form.Control
+                                type="password"
+                                placeholder="Mínimo 6 caracteres"
+                                value={newPassword}
+                                onChange={(e) => setNewPassword(e.target.value)}
+                                required
+                                className="rounded-3 py-2"
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label className="small fw-bold">Confirmar Contraseña</Form.Label>
+                            <Form.Control
+                                type="password"
+                                placeholder="Repetir contraseña"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                required
+                                className="rounded-3 py-2"
+                            />
+                        </Form.Group>
+                        {resetMessage && (
+                            <Alert variant={resetSuccess ? "success" : "danger"} className="small py-2">
+                                {resetMessage}
+                            </Alert>
+                        )}
+                        {!resetSuccess ? (
+                            <Button variant="primary" type="submit" className="w-100 rounded-pill fw-bold" disabled={resetLoading}>
+                                {resetLoading ? <Spinner size="sm" animation="border" /> : "Restablecer Contraseña"}
+                            </Button>
+                        ) : (
+                            <Button variant="success" className="w-100 rounded-pill fw-bold" onClick={() => { setShowResetModal(false); window.history.replaceState({}, '', '/'); }}>
+                                Ir a Iniciar Sesión
+                            </Button>
+                        )}
+                    </Form>
+                </Modal.Body>
+            </Modal>
         </div >
     );
 };
