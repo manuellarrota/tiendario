@@ -26,7 +26,7 @@ const POSPage = () => {
     // Quantity modal
     const [showQuantityModal, setShowQuantityModal] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
-    const [inputQuantity, setInputQuantity] = useState(1);
+    const [inputQuantity, setInputQuantity] = useState('1');
 
     useEffect(() => {
         ProductService.getCompanyProducts().then(
@@ -48,40 +48,41 @@ const POSPage = () => {
 
     const openQuantityModal = (product) => {
         setSelectedProduct(product);
-        setInputQuantity(1);
+        setInputQuantity('1');
         setShowQuantityModal(true);
     };
 
     const confirmAddToCart = () => {
-        if (!selectedProduct || inputQuantity < 1) return;
+        const qty = parseInt(inputQuantity, 10);
+        if (!selectedProduct || !qty || qty < 1) return;
 
         const existing = cart.find(item => item.product.id === selectedProduct.id);
         if (existing) {
-            if (existing.quantity + inputQuantity > selectedProduct.stock) {
+            if (existing.quantity + qty > selectedProduct.stock) {
                 alert(`Stock insuficiente. Disponible: ${selectedProduct.stock}`);
                 return;
             }
             setCart(cart.map(item =>
                 item.product.id === selectedProduct.id
-                    ? { ...item, quantity: item.quantity + inputQuantity, subtotal: (item.quantity + inputQuantity) * selectedProduct.price }
+                    ? { ...item, quantity: item.quantity + qty, subtotal: (item.quantity + qty) * selectedProduct.price }
                     : item
             ));
         } else {
-            if (inputQuantity > selectedProduct.stock) {
+            if (qty > selectedProduct.stock) {
                 alert(`Stock insuficiente. Disponible: ${selectedProduct.stock}`);
                 return;
             }
             setCart([...cart, {
                 product: selectedProduct,
-                quantity: inputQuantity,
+                quantity: qty,
                 unitPrice: selectedProduct.price,
-                subtotal: inputQuantity * selectedProduct.price
+                subtotal: qty * selectedProduct.price
             }]);
         }
 
         setShowQuantityModal(false);
         setSelectedProduct(null);
-        setInputQuantity(1);
+        setInputQuantity('1');
     };
 
     const updateCartQuantity = (productId, newQuantity) => {
@@ -293,7 +294,10 @@ const POSPage = () => {
                                                         type="number"
                                                         min="1"
                                                         value={item.quantity}
-                                                        onChange={(e) => updateCartQuantity(item.product.id, parseInt(e.target.value) || 1)}
+                                                        onChange={(e) => {
+                                                            const v = parseInt(e.target.value, 10);
+                                                            if (!isNaN(v)) updateCartQuantity(item.product.id, v);
+                                                        }}
                                                         className="mx-2 text-center"
                                                         style={{ width: '70px' }}
                                                     />
@@ -399,7 +403,7 @@ const POSPage = () => {
                                         min="1"
                                         max={selectedProduct.stock}
                                         value={inputQuantity}
-                                        onChange={(e) => setInputQuantity(parseInt(e.target.value) || 1)}
+                                        onChange={(e) => setInputQuantity(e.target.value)}
                                         autoFocus
                                         onKeyPress={(e) => e.key === 'Enter' && confirmAddToCart()}
                                     />
