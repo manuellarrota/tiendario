@@ -232,7 +232,9 @@ const MarketplacePage = () => {
 
     const handleCheckout = () => {
         if (!user) {
-            window.location.href = '/login';
+            // El login es un modal embebido — no redirigir a /login
+            setShowCartModal(false);
+            setShowLoginModal(true);
             return;
         }
         // Prefill customer data

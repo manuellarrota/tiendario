@@ -11,3 +11,4 @@
 [2026-03-02T15:21:45.283498600] TO: manager@tiendario.com | SUBJECT: ✉️ Verifica tu cuenta — Tiendario | HTML: (logged)
 [2026-03-02T15:25:35.956141500] TO: manager@tiendario.com | SUBJECT: ✉️ Verifica tu cuenta — Tiendario | HTML: (logged)
 [2026-03-02T16:19:53.420160700] TO: manager@tiendario.com | SUBJECT: ✉️ Verifica tu cuenta — Tiendario | HTML: (logged)
+[2026-03-02T16:51:18.538286600] TO: teststore@example.com | SUBJECT: ✉️ Verifica tu cuenta — Tiendario | HTML: (logged)

@@ -45,7 +45,7 @@ export const LoginModal = ({
             <div className="text-center mt-3">
                 <small className="text-secondary">¿No tienes cuenta? <span className="fw-bold text-primary" onClick={onSwitchToRegister} style={{ cursor: 'pointer' }}>Regístrate gratis</span></small>
                 <br />
-                <small><a href="/login" className="text-muted">¿Olvidaste tu contraseña?</a></small>
+                <small><span className="text-muted" style={{ cursor: 'default' }}>¿Olvidaste tu contraseña? Contáctanos.</span></small>
             </div>
         </Modal.Body>
     </Modal>
