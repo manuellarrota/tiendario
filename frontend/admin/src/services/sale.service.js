@@ -45,6 +45,7 @@ const getDailySummary = () => {
 
 const SaleService = {
     getSales,
+    getSaleById,
     createSale,
     updateStatus,
     getDailySummary

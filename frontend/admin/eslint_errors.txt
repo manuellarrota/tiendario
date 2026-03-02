@@ -1,0 +1,579 @@
+[0m[0m
+[0m[4mD:\emprendimiento\antigravity\tiendario\frontend\admin\src\pages\AdminCatalogPage.jsx[24m[0m
+[0m  [2m16:9[22m  [31merror[39m  Error: Cannot access variable before it is declared[0m
+[0m[0m
+[0m`loadCatalog` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.[0m
+[0m[0m
+[0m  14 |[0m
+[0m  15 |     useEffect(() => {[0m
+[0m> 16 |         loadCatalog();[0m
+[0m     |         ^^^^^^^^^^^ `loadCatalog` accessed before it is declared[0m
+[0m  17 |     }, []);[0m
+[0m  18 |[0m
+[0m  19 |     const loadCatalog = () => {[0m
+[0m[0m
+[0m  17 |     }, []);[0m
+[0m  18 |[0m
+[0m> 19 |     const loadCatalog = () => {[0m
+[0m     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 20 |         setLoading(true);[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 21 |         AdminService.getAllCatalogProducts().then([0m
+[0m     …[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 31 |         );[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 32 |     };[0m
+[0m     | ^^^^^^^ `loadCatalog` is declared here[0m
+[0m  33 |[0m
+[0m  34 |     const handleEdit = (item) => {[0m
+[0m  35 |         setSelectedItem({ ...item });  [2mreact-hooks/immutability[22m[0m
+[0m[0m
+[0m[4mD:\emprendimiento\antigravity\tiendario\frontend\admin\src\pages\AdminCompaniesPage.jsx[24m[0m
+[0m  [2m14:9[22m  [31merror[39m  Error: Cannot access variable before it is declared[0m
+[0m[0m
+[0m`loadCompanies` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.[0m
+[0m[0m
+[0m  12 |[0m
+[0m  13 |     useEffect(() => {[0m
+[0m> 14 |         loadCompanies();[0m
+[0m     |         ^^^^^^^^^^^^^ `loadCompanies` accessed before it is declared[0m
+[0m  15 |     }, []);[0m
+[0m  16 |[0m
+[0m  17 |     const loadCompanies = () => {[0m
+[0m[0m
+[0m  15 |     }, []);[0m
+[0m  16 |[0m
+[0m> 17 |     const loadCompanies = () => {[0m
+[0m     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 18 |         setLoading(true);[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 19 |         AdminService.getAllCompanies().then([0m
+[0m     …[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 29 |         );[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 30 |     };[0m
+[0m     | ^^^^^^^ `loadCompanies` is declared here[0m
+[0m  31 |[0m
+[0m  32 |     const handleStatusChange = (companyId, newStatus) => {[0m
+[0m  33 |         setUpdating(companyId);  [2mreact-hooks/immutability[22m[0m
+[0m[0m
+[0m[4mD:\emprendimiento\antigravity\tiendario\frontend\admin\src\pages\AdminConfigPage.jsx[24m[0m
+[0m  [2m27:9[22m   [31merror[39m  Error: Cannot access variable before it is declared[0m
+[0m[0m
+[0m`loadConfig` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.[0m
+[0m[0m
+[0m  25 |[0m
+[0m  26 |     useEffect(() => {[0m
+[0m> 27 |         loadConfig();[0m
+[0m     |         ^^^^^^^^^^ `loadConfig` accessed before it is declared[0m
+[0m  28 |     }, []);[0m
+[0m  29 |[0m
+[0m  30 |     const loadConfig = () => {[0m
+[0m[0m
+[0m  28 |     }, []);[0m
+[0m  29 |[0m
+[0m> 30 |     const loadConfig = () => {[0m
+[0m     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 31 |         setLoading(true);[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 32 |         AdminService.getPlatformConfig().then([0m
+[0m     …[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 42 |         );[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 43 |     };[0m
+[0m     | ^^^^^^^ `loadConfig` is declared here[0m
+[0m  44 |[0m
+[0m  45 |     const handleChange = (e) => {[0m
+[0m  46 |         const { name, value, type, checked } = e.target;  [2mreact-hooks/immutability[22m[0m
+[0m  [2m65:14[22m  [31merror[39m  'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mD:\emprendimiento\antigravity\tiendario\frontend\admin\src\pages\AdminPaymentsPage.jsx[24m[0m
+[0m  [2m17:9[22m  [31merror[39m  Error: Cannot access variable before it is declared[0m
+[0m[0m
+[0m`loadPayments` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.[0m
+[0m[0m
+[0m  15 |[0m
+[0m  16 |     useEffect(() => {[0m
+[0m> 17 |         loadPayments();[0m
+[0m     |         ^^^^^^^^^^^^ `loadPayments` accessed before it is declared[0m
+[0m  18 |     }, []);[0m
+[0m  19 |[0m
+[0m  20 |     const loadPayments = () => {[0m
+[0m[0m
+[0m  18 |     }, []);[0m
+[0m  19 |[0m
+[0m> 20 |     const loadPayments = () => {[0m
+[0m     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 21 |         setLoading(true);[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 22 |         AdminService.getGlobalPayments().then([0m
+[0m     …[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 32 |         );[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 33 |     };[0m
+[0m     | ^^^^^^^ `loadPayments` is declared here[0m
+[0m  34 |[0m
+[0m  35 |     const handleApprove = (id) => {[0m
+[0m  36 |         if (!window.confirm("¿Estás seguro de aprobar este pago? Se actualizará el plan de la empresa a PAID.")) return;  [2mreact-hooks/immutability[22m[0m
+[0m[0m
+[0m[4mD:\emprendimiento\antigravity\tiendario\frontend\admin\src\pages\AdminUsersPage.jsx[24m[0m
+[0m  [2m14:9[22m  [31merror[39m  Error: Cannot access variable before it is declared[0m
+[0m[0m
+[0m`loadUsers` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.[0m
+[0m[0m
+[0m  12 |[0m
+[0m  13 |     useEffect(() => {[0m
+[0m> 14 |         loadUsers();[0m
+[0m     |         ^^^^^^^^^ `loadUsers` accessed before it is declared[0m
+[0m  15 |     }, []);[0m
+[0m  16 |[0m
+[0m  17 |     const loadUsers = () => {[0m
+[0m[0m
+[0m  15 |     }, []);[0m
+[0m  16 |[0m
+[0m> 17 |     const loadUsers = () => {[0m
+[0m     |     ^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 18 |         setLoading(true);[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 19 |         AdminService.getAllUsers().then([0m
+[0m     …[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 29 |         );[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 30 |     };[0m
+[0m     | ^^^^^^^ `loadUsers` is declared here[0m
+[0m  31 |[0m
+[0m  32 |     const handleToggleUser = (userId) => {[0m
+[0m  33 |         setProcessing(userId);  [2mreact-hooks/immutability[22m[0m
+[0m[0m
+[0m[4mD:\emprendimiento\antigravity\tiendario\frontend\admin\src\pages\CategoriesPage.jsx[24m[0m
+[0m  [2m15:9[22m   [31merror[39m  Error: Cannot access variable before it is declared[0m
+[0m[0m
+[0m`loadCategories` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.[0m
+[0m[0m
+[0m  13 |[0m
+[0m  14 |     useEffect(() => {[0m
+[0m> 15 |         loadCategories();[0m
+[0m     |         ^^^^^^^^^^^^^^ `loadCategories` accessed before it is declared[0m
+[0m  16 |     }, []);[0m
+[0m  17 |[0m
+[0m  18 |     const loadCategories = () => {[0m
+[0m[0m
+[0m  16 |     }, []);[0m
+[0m  17 |[0m
+[0m> 18 |     const loadCategories = () => {[0m
+[0m     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 19 |         CategoryService.getAll().then([0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 20 |             (res) => setCategories(res.data),[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 21 |             (err) => console.error('Error loading categories', err)[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 22 |         );[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 23 |     };[0m
+[0m     | ^^^^^^^ `loadCategories` is declared here[0m
+[0m  24 |[0m
+[0m  25 |     const handleCreate = (e) => {[0m
+[0m  26 |         e.preventDefault();  [2mreact-hooks/immutability[22m[0m
+[0m  [2m36:14[22m  [31merror[39m  'error' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             [2mno-unused-vars[22m[0m
+[0m  [2m51:18[22m  [31merror[39m  'error' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mD:\emprendimiento\antigravity\tiendario\frontend\admin\src\pages\CustomersPage.jsx[24m[0m
+[0m   [2m23:9[22m   [31merror[39m    Error: Cannot access variable before it is declared[0m
+[0m[0m
+[0m`loadCustomers` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.[0m
+[0m[0m
+[0m  21 |[0m
+[0m  22 |     useEffect(() => {[0m
+[0m> 23 |         loadCustomers();[0m
+[0m     |         ^^^^^^^^^^^^^ `loadCustomers` accessed before it is declared[0m
+[0m  24 |     }, []);[0m
+[0m  25 |[0m
+[0m  26 |     useEffect(() => {[0m
+[0m[0m
+[0m  28 |     }, [customers, searchTerm]);[0m
+[0m  29 |[0m
+[0m> 30 |     const loadCustomers = () => {[0m
+[0m     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 31 |         CustomerService.getAll().then([0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 32 |             (res) => setCustomers(res.data),[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 33 |             (err) => console.error('Error loading customers', err)[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 34 |         );[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 35 |     };[0m
+[0m     | ^^^^^^^ `loadCustomers` is declared here[0m
+[0m  36 |[0m
+[0m  37 |     const filterCustomers = () => {[0m
+[0m  38 |         if (!searchTerm) {  [2mreact-hooks/immutability[22m[0m
+[0m   [2m27:9[22m   [31merror[39m    Error: Cannot access variable before it is declared[0m
+[0m[0m
+[0m`filterCustomers` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.[0m
+[0m[0m
+[0m  25 |[0m
+[0m  26 |     useEffect(() => {[0m
+[0m> 27 |         filterCustomers();[0m
+[0m     |         ^^^^^^^^^^^^^^^ `filterCustomers` accessed before it is declared[0m
+[0m  28 |     }, [customers, searchTerm]);[0m
+[0m  29 |[0m
+[0m  30 |     const loadCustomers = () => {[0m
+[0m[0m
+[0m  35 |     };[0m
+[0m  36 |[0m
+[0m> 37 |     const filterCustomers = () => {[0m
+[0m     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 38 |         if (!searchTerm) {[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 39 |             setFilteredCustomers(customers);[0m
+[0m     …[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 47 |         }[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 48 |     };[0m
+[0m     | ^^^^^^^ `filterCustomers` is declared here[0m
+[0m  49 |[0m
+[0m  50 |     const handleCreate = (e) => {[0m
+[0m  51 |         e.preventDefault();                                                                                                                                                [2mreact-hooks/immutability[22m[0m
+[0m   [2m28:8[22m   [33mwarning[39m  React Hook useEffect has a missing dependency: 'filterCustomers'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            [2mreact-hooks/exhaustive-deps[22m[0m
+[0m   [2m62:18[22m  [31merror[39m    'error' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             [2mno-unused-vars[22m[0m
+[0m  [2m102:18[22m  [31merror[39m    'error' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mD:\emprendimiento\antigravity\tiendario\frontend\admin\src\pages\DailyClosingPage.jsx[24m[0m
+[0m  [2m36:9[22m   [31merror[39m  Error: Calling setState synchronously within an effect can trigger cascading renders[0m
+[0m[0m
+[0mEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:[0m
+[0m* Update external systems with the latest state from React.[0m
+[0m* Subscribe for updates from some external system, calling setState in a callback function when external state changes.[0m
+[0m[0m
+[0mCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).[0m
+[0m[0m
+[0m  34 |[0m
+[0m  35 |     useEffect(() => {[0m
+[0m> 36 |         fetchSummary();[0m
+[0m     |         ^^^^^^^^^^^^ Avoid calling setState() directly within an effect[0m
+[0m  37 |         PublicService.getPlatformConfig().then([0m
+[0m  38 |             (res) => setPlatformConfig(res.data),[0m
+[0m  39 |             (err) => console.error('Error loading config', err)  [2mreact-hooks/set-state-in-effect[22m[0m
+[0m  [2m53:15[22m  [31merror[39m  'getCount' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mD:\emprendimiento\antigravity\tiendario\frontend\admin\src\pages\DashboardHome.jsx[24m[0m
+[0m   [2m45:9[22m   [31merror[39m    Error: Cannot access variable before it is declared[0m
+[0m[0m
+[0m`loadData` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.[0m
+[0m[0m
+[0m  43 |[0m
+[0m  44 |     useEffect(() => {[0m
+[0m> 45 |         loadData();[0m
+[0m     |         ^^^^^^^^ `loadData` accessed before it is declared[0m
+[0m  46 |[0m
+[0m  47 |         // 30 Seconds Polling for live updates[0m
+[0m  48 |         const interval = setInterval(() => {[0m
+[0m[0m
+[0m  53 |     }, [isSuperAdmin, isBlocked]);[0m
+[0m  54 |[0m
+[0m> 55 |     const loadData = (silent = false) => {[0m
+[0m     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 56 |         if (!silent) setLoading(true);[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 57 |[0m
+[0m     …[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 88 |         }[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 89 |     };[0m
+[0m     | ^^^^^^^ `loadData` is declared here[0m
+[0m  90 |[0m
+[0m  91 |     const handleSubscriptionChange = (type) => {[0m
+[0m  92 |         if (type === 'upgrade' || type === 'trial') {  [2mreact-hooks/immutability[22m[0m
+[0m   [2m53:8[22m   [33mwarning[39m  React Hook useEffect has a missing dependency: 'loadData'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 [2mreact-hooks/exhaustive-deps[22m[0m
+[0m   [2m95:18[22m  [31merror[39m    'res' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             [2mno-unused-vars[22m[0m
+[0m  [2m120:18[22m  [31merror[39m    'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             [2mno-unused-vars[22m[0m
+[0m  [2m130:14[22m  [31merror[39m    'res' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             [2mno-unused-vars[22m[0m
+[0m  [2m144:33[22m  [31merror[39m    Error: Cannot call impure function during render[0m
+[0m[0m
+[0m`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).[0m
+[0m[0m
+[0m  142 |[0m
+[0m  143 |     const renderTooltip = (props, text) => ([0m
+[0m> 144 |         <Tooltip id={`tooltip-${Math.random()}`} {...props}>[0m
+[0m      |                                 ^^^^^^^^^^^^^ Cannot call impure function[0m
+[0m  145 |             {text}[0m
+[0m  146 |         </Tooltip>[0m
+[0m  147 |     );                                                                                                                                                                                                                                                                                                                                                                                  [2mreact-hooks/purity[22m[0m
+[0m  [2m638:29[22m  [31merror[39m    'isSuperAdmin' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    [2mno-unused-vars[22m[0m
+[0m  [2m638:43[22m  [31merror[39m    'isBlocked' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mD:\emprendimiento\antigravity\tiendario\frontend\admin\src\pages\InventoryPage.jsx[24m[0m
+[0m   [2m21:11[22m  [31merror[39m    'canCreateProducts' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  [2mno-unused-vars[22m[0m
+[0m   [2m45:9[22m   [31merror[39m    Error: Cannot access variable before it is declared[0m
+[0m[0m
+[0m`loadProducts` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.[0m
+[0m[0m
+[0m  43 |[0m
+[0m  44 |     useEffect(() => {[0m
+[0m> 45 |         loadProducts();[0m
+[0m     |         ^^^^^^^^^^^^ `loadProducts` accessed before it is declared[0m
+[0m  46 |         loadCategories();[0m
+[0m  47 |     }, []);[0m
+[0m  48 |[0m
+[0m[0m
+[0m  106 |     };[0m
+[0m  107 |[0m
+[0m> 108 |     const loadProducts = () => {[0m
+[0m      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 109 |         ProductService.getAll().then([0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 110 |             (response) => {[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 111 |                 setProducts(response.data);[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 112 |             },[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 113 |             (error) => {[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 114 |                 console.error("Error loading products", error);[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 115 |             }[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 116 |         );[0m
+[0m      | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 117 |     };[0m
+[0m      | ^^^^^^^ `loadProducts` is declared here[0m
+[0m  118 |[0m
+[0m  119 |     const handleEditClick = (product) => {[0m
+[0m  120 |         setEditingProduct(product);  [2mreact-hooks/immutability[22m[0m
+[0m   [2m46:9[22m   [31merror[39m    Error: Cannot access variable before it is declared[0m
+[0m[0m
+[0m`loadCategories` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.[0m
+[0m[0m
+[0m  44 |     useEffect(() => {[0m
+[0m  45 |         loadProducts();[0m
+[0m> 46 |         loadCategories();[0m
+[0m     |         ^^^^^^^^^^^^^^ `loadCategories` accessed before it is declared[0m
+[0m  47 |     }, []);[0m
+[0m  48 |[0m
+[0m  49 |     const renderTooltip = (props, text) => ([0m
+[0m[0m
+[0m  53 |     );[0m
+[0m  54 |[0m
+[0m> 55 |     const loadCategories = () => {[0m
+[0m     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 56 |         CategoryService.getAll().then([0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 57 |             (res) => setCategories(res.data),[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 58 |             (err) => console.error("Error loading categories", err)[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 59 |         );[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 60 |     };[0m
+[0m     | ^^^^^^^ `loadCategories` is declared here[0m
+[0m  61 |[0m
+[0m  62 |     // Suggest SKU when name changes (and category if available)[0m
+[0m  63 |     useEffect(() => {                                                                                                                                                                                                                                                 [2mreact-hooks/immutability[22m[0m
+[0m   [2m77:8[22m   [33mwarning[39m  React Hook useEffect has a missing dependency: 'sku'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             [2mreact-hooks/exhaustive-deps[22m[0m
+[0m  [2m189:18[22m  [31merror[39m    'error' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  [2mno-unused-vars[22m[0m
+[0m  [2m205:18[22m  [31merror[39m    'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    [2mno-unused-vars[22m[0m
+[0m  [2m217:18[22m  [31merror[39m    'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    [2mno-unused-vars[22m[0m
+[0m  [2m229:18[22m  [31merror[39m    'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mD:\emprendimiento\antigravity\tiendario\frontend\admin\src\pages\LandingPage.jsx[24m[0m
+[0m  [2m50:13[22m  [31merror[39m  Error: Calling setState synchronously within an effect can trigger cascading renders[0m
+[0m[0m
+[0mEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:[0m
+[0m* Update external systems with the latest state from React.[0m
+[0m* Subscribe for updates from some external system, calling setState in a callback function when external state changes.[0m
+[0m[0m
+[0mCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).[0m
+[0m[0m
+[0m  48 |         const token = searchParams.get('token');[0m
+[0m  49 |         if (token) {[0m
+[0m> 50 |             setResetToken(token);[0m
+[0m     |             ^^^^^^^^^^^^^ Avoid calling setState() directly within an effect[0m
+[0m  51 |             setShowResetModal(true);[0m
+[0m  52 |         }[0m
+[0m  53 |  [2mreact-hooks/set-state-in-effect[22m[0m
+[0m[0m
+[0m[4mD:\emprendimiento\antigravity\tiendario\frontend\admin\src\pages\NewPurchasePage.jsx[24m[0m
+[0m   [2m82:8[22m   [33mwarning[39m  React Hook useEffect has a missing dependency: 'prodSku'. Either include it or remove the dependency array  [2mreact-hooks/exhaustive-deps[22m[0m
+[0m  [2m124:14[22m  [31merror[39m    'error' is defined but never used                                                                           [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mD:\emprendimiento\antigravity\tiendario\frontend\admin\src\pages\NotificationsPage.jsx[24m[0m
+[0m  [2m13:12[22m  [31merror[39m  'saleLoading' is assigned a value but never used. Allowed unused vars must match /^[A-Z_]/u                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   [2mno-unused-vars[22m[0m
+[0m  [2m20:9[22m   [31merror[39m  Error: Cannot access variable before it is declared[0m
+[0m[0m
+[0m`loadNotifications` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.[0m
+[0m[0m
+[0m  18 |[0m
+[0m  19 |     useEffect(() => {[0m
+[0m> 20 |         loadNotifications();[0m
+[0m     |         ^^^^^^^^^^^^^^^^^ `loadNotifications` accessed before it is declared[0m
+[0m  21 |     }, []);[0m
+[0m  22 |[0m
+[0m  23 |     const loadNotifications = () => {[0m
+[0m[0m
+[0m  21 |     }, []);[0m
+[0m  22 |[0m
+[0m> 23 |     const loadNotifications = () => {[0m
+[0m     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 24 |         NotificationService.getNotifications().then([0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 25 |             res => {[0m
+[0m     …[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 33 |         );[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 34 |     };[0m
+[0m     | ^^^^^^^ `loadNotifications` is declared here[0m
+[0m  35 |[0m
+[0m  36 |     const markAsRead = (id) => {[0m
+[0m  37 |         NotificationService.markAsRead(id).then(() => {  [2mreact-hooks/immutability[22m[0m
+[0m  [2m55:17[22m  [31merror[39m  'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               [2mno-unused-vars[22m[0m
+[0m  [2m93:14[22m  [31merror[39m  'error' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mD:\emprendimiento\antigravity\tiendario\frontend\admin\src\pages\PurchaseHistoryPage.jsx[24m[0m
+[0m  [2m17:9[22m  [31merror[39m    Error: Cannot access variable before it is declared[0m
+[0m[0m
+[0m`loadPurchases` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.[0m
+[0m[0m
+[0m  15 |[0m
+[0m  16 |     useEffect(() => {[0m
+[0m> 17 |         loadPurchases();[0m
+[0m     |         ^^^^^^^^^^^^^ `loadPurchases` accessed before it is declared[0m
+[0m  18 |     }, []);[0m
+[0m  19 |[0m
+[0m  20 |     useEffect(() => {[0m
+[0m[0m
+[0m  22 |     }, [purchases]);[0m
+[0m  23 |[0m
+[0m> 24 |     const loadPurchases = () => {[0m
+[0m     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 25 |         PurchaseService.getAll().then([0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 26 |             (response) => {[0m
+[0m     …[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 34 |         );[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 35 |     };[0m
+[0m     | ^^^^^^^ `loadPurchases` is declared here[0m
+[0m  36 |[0m
+[0m  37 |     const applyFilters = () => {[0m
+[0m  38 |         let filtered = [...purchases];                    [2mreact-hooks/immutability[22m[0m
+[0m  [2m21:9[22m  [31merror[39m    Error: Cannot access variable before it is declared[0m
+[0m[0m
+[0m`applyFilters` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.[0m
+[0m[0m
+[0m  19 |[0m
+[0m  20 |     useEffect(() => {[0m
+[0m> 21 |         applyFilters();[0m
+[0m     |         ^^^^^^^^^^^^ `applyFilters` accessed before it is declared[0m
+[0m  22 |     }, [purchases]);[0m
+[0m  23 |[0m
+[0m  24 |     const loadPurchases = () => {[0m
+[0m[0m
+[0m  35 |     };[0m
+[0m  36 |[0m
+[0m> 37 |     const applyFilters = () => {[0m
+[0m     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 38 |         let filtered = [...purchases];[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 39 |[0m
+[0m     …[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 60 |         setFilteredPurchases(filtered);[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 61 |     };[0m
+[0m     | ^^^^^^^ `applyFilters` is declared here[0m
+[0m  62 |[0m
+[0m  63 |     const toggleExpand = (id) => {[0m
+[0m  64 |         setExpandedId(expandedId === id ? null : id);  [2mreact-hooks/immutability[22m[0m
+[0m  [2m22:8[22m  [33mwarning[39m  React Hook useEffect has a missing dependency: 'applyFilters'. Either include it or remove the dependency array                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            [2mreact-hooks/exhaustive-deps[22m[0m
+[0m[0m
+[0m[4mD:\emprendimiento\antigravity\tiendario\frontend\admin\src\pages\RegisterPage.jsx[24m[0m
+[0m   [2m1:27[22m  [31merror[39m  'useEffect' is defined but never used. Allowed unused vars must match /^[A-Z_]/u  [2mno-unused-vars[22m[0m
+[0m  [2m27:14[22m  [31merror[39m  'response' is defined but never used                                              [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mD:\emprendimiento\antigravity\tiendario\frontend\admin\src\pages\ReportsPage.jsx[24m[0m
+[0m  [2m26:9[22m  [31merror[39m  Error: Calling setState synchronously within an effect can trigger cascading renders[0m
+[0m[0m
+[0mEffects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:[0m
+[0m* Update external systems with the latest state from React.[0m
+[0m* Subscribe for updates from some external system, calling setState in a callback function when external state changes.[0m
+[0m[0m
+[0mCalling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).[0m
+[0m[0m
+[0m  24 |[0m
+[0m  25 |     useEffect(() => {[0m
+[0m> 26 |         fetchSales();[0m
+[0m     |         ^^^^^^^^^^ Avoid calling setState() directly within an effect[0m
+[0m  27 |     }, []);[0m
+[0m  28 |[0m
+[0m  29 |     const fetchReports = () => {  [2mreact-hooks/set-state-in-effect[22m[0m
+[0m[0m
+[0m[4mD:\emprendimiento\antigravity\tiendario\frontend\admin\src\pages\SalesHistoryPage.jsx[24m[0m
+[0m  [2m23:9[22m   [31merror[39m  Error: Cannot access variable before it is declared[0m
+[0m[0m
+[0m`loadSales` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.[0m
+[0m[0m
+[0m  21 |[0m
+[0m  22 |     useEffect(() => {[0m
+[0m> 23 |         loadSales();[0m
+[0m     |         ^^^^^^^^^ `loadSales` accessed before it is declared[0m
+[0m  24 |         PublicService.getPlatformConfig().then([0m
+[0m  25 |             (res) => setPlatformConfig(res.data),[0m
+[0m  26 |             (err) => console.error('Error loading config', err)[0m
+[0m[0m
+[0m  35 |     }, []);[0m
+[0m  36 |[0m
+[0m> 37 |     const loadSales = (silent = false) => {[0m
+[0m     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 38 |         if (!silent) setLoading(true);[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 39 |         SaleService.getSales().then([0m
+[0m     …[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 48 |         );[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 49 |     };[0m
+[0m     | ^^^^^^^ `loadSales` is declared here[0m
+[0m  50 |[0m
+[0m  51 |     const [showPaymentModal, setShowPaymentModal] = useState(false);[0m
+[0m  52 |     const [paymentMethod, setPaymentMethod] = useState('CASH');  [2mreact-hooks/immutability[22m[0m
+[0m  [2m90:14[22m  [31merror[39m  'error' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[4mD:\emprendimiento\antigravity\tiendario\frontend\admin\src\pages\SupplierPage.jsx[24m[0m
+[0m  [2m16:23[22m  [31merror[39m  Error: Cannot access variable before it is declared[0m
+[0m[0m
+[0m`loadSuppliers` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.[0m
+[0m[0m
+[0m  14 |     const [phone, setPhone] = useState("");[0m
+[0m  15 |[0m
+[0m> 16 |     useEffect(() => { loadSuppliers(); }, []);[0m
+[0m     |                       ^^^^^^^^^^^^^ `loadSuppliers` accessed before it is declared[0m
+[0m  17 |[0m
+[0m  18 |     const loadSuppliers = () => {[0m
+[0m  19 |         SupplierService.getAll().then(res => setSuppliers(res.data), err => console.error(err));[0m
+[0m[0m
+[0m  16 |     useEffect(() => { loadSuppliers(); }, []);[0m
+[0m  17 |[0m
+[0m> 18 |     const loadSuppliers = () => {[0m
+[0m     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 19 |         SupplierService.getAll().then(res => setSuppliers(res.data), err => console.error(err));[0m
+[0m     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^[0m
+[0m> 20 |     };[0m
+[0m     | ^^^^^^^ `loadSuppliers` is declared here[0m
+[0m  21 |[0m
+[0m  22 |     const handleCreate = (e) => {[0m
+[0m  23 |         e.preventDefault();  [2mreact-hooks/immutability[22m[0m
+[0m  [2m32:14[22m  [31merror[39m  'error' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               [2mno-unused-vars[22m[0m
+[0m[0m
+[0m[31m[1m✖ 49 problems (44 errors, 5 warnings)[22m[39m[0m
+[0m[31m[1m[22m[39m[0m

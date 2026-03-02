@@ -14,6 +14,8 @@ const POSPage = () => {
     const [message, setMessage] = useState("");
     const [paymentMethod, setPaymentMethod] = useState("CASH");
     const [customerName, setCustomerName] = useState("");
+    const [customerCedula, setCustomerCedula] = useState("");
+    const [customerPhone, setCustomerPhone] = useState("");
     const [platformConfig, setPlatformConfig] = useState(null);
 
     // Subscription status check
@@ -107,6 +109,11 @@ const POSPage = () => {
     const handleCheckout = () => {
         if (cart.length === 0) return;
 
+        let finalName = customerName.trim();
+        if (customerCedula.trim()) {
+            finalName = finalName ? `${finalName} (C.I: ${customerCedula.trim()})` : `C.I: ${customerCedula.trim()}`;
+        }
+
         const saleData = {
             totalAmount: total,
             paymentMethod: paymentMethod,
@@ -116,7 +123,8 @@ const POSPage = () => {
                 unitPrice: item.unitPrice,
                 subtotal: item.subtotal
             })),
-            customerName: customerName,
+            customerName: finalName,
+            customerPhone: customerPhone.trim(),
             status: 'PAID'
         };
 
@@ -126,6 +134,8 @@ const POSPage = () => {
                 setCart([]);
                 setPaymentMethod("CASH");
                 setCustomerName("");
+                setCustomerCedula("");
+                setCustomerPhone("");
                 // Refresh product stock
                 ProductService.getCompanyProducts().then(r => setProducts(r.data));
                 setTimeout(() => setMessage(""), 3000);
@@ -194,7 +204,7 @@ const POSPage = () => {
                                             <tr>
                                                 <th>Producto</th>
                                                 <th>SKU</th>
-                                                <th>Precio</th>
+                                                <th>Precio al Público</th>
                                                 <th>Stock</th>
                                                 <th>Acción</th>
                                             </tr>
@@ -264,9 +274,11 @@ const POSPage = () => {
                                                         )}
                                                     </small>
                                                 </div>
-                                                <Button variant="outline-danger" size="sm" onClick={() => removeFromCart(item.product.id)}>
-                                                    <FaTrash />
-                                                </Button>
+                                                <OverlayTrigger overlay={<Tooltip>Quitar del Carrito</Tooltip>}>
+                                                    <Button variant="outline-danger" size="sm" onClick={() => removeFromCart(item.product.id)}>
+                                                        <FaTrash />
+                                                    </Button>
+                                                </OverlayTrigger>
                                             </div>
                                             <div className="d-flex align-items-center justify-content-between">
                                                 <div className="d-flex align-items-center">
@@ -323,11 +335,23 @@ const POSPage = () => {
                                     </div>
 
                                     <Form.Group className="mb-3">
-                                        <Form.Label>Cliente (Opcional)</Form.Label>
+                                        <Form.Label>Datos del Cliente (Opcional)</Form.Label>
                                         <Form.Control
+                                            className="mb-2"
                                             placeholder="Nombre del cliente..."
                                             value={customerName}
                                             onChange={(e) => setCustomerName(e.target.value)}
+                                        />
+                                        <Form.Control
+                                            className="mb-2"
+                                            placeholder="Cédula / Identificación..."
+                                            value={customerCedula}
+                                            onChange={(e) => setCustomerCedula(e.target.value)}
+                                        />
+                                        <Form.Control
+                                            placeholder="Teléfono de contacto..."
+                                            value={customerPhone}
+                                            onChange={(e) => setCustomerPhone(e.target.value)}
                                         />
                                     </Form.Group>
 
@@ -350,7 +374,7 @@ const POSPage = () => {
                                         onClick={handleCheckout}
                                         disabled={cart.length === 0}
                                     >
-                                        Registrar Salida / Venta
+                                        Realizar Venta
                                     </Button>
                                 </div>
                             </Card.Body>
@@ -367,7 +391,7 @@ const POSPage = () => {
                         {selectedProduct && (
                             <>
                                 <h5>{selectedProduct.name}</h5>
-                                <p className="text-muted">Precio: ${selectedProduct.price} | Stock disponible: {selectedProduct.stock}</p>
+                                <p className="text-muted">Precio al Público: ${selectedProduct.price} | Stock disponible: {selectedProduct.stock}</p>
                                 <Form.Group>
                                     <Form.Label>Cantidad</Form.Label>
                                     <Form.Control

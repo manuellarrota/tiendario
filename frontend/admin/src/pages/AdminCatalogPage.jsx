@@ -12,10 +12,6 @@ const AdminCatalogPage = () => {
     const [selectedItem, setSelectedItem] = useState(null);
     const [saving, setSaving] = useState(false);
 
-    useEffect(() => {
-        loadCatalog();
-    }, []);
-
     const loadCatalog = () => {
         setLoading(true);
         AdminService.getAllCatalogProducts().then(
@@ -30,6 +26,10 @@ const AdminCatalogPage = () => {
             }
         );
     };
+
+    useEffect(() => {
+        loadCatalog();
+    }, []);
 
     const handleEdit = (item) => {
         setSelectedItem({ ...item });

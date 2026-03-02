@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Table, Button, Modal, Form, Alert, Card, Badge } from 'react-bootstrap';
+import { Container, Table, Button, Modal, Form, Alert, Card, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaPlus, FaUsers, FaEdit, FaTrash, FaEnvelope, FaPhone, FaMapMarkerAlt } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import CustomerService from '../services/customer.service';
@@ -19,14 +19,6 @@ const CustomersPage = () => {
     const [phone, setPhone] = useState('');
     const [address, setAddress] = useState('');
 
-    useEffect(() => {
-        loadCustomers();
-    }, []);
-
-    useEffect(() => {
-        filterCustomers();
-    }, [customers, searchTerm]);
-
     const loadCustomers = () => {
         CustomerService.getAll().then(
             (res) => setCustomers(res.data),
@@ -34,7 +26,11 @@ const CustomersPage = () => {
         );
     };
 
-    const filterCustomers = () => {
+    useEffect(() => {
+        loadCustomers();
+    }, []);
+
+    useEffect(() => {
         if (!searchTerm) {
             setFilteredCustomers(customers);
         } else {
@@ -45,7 +41,7 @@ const CustomersPage = () => {
             );
             setFilteredCustomers(filtered);
         }
-    };
+    }, [customers, searchTerm]);
 
     const handleCreate = (e) => {
         e.preventDefault();
@@ -59,7 +55,7 @@ const CustomersPage = () => {
                     loadCustomers();
                     setTimeout(() => setMessage(''), 3000);
                 },
-                (error) => {
+                () => {
                     setMessage('❌ Error actualizando cliente');
                     setTimeout(() => setMessage(''), 3000);
                 }
@@ -99,7 +95,7 @@ const CustomersPage = () => {
                     loadCustomers();
                     setTimeout(() => setMessage(''), 3000);
                 },
-                (error) => {
+                () => {
                     setMessage('❌ Error eliminando cliente');
                     setTimeout(() => setMessage(''), 3000);
                 }
@@ -198,21 +194,25 @@ const CustomersPage = () => {
                                                     ) : '-'}
                                                 </td>
                                                 <td className="text-end">
-                                                    <Button
-                                                        variant="outline-primary"
-                                                        size="sm"
-                                                        className="me-2"
-                                                        onClick={() => handleEdit(customer)}
-                                                    >
-                                                        <FaEdit />
-                                                    </Button>
-                                                    <Button
-                                                        variant="outline-danger"
-                                                        size="sm"
-                                                        onClick={() => handleDelete(customer.id)}
-                                                    >
-                                                        <FaTrash />
-                                                    </Button>
+                                                    <OverlayTrigger overlay={<Tooltip>Editar Cliente</Tooltip>}>
+                                                        <Button
+                                                            variant="outline-primary"
+                                                            size="sm"
+                                                            className="me-2"
+                                                            onClick={() => handleEdit(customer)}
+                                                        >
+                                                            <FaEdit />
+                                                        </Button>
+                                                    </OverlayTrigger>
+                                                    <OverlayTrigger overlay={<Tooltip>Eliminar Cliente</Tooltip>}>
+                                                        <Button
+                                                            variant="outline-danger"
+                                                            size="sm"
+                                                            onClick={() => handleDelete(customer.id)}
+                                                        >
+                                                            <FaTrash />
+                                                        </Button>
+                                                    </OverlayTrigger>
                                                 </td>
                                             </tr>
                                         ))}

@@ -24,16 +24,19 @@ public class SaleService {
     private final ProductRepository productRepository;
     private final CompanyRepository companyRepository;
     private final UserRepository userRepository;
+    private final EmailService emailService;
 
     @Autowired
     public SaleService(SaleRepository saleRepository,
             ProductRepository productRepository,
             CompanyRepository companyRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            EmailService emailService) {
         this.saleRepository = saleRepository;
         this.productRepository = productRepository;
         this.companyRepository = companyRepository;
         this.userRepository = userRepository;
+        this.emailService = emailService;
     }
 
     public List<Sale> getCompanySales(UserDetailsImpl userDetails) {
@@ -116,6 +119,34 @@ public class SaleService {
         }
 
         saleRepository.save(sale);
+
+        // Notify store owner about new marketplace order (PENDING orders only)
+        if (SaleStatus.PENDING.equals(sale.getStatus())) {
+            try {
+                // Find the store manager's email
+                List<User> managers = userRepository.findByCompanyIdAndRole(
+                        company.getId(), Role.ROLE_MANAGER);
+                if (!managers.isEmpty()) {
+                    String orderSummary = sale.getItems().stream()
+                            .map(i -> i.getQuantity() + "x " + i.getProduct().getName())
+                            .collect(Collectors.joining("\n"));
+                    double total = sale.getItems().stream()
+                            .mapToDouble(i -> i.getQuantity() * i.getProduct().getPrice().doubleValue())
+                            .sum();
+                    String customerName = sale.getCustomerName() != null ? sale.getCustomerName() : "Cliente";
+                    for (User mgr : managers) {
+                        if (mgr.getEmail() != null) {
+                            emailService.sendNewOrderNotification(
+                                    mgr.getEmail(), company.getName(), customerName, orderSummary, total);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Don't let notification failures block order creation
+                org.slf4j.LoggerFactory.getLogger(SaleService.class)
+                        .warn("Could not send new order notification: {}", e.getMessage());
+            }
+        }
     }
 
     @Transactional
@@ -148,6 +179,22 @@ public class SaleService {
         }
 
         saleRepository.save(sale);
+
+        // Notify customer about status change (if email available)
+        try {
+            String customerEmail = sale.getCustomerEmail();
+            if (customerEmail != null && !customerEmail.isBlank()) {
+                emailService.sendOrderStatusUpdateEmail(
+                        customerEmail,
+                        sale.getCustomerName() != null ? sale.getCustomerName() : "Cliente",
+                        sale.getCompany().getName(),
+                        status.name(),
+                        String.valueOf(sale.getId()));
+            }
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(SaleService.class)
+                    .warn("Could not send order status update notification: {}", e.getMessage());
+        }
     }
 
     public List<DailySalesSummary> getDailySalesSummaryList(UserDetailsImpl userDetails) {

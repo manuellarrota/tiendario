@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Form, InputGroup, Button, Badge, Spinner, Modal, Alert, Nav, Tab } from 'react-bootstrap';
-import { FaSearch, FaShoppingCart, FaLock, FaStore, FaCreditCard, FaTruck, FaInfoCircle, FaStar, FaGem, FaBitcoin, FaMobileAlt } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { Container, Row, Col, Card, Form, InputGroup, Button, Badge, Spinner, Modal, Alert, Nav, Toast, ToastContainer } from 'react-bootstrap';
+import { FaSearch, FaShoppingCart, FaLock, FaStore, FaInfoCircle, FaStar, FaGem } from 'react-icons/fa';
 import SearchService from '../services/search.service';
 import AuthService from '../services/auth.service';
 import MarketplaceNavbar from '../components/Navbar';
+import ProductDetailModal from '../components/ProductDetailModal';
+import CartModal from '../components/CartModal';
+import CheckoutModal from '../components/CheckoutModal';
+import { LoginModal, RegisterModal } from '../components/AuthModals';
 import { getCategoryEmoji } from '../utils/categoryEmoji';
 
 const MarketplacePage = () => {
@@ -41,6 +44,8 @@ const MarketplacePage = () => {
     const [selectedStore, setSelectedStore] = useState(null);
     const [confirmedOrder, setConfirmedOrder] = useState(null);
     const [showOrderConfirmation, setShowOrderConfirmation] = useState(false);
+    const [showToast, setShowToast] = useState(false);
+    const [toastMessage, setToastMessage] = useState('');
     const user = AuthService.getCurrentUser();
 
     useEffect(() => {
@@ -205,7 +210,8 @@ const MarketplacePage = () => {
         } else {
             setCart([...cart, { ...product, quantity: 1 }]);
         }
-        // Small feedback could be added here
+        setToastMessage(`¡${product.name} agregado al carrito!`);
+        setShowToast(true);
     };
 
     const removeFromCart = (productId) => {
@@ -393,6 +399,13 @@ const MarketplacePage = () => {
     const openLogin = () => {
         setShowRegisterModal(false);
         setShowLoginModal(true);
+    };
+
+    // Helper for full image URL
+    const getFullImageUrl = (path) => {
+        if (!path) return null;
+        if (path.startsWith('http')) return path;
+        return (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080') + path;
     };
 
     return (
@@ -591,11 +604,11 @@ const MarketplacePage = () => {
                                             onChange={(e) => setSortBy(e.target.value)}
                                         >
                                             <option value="relevant">Más relevantes</option>
-                                            <option value="price_asc">Menor precio</option>
-                                            <option value="price_desc">Mayor precio</option>
-                                            <option value="name_asc">Nombre A-Z</option>
+                                            <option value="price_asc">Mejor precio primero</option>
+                                            <option value="price_desc">Más exclusivos primero</option>
+                                            <option value="name_asc">Orden A-Z</option>
                                         </Form.Select>
-                                        <div className="text-muted small">Mostrando {filteredProducts.length} resultados</div>
+                                        <div className="text-muted small">Mostrando {filteredProducts.length} productos disponibles</div>
                                     </div>
                                 </div>
 
@@ -605,12 +618,20 @@ const MarketplacePage = () => {
                                             <Card className="h-100 border-0 shadow-sm rounded-4 overflow-hidden product-card-v2"
                                                 onClick={() => handleDetailClick(product)} style={{ cursor: 'pointer' }}>
                                                 <div className="position-relative">
-                                                    <div className="bg-light d-flex align-items-center justify-content-center" style={{ height: '200px' }}>
-                                                        <span style={{ fontSize: '70px' }}>
-                                                            {getCategoryEmoji(product.category)}
-                                                        </span>
+                                                    <div className="bg-light d-flex align-items-center justify-content-center overflow-hidden" style={{ height: '220px' }}>
+                                                        {product.imageUrl ? (
+                                                            <img
+                                                                src={getFullImageUrl(product.imageUrl)}
+                                                                alt={product.name}
+                                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                                                className="product-img-zoom"
+                                                            />
+                                                        ) : (
+                                                            <span style={{ fontSize: '70px' }}>
+                                                                {getCategoryEmoji(product.category)}
+                                                            </span>
+                                                        )}
                                                     </div>
-                                                    {/* Status badge removed as it is now store-specific and shown in details */}
                                                 </div>
                                                 <Card.Body className="p-4">
                                                     <div className="d-flex justify-content-between align-items-center mb-2">
@@ -633,7 +654,7 @@ const MarketplacePage = () => {
 
                                                     <Button variant="outline-primary" className="w-100 rounded-pill fw-bold"
                                                         onClick={(e) => { e.stopPropagation(); handleDetailClick(product); }}>
-                                                        Ver Ofertas
+                                                        Ver tiendas y precios
                                                     </Button>
                                                 </Card.Body>
                                             </Card>
@@ -644,9 +665,9 @@ const MarketplacePage = () => {
                                 {filteredProducts.length === 0 && (
                                     <div className="text-center py-5">
                                         <div className="opacity-25 display-1 mb-3">🔍</div>
-                                        <h5>No encontramos ese producto</h5>
-                                        <p className="text-muted">Intenta con otra búsqueda o limpia los filtros.</p>
-                                        <Button variant="outline-primary" onClick={() => setSearchTerm('')}>Ver Todo</Button>
+                                        <h5 className="fw-bold">No encontramos coincidencias</h5>
+                                        <p className="text-muted">Intenta con otros términos o explora las categorías principales.</p>
+                                        <Button variant="outline-primary" className="rounded-pill px-4" onClick={() => setSearchTerm('')}>Ver Todo el Catálogo</Button>
                                     </div>
                                 )}
                             </>
@@ -673,201 +694,52 @@ const MarketplacePage = () => {
             )}
 
             {/* Cart Modal */}
-            <Modal show={showCartModal} onHide={() => setShowCartModal(false)} centered>
-                <Modal.Header closeButton>
-                    <Modal.Title className="fw-bold">Tu Carrito de Compras</Modal.Title>
-                </Modal.Header>
-                <Modal.Body className="p-0">
-                    {cart.length === 0 ? (
-                        <div className="text-center p-5">
-                            <div className="display-1 mb-3">🛒</div>
-                            <h5>Tu carrito está vacío</h5>
-                            <p className="text-muted">¡Agrega productos para empezar!</p>
-                            <Button variant="primary" onClick={() => setShowCartModal(false)}>Ir a Comprar</Button>
-                        </div>
-                    ) : (
-                        <div className="p-3">
-                            {cart.map(item => (
-                                <div key={item.id} className="d-flex justify-content-between align-items-center mb-3 border-bottom pb-3">
-                                    <div className="d-flex align-items-center gap-3">
-                                        <div className="bg-light rounded p-2">📦</div>
-                                        <div>
-                                            <h6 className="mb-0 fw-bold">{item.name}</h6>
-                                            <small className="text-muted">
-                                                ${item.price} c/u
-                                                {platformConfig?.enableSecondaryCurrency && (
-                                                    <span className="ms-2 text-success">({formatSecondary(item.price)})</span>
-                                                )}
-                                            </small>
-                                        </div>
-                                    </div>
-                                    <div className="d-flex align-items-center gap-2">
-                                        <Button variant="outline-secondary" size="sm" onClick={() => updateQuantity(item.id, -1)}>-</Button>
-                                        <span className="fw-bold mx-2">{item.quantity}</span>
-                                        <Button variant="outline-secondary" size="sm" onClick={() => updateQuantity(item.id, 1)}>+</Button>
-                                        <Button variant="danger" size="sm" className="ms-2" onClick={() => removeFromCart(item.id)}>×</Button>
-                                    </div>
-                                </div>
-                            ))}
-                            <div className="d-flex justify-content-between align-items-end mt-4">
-                                <h5 className="fw-bold mb-0">Total:</h5>
-                                <div className="text-end">
-                                    {platformConfig?.enableSecondaryCurrency && (
-                                        <h5 className="text-success mb-1">{formatSecondary(cartTotal)}</h5>
-                                    )}
-                                    <h3 className="fw-bold text-success mb-0">${cartTotal.toFixed(2)}</h3>
-                                </div>
-                            </div>
-                            <Button variant="primary" className="w-100 mt-3 py-2 fw-bold" onClick={handleCheckout}>
-                                Continuar con el Pedido
-                            </Button>
-                        </div>
-                    )}
-                </Modal.Body>
-            </Modal>
-            {/* Detail Modal */}
-            <Modal show={showDetailModal} onHide={() => setShowDetailModal(false)} size="lg" centered className="modal-premium">
-                <Modal.Body className="p-0 overflow-hidden rounded-4">
-                    {selectedProduct && (
-                        <Row className="g-0">
-                            <Col md={5} className="bg-light d-flex align-items-center justify-content-center p-5">
-                                <div style={{ fontSize: '150px' }}>
-                                    {getCategoryEmoji(selectedProduct.category)}
-                                </div>
-                            </Col>
-                            <Col md={7} className="p-5">
-                                <div className="d-flex justify-content-between align-items-start mb-2">
-                                    <Badge bg="primary" className="bg-opacity-10 text-primary px-3 py-2 rounded-pill">{selectedProduct.category || 'General'}</Badge>
-                                    <Button variant="close" onClick={() => setShowDetailModal(false)} />
-                                </div>
-                                <h2 className="fw-bold mb-3">{selectedProduct.name}</h2>
-                                <p className="text-muted mb-4">{selectedProduct.description || 'Sin descripción detallada disponible.'}</p>
+            <CartModal
+                show={showCartModal}
+                onHide={() => setShowCartModal(false)}
+                cart={cart}
+                onUpdateQuantity={updateQuantity}
+                onRemoveFromCart={removeFromCart}
+                onCheckout={handleCheckout}
+                platformConfig={platformConfig}
+                formatSecondary={formatSecondary}
+            />
 
+            {/* Product Detail Modal */}
+            <ProductDetailModal
+                show={showDetailModal}
+                onHide={() => setShowDetailModal(false)}
+                selectedProduct={selectedProduct}
+                sellers={sellers}
+                sellerSortOrder={sellerSortOrder}
+                onSortSellers={handleSortSellers}
+                onBuyFromSeller={handleBuyFromSeller}
+                onStoreClick={handleStoreClick}
+                platformConfig={platformConfig}
+                formatSecondary={formatSecondary}
+                getCategoryEmoji={getCategoryEmoji}
+            />
 
-
-                                {(() => {
-                                    const mainSeller = sellers.find(s => s.companyId === selectedProduct.companyId);
-                                    // Only show detailed price/stock if the store is PAID or TRIAL
-                                    const showDetails = mainSeller ? ['PAID', 'TRIAL'].includes(mainSeller.subscriptionStatus) : ['PAID', 'TRIAL'].includes(selectedProduct.subscriptionStatus);
-
-                                    return showDetails ? (
-                                        <div className="bg-light p-3 rounded-4 mb-4">
-                                            <div className="d-flex justify-content-between align-items-center">
-                                                <span className="text-muted">Precio Unitario</span>
-                                                <div className="text-end">
-                                                    <h3 className="fw-bold text-success mb-0">${selectedProduct.price}</h3>
-                                                    {platformConfig?.enableSecondaryCurrency && (
-                                                        <h6 className="text-muted mb-0">{formatSecondary(selectedProduct.price)}</h6>
-                                                    )}
-                                                </div>
-                                            </div>
-                                            <div className="d-flex justify-content-between align-items-center mt-2 small">
-                                                <span className="text-muted">Stock</span>
-                                                <span className={selectedProduct.stock > 0 ? 'text-success fw-bold' : 'text-danger fw-bold'}>
-                                                    {selectedProduct.stock > 0 ? 'Disponible' : 'Agotado'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="bg-light p-3 rounded-4 mb-4 text-center">
-                                            <p className="mb-0 text-muted">
-                                                <FaInfoCircle className="me-2" />
-                                                Contactar tienda para precio y disponibilidad
-                                            </p>
-                                        </div>
-                                    );
-                                })()}
-
-                                {(() => {
-                                    const mainSeller = sellers.find(s => s.companyId === selectedProduct.companyId);
-                                    return (
-                                        <div className="d-flex align-items-center justify-content-between p-3 border rounded-4 mb-4 bg-gradient shadow-sm"
-                                            style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)' }}>
-                                            <div className="d-flex align-items-center"
-                                                style={{ cursor: mainSeller ? 'pointer' : 'default' }}
-                                                onClick={() => mainSeller && handleStoreClick(mainSeller)}>
-                                                <div className="bg-primary text-white p-3 rounded-circle me-3 shadow-sm">
-                                                    <FaStore size={24} />
-                                                </div>
-                                                <div>
-                                                    <h6 className="fw-bold mb-0 text-primary" style={{ textDecoration: 'underline' }}>{selectedProduct.companyName}</h6>
-                                                    <small className="text-muted">🏆 Mejor Precio del Marketplace</small>
-                                                </div>
-                                            </div>
-                                            {['PAID', 'TRIAL'].includes(mainSeller?.subscriptionStatus) ? (
-                                                <Button variant="success" className="rounded-pill px-4 py-2 fw-bold shadow-sm"
-                                                    onClick={(e) => { e.stopPropagation(); handleBuyFromSeller(mainSeller); }}>
-                                                    <FaShoppingCart className="me-2" /> Agregar al carrito
-                                                </Button>
-                                            ) : (
-                                                <Button variant="outline-primary" className="rounded-pill px-4 py-2 fw-bold"
-                                                    onClick={(e) => { e.stopPropagation(); handleBuyFromSeller(mainSeller); }}>
-                                                    <FaInfoCircle className="me-2" /> Ver Catálogo
-                                                </Button>
-                                            )}
-                                        </div>
-                                    );
-                                })()}
-
-                                {/* Detailed Sellers List (Always shown to allow comparing Paid vs Free stores) */}
-                                <div className="mt-4">
-                                    <div className="d-flex justify-content-between align-items-center mb-3">
-                                        <h6 className="fw-bold mb-0">Tiendas que ofrecen este producto</h6>
-                                        {sellers.length > 1 && (
-                                            <Button variant="link" size="sm" className="text-decoration-none p-0" onClick={handleSortSellers}>
-                                                Precio {sellerSortOrder === 'asc' ? '↑' : '↓'}
-                                            </Button>
-                                        )}
-                                    </div>
-                                    <div className="sellers-list" style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                                        {sellers.filter(s => s.companyId !== selectedProduct.companyId).map((seller, idx) => (
-                                            <div key={idx} className="d-flex justify-content-between align-items-center p-3 border rounded-4 mb-2 bg-white shadow-sm hover-elevate">
-                                                <div>
-                                                    <div className="d-flex align-items-center gap-2">
-                                                        <h6 className="fw-bold mb-0 small text-primary"
-                                                            style={{ cursor: 'pointer', textDecoration: 'underline' }}
-                                                            onClick={() => handleStoreClick(seller)}
-                                                        >
-                                                            {seller.companyName}
-                                                        </h6>
-                                                        {['PAID', 'TRIAL'].includes(seller.subscriptionStatus) && <Badge bg="primary" className="rounded-circle p-1" style={{ fontSize: '0.6rem' }}><FaStar size={8} /></Badge>}
-                                                    </div>
-                                                    {['PAID', 'TRIAL'].includes(seller.subscriptionStatus) ? (
-                                                        <div className="d-flex align-items-center gap-2 mt-1">
-                                                            <span className={seller.stock > 0 ? 'text-success small fw-bold' : 'text-danger small fw-bold'}>
-                                                                {seller.stock > 0 ? 'Disponible' : 'Agotado'}
-                                                            </span>
-                                                            <span className="text-muted small">•</span>
-                                                            <span className="text-primary fw-bold">${seller.price}</span>
-                                                        </div>
-                                                    ) : (
-                                                        <small className="text-muted mt-1 d-block">Consultar Precio</small>
-                                                    )}
-                                                </div>
-                                                <Button
-                                                    variant={['PAID', 'TRIAL'].includes(seller.subscriptionStatus) ? "primary" : "outline-primary"}
-                                                    size="sm"
-                                                    className="rounded-pill px-3 fw-bold"
-                                                    disabled={seller.stock === 0}
-                                                    onClick={() => handleBuyFromSeller(seller)}
-                                                >
-                                                    {['PAID', 'TRIAL'].includes(seller.subscriptionStatus) ? (
-                                                        <><FaShoppingCart className="me-1" /> Comprar</>
-                                                    ) : (
-                                                        <><FaInfoCircle className="me-1" /> Ver Catálogo</>
-                                                    )}
-                                                </Button>
-                                            </div>
-                                        ))}
-                                        {sellers.length === 0 && <div className="text-center py-4 text-muted small">Cargando ofertas...</div>}
-                                    </div>
-                                    <div className="mt-3 small text-muted opacity-75">* Las tiendas verificadas permiten compras directas y checkout online.</div>
-                                </div>
-                            </Col>
-                        </Row>
-                    )}
-                </Modal.Body>
-            </Modal>
+            {/* Notification Toast */}
+            <ToastContainer position="bottom-center" className="pb-5 mb-5" style={{ zIndex: 3000 }}>
+                <Toast
+                    onClose={() => setShowToast(false)}
+                    show={showToast}
+                    delay={3000}
+                    autohide
+                    className="border-0 shadow-lg rounded-pill overflow-hidden animate-fade-in"
+                    style={{
+                        background: 'rgba(15, 23, 42, 0.9)',
+                        backdropFilter: 'blur(10px)',
+                        minWidth: '250px'
+                    }}
+                >
+                    <Toast.Body className="text-white py-3 px-4 d-flex align-items-center justify-content-center gap-2 fw-bold">
+                        <span style={{ fontSize: '1.2rem' }}>🎉</span>
+                        {toastMessage}
+                    </Toast.Body>
+                </Toast>
+            </ToastContainer>
 
             {/* Store Detail Modal (Map & Reviews) */}
             <Modal show={showStoreModal} onHide={() => setShowStoreModal(false)} size="lg" centered className="modal-premium">
@@ -997,85 +869,18 @@ const MarketplacePage = () => {
                 </Modal.Body>
             </Modal>
 
-            {/* Payment Simulation & Checkout Modal */}
-            <Modal show={showBuyModal} onHide={() => setShowBuyModal(false)} centered size="md">
-                <Modal.Header closeButton className="border-0">
-                    <Modal.Title className="fw-bold">Finalizar Compra</Modal.Title>
-                </Modal.Header>
-                <Modal.Body className="px-4 pb-4">
-                    {orderStatus.success ? (
-                        <div className="text-center py-5">
-                            <div className="display-1 text-success mb-3">🎉</div>
-                            <h4 className="fw-bold">¡Orden Registrada!</h4>
-                            <p className="text-muted mb-4">Tu compra ha sido registrada en el sistema de inventario.</p>
-                            <div className="bg-light p-3 rounded-4 text-start">
-                                <h6 className="fw-bold small mb-2 text-uppercase">Próximos Pasos</h6>
-                                <div className="small mb-1"><strong>1.</strong> Dirígete a la tienda mencionada.</div>
-                                <div className="small"><strong>2.</strong> Presenta tu número de orden o comprobante de pago para retirar.</div>
-                            </div>
-                        </div>
-                    ) : (
-                        <Form onSubmit={handleOrderSubmit}>
-                            {/* Summary Pin */}
-                            <div className="bg-light p-3 rounded-4 mb-4">
-                                <h6 className="fw-bold mb-3 border-bottom pb-2">Resumen del Pedido</h6>
-                                {cart.map((item, idx) => (
-                                    <div key={idx} className="d-flex align-items-center justify-content-between mb-2">
-                                        <div className="d-flex align-items-center">
-                                            <small className="badge bg-secondary me-2">{item.quantity}x</small>
-                                            <span className="small fw-medium text-truncate" style={{ maxWidth: '200px' }}>{item.name}</span>
-                                        </div>
-                                        <span className="small fw-bold">${(item.price * item.quantity).toFixed(2)}</span>
-                                    </div>
-                                ))}
-                                <div className="d-flex justify-content-between mt-3 pt-2 border-top align-items-end">
-                                    <span className="fw-bold">Total a Pagar</span>
-                                    <div className="text-end">
-                                        {platformConfig?.enableSecondaryCurrency && (
-                                            <h5 className="text-success mb-1">{formatSecondary(cartTotal)}</h5>
-                                        )}
-                                        <h5 className="fw-bold text-success mb-0">${cartTotal.toFixed(2)}</h5>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {orderStatus.error && <Alert variant="danger" className="rounded-4">{orderStatus.error}</Alert>}
-
-                            <h6 className="fw-bold mb-3 d-flex align-items-center">
-                                <span className="bg-primary bg-opacity-10 text-primary rounded-circle px-2 me-2">1</span> Datos del Cliente
-                            </h6>
-                            <Row className="mb-4">
-                                <Col md={6}>
-                                    <Form.Control className="mb-2 rounded-3 py-2 px-3" placeholder="Nombre"
-                                        value={customerData.name} onChange={(e) => setCustomerData({ ...customerData, name: e.target.value })} required />
-                                </Col>
-                                <Col md={6}>
-                                    <Form.Control className="mb-2 rounded-3 py-2 px-3" placeholder="Email"
-                                        value={customerData.email} onChange={(e) => setCustomerData({ ...customerData, email: e.target.value })} required />
-                                </Col>
-                                <Col md={12}>
-                                    <Form.Control className="mb-2 rounded-3 py-2 px-3" placeholder="Teléfono / WhatsApp (Opcional)"
-                                        value={customerData.phone} onChange={(e) => setCustomerData({ ...customerData, phone: e.target.value })} />
-                                </Col>
-                            </Row>
-
-                            <Alert variant="info" className="rounded-4 mb-4 border-0">
-                                <strong>💡 Nota Importante:</strong>
-                                <br />
-                                Estás registrando un pedido. El pago se coordinará y confirmará directamente con la tienda.
-                            </Alert>
-
-                            <Button variant="primary" type="submit" className="w-100 py-3 rounded-4 fw-bold shadow" disabled={orderStatus.loading}>
-                                {orderStatus.loading ? (
-                                    <><Spinner size="sm" animation="border" className="me-2" /> Procesando Pedido...</>
-                                ) : (
-                                    <>Confirmar Pedido (Pago en Tienda) (${cartTotal.toFixed(2)})</>
-                                )}
-                            </Button>
-                        </Form>
-                    )}
-                </Modal.Body>
-            </Modal>
+            {/* Checkout Modal */}
+            <CheckoutModal
+                show={showBuyModal}
+                onHide={() => setShowBuyModal(false)}
+                cart={cart}
+                customerData={customerData}
+                setCustomerData={setCustomerData}
+                orderStatus={orderStatus}
+                onOrderSubmit={handleOrderSubmit}
+                platformConfig={platformConfig}
+                formatSecondary={formatSecondary}
+            />
 
 
             {/* Loyalty Program Modal */}
@@ -1225,107 +1030,44 @@ const MarketplacePage = () => {
                 </Modal.Body>
             </Modal>
 
-            {/* Login Modal Embedded */}
-            <Modal show={showLoginModal} onHide={() => setShowLoginModal(false)} centered className="rounded-4 overflow-hidden">
-                <Modal.Header closeButton className="border-0 pb-0">
-                    <Modal.Title className="fw-bold">Ingresar al Marketplace</Modal.Title>
-                </Modal.Header>
-                <Modal.Body className="p-4">
-                    <p className="text-secondary small mb-4">Inicia sesión para acumular puntos por tus compras y gestionar tus pedidos.</p>
-                    {loginError && <Alert variant="danger" className="py-2 small">{loginError}</Alert>}
-                    <Form onSubmit={handleLogin}>
-                        <Form.Group className="mb-3">
-                            <Form.Label className="small fw-bold">Correo Electrónico</Form.Label>
-                            <Form.Control
-                                type="email"
-                                placeholder="tu@email.com"
-                                className="py-2 rounded-3"
-                                value={loginData.email}
-                                onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                                required
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-4">
-                            <Form.Label className="small fw-bold">Contraseña</Form.Label>
-                            <Form.Control
-                                type="password"
-                                placeholder="••••••••"
-                                className="py-2 rounded-3"
-                                value={loginData.password}
-                                onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                                required
-                            />
-                        </Form.Group>
-                        <Button variant="primary" type="submit" className="w-100 py-2 fw-bold shadow-sm" disabled={loginLoading}>
-                            {loginLoading ? "Verificando..." : "Ingresar"}
-                        </Button>
-                    </Form>
-                    <div className="text-center mt-3">
-                        <small className="text-secondary">¿No tienes cuenta? <span className="fw-bold text-primary" onClick={openRegister} style={{ cursor: 'pointer' }}>Regístrate gratis</span></small>
-                        <br />
-                        <small><a href="/login" className="text-muted">¿Olvidaste tu contraseña?</a></small>
-                    </div>
-                </Modal.Body>
-            </Modal>
+            {/* Auth Modals */}
+            <LoginModal
+                show={showLoginModal}
+                onHide={() => setShowLoginModal(false)}
+                loginData={loginData}
+                setLoginData={setLoginData}
+                loginError={loginError}
+                loginLoading={loginLoading}
+                onLogin={handleLogin}
+                onSwitchToRegister={openRegister}
+            />
 
-            {/* Register Modal Embedded */}
-            <Modal show={showRegisterModal} onHide={() => setShowRegisterModal(false)} centered className="rounded-4 overflow-hidden">
-                <Modal.Header closeButton className="border-0 pb-0">
-                    <Modal.Title className="fw-bold">Crear Cuenta</Modal.Title>
-                </Modal.Header>
-                <Modal.Body className="p-4">
-                    <p className="text-secondary small mb-4">Únete a Tiendario y disfruta de una experiencia de compra unificada.</p>
-                    {registerMessage && <Alert variant={registerSuccess ? "success" : "danger"} className="py-2 small">{registerMessage}</Alert>}
-                    <Form onSubmit={handleRegister}>
-                        <Form.Group className="mb-3">
-                            <Form.Label className="small fw-bold">Nombre Completo</Form.Label>
-                            <Form.Control
-                                type="text"
-                                placeholder="Juan Perez"
-                                className="py-2 rounded-3"
-                                value={registerData.name}
-                                onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
-                                required
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-3">
-                            <Form.Label className="small fw-bold">Correo Electrónico</Form.Label>
-                            <Form.Control
-                                type="email"
-                                placeholder="tu@email.com"
-                                className="py-2 rounded-3"
-                                value={registerData.email}
-                                onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-                                required
-                            />
-                        </Form.Group>
-                        <Form.Group className="mb-4">
-                            <Form.Label className="small fw-bold">Contraseña</Form.Label>
-                            <Form.Control
-                                type="password"
-                                placeholder="Mínimo 6 caracteres"
-                                className="py-2 rounded-3"
-                                value={registerData.password}
-                                onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                                required
-                            />
-                        </Form.Group>
-                        {!registerSuccess && (
-                            <Button variant="success" type="submit" className="w-100 py-2 fw-bold shadow-sm">
-                                Registrarse
-                            </Button>
-                        )}
-                        {registerSuccess && (
-                            <Button variant="primary" className="w-100 py-2 fw-bold shadow-sm" onClick={openLogin}>
-                                Iniciar Sesión Ahora
-                            </Button>
-                        )}
-                    </Form>
-                    <div className="text-center mt-3">
-                        <small className="text-secondary">¿Ya tienes cuenta? <span className="fw-bold text-primary" onClick={openLogin} style={{ cursor: 'pointer' }}>Inicia Sesión</span></small>
+            <RegisterModal
+                show={showRegisterModal}
+                onHide={() => setShowRegisterModal(false)}
+                registerData={registerData}
+                setRegisterData={setRegisterData}
+                registerMessage={registerMessage}
+                registerSuccess={registerSuccess}
+                onRegister={handleRegister}
+                onSwitchToLogin={openLogin}
+            />
+
+            {/* Footer */}
+            <footer className="bg-dark text-white py-4 mt-5">
+                <div className="container">
+                    <div className="row align-items-center">
+                        <div className="col-md-6 text-center text-md-start mb-3 mb-md-0">
+                            <span className="fw-bold">Tiendario</span>
+                            <span className="text-white-50 ms-2">© {new Date().getFullYear()} Antigravity Inc.</span>
+                        </div>
+                        <div className="col-md-6 text-center text-md-end">
+                            <a href="/terms" className="text-white-50 text-decoration-none me-3 small hover-white">Términos de Servicio</a>
+                            <a href="/privacy" className="text-white-50 text-decoration-none small hover-white">Política de Privacidad</a>
+                        </div>
                     </div>
-                </Modal.Body>
-            </Modal>
+                </div>
+            </footer>
         </div >
     );
 };

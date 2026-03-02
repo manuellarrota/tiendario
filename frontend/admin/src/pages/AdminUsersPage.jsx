@@ -10,10 +10,6 @@ const AdminUsersPage = () => {
     const [error, setError] = useState('');
     const [processing, setProcessing] = useState(null);
 
-    useEffect(() => {
-        loadUsers();
-    }, []);
-
     const loadUsers = () => {
         setLoading(true);
         AdminService.getAllUsers().then(
@@ -28,6 +24,10 @@ const AdminUsersPage = () => {
             }
         );
     };
+
+    useEffect(() => {
+        loadUsers();
+    }, []);
 
     const handleToggleUser = (userId) => {
         setProcessing(userId);

@@ -17,8 +17,8 @@ const DailyClosingPage = () => {
         return `${platformConfig.secondaryCurrencySymbol} ${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
-    const fetchSummary = () => {
-        setLoading(true);
+    const fetchSummary = (silent = false) => {
+        if (!silent) setLoading(true);
         SaleService.getDailySummary().then(
             (response) => {
                 setSummary(response.data);
@@ -33,7 +33,7 @@ const DailyClosingPage = () => {
     };
 
     useEffect(() => {
-        fetchSummary();
+        fetchSummary(true);
         PublicService.getPlatformConfig().then(
             (res) => setPlatformConfig(res.data),
             (err) => console.error('Error loading config', err)
@@ -48,11 +48,6 @@ const DailyClosingPage = () => {
         const getAmount = (method) => {
             const found = userSales.find(s => s.paymentMethod === method);
             return found ? found.totalAmount : 0;
-        };
-
-        const getCount = (method) => {
-            const found = userSales.find(s => s.paymentMethod === method);
-            return found ? found.saleCount : 0;
         };
 
         const totalCash = getAmount('CASH');

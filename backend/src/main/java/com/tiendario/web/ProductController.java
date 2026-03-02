@@ -6,14 +6,28 @@ import com.tiendario.repository.CompanyRepository;
 import com.tiendario.repository.ProductRepository;
 import com.tiendario.repository.UserRepository;
 import com.tiendario.security.UserDetailsImpl;
+import com.tiendario.service.FileStorageService;
+import com.tiendario.service.ProductIndexService;
+import com.tiendario.repository.CatalogProductRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
@@ -28,10 +42,45 @@ public class ProductController {
     CompanyRepository companyRepository;
 
     @Autowired
-    com.tiendario.service.ProductIndexService productIndexService;
+    ProductIndexService productIndexService;
 
     @Autowired
-    com.tiendario.repository.CatalogProductRepository catalogProductRepository;
+    CatalogProductRepository catalogProductRepository;
+
+    @Autowired
+    FileStorageService fileStorageService;
+
+    @Value("${app.upload.dir:uploads}")
+    private String uploadDir;
+
+    @PostMapping("/upload")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+    public ResponseEntity<?> uploadImage(@RequestParam("file") MultipartFile file) {
+        try {
+            String fileName = fileStorageService.storeFile(file);
+            return ResponseEntity.ok(new MessageResponse("/api/products/images/" + fileName));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Could not upload file: " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/images/{filename:.+}")
+    public ResponseEntity<Resource> getImage(@PathVariable String filename) {
+        try {
+            Path filePath = Paths.get(uploadDir).toAbsolutePath().normalize().resolve(filename);
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (resource.exists()) {
+                return ResponseEntity.ok()
+                        .contentType(MediaType.IMAGE_JPEG)
+                        .body(resource);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
 
     @GetMapping("/suggest-sku")
     @PreAuthorize("hasRole('MANAGER')")
@@ -76,7 +125,7 @@ public class ProductController {
             suggestedSku = String.format("%s-%04d", finalPrefix, count + attempt);
         }
 
-        java.util.Map<String, String> response = new java.util.HashMap<>();
+        Map<String, String> response = new HashMap<>();
         response.put("suggestedSku", suggestedSku);
         return ResponseEntity.ok(response);
     }
@@ -157,7 +206,7 @@ public class ProductController {
         try {
             productIndexService.indexProduct(savedProduct);
         } catch (Exception e) {
-            System.err.println("Warning: Could not index product: " + e.getMessage());
+            log.warn("Could not index product: {}", e.getMessage());
         }
 
         return ResponseEntity.ok(savedProduct);

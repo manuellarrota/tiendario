@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Row, Col, Card, Table } from 'react-bootstrap';
-import { FaChartBar, FaCalendarAlt, FaHistory } from 'react-icons/fa';
+import { Row, Col, Card, Table, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { FaChartBar, FaCalendarAlt, FaHistory, FaChartLine } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import SaleService from '../services/sale.service';
 
@@ -8,7 +8,8 @@ const ReportsPage = () => {
     const [sales, setSales] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
+    const fetchSales = () => {
+        setLoading(true);
         SaleService.getSales().then(
             (response) => {
                 setSales(response.data);
@@ -19,14 +20,19 @@ const ReportsPage = () => {
                 setLoading(false);
             }
         );
+    };
+
+    useEffect(() => {
+        fetchSales();
     }, []);
 
     const fetchReports = () => {
         fetchSales(); // Re-fetch sales data
     };
 
-    const totalSales = sales.reduce((acc, s) => acc + s.totalAmount, 0);
-    const salesCount = sales.length;
+    const validSales = sales || [];
+    const totalSales = validSales.reduce((acc, s) => acc + (s.totalAmount || 0), 0);
+    const salesCount = validSales.length;
     const averageSale = salesCount > 0 ? totalSales / salesCount : 0;
 
     return (
@@ -87,15 +93,15 @@ const ReportsPage = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {sales.map(s => (
+                                {(sales || []).map(s => (
                                     <tr key={s.id}>
                                         <td>#{s.id}</td>
-                                        <td>{new Date(s.date).toLocaleString()}</td>
+                                        <td>{s.date ? new Date(s.date).toLocaleString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}</td>
                                         <td>{s.items?.length || 0} items</td>
-                                        <td className="fw-bold text-success">${s.totalAmount}</td>
+                                        <td className="fw-bold text-success">${s.totalAmount?.toLocaleString() || '0'}</td>
                                     </tr>
                                 ))}
-                                {sales.length === 0 && !loading && (
+                                {(!sales || sales.length === 0) && !loading && (
                                     <tr>
                                         <td colSpan="4" className="text-center py-4 text-muted">No hay ventas registradas aún.</td>
                                     </tr>

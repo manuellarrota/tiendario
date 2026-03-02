@@ -1,19 +1,25 @@
 package com.tiendario.web;
 
 import com.tiendario.domain.*;
-import com.tiendario.repository.CompanyRepository;
-import com.tiendario.repository.CustomerRepository;
-import com.tiendario.repository.ProductRepository;
-import com.tiendario.repository.SaleRepository;
+import com.tiendario.payload.request.PublicOrderRequest;
+import com.tiendario.payload.response.MessageResponse;
+import com.tiendario.payload.response.PublicProductDTO;
+import com.tiendario.payload.response.SellerOfferDTO;
+import com.tiendario.repository.*;
+import com.tiendario.service.EmailService;
 import com.tiendario.service.ProductIndexService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.http.ResponseEntity;
 
-import java.util.List;
-import com.tiendario.payload.response.PublicProductDTO;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/public")
 public class PublicController {
@@ -34,16 +40,21 @@ public class PublicController {
     SaleRepository saleRepository;
 
     @Autowired
-    com.tiendario.repository.NotificationRepository notificationRepository;
+    NotificationRepository notificationRepository;
 
     @Autowired
-    com.tiendario.repository.GlobalConfigRepository globalConfigRepository;
+    UserRepository userRepository;
+
+    @Autowired
+    EmailService emailService;
+
+    @Autowired
+    GlobalConfigRepository globalConfigRepository;
 
     @GetMapping("/products")
     public List<PublicProductDTO> getAllProducts() {
-        // Return unique products grouped by Catalog ID or normalized name
         return productRepository.findAll().stream()
-                .collect(java.util.stream.Collectors.groupingBy(p -> {
+                .collect(Collectors.groupingBy(p -> {
                     if (p.getCatalogProduct() != null) {
                         return "CAT-" + p.getCatalogProduct().getId();
                     }
@@ -51,13 +62,12 @@ public class PublicController {
                 }))
                 .values().stream()
                 .map(list -> {
-                    // Find product with minimum price to represent the group
                     Product bestPriceProduct = list.stream()
-                            .min(java.util.Comparator.comparing(Product::getPrice))
+                            .min(Comparator.comparing(Product::getPrice))
                             .orElse(list.get(0));
                     return this.mapToDTO(bestPriceProduct);
                 })
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/products/{id}")
@@ -71,16 +81,16 @@ public class PublicController {
     public List<PublicProductDTO> getCompanyProducts(@PathVariable Long companyId) {
         return productRepository.findByCompanyId(companyId).stream()
                 .map(this::mapToDTO)
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/products/name/{name}/sellers")
-    public List<com.tiendario.payload.response.SellerOfferDTO> getSellersByName(@PathVariable String name) {
+    public List<SellerOfferDTO> getSellersByName(@PathVariable String name) {
         String normalizedName = name.trim().toLowerCase();
         return productRepository.findAll().stream()
                 .filter(p -> p.getName().trim().toLowerCase().equals(normalizedName))
                 .map(p -> {
-                    com.tiendario.payload.response.SellerOfferDTO offer = new com.tiendario.payload.response.SellerOfferDTO();
+                    SellerOfferDTO offer = new SellerOfferDTO();
                     offer.setProductId(p.getId());
                     offer.setCompanyId(p.getCompany().getId());
                     offer.setCompanyName(p.getCompany().getName());
@@ -93,22 +103,20 @@ public class PublicController {
                     offer.setImageUrl(p.getCompany().getImageUrl());
                     return offer;
                 })
-                .sorted(java.util.Comparator.comparing(com.tiendario.payload.response.SellerOfferDTO::getPrice))
-                .collect(java.util.stream.Collectors.toList());
+                .sorted(Comparator.comparing(SellerOfferDTO::getPrice))
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/search")
     public List<PublicProductDTO> searchProducts(@RequestParam String q) {
-        // Try Elasticsearch first, fallback to database
         List<Product> results = productIndexService.searchProducts(q);
 
-        // If Elasticsearch returns no results or is not available, search in database
         if (results.isEmpty()) {
             results = productRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(q, q);
         }
 
         return results.stream()
-                .collect(java.util.stream.Collectors.groupingBy(p -> {
+                .collect(Collectors.groupingBy(p -> {
                     if (p.getCatalogProduct() != null) {
                         return "CAT-" + p.getCatalogProduct().getId();
                     }
@@ -117,29 +125,29 @@ public class PublicController {
                 .values().stream()
                 .map(list -> {
                     Product bestPriceProduct = list.stream()
-                            .min(java.util.Comparator.comparing(Product::getPrice))
+                            .min(Comparator.comparing(Product::getPrice))
                             .orElse(list.get(0));
                     return this.mapToDTO(bestPriceProduct);
                 })
-                .collect(java.util.stream.Collectors.toList());
+                .collect(Collectors.toList());
     }
 
     @PostMapping("/order")
     @Transactional
-    public ResponseEntity<?> createOrder(@RequestBody com.tiendario.payload.request.PublicOrderRequest request) {
+    public ResponseEntity<?> createOrder(@RequestBody PublicOrderRequest request) {
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
         if (product.getStock() < request.getQuantity()) {
             return ResponseEntity.badRequest()
-                    .body(new com.tiendario.payload.response.MessageResponse("Insufficient stock"));
+                    .body(new MessageResponse("Insufficient stock"));
         }
 
         Company company = product.getCompany();
-        if (company.getSubscriptionStatus() != com.tiendario.domain.SubscriptionStatus.PAID
-                && company.getSubscriptionStatus() != com.tiendario.domain.SubscriptionStatus.TRIAL) {
+        if (company.getSubscriptionStatus() != SubscriptionStatus.PAID
+                && company.getSubscriptionStatus() != SubscriptionStatus.TRIAL) {
             return ResponseEntity.badRequest().body(
-                    new com.tiendario.payload.response.MessageResponse("Seller cannot accept orders (FREE Plan)"));
+                    new MessageResponse("Seller cannot accept orders (FREE Plan)"));
         }
 
         Customer customer = customerRepository.findByEmailAndCompanyId(request.getCustomerEmail(), company.getId())
@@ -159,17 +167,20 @@ public class PublicController {
         Sale sale = new Sale();
         sale.setCompany(company);
         sale.setCustomer(customer);
-        sale.setDate(java.time.LocalDateTime.now());
+        sale.setCustomerName(request.getCustomerName());
+        sale.setCustomerEmail(request.getCustomerEmail());
+        sale.setCustomerPhone(request.getCustomerPhone());
+        sale.setDate(LocalDateTime.now());
         sale.setStatus(SaleStatus.PENDING);
 
-        com.tiendario.domain.SaleItem item = new com.tiendario.domain.SaleItem();
+        SaleItem item = new SaleItem();
         item.setProduct(product);
         item.setQuantity(request.getQuantity());
         item.setUnitPrice(product.getPrice());
-        item.setSubtotal(product.getPrice().multiply(new java.math.BigDecimal(request.getQuantity())));
+        item.setSubtotal(product.getPrice().multiply(new BigDecimal(request.getQuantity())));
         item.setSale(sale);
 
-        sale.setItems(java.util.List.of(item));
+        sale.setItems(List.of(item));
         sale.setTotalAmount(item.getSubtotal());
 
         product.setStock(product.getStock() - request.getQuantity());
@@ -178,15 +189,32 @@ public class PublicController {
         saleRepository.save(sale);
 
         // Create Notification for the seller
-        com.tiendario.domain.Notification notification = new com.tiendario.domain.Notification();
+        Notification notification = new Notification();
         notification.setCompany(company);
         notification.setReferenceId(sale.getId());
         notification.setType("SALE");
         notification.setTitle("¡Nueva Venta!");
         notification.setMessage("Has recibido un pedido de " + customer.getName() + " por $" + sale.getTotalAmount());
-        notification.setCreatedAt(java.time.LocalDateTime.now());
+        notification.setCreatedAt(LocalDateTime.now());
         notification.setReadStatus(false);
         notificationRepository.save(notification);
+
+        // Send email notification to store manager(s)
+        try {
+            List<User> managers = userRepository.findByCompanyIdAndRole(
+                    company.getId(), Role.ROLE_MANAGER);
+            String orderSummary = request.getQuantity() + "x " + product.getName();
+            for (User mgr : managers) {
+                if (mgr.getEmail() != null) {
+                    emailService.sendNewOrderNotification(
+                            mgr.getEmail(), company.getName(),
+                            request.getCustomerName(),
+                            orderSummary, sale.getTotalAmount().doubleValue());
+                }
+            }
+        } catch (Exception e) {
+            log.error("Failed to send order notification email", e);
+        }
 
         // Update Loyalty Points (1 point per $1)
         if (customer.getLoyaltyPoints() == null)
@@ -194,7 +222,7 @@ public class PublicController {
         customer.setLoyaltyPoints(customer.getLoyaltyPoints() + sale.getTotalAmount().intValue());
         customerRepository.save(customer);
 
-        return ResponseEntity.ok(new com.tiendario.payload.response.MessageResponse(
+        return ResponseEntity.ok(new MessageResponse(
                 "Order placed successfully! Order ID: " + sale.getId()));
     }
 
@@ -202,7 +230,7 @@ public class PublicController {
     public ResponseEntity<?> getPublicConfig() {
         return ResponseEntity.ok(globalConfigRepository.findFirstByOrderByIdAsc()
                 .map(config -> {
-                    java.util.Map<String, Object> map = new java.util.HashMap<>();
+                    Map<String, Object> map = new HashMap<>();
                     map.put("announcementMessage", config.getAnnouncementMessage());
                     map.put("maintenanceMode", config.isMaintenanceMode());
                     map.put("contactEmail", config.getContactEmail());
@@ -214,7 +242,7 @@ public class PublicController {
                     return map;
                 })
                 .orElseGet(() -> {
-                    java.util.Map<String, Object> map = new java.util.HashMap<>();
+                    Map<String, Object> map = new HashMap<>();
                     map.put("announcementMessage", "");
                     map.put("maintenanceMode", false);
                     map.put("enableSecondaryCurrency", false);
@@ -224,20 +252,27 @@ public class PublicController {
 
     @GetMapping("/customer/points")
     public ResponseEntity<?> getCustomerPoints(@RequestParam String email) {
-        // Simple aggregate of points for this email across all companies
         Integer totalPoints = customerRepository.findAll().stream()
                 .filter(c -> c.getEmail().equalsIgnoreCase(email))
                 .mapToInt(c -> c.getLoyaltyPoints() != null ? c.getLoyaltyPoints() : 0)
                 .sum();
 
-        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        Map<String, Object> response = new HashMap<>();
         response.put("email", email);
         response.put("points", totalPoints);
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/stores/nearby")
+    public List<Company> getNearbyStores(@RequestParam double lat, @RequestParam double lon) {
+        // ~10km bounding box (approx 0.1 deg)
+        double offset = 0.1;
+        return companyRepository.findByLatitudeBetweenAndLongitudeBetween(
+                lat - offset, lat + offset, lon - offset, lon + offset);
+    }
+
     private PublicProductDTO mapToDTO(Product product) {
-        com.tiendario.payload.response.PublicProductDTO dto = new com.tiendario.payload.response.PublicProductDTO();
+        PublicProductDTO dto = new PublicProductDTO();
         dto.setId(product.getId());
         dto.setName(product.getName());
         dto.setDescription(product.getDescription());

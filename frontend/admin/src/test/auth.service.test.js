@@ -28,15 +28,17 @@ describe('AuthService', () => {
             const mockResponse = { data: { message: 'User registered successfully!' } };
             axios.post.mockResolvedValue(mockResponse);
 
-            const result = await AuthService.register('testuser', 'password123', 'manager', 'Test Company');
+            const result = await AuthService.register('testuser', 'testuser@example.com', 'password123', 'manager', 'Test Company', '+123456');
 
             expect(axios.post).toHaveBeenCalledWith(
                 expect.stringContaining('/auth/signup'),
                 {
                     username: 'testuser',
+                    email: 'testuser@example.com',
                     password: 'password123',
                     role: ['manager'],
                     companyName: 'Test Company',
+                    phoneNumber: '+123456',
                 }
             );
             expect(result.data.message).toBe('User registered successfully!');

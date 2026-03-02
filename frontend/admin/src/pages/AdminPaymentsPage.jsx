@@ -13,10 +13,6 @@ const AdminPaymentsPage = () => {
     const [selectedPayment, setSelectedPayment] = useState(null);
     const [rejectReason, setRejectReason] = useState('');
 
-    useEffect(() => {
-        loadPayments();
-    }, []);
-
     const loadPayments = () => {
         setLoading(true);
         AdminService.getGlobalPayments().then(
@@ -31,6 +27,10 @@ const AdminPaymentsPage = () => {
             }
         );
     };
+
+    useEffect(() => {
+        loadPayments();
+    }, []);
 
     const handleApprove = (id) => {
         if (!window.confirm("¿Estás seguro de aprobar este pago? Se actualizará el plan de la empresa a PAID.")) return;
@@ -136,7 +136,7 @@ const AdminPaymentsPage = () => {
                                                 <div className="small text-muted">{p.reference}</div>
                                             </td>
                                             <td className="small">
-                                                {new Date(p.createdAt).toLocaleString()}
+                                                {new Date(p.createdAt).toLocaleString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
                                             </td>
                                             <td>{getStatusBadge(p.status)}</td>
                                             <td>

@@ -23,10 +23,6 @@ const AdminConfigPage = () => {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
 
-    useEffect(() => {
-        loadConfig();
-    }, []);
-
     const loadConfig = () => {
         setLoading(true);
         AdminService.getPlatformConfig().then(
@@ -41,6 +37,10 @@ const AdminConfigPage = () => {
             }
         );
     };
+
+    useEffect(() => {
+        loadConfig();
+    }, []);
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -62,7 +62,7 @@ const AdminConfigPage = () => {
                 setSuccess("Configuración actualizada correctamente.");
                 window.scrollTo(0, 0);
             },
-            (err) => {
+            () => {
                 setSaving(false);
                 setError("Error al guardar la configuración.");
             }

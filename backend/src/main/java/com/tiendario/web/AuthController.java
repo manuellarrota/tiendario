@@ -11,6 +11,7 @@ import com.tiendario.security.JwtUtils;
 import com.tiendario.security.LoginRateLimiter;
 import com.tiendario.security.UserDetailsImpl;
 import com.tiendario.service.AuthService;
+import com.tiendario.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -39,6 +40,7 @@ public class AuthController {
     private final JwtUtils jwtUtils;
     private final AuthService authService;
     private final LoginRateLimiter rateLimiter;
+    private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
 
     @org.springframework.beans.factory.annotation.Value("${app.frontend.url:http://localhost:8081}")
@@ -51,7 +53,8 @@ public class AuthController {
             JwtUtils jwtUtils,
             AuthService authService,
             LoginRateLimiter rateLimiter,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            EmailService emailService) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.companyRepository = companyRepository;
@@ -59,6 +62,7 @@ public class AuthController {
         this.authService = authService;
         this.rateLimiter = rateLimiter;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
     }
 
     @PostMapping("/signin")
@@ -125,7 +129,9 @@ public class AuthController {
         user.setVerificationCode(null);
         userRepository.save(user);
 
-        return ResponseEntity.ok(new MessageResponse("User verified successfully!"));
+        return ResponseEntity.status(org.springframework.http.HttpStatus.FOUND)
+                .location(java.net.URI.create(frontendUrl + "/login?verified=true"))
+                .build();
     }
 
     @PostMapping("/signup")
@@ -168,20 +174,11 @@ public class AuthController {
         user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(30));
         userRepository.save(user);
 
-        // In production, send email. For now, write to file.
-        String resetLink = frontendUrl + "/reset-password?token=" + token;
-        try {
-            java.nio.file.Files.writeString(
-                    java.nio.file.Path.of("password_reset_links.txt"),
-                    "[" + LocalDateTime.now() + "] User: " + user.getUsername()
-                            + " → " + resetLink + "\n",
-                    java.nio.file.StandardOpenOption.CREATE,
-                    java.nio.file.StandardOpenOption.APPEND);
-        } catch (Exception e) {
-            // Log but don't fail
-            org.slf4j.LoggerFactory.getLogger(AuthController.class)
-                    .error("Could not write reset link to file", e);
-        }
+        // Send password reset email (falls back to file if SMTP is unavailable)
+        emailService.sendPasswordResetEmail(
+                user.getEmail() != null ? user.getEmail() : identifier,
+                user.getUsername(),
+                token);
 
         return ResponseEntity.ok(new MessageResponse(
                 "Si el email/usuario existe, recibirás instrucciones para restablecer tu contraseña."));

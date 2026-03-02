@@ -10,10 +10,6 @@ const AdminCompaniesPage = () => {
     const [error, setError] = useState('');
     const [updating, setUpdating] = useState(null);
 
-    useEffect(() => {
-        loadCompanies();
-    }, []);
-
     const loadCompanies = () => {
         setLoading(true);
         AdminService.getAllCompanies().then(
@@ -28,6 +24,10 @@ const AdminCompaniesPage = () => {
             }
         );
     };
+
+    useEffect(() => {
+        loadCompanies();
+    }, []);
 
     const handleStatusChange = (companyId, newStatus) => {
         setUpdating(companyId);

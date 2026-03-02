@@ -122,7 +122,7 @@ public class SaleControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(newSale)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message", containsString("completed")));
+                .andExpect(jsonPath("$.message", containsString("successfully")));
 
         // Verify stock was reduced
         Product updatedProduct = productRepository.findById(testProduct.getId()).orElse(null);

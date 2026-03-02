@@ -38,6 +38,7 @@ const LandingPage = () => {
     const [resetMessage, setResetMessage] = useState("");
     const [resetSuccess, setResetSuccess] = useState(false);
     const [resetLoading, setResetLoading] = useState(false);
+    const [verificationSuccess, setVerificationSuccess] = useState(false);
 
     const [searchParams] = useSearchParams();
     const API_URL = import.meta.env.VITE_API_URL;
@@ -48,6 +49,14 @@ const LandingPage = () => {
         if (token) {
             setResetToken(token);
             setShowResetModal(true);
+        }
+
+        const verified = searchParams.get('verified');
+        if (verified === 'true') {
+            setVerificationSuccess(true);
+            setMessage("✅ ¡Cuenta verificada con éxito! Ya puedes iniciar sesión.");
+            // Clean URL
+            window.history.replaceState({}, '', '/');
         }
     }, [searchParams]);
 
@@ -229,7 +238,7 @@ const LandingPage = () => {
                                     </div>
                                 </Form.Group>
 
-                                {message && <Alert variant="danger" className="py-2 small">{message}</Alert>}
+                                {message && <Alert variant={verificationSuccess ? "success" : "danger"} className="py-2 small">{message}</Alert>}
 
                                 <Button variant="primary" type="submit" className="w-100 py-2 fs-5 shadow-sm" disabled={loading}>
                                     {loading ? "Iniciando..." : "Entrar al Panel"}

@@ -90,10 +90,11 @@ npm install && npm run dev
 - ✅ **Gestión Flexible**: Categorías dinámicas (Globales + Personalizadas).
 - ✅ **Visibilidad Global**: Sincronización automática de stock con el Marketplace.
 - ✅ **Suscripciones**: Sistema completo de planes (FREE, TRIAL, PAID) con gestión de estados (Vencido, Suspendido), simulación de pagos y restricciones de acceso.
-- ✅ **Restricciones Inteligentes**: Bloqueo automático de creación de productos y ventas según el plan y estado de la cuenta.
-- ✅ **Lealtad**: Sistema automático de acumulación de puntos por compras.
-- ✅ **Experiencia Unificada**: Login y Registro integrados directamente en el Marketplace sin redirecciones.
-- ✅ **Diseño Premium**: Interfaz fluida y profesional en todos los dispositivos.
+- ✅ **Multimedia Core**: Subida directa de imágenes de productos y servidor de archivos estáticos integrado.
+- ✅ **Centro de Comunicaciones**: Sistema de emails HTML branded y notificaciones internas en tiempo real.
+- ✅ **Fidelización y Cercanía**: Acumulación de puntos por compras y búsqueda de tiendas por geolocalización.
+- ✅ **Confianza Legal**: Páginas integradas de Términos de Servicio y Privacidad.
+- ✅ **Diseño Premium**: Interfaz fluida y profesional con estética Glassmorphism.
 
 ---
 

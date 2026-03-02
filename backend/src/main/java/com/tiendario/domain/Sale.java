@@ -41,6 +41,8 @@ public class Sale {
     private PaymentMethod paymentMethod;
 
     private String customerName; // For POS quick sales
+    private String customerEmail; // For marketplace order notifications
+    private String customerPhone; // Optional contact number
 
     @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SaleItem> items;

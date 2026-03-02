@@ -1,15 +1,34 @@
-import React, { useState, useEffect } from "react";
-import { Container, Row, Col, Card, Table, Button, Badge } from "react-bootstrap";
+import React, { useState, useEffect, useRef } from "react";
+import { Container, Row, Col, Card, Table, Button, Badge, Spinner } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import CustomerService from "../services/customer.service";
 import AuthService from "../services/auth.service";
 import Navbar from "../components/Navbar";
 
+const POLL_INTERVAL_MS = 30000; // 30 seconds
+
 const CustomerDashboard = () => {
     const [stats, setStats] = useState({ totalOrders: 0, totalSpent: 0, lastOrderDate: null });
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [lastUpdated, setLastUpdated] = useState(null);
     const navigate = useNavigate();
+    const pollRef = useRef(null);
+
+    const loadDashboard = (isInitial = false) => {
+        if (isInitial) setLoading(true);
+        Promise.all([CustomerService.getDashboardStats(), CustomerService.getMyOrders()])
+            .then(([statsRes, ordersRes]) => {
+                setStats(statsRes.data);
+                setOrders(ordersRes.data);
+                setLastUpdated(new Date());
+                if (isInitial) setLoading(false);
+            })
+            .catch(err => {
+                console.error("Error loading dashboard", err);
+                if (isInitial) setLoading(false);
+            });
+    };
 
     useEffect(() => {
         const user = AuthService.getCurrentUser();
@@ -18,17 +37,45 @@ const CustomerDashboard = () => {
             return;
         }
 
-        Promise.all([CustomerService.getDashboardStats(), CustomerService.getMyOrders()])
-            .then(([statsRes, ordersRes]) => {
-                setStats(statsRes.data);
-                setOrders(ordersRes.data);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error("Error loading dashboard", err);
-                setLoading(false);
-            });
+        loadDashboard(true);
+
+        // Start polling for real-time updates
+        pollRef.current = setInterval(() => loadDashboard(false), POLL_INTERVAL_MS);
+
+        return () => {
+            if (pollRef.current) clearInterval(pollRef.current);
+        };
     }, [navigate]);
+
+    const getStatusBadge = (status) => {
+        switch (status) {
+            case 'READY_FOR_PICKUP':
+                return (
+                    <Badge bg="info" className="text-white px-3 py-2 rounded-pill shadow-sm animate-pulse-subtle">
+                        📦 Lista para Retirar
+                    </Badge>
+                );
+            case 'PAID':
+                return (
+                    <Badge bg="success" className="px-3 py-2 rounded-pill">
+                        ✅ Completado
+                    </Badge>
+                );
+            case 'CANCELLED':
+                return (
+                    <Badge bg="danger" className="px-3 py-2 rounded-pill">
+                        ❌ Cancelado
+                    </Badge>
+                );
+            case 'PENDING':
+            default:
+                return (
+                    <Badge bg="warning" text="dark" className="px-3 py-2 rounded-pill">
+                        ⏳ En Proceso
+                    </Badge>
+                );
+        }
+    };
 
     return (
         <div className="bg-light min-vh-100">
@@ -88,72 +135,84 @@ const CustomerDashboard = () => {
                 <Card className="border-0 shadow-lg rounded-4 overflow-hidden mb-5">
                     <Card.Header className="bg-white py-4 border-0 d-flex justify-content-between align-items-center">
                         <h4 className="fw-800 mb-0 text-gradient">Mis Pedidos Recientes</h4>
-                        <Badge bg="primary" className="bg-opacity-10 text-primary px-3 py-2 rounded-pill">Historial Completo</Badge>
+                        <div className="d-flex align-items-center gap-3">
+                            {lastUpdated && (
+                                <small className="text-muted">
+                                    🔄 Actualizado: {lastUpdated.toLocaleTimeString()}
+                                </small>
+                            )}
+                            <Badge bg="primary" className="bg-opacity-10 text-primary px-3 py-2 rounded-pill">Actualización automática</Badge>
+                        </div>
                     </Card.Header>
                     <Card.Body className="p-0">
-                        <Table hover responsive className="mb-0 align-middle">
-                            <thead className="bg-light">
-                                <tr>
-                                    <th className="px-4 py-3 border-0">ID Pedido</th>
-                                    <th className="py-3 border-0">Fecha y Hora</th>
-                                    <th className="py-3 border-0">Tienda / Comercio</th>
-                                    <th className="py-3 border-0 text-center">Estado</th>
-                                    <th className="py-3 border-0 text-end">Monto Total</th>
-                                    <th className="px-4 py-3 border-0">Detalle</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {orders.map(order => (
-                                    <tr key={order.id}>
-                                        <td className="px-4 py-3 fw-bold">#{order.id}</td>
-                                        <td className="py-3 text-secondary">{new Date(order.date).toLocaleString()}</td>
-                                        <td className="py-3">
-                                            <div className="d-flex align-items-center">
-                                                <div className="bg-light rounded-circle p-2 me-2" style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                    🏪
-                                                </div>
-                                                <span className="fw-600">{order.company?.name || "Tienda Local"}</span>
-                                            </div>
-                                        </td>
-                                        <td className="py-3 text-center">
-                                            {order.status === 'READY_FOR_PICKUP' ? (
-                                                <Badge bg="info" className="text-white px-3 py-2 rounded-pill shadow-sm">
-                                                    Lista para Retirar
-                                                </Badge>
-                                            ) : order.status === 'PAID' ? (
-                                                <Badge bg="success" className="px-3 py-2 rounded-pill">
-                                                    Completado
-                                                </Badge>
-                                            ) : (
-                                                <Badge bg="warning" text="dark" className="px-3 py-2 rounded-pill">
-                                                    En Proceso
-                                                </Badge>
-                                            )}
-                                        </td>
-                                        <td className="py-3 text-end fw-bold text-success">${(order.totalAmount || 0).toFixed(2)}</td>
-                                        <td className="px-4 py-3">
-                                            {order.items?.map(item => (
-                                                <div key={item.id} className="small text-muted border-bottom py-1 last-child-border-0">
-                                                    {item.quantity}x {item.product?.name}
-                                                </div>
-                                            ))}
-                                        </td>
-                                    </tr>
-                                ))}
-                                {orders.length === 0 && (
+                        {loading ? (
+                            <div className="text-center py-5">
+                                <Spinner animation="border" variant="primary" />
+                                <p className="mt-3 text-muted">Cargando tus pedidos...</p>
+                            </div>
+                        ) : (
+                            <Table hover responsive className="mb-0 align-middle">
+                                <thead className="bg-light">
                                     <tr>
-                                        <td colSpan="6" className="text-center py-5 text-muted">
-                                            <div className="opacity-50 fs-2 mb-2">🛍️</div>
-                                            <h5>Aún no has realizado pedidos</h5>
-                                            <small>¡Explora el marketplace y acumula tus primeros puntos!</small>
-                                        </td>
+                                        <th className="px-4 py-3 border-0">ID Pedido</th>
+                                        <th className="py-3 border-0">Fecha y Hora</th>
+                                        <th className="py-3 border-0">Tienda / Comercio</th>
+                                        <th className="py-3 border-0 text-center">Estado</th>
+                                        <th className="py-3 border-0 text-end">Monto Total</th>
+                                        <th className="px-4 py-3 border-0">Detalle</th>
                                     </tr>
-                                )}
-                            </tbody>
-                        </Table>
+                                </thead>
+                                <tbody>
+                                    {orders.map(order => (
+                                        <tr key={order.id}>
+                                            <td className="px-4 py-3 fw-bold">#{order.id}</td>
+                                            <td className="py-3 text-secondary">{new Date(order.date).toLocaleString()}</td>
+                                            <td className="py-3">
+                                                <div className="d-flex align-items-center">
+                                                    <div className="bg-light rounded-circle p-2 me-2" style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        🏪
+                                                    </div>
+                                                    <span className="fw-600">{order.company?.name || "Tienda Local"}</span>
+                                                </div>
+                                            </td>
+                                            <td className="py-3 text-center">
+                                                {getStatusBadge(order.status)}
+                                            </td>
+                                            <td className="py-3 text-end fw-bold text-success">${(order.totalAmount || 0).toFixed(2)}</td>
+                                            <td className="px-4 py-3">
+                                                {order.items?.map(item => (
+                                                    <div key={item.id} className="small text-muted border-bottom py-1 last-child-border-0">
+                                                        {item.quantity}x {item.product?.name}
+                                                    </div>
+                                                ))}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {orders.length === 0 && (
+                                        <tr>
+                                            <td colSpan="6" className="text-center py-5 text-muted">
+                                                <div className="opacity-50 fs-2 mb-2">🛍️</div>
+                                                <h5>Aún no has realizado pedidos</h5>
+                                                <small>¡Explora el marketplace y acumula tus primeros puntos!</small>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </Table>
+                        )}
                     </Card.Body>
                 </Card>
             </Container>
+
+            <style>{`
+                @keyframes pulse-subtle {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.7; }
+                }
+                .animate-pulse-subtle {
+                    animation: pulse-subtle 2s ease-in-out infinite;
+                }
+            `}</style>
         </div>
     );
 };

@@ -46,6 +46,12 @@ const NewPurchasePage = () => {
     // Predefined global categories
     const globalCategories = ["Ropa", "Tecnología", "Alimentos", "Hogar", "Deportes", "Salud y Belleza", "Juguetes", "Libros"];
 
+    const loadData = () => {
+        ProductService.getAll().then(res => setProducts(res.data));
+        SupplierService.getAll().then(res => setSuppliers(res.data));
+        CategoryService.getAll().then(res => setCategories(res.data));
+    };
+
     useEffect(() => {
         loadData();
         // Click outside listener for dropdown
@@ -73,13 +79,9 @@ const NewPurchasePage = () => {
             }, 800);
             return () => clearTimeout(delayDebounceFn);
         }
-    }, [prodName, prodCategory, prodVariant, showProductModal]);
+    }, [prodName, prodCategory, prodVariant, showProductModal, prodSku]);
 
-    const loadData = () => {
-        ProductService.getAll().then(res => setProducts(res.data));
-        SupplierService.getAll().then(res => setSuppliers(res.data));
-        CategoryService.getAll().then(res => setCategories(res.data));
-    };
+
 
     const addToCart = () => {
         if (!selectedProduct || !quantity || !unitCost) return;
@@ -119,7 +121,7 @@ const NewPurchasePage = () => {
                     setSelectedSupplier(response.data.id);
                 }
             },
-            (error) => {
+            () => {
                 setMessage("❌ Error creando proveedor");
                 setTimeout(() => setMessage(""), 3000);
             }
@@ -238,7 +240,7 @@ const NewPurchasePage = () => {
                                         <tr>
                                             <th>Producto</th>
                                             <th className="text-center">Cant.</th>
-                                            <th className="text-end">Costo Unit.</th>
+                                            <th className="text-end">Costo de Adq.</th>
                                             <th className="text-end">Subtotal</th>
                                         </tr>
                                     </thead>
@@ -321,7 +323,14 @@ const NewPurchasePage = () => {
                                                     </div>
                                                 ))
                                             ) : (
-                                                <div className="p-3 text-center text-muted">No se encontraron productos</div>
+                                                <div className="p-3 text-center text-muted">
+                                                    <p className="mb-2">No se encontraron productos</p>
+                                                    {searchTerm && (
+                                                        <Button variant="outline-primary" size="sm" onClick={() => { setProdName(searchTerm); setShowProductModal(true); setShowDropdown(false); }}>
+                                                            Crear "{searchTerm}"
+                                                        </Button>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                     )}
@@ -336,7 +345,7 @@ const NewPurchasePage = () => {
                                     </Col>
                                     <Col>
                                         <Form.Group className="mb-3">
-                                            <Form.Label>Costo ($)</Form.Label>
+                                            <Form.Label>Costo de Adquisición ($)</Form.Label>
                                             <Form.Control type="number" value={unitCost} onChange={e => setUnitCost(e.target.value)} />
                                         </Form.Group>
                                     </Col>
@@ -460,7 +469,7 @@ const NewPurchasePage = () => {
                                     </Form.Group>
                                 </div>
 
-                                <div className="col-md-6">
+                                <div className="d-none">
                                     <Form.Group className="mb-3">
                                         <Form.Label className="d-flex justify-content-between">
                                             SKU (Código) <span className="text-danger">*</span>
@@ -468,7 +477,6 @@ const NewPurchasePage = () => {
                                         </Form.Label>
                                         <Form.Control
                                             type="text"
-                                            required
                                             value={prodSku}
                                             onChange={(e) => setProdSku(e.target.value)}
                                             placeholder="Generación automática..."
@@ -478,34 +486,28 @@ const NewPurchasePage = () => {
 
                                 {/* Inventory & Pricing */}
                                 <div className="col-12 mt-4">
-                                    <h6 className="text-primary fw-bold mb-3">Precios e Inventario</h6>
+                                    <h6 className="text-primary fw-bold mb-3">Precios y Costos</h6>
                                 </div>
 
-                                <div className="col-md-4">
+                                <div className="col-md-6">
                                     <Form.Group className="mb-3">
-                                        <Form.Label>Stock Inicial</Form.Label>
-                                        <Form.Control type="number" required value={prodStock} onChange={(e) => setProdStock(e.target.value)} min="0" />
-                                    </Form.Group>
-                                </div>
-                                <div className="col-md-4">
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>Precio Venta ($) <span className="text-danger">*</span></Form.Label>
+                                        <Form.Label>Precio al Público ($) <span className="text-danger">*</span></Form.Label>
                                         <Form.Control type="number" step="0.01" required value={prodPrice} onChange={(e) => setProdPrice(e.target.value)} min="0" />
                                     </Form.Group>
                                 </div>
-                                <div className="col-md-4">
+                                <div className="col-md-6">
                                     <Form.Group className="mb-3">
-                                        <Form.Label>Costo Unitario ($) <small className="text-muted">(Opcional)</small></Form.Label>
+                                        <Form.Label>Costo de Adquisición Unit. ($) <small className="text-muted">(Opcional)</small></Form.Label>
                                         <Form.Control type="number" step="0.01" value={prodCostPrice} onChange={(e) => setProdCostPrice(e.target.value)} min="0" placeholder="Para reportes" />
                                     </Form.Group>
                                 </div>
 
                                 {/* Media */}
-                                <div className="col-12 mt-4">
+                                <div className="col-12 mt-4 d-none">
                                     <h6 className="text-primary fw-bold mb-3">Multimedia</h6>
                                 </div>
 
-                                <div className="col-12">
+                                <div className="col-12 d-none">
                                     <Form.Group className="mb-3">
                                         <Form.Label>URL de la Imagen <small className="text-muted">(Pega un link de imagen)</small></Form.Label>
                                         <div className="d-flex gap-3">
@@ -523,7 +525,6 @@ const NewPurchasePage = () => {
                                         </div>
                                     </Form.Group>
                                 </div>
-
                             </div>
 
                             <div className="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
@@ -536,7 +537,7 @@ const NewPurchasePage = () => {
                     </Modal.Body>
                 </Modal>
             </div>
-        </div>
+        </div >
     );
 };
 

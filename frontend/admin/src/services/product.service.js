@@ -42,6 +42,17 @@ const searchCatalog = (query) => {
     });
 };
 
+const uploadImage = (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return axios.post(API_URL + "upload", formData, {
+        headers: {
+            ...getAuthHeader(),
+            "Content-Type": "multipart/form-data"
+        }
+    });
+};
+
 const ProductService = {
     getAll,
     getCompanyProducts: getAll,
@@ -49,7 +60,8 @@ const ProductService = {
     update,
     remove,
     getSuggestedSku,
-    searchCatalog
+    searchCatalog,
+    uploadImage
 };
 
 export default ProductService;

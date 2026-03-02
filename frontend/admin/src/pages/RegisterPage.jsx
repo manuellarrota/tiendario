@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Form, Button, Alert, Container, Card } from "react-bootstrap";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import AuthService from "../services/auth.service";
@@ -24,7 +24,7 @@ const RegisterPage = () => {
 
         // Default role is manager for new registers via this form
         AuthService.register(username, email, password, "manager", companyName, phoneNumber).then(
-            (response) => {
+            () => {
                 setMessage("✅ Registro exitoso. Cuenta creada pero INACTIVA. Revisa 'backend/verification_links.txt' para activar tu cuenta antes de iniciar sesión.");
                 setSuccessful(true);
                 setTimeout(() => {

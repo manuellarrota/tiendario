@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Table, Badge, Button, Modal, ListGroup, Form } from 'react-bootstrap';
+import { Container, Row, Col, Card, Table, Badge, Button, Modal, ListGroup, Form, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaHistory, FaEye, FaCheckCircle, FaClock, FaUser, FaPhoneAlt, FaMapMarkerAlt } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import SaleService from '../services/sale.service';
@@ -19,6 +19,20 @@ const SalesHistoryPage = () => {
         return `${platformConfig.secondaryCurrencySymbol} ${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
+    const loadSales = React.useCallback((silent = false) => {
+        if (!silent) setLoading(true);
+        SaleService.getSales().then(
+            (response) => {
+                setSales(response.data);
+                setLoading(false);
+            },
+            (error) => {
+                console.error("Error loading sales", error);
+                setLoading(false);
+            }
+        );
+    }, []);
+
     useEffect(() => {
         loadSales();
         PublicService.getPlatformConfig().then(
@@ -32,21 +46,7 @@ const SalesHistoryPage = () => {
         }, 30000);
 
         return () => clearInterval(interval);
-    }, []);
-
-    const loadSales = (silent = false) => {
-        if (!silent) setLoading(true);
-        SaleService.getSales().then(
-            (response) => {
-                setSales(response.data);
-                setLoading(false);
-            },
-            (error) => {
-                console.error("Error loading sales", error);
-                setLoading(false);
-            }
-        );
-    };
+    }, [loadSales]);
 
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('CASH');
@@ -60,9 +60,7 @@ const SalesHistoryPage = () => {
             return;
         }
 
-        if (window.confirm(`¿Seguro que quieres cambiar el estado a ${status}?`)) {
-            performStatusUpdate(id, status);
-        }
+        performStatusUpdate(id, status);
     };
 
     const confirmPayment = () => {
@@ -89,7 +87,7 @@ const SalesHistoryPage = () => {
                 // Reload from server to ensure consistency (silently to avoid disrupt)
                 loadSales(true);
             },
-            (error) => alert("Error al actualizar estado")
+            () => alert("Error al actualizar estado")
         );
     };
 
@@ -121,7 +119,7 @@ const SalesHistoryPage = () => {
 
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <div>
-                        <h2 className="fw-bold mb-0">Seguimiento de Pedidos</h2>
+                        <h2 className="fw-bold mb-0">Historial de Ventas</h2>
                         <p className="text-muted">Administra tus ventas del local y pedidos del Marketplace</p>
                     </div>
                     <div className="d-flex gap-2">
@@ -160,7 +158,7 @@ const SalesHistoryPage = () => {
                                     <tr key={sale.id}>
                                         <td className="px-4">
                                             <div className="fw-bold text-primary">#{sale.id}</div>
-                                            <small className="text-muted">{sale.date ? new Date(sale.date).toLocaleString() : 'N/A'}</small>
+                                            <small className="text-muted">{sale.date ? new Date(sale.date).toLocaleString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}</small>
                                         </td>
                                         <td>
                                             <div className="fw-bold">{sale.customerName || sale.customer?.name || 'Venta Mostrador'}</div>
@@ -174,18 +172,24 @@ const SalesHistoryPage = () => {
                                             )}
                                         </td>
                                         <td className="text-center px-4">
-                                            <Button variant="light" size="sm" className="rounded-circle me-1" onClick={() => openDetail(sale)}>
-                                                <FaEye className="text-primary" />
-                                            </Button>
-                                            {sale.status === 'PENDING' && (
-                                                <Button variant="light" size="sm" className="rounded-circle" title="Marcar Listo para Recoger" onClick={() => handleStatusUpdate(sale.id, 'READY_FOR_PICKUP')}>
-                                                    <FaClock className="text-info" />
+                                            <OverlayTrigger overlay={<Tooltip>Ver Detalle</Tooltip>}>
+                                                <Button variant="light" size="sm" className="rounded-circle me-1" onClick={() => openDetail(sale)}>
+                                                    <FaEye className="text-primary" />
                                                 </Button>
+                                            </OverlayTrigger>
+                                            {sale.status === 'PENDING' && (
+                                                <OverlayTrigger overlay={<Tooltip>Marcar Listo para Recoger</Tooltip>}>
+                                                    <Button variant="light" size="sm" className="rounded-circle" onClick={() => handleStatusUpdate(sale.id, 'READY_FOR_PICKUP')}>
+                                                        <FaClock className="text-info" />
+                                                    </Button>
+                                                </OverlayTrigger>
                                             )}
                                             {sale.status === 'READY_FOR_PICKUP' && (
-                                                <Button variant="light" size="sm" className="rounded-circle" title="Registrar Pago" onClick={() => handleStatusUpdate(sale.id, 'PAID')}>
-                                                    <FaCheckCircle className="text-success" />
-                                                </Button>
+                                                <OverlayTrigger overlay={<Tooltip>Registrar Pago</Tooltip>}>
+                                                    <Button variant="light" size="sm" className="rounded-circle" onClick={() => handleStatusUpdate(sale.id, 'PAID')}>
+                                                        <FaCheckCircle className="text-success" />
+                                                    </Button>
+                                                </OverlayTrigger>
                                             )}
                                         </td>
                                     </tr>
@@ -215,7 +219,7 @@ const SalesHistoryPage = () => {
                                     <h6 className="text-uppercase fw-bold text-muted small mb-3">Información del Cliente</h6>
                                     <div className="bg-light p-3 rounded-4 mb-4">
                                         <p className="mb-2"><FaUser className="me-2 text-primary" /> <strong>Cliente:</strong> {selectedSale.customerName || selectedSale.customer?.name || 'Cliente Mostrador'}</p>
-                                        <p className="mb-2"><FaPhoneAlt className="me-2 text-primary" /> <strong>Teléfono:</strong> {selectedSale.customer?.phone || 'N/A'}</p>
+                                        <p className="mb-2"><FaPhoneAlt className="me-2 text-primary" /> <strong>Teléfono:</strong> {selectedSale.customerPhone || selectedSale.customer?.phone || 'N/A'}</p>
                                         <p className="mb-0"><FaMapMarkerAlt className="me-2 text-primary" /> <strong>Dirección:</strong> {selectedSale.customer?.address || 'Retiro en Local'}</p>
                                     </div>
                                 </Col>
@@ -223,7 +227,7 @@ const SalesHistoryPage = () => {
                                     <h6 className="text-uppercase fw-bold text-muted small mb-3">Resumen de Pago</h6>
                                     <div className="bg-light p-3 rounded-4 mb-4">
                                         <p className="mb-2"><strong>Estado:</strong> {getStatusBadge(selectedSale.status)}</p>
-                                        <p className="mb-2"><strong>Fecha:</strong> {selectedSale.date ? new Date(selectedSale.date).toLocaleString() : 'N/A'}</p>
+                                        <p className="mb-2"><strong>Fecha:</strong> {selectedSale.date ? new Date(selectedSale.date).toLocaleString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}</p>
                                         <p className="mb-2"><strong>Método:</strong> {selectedSale.paymentMethod || 'Pendiente'}</p>
                                         <h4 className="fw-bold text-success mb-0 mt-3">Total: ${selectedSale.totalAmount ? selectedSale.totalAmount.toLocaleString() : '0'}</h4>
                                         {platformConfig?.enableSecondaryCurrency && selectedSale.totalAmount > 0 && (

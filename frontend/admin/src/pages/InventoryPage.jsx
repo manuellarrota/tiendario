@@ -18,7 +18,6 @@ const InventoryPage = () => {
     const subscriptionStatus = user?.subscriptionStatus || 'FREE';
     const isPremium = subscriptionStatus === 'PAID' || subscriptionStatus === 'TRIAL';
     const isBlocked = subscriptionStatus === 'PAST_DUE' || subscriptionStatus === 'SUSPENDED';
-    const canCreateProducts = isPremium || (subscriptionStatus === 'FREE' && products.length < 10);
 
     // Form State
     const [name, setName] = useState("");
@@ -30,13 +29,16 @@ const InventoryPage = () => {
     const [costPrice, setCostPrice] = useState("");
     const [imageUrl, setImageUrl] = useState("");
     const [isGeneratingSku, setIsGeneratingSku] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
     const [catalogSuggestions, setCatalogSuggestions] = useState([]);
     const [showCatalogSuggestions, setShowCatalogSuggestions] = useState(false);
 
-    useEffect(() => {
-        loadProducts();
-        loadCategories();
-    }, []);
+    // Helper to get full image URL
+    const getFullImageUrl = (path) => {
+        if (!path) return null;
+        if (path.startsWith('http')) return path;
+        return (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080') + path;
+    };
 
     const renderTooltip = (props, text) => (
         <Tooltip id="button-tooltip" {...props}>
@@ -50,6 +52,22 @@ const InventoryPage = () => {
             (err) => console.error("Error loading categories", err)
         );
     };
+
+    const loadProducts = () => {
+        ProductService.getAll().then(
+            (response) => {
+                setProducts(response.data);
+            },
+            (error) => {
+                console.error("Error loading products", error);
+            }
+        );
+    };
+
+    useEffect(() => {
+        loadProducts();
+        loadCategories();
+    }, []);
 
     // Suggest SKU when name changes (and category if available)
     useEffect(() => {
@@ -66,7 +84,7 @@ const InventoryPage = () => {
             }, 800);
             return () => clearTimeout(delayDebounceFn);
         }
-    }, [name, category, variant, editingProduct]);
+    }, [name, category, variant, editingProduct, sku]);
 
     // Search Catalog when name changes
     useEffect(() => {
@@ -95,17 +113,6 @@ const InventoryPage = () => {
             // If we had a description field in the form, we'd set it here
         }
         setShowCatalogSuggestions(false);
-    };
-
-    const loadProducts = () => {
-        ProductService.getAll().then(
-            (response) => {
-                setProducts(response.data);
-            },
-            (error) => {
-                console.error("Error loading products", error);
-            }
-        );
     };
 
     const handleEditClick = (product) => {
@@ -138,7 +145,7 @@ const InventoryPage = () => {
         if (editingProduct) {
             ProductService.update(editingProduct.id, productData).then(
                 () => {
-                    setMessage("Producto actualizado con éxito!");
+                    setMessage("¡Genial! El producto se ha actualizado correctamente.");
                     setShowModal(false);
                     setEditingProduct(null);
                     loadProducts();
@@ -153,7 +160,7 @@ const InventoryPage = () => {
         } else {
             ProductService.create(productData).then(
                 () => {
-                    setMessage("Producto creado con éxito!");
+                    setMessage("¡Listo! Nuevo producto añadido a tu inventario.");
                     setShowModal(false);
                     loadProducts();
                     resetForm();
@@ -178,7 +185,7 @@ const InventoryPage = () => {
                 () => {
                     loadProducts();
                 },
-                (error) => {
+                () => {
                     alert("Error al eliminar");
                 }
             );
@@ -194,7 +201,7 @@ const InventoryPage = () => {
             document.body.appendChild(link);
             link.click();
             link.remove();
-        }).catch(err => setMessage("Error exportando a Excel"));
+        }).catch(() => setMessage("Error exportando a Excel"));
     };
 
     const handleExportPdf = () => {
@@ -206,7 +213,7 @@ const InventoryPage = () => {
             document.body.appendChild(link);
             link.click();
             link.remove();
-        }).catch(err => setMessage("Error exportando a PDF"));
+        }).catch(() => setMessage("Error exportando a PDF"));
     };
 
     const handleImportExcel = (e) => {
@@ -218,10 +225,28 @@ const InventoryPage = () => {
             setMessage(response.data.join("\n"));
             loadProducts();
             e.target.value = null;
-        }).catch(err => {
+        }).catch(() => {
             setMessage("Error importando productos");
             e.target.value = null;
         });
+    };
+
+    const handleUploadImage = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        ProductService.uploadImage(file).then(
+            res => {
+                setImageUrl(res.data.message); // Should contain path like /api/products/images/filename.jpg
+                setIsUploading(false);
+            },
+            err => {
+                console.error("Upload failed", err);
+                alert("Error al subir la imagen");
+                setIsUploading(false);
+            }
+        );
     };
 
     // Predefined global categories
@@ -321,10 +346,10 @@ const InventoryPage = () => {
                                 <thead className="bg-light">
                                     <tr>
                                         <th className="border-0 text-secondary small text-uppercase ps-4">Producto</th>
-                                        <th className="border-0 text-secondary small text-uppercase">SKU / Variante</th>
+                                        <th className="border-0 text-secondary small text-uppercase">Código / Variante</th>
                                         <th className="border-0 text-secondary small text-uppercase">Categoría</th>
-                                        <th className="border-0 text-secondary small text-uppercase text-end">Precio</th>
-                                        <th className="border-0 text-secondary small text-uppercase text-center">Stock</th>
+                                        <th className="border-0 text-secondary small text-uppercase text-end">Precio al Público</th>
+                                        <th className="border-0 text-secondary small text-uppercase text-center">Unidades</th>
                                         <th className="border-0 text-secondary small text-uppercase text-center">Estado</th>
                                         <th className="border-0 text-secondary small text-uppercase text-end pe-4">Acciones</th>
                                     </tr>
@@ -336,7 +361,7 @@ const InventoryPage = () => {
                                                 <div className="d-flex align-items-center">
                                                     <div className="me-3 rounded bg-light d-flex align-items-center justify-content-center" style={{ width: 48, height: 48, overflow: 'hidden' }}>
                                                         {product.imageUrl ? (
-                                                            <Image src={product.imageUrl} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                            <Image src={getFullImageUrl(product.imageUrl)} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                         ) : (
                                                             <FaImage className="text-secondary opacity-50" />
                                                         )}
@@ -469,7 +494,7 @@ const InventoryPage = () => {
                                 <div className="col-md-6">
                                     <Form.Group className="mb-3">
                                         <Form.Label className="d-flex justify-content-between">
-                                            SKU (Código) <span className="text-danger">*</span>
+                                            Código de Barras / SKU <span className="text-danger">*</span>
                                             {isGeneratingSku && <span className="spinner-border spinner-border-sm text-primary"></span>}
                                         </Form.Label>
                                         <Form.Control
@@ -490,20 +515,20 @@ const InventoryPage = () => {
 
                                 <div className="col-md-4">
                                     <Form.Group className="mb-3">
-                                        <Form.Label>Stock Inicial</Form.Label>
-                                        <Form.Control type="number" required value={stock} onChange={(e) => setStock(e.target.value)} min="0" />
+                                        <Form.Label>Unidades en Existencia</Form.Label>
+                                        <Form.Control type="number" required value={stock} onChange={(e) => setStock(e.target.value)} min="0" placeholder="¿Cuántos tienes?" />
                                     </Form.Group>
                                 </div>
                                 <div className="col-md-4">
                                     <Form.Group className="mb-3">
-                                        <Form.Label>Precio Venta ($) <span className="text-danger">*</span></Form.Label>
-                                        <Form.Control type="number" step="0.01" required value={price} onChange={(e) => setPrice(e.target.value)} min="0" />
+                                        <Form.Label>Precio al Público ($) <span className="text-danger">*</span></Form.Label>
+                                        <Form.Control type="number" step="0.01" required value={price} onChange={(e) => setPrice(e.target.value)} min="0" placeholder="0.00" />
                                     </Form.Group>
                                 </div>
                                 <div className="col-md-4">
                                     <Form.Group className="mb-3">
-                                        <Form.Label>Costo Unitario ($) <small className="text-muted">(Opcional)</small></Form.Label>
-                                        <Form.Control type="number" step="0.01" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} min="0" placeholder="Para reportes" />
+                                        <Form.Label>Costo de Adquisición ($) <small className="text-muted">(Privado)</small></Form.Label>
+                                        <Form.Control type="number" step="0.01" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} min="0" placeholder="Solo para tus reportes" />
                                     </Form.Group>
                                 </div>
 
@@ -514,22 +539,35 @@ const InventoryPage = () => {
 
                                 <div className="col-12">
                                     <Form.Group className="mb-3">
-                                        <Form.Label>URL de la Imagen <small className="text-muted">(Pega un link de imagen)</small></Form.Label>
-                                        <div className="d-flex gap-3">
-                                            <Form.Control
-                                                type="url"
-                                                value={imageUrl}
-                                                onChange={(e) => setImageUrl(e.target.value)}
-                                                placeholder="https://ejemplo.com/imagen.jpg"
-                                            />
-                                            {imageUrl && (
-                                                <div className="border rounded d-flex align-items-center justify-content-center" style={{ width: 50, height: 38, flexShrink: 0, overflow: 'hidden' }}>
-                                                    <img src={imageUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => e.target.style.display = 'none'} />
-                                                </div>
-                                            )}
+                                        <Form.Label>Imagen del Producto</Form.Label>
+                                        <div className="d-flex flex-column gap-3">
+                                            {/* File Upload Option */}
+                                            <div className="d-flex align-items-center gap-2">
+                                                <label className={`btn ${isUploading ? 'btn-secondary' : 'btn-outline-primary'} mb-0`}>
+                                                    {isUploading ? <span className="spinner-border spinner-border-sm me-2"></span> : <FaUpload className="me-2" />}
+                                                    {isUploading ? 'Subiendo...' : 'Subir Archivo'}
+                                                    <input type="file" hidden accept="image/*" onChange={handleUploadImage} disabled={isUploading} />
+                                                </label>
+                                                <span className="text-muted small">o pega una URL abajo</span>
+                                            </div>
+
+                                            {/* URL Input Option */}
+                                            <div className="d-flex gap-3">
+                                                <Form.Control
+                                                    type="text"
+                                                    value={imageUrl}
+                                                    onChange={(e) => setImageUrl(e.target.value)}
+                                                    placeholder="https://ejemplo.com/imagen.jpg o ruta/interna"
+                                                />
+                                                {imageUrl && (
+                                                    <div className="border rounded d-flex align-items-center justify-content-center bg-light" style={{ width: 80, height: 45, flexShrink: 0, overflow: 'hidden' }}>
+                                                        <img src={getFullImageUrl(imageUrl)} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                         <Form.Text className="text-muted">
-                                            Recomendamos usar imágenes cuadradas (1:1).
+                                            Recomendamos usar imágenes cuadradas (1:1) de menos de 2MB.
                                         </Form.Text>
                                     </Form.Group>
                                 </div>

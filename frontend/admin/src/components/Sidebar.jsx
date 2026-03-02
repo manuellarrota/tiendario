@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { NavLink, Link, useNavigate } from 'react-router-dom';
+import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
 import { OverlayTrigger, Tooltip, Nav } from 'react-bootstrap';
 import {
     FaBars, FaTimes, FaChevronLeft, FaChevronRight, FaStore, FaChartLine,
@@ -11,9 +11,9 @@ import NotificationService from '../services/notification.service';
 
 const Sidebar = () => {
     const user = AuthService.getCurrentUser();
-    const isPremium = user?.subscriptionStatus === 'PAID' || user?.subscriptionStatus === 'TRIAL';
     const isSuperAdmin = user?.roles?.includes('ROLE_ADMIN');
     const navigate = useNavigate();
+    const location = useLocation();
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
 
@@ -47,6 +47,17 @@ const Sidebar = () => {
         }
     }, [user]);
 
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            const activeLink = document.querySelector('.sidebar-nav-link.active');
+            if (activeLink) {
+                // Mantener la altura del menu a la opcion seleccionada (centrado)
+                activeLink.scrollIntoView({ behavior: 'auto', block: 'center' });
+            }
+        }, 50);
+        return () => clearTimeout(timer);
+    }, [location.pathname]);
+
     const handleLogout = () => {
         AuthService.logout();
         navigate('/login');
@@ -59,38 +70,6 @@ const Sidebar = () => {
         const newState = !collapsed;
         setCollapsed(newState);
         localStorage.setItem('sidebar_collapsed', newState);
-    };
-
-    const NavItem = ({ to, icon: Icon, label, badge, description }) => {
-        const renderTooltip = (props) => (
-            <Tooltip id={`tooltip-${to}`} {...props}>
-                <div className="text-start">
-                    <div className="fw-bold mb-1">{label}</div>
-                    <div className="small opacity-75">{description}</div>
-                </div>
-            </Tooltip>
-        );
-
-        return (
-            <OverlayTrigger
-                placement="right"
-                delay={{ show: 400, hide: 100 }}
-                overlay={renderTooltip}
-            >
-                <NavLink
-                    to={to}
-                    className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''} ${collapsed ? 'justify-content-center px-0' : ''}`}
-                    onClick={(e) => {
-                        setIsOpen(false);
-                    }}
-                >
-                    <Icon className="nav-icon" style={{ marginRight: collapsed ? 0 : '12px', fontSize: collapsed ? '1.2rem' : 'inherit' }} />
-                    {!collapsed && <span className="flex-grow-1">{label}</span>}
-                    {!collapsed && badge > 0 && <span className="notification-count">{badge}</span>}
-                    {collapsed && badge > 0 && <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ transform: 'translate(-10px, 10px)' }}>•</span>}
-                </NavLink>
-            </OverlayTrigger>
-        );
     };
 
     const sidebarWidth = collapsed ? '80px' : '280px';
@@ -162,35 +141,33 @@ const Sidebar = () => {
                         {isSuperAdmin ? (
                             <>
                                 {!collapsed && <div className="nav-group-label">administración saas</div>}
-                                <NavItem to="/dashboard" icon={FaChartLine} label="Métricas Globales" description="Visualiza el estado de todo el ecosistema Tiendario." />
-                                <NavItem to="/admin/companies" icon={FaStore} label="Gestión de Empresas" description="Administra los comercios y sus suscripciones." />
-                                <NavItem to="/admin/catalog" icon={FaBox} label="Catálogo Global" description="Gestiona los registros maestros de productos unificados." />
-                                <NavItem to="/admin/payments" icon={FaMoneyBillWave} label="Validación de Pagos" description="Aprueba o rechaza los reportes de pago de los usuarios." />
-                                <NavItem to="/admin/users" icon={FaUsers} label="Gestión de Usuarios" description="Control total sobre los accesos de usuarios al sistema." />
-                                <NavItem to="/admin/config" icon={FaCog} label="Configuración SaaS" description="Ajusta precios, planes y mantenimiento del sistema." />
+                                <NavItem to="/dashboard" icon={FaChartLine} label="Métricas Globales" description="Visualiza el estado de todo el ecosistema Tiendario." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/admin/companies" icon={FaStore} label="Gestión de Empresas" description="Administra los comercios y sus suscripciones." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/admin/catalog" icon={FaBox} label="Catálogo Global" description="Gestiona los registros maestros de productos unificados." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/admin/payments" icon={FaMoneyBillWave} label="Validación de Pagos" description="Aprueba o rechaza los reportes de pago de los usuarios." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/admin/users" icon={FaUsers} label="Gestión de Usuarios" description="Control total sobre los accesos de usuarios al sistema." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/admin/config" icon={FaCog} label="Configuración SaaS" description="Ajusta precios, planes y mantenimiento del sistema." collapsed={collapsed} setIsOpen={setIsOpen} />
                             </>
                         ) : (
                             <>
-                                {!collapsed && <div className="nav-group-label">Panel Principal</div>}
-                                <NavItem to="/dashboard" icon={FaHome} label="Vistazo General" description="Resumen rápido de tus ventas y actividad reciente." />
-                                <NavItem to="/notifications" icon={FaBell} label="Notificaciones" badge={unreadCount} description="Novedades, pedidos nuevos y alertas de sistema." />
+                                {!collapsed && <div className="nav-group-label">Ventas y Operación</div>}
+                                <NavItem to="/dashboard" icon={FaHome} label="Resumen General" description="Resumen rápido de tus ventas y actividad reciente." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/pos" icon={FaShoppingBag} label="Punto de Venta" description="Realiza ventas rápidas en mostrador y genera tickets." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/inventory" icon={FaBox} label="Inventario" description="Controla stocks, precios, imágenes y exportación." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/sales/history" icon={FaHistory} label="Historial de Ventas" description="Monitorea el estado de tus ventas y pedidos pendientes." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/daily-closing" icon={FaCashRegister} label="Control de Caja" description="Arqueo diario y balance de ingresos en efectivo/digital." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/notifications" icon={FaBell} label="Notificaciones" badge={unreadCount} description="Novedades, pedidos nuevos y alertas de sistema." collapsed={collapsed} setIsOpen={setIsOpen} />
 
-                                {!collapsed && <div className="nav-group-label">Operación Diaria</div>}
-                                <NavItem to="/pos" icon={FaShoppingBag} label="Punto de Venta (POS)" description="Realiza ventas rápidas en mostrador y genera tickets." />
-                                <NavItem to="/daily-closing" icon={FaCashRegister} label="Control de Caja" description="Arqueo diario y balance de ingresos en efectivo/digital." />
-                                <NavItem to="/inventory" icon={FaBox} label="Inventario de Productos" description="Controla stocks, precios, imágenes y exportación." />
-                                <NavItem to="/categories" icon={FaTags} label="Categorías" description="Organiza tus productos para buscarlos más rápido." />
+                                {!collapsed && <div className="nav-group-label">Catálogo y Compras</div>}
+                                <NavItem to="/purchases/new" icon={FaTruck} label="Comprar Mercancía" description="Registra compras a proveedores y suma al stock." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/purchases/history" icon={FaHistory} label="Historial de Compras" description="Revisa cuándo y a cuánto compraste tus productos." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/categories" icon={FaTags} label="Categorías" description="Organiza tus productos para buscarlos más rápido." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/suppliers" icon={FaUsers} label="Proveedores" description="Guarda los datos de contacto de quienes te surten." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/customers" icon={FaUsers} label="Clientes" description="Directorio y base de datos de tus clientes" collapsed={collapsed} setIsOpen={setIsOpen} />
 
-                                {!collapsed && <div className="nav-group-label">Logística y CRM</div>}
-                                <NavItem to="/purchases/new" icon={FaHistory} label="Entrada de Mercancía" description="Registra compras a proveedores y suma al stock." />
-                                <NavItem to="/purchases/history" icon={FaHistory} label="Historial de Compras" description="Revisa cuándo y a cuánto compraste tus productos." />
-                                <NavItem to="/suppliers" icon={FaTruck} label="Proveedores" description="Guarda los datos de contacto de quienes te surten." />
-
-
-                                {!collapsed && <div className="nav-group-label">Configuración y Auditoría</div>}
-                                <NavItem to="/sales/history" icon={FaHistory} label="Seguimiento de Pedidos" description="Monitorea el estado de tus ventas y pedidos pendientes." />
-                                <NavItem to="/reports" icon={FaChartLine} label="Reportes" description="Analítica avanzada, productos más vendidos y ganancias." />
-                                <NavItem to="/company" icon={FaCog} label="Ajustes de Tienda" description="Configura los detalles de tu negocio y membresía." />
+                                {!collapsed && <div className="nav-group-label">Administración</div>}
+                                <NavItem to="/reports" icon={FaChartLine} label="Reportes" description="Analítica avanzada, productos más vendidos y ganancias." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/company" icon={FaCog} label="Ajustes de Tienda" description="Configura los detalles de tu negocio." collapsed={collapsed} setIsOpen={setIsOpen} />
                             </>
                         )}
                     </div>
@@ -204,6 +181,39 @@ const Sidebar = () => {
                 </div>
             </div>
         </>
+    );
+};
+
+// eslint-disable-next-line no-unused-vars
+const NavItem = ({ to, icon: Icon, label, badge, description, collapsed, setIsOpen }) => {
+    const renderTooltip = (props) => (
+        <Tooltip id={`tooltip-${to}`} {...props}>
+            <div className="text-start">
+                <div className="fw-bold mb-1">{label}</div>
+                <div className="small opacity-75">{description}</div>
+            </div>
+        </Tooltip>
+    );
+
+    return (
+        <OverlayTrigger
+            placement="right"
+            delay={{ show: 400, hide: 100 }}
+            overlay={renderTooltip}
+        >
+            <NavLink
+                to={to}
+                className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''} ${collapsed ? 'justify-content-center px-0' : ''}`}
+                onClick={() => {
+                    setIsOpen(false);
+                }}
+            >
+                <Icon className="nav-icon" style={{ marginRight: collapsed ? 0 : '12px', fontSize: collapsed ? '1.2rem' : 'inherit' }} />
+                {!collapsed && <span className="flex-grow-1">{label}</span>}
+                {!collapsed && badge > 0 && <span className="notification-count">{badge}</span>}
+                {collapsed && badge > 0 && <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ transform: 'translate(-10px, 10px)' }}>•</span>}
+            </NavLink>
+        </OverlayTrigger>
     );
 };
 

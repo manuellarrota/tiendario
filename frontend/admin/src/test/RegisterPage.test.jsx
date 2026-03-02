@@ -39,9 +39,10 @@ describe('RegisterPage', () => {
     it('should render registration form', () => {
         renderRegisterPage();
 
-        expect(screen.getByText('Crear Tienda')).toBeInTheDocument();
+        expect(screen.getByText('Registrar Nueva Tienda')).toBeInTheDocument();
         expect(screen.getByLabelText(/nombre de tu empresa/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/usuario \(admin\)/i)).toBeInTheDocument();
+        expect(screen.getByLabelText(/correo electrónico/i)).toBeInTheDocument();
         expect(screen.getByLabelText(/contraseña/i)).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /registrar empresa/i })).toBeInTheDocument();
     });
@@ -59,15 +60,21 @@ describe('RegisterPage', () => {
 
         const companyInput = screen.getByLabelText(/nombre de tu empresa/i);
         const usernameInput = screen.getByLabelText(/usuario \(admin\)/i);
+        const emailInput = screen.getByLabelText(/correo electrónico/i);
         const passwordInput = screen.getByLabelText(/contraseña/i);
+        const phoneInput = screen.getByLabelText(/teléfono de contacto/i);
 
         await user.type(companyInput, 'Mi Tienda');
         await user.type(usernameInput, 'miusuario');
+        await user.type(emailInput, 'user@example.com');
         await user.type(passwordInput, 'password123');
+        await user.type(phoneInput, '1234567890');
 
         expect(companyInput).toHaveValue('Mi Tienda');
         expect(usernameInput).toHaveValue('miusuario');
+        expect(emailInput).toHaveValue('user@example.com');
         expect(passwordInput).toHaveValue('password123');
+        expect(phoneInput).toHaveValue('1234567890');
     });
 
     it('should call register service on form submit', async () => {
@@ -77,15 +84,19 @@ describe('RegisterPage', () => {
 
         await user.type(screen.getByLabelText(/nombre de tu empresa/i), 'Mi Tienda');
         await user.type(screen.getByLabelText(/usuario \(admin\)/i), 'miusuario');
+        await user.type(screen.getByLabelText(/correo electrónico/i), 'user@example.com');
         await user.type(screen.getByLabelText(/contraseña/i), 'password123');
+        await user.type(screen.getByLabelText(/teléfono de contacto/i), '1234567890');
         await user.click(screen.getByRole('button', { name: /registrar empresa/i }));
 
         await waitFor(() => {
             expect(AuthService.register).toHaveBeenCalledWith(
                 'miusuario',
+                'user@example.com',
                 'password123',
                 'manager',
-                'Mi Tienda'
+                'Mi Tienda',
+                '1234567890'
             );
         });
     });
@@ -97,7 +108,9 @@ describe('RegisterPage', () => {
 
         await user.type(screen.getByLabelText(/nombre de tu empresa/i), 'Mi Tienda');
         await user.type(screen.getByLabelText(/usuario \(admin\)/i), 'miusuario');
+        await user.type(screen.getByLabelText(/correo electrónico/i), 'user@example.com');
         await user.type(screen.getByLabelText(/contraseña/i), 'password123');
+        await user.type(screen.getByLabelText(/teléfono de contacto/i), '1234567890');
         await user.click(screen.getByRole('button', { name: /registrar empresa/i }));
 
         await waitFor(() => {
@@ -114,7 +127,9 @@ describe('RegisterPage', () => {
 
         await user.type(screen.getByLabelText(/nombre de tu empresa/i), 'Mi Tienda');
         await user.type(screen.getByLabelText(/usuario \(admin\)/i), 'existinguser');
+        await user.type(screen.getByLabelText(/correo electrónico/i), 'user@example.com');
         await user.type(screen.getByLabelText(/contraseña/i), 'password123');
+        await user.type(screen.getByLabelText(/teléfono de contacto/i), '1234567890');
         await user.click(screen.getByRole('button', { name: /registrar empresa/i }));
 
         await waitFor(() => {
@@ -128,6 +143,6 @@ describe('RegisterPage', () => {
 
         await user.click(screen.getByText(/inicia sesión/i));
 
-        expect(mockNavigate).toHaveBeenCalledWith('/login');
+        expect(mockNavigate).toHaveBeenCalledWith('/');
     });
 });

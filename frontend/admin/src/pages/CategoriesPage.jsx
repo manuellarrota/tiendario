@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Table, Button, Modal, Form, Alert, Card, Badge } from 'react-bootstrap';
+import { Container, Table, Button, Modal, Form, Alert, Card, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaPlus, FaTags, FaTrash } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import CategoryService from '../services/category.service';
@@ -11,16 +11,16 @@ const CategoriesPage = () => {
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
 
-    useEffect(() => {
-        loadCategories();
-    }, []);
-
     const loadCategories = () => {
         CategoryService.getAll().then(
             (res) => setCategories(res.data),
             (err) => console.error('Error loading categories', err)
         );
     };
+
+    useEffect(() => {
+        loadCategories();
+    }, []);
 
     const handleCreate = (e) => {
         e.preventDefault();
@@ -33,7 +33,7 @@ const CategoriesPage = () => {
                 setDescription('');
                 setTimeout(() => setMessage(''), 3000);
             },
-            (error) => {
+            () => {
                 setMessage('❌ Error creando categoría');
                 setTimeout(() => setMessage(''), 3000);
             }
@@ -48,7 +48,7 @@ const CategoriesPage = () => {
                     loadCategories();
                     setTimeout(() => setMessage(''), 3000);
                 },
-                (error) => {
+                () => {
                     setMessage('❌ Error eliminando categoría');
                     setTimeout(() => setMessage(''), 3000);
                 }
@@ -102,13 +102,15 @@ const CategoriesPage = () => {
                                                 </td>
                                                 <td className="text-muted">{cat.description || '-'}</td>
                                                 <td className="text-end">
-                                                    <Button
-                                                        variant="outline-danger"
-                                                        size="sm"
-                                                        onClick={() => handleDelete(cat.id)}
-                                                    >
-                                                        <FaTrash />
-                                                    </Button>
+                                                    <OverlayTrigger overlay={<Tooltip>Eliminar Categoría</Tooltip>}>
+                                                        <Button
+                                                            variant="outline-danger"
+                                                            size="sm"
+                                                            onClick={() => handleDelete(cat.id)}
+                                                        >
+                                                            <FaTrash />
+                                                        </Button>
+                                                    </OverlayTrigger>
                                                 </td>
                                             </tr>
                                         ))}

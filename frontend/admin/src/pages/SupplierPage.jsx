@@ -13,11 +13,11 @@ const SupplierPage = () => {
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
 
-    useEffect(() => { loadSuppliers(); }, []);
-
     const loadSuppliers = () => {
         SupplierService.getAll().then(res => setSuppliers(res.data), err => console.error(err));
     };
+
+    useEffect(() => { loadSuppliers(); }, []);
 
     const handleCreate = (e) => {
         e.preventDefault();
@@ -29,7 +29,7 @@ const SupplierPage = () => {
                 setName(""); setEmail(""); setPhone("");
                 setTimeout(() => setMessage(""), 3000);
             },
-            (error) => setMessage("Error creando proveedor")
+            () => setMessage("Error creando proveedor")
         );
     };
 

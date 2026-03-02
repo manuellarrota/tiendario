@@ -30,6 +30,39 @@ public class CompanyController {
                 return ResponseEntity.ok(company);
         }
 
+        @PutMapping("/profile")
+        @PreAuthorize("hasRole('MANAGER')")
+        public ResponseEntity<?> updateCompanyProfile(@RequestBody Company profileUpdate) {
+                UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
+                                .getPrincipal();
+
+                Company company = companyRepository.findById(userDetails.getCompanyId())
+                                .orElseThrow(() -> new RuntimeException("Error: Company not found."));
+
+                // Update allowed fields only
+                if (profileUpdate.getName() != null && !profileUpdate.getName().isBlank()) {
+                        company.setName(profileUpdate.getName());
+                }
+                if (profileUpdate.getDescription() != null) {
+                        company.setDescription(profileUpdate.getDescription());
+                }
+                if (profileUpdate.getPhoneNumber() != null) {
+                        company.setPhoneNumber(profileUpdate.getPhoneNumber());
+                }
+                if (profileUpdate.getImageUrl() != null) {
+                        company.setImageUrl(profileUpdate.getImageUrl());
+                }
+                if (profileUpdate.getLatitude() != null) {
+                        company.setLatitude(profileUpdate.getLatitude());
+                }
+                if (profileUpdate.getLongitude() != null) {
+                        company.setLongitude(profileUpdate.getLongitude());
+                }
+
+                companyRepository.save(company);
+                return ResponseEntity.ok(company);
+        }
+
         @Autowired
         com.tiendario.service.ProductIndexService productIndexService;
 

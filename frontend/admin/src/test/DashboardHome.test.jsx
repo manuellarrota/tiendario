@@ -173,8 +173,8 @@ describe('DashboardHome', () => {
 
     describe('Error Handling', () => {
         it('should display error message on API failure', async () => {
-            AuthService.getCurrentUser.mockReturnValue(mockManagerUser);
-            DashboardService.getSummary.mockRejectedValue(new Error('API Error'));
+            AuthService.getCurrentUser.mockReturnValue({ ...mockManagerUser, subscriptionStatus: 'PAID' });
+            DashboardService.getSummary.mockRejectedValue({ response: { status: 500 } });
 
             renderDashboardHome();
 

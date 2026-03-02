@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Card, Row, Col, Badge, Button, Form, Modal, Table, Alert, Spinner } from 'react-bootstrap';
-import { FaBuilding, FaCrown, FaCheckCircle, FaExclamationTriangle, FaHistory, FaFileUpload, FaInfoCircle } from 'react-icons/fa';
+import { FaBuilding, FaCrown, FaCheckCircle, FaExclamationTriangle, FaHistory, FaFileUpload, FaInfoCircle, FaEdit, FaSave, FaTimes, FaPhone, FaMapMarkerAlt, FaImage } from 'react-icons/fa';
 import CompanyService from '../services/company.service';
 import PaymentService from '../services/payment.service';
 
@@ -13,6 +13,9 @@ const CompanyPage = () => {
     const [error, setError] = useState('');
     const [showModal, setShowModal] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [editing, setEditing] = useState(false);
+    const [editForm, setEditForm] = useState({});
+    const [saveSuccess, setSaveSuccess] = useState('');
 
     // Form states
     const [paymentForm, setPaymentForm] = useState({
@@ -40,6 +43,53 @@ const CompanyPage = () => {
             setError("No se pudieron cargar los datos de la empresa.");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const startEditing = () => {
+        setEditForm({
+            name: company?.name || '',
+            description: company?.description || '',
+            phoneNumber: company?.phoneNumber || '',
+            imageUrl: company?.imageUrl || '',
+            latitude: company?.latitude || '',
+            longitude: company?.longitude || ''
+        });
+        setEditing(true);
+        setSaveSuccess('');
+    };
+
+    const cancelEditing = () => {
+        setEditing(false);
+        setEditForm({});
+        setSaveSuccess('');
+    };
+
+    const handleEditChange = (e) => {
+        const { name, value } = e.target;
+        setEditForm(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSaveProfile = async (e) => {
+        e.preventDefault();
+        setSubmitting(true);
+        setSaveSuccess('');
+        try {
+            const payload = {
+                ...editForm,
+                latitude: editForm.latitude ? parseFloat(editForm.latitude) : null,
+                longitude: editForm.longitude ? parseFloat(editForm.longitude) : null
+            };
+            const res = await CompanyService.updateProfile(payload);
+            setCompany(res.data);
+            setEditing(false);
+            setSaveSuccess('¡Perfil actualizado exitosamente!');
+            setTimeout(() => setSaveSuccess(''), 4000);
+        } catch (err) {
+            console.error("Error updating profile", err);
+            setError("Error al actualizar el perfil. Intenta de nuevo.");
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -101,52 +151,176 @@ const CompanyPage = () => {
                 <Container fluid className="py-4 px-4 bg-light min-vh-100">
                     <Row className="mb-4">
                         <Col>
-                            <h2 className="d-flex align-items-center text-dark">
-                                <FaBuilding className="me-3 text-primary" />
-                                Perfil de Empresa
-                            </h2>
-                            <p className="text-muted">Gestiona tu suscripción y detalles del comercio.</p>
+                            <div className="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h2 className="d-flex align-items-center text-dark">
+                                        <FaBuilding className="me-3 text-primary" />
+                                        Perfil de Empresa
+                                    </h2>
+                                    <p className="text-muted">Gestiona tu suscripción y detalles del comercio.</p>
+                                </div>
+                                {!editing && (
+                                    <Button variant="outline-primary" className="rounded-pill px-4" onClick={startEditing}>
+                                        <FaEdit className="me-2" /> Editar Perfil
+                                    </Button>
+                                )}
+                            </div>
                         </Col>
                     </Row>
 
-                    {error && <Alert variant="danger">{error}</Alert>}
+                    {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
+                    {saveSuccess && <Alert variant="success" dismissible onClose={() => setSaveSuccess('')}>{saveSuccess}</Alert>}
 
                     <Row>
                         <Col lg={4}>
                             <Card className="border-0 shadow-sm rounded-4 mb-4">
                                 <Card.Body className="p-4">
                                     <h5 className="fw-bold mb-4">Información General</h5>
-                                    <div className="mb-3">
-                                        <label className="text-muted small d-block">NOMBRE COMERCIAL</label>
-                                        <span className="fs-5 fw-bold">{company?.name}</span>
-                                    </div>
-                                    <div className="mb-3">
-                                        <label className="text-muted small d-block">ID DE TIENDA</label>
-                                        <span className="text-muted">#{company?.id}</span>
-                                    </div>
-                                    <hr className="my-4" />
-                                    <h5 className="fw-bold mb-3">Estado de Suscripción</h5>
-                                    <div className="mb-4">
-                                        {getStatusBadge(company?.subscriptionStatus)}
-                                    </div>
 
-                                    {company?.subscriptionEndDate && (
-                                        <div className="mb-3 p-3 bg-light rounded-3">
-                                            <label className="text-muted small d-block">VENCIMIENTO</label>
-                                            <span className="fw-bold">
-                                                {new Date(company.subscriptionEndDate).toLocaleDateString()}
-                                            </span>
-                                        </div>
+                                    {editing ? (
+                                        <Form onSubmit={handleSaveProfile}>
+                                            <Form.Group className="mb-3">
+                                                <Form.Label className="text-muted small d-block">NOMBRE COMERCIAL</Form.Label>
+                                                <Form.Control
+                                                    type="text"
+                                                    name="name"
+                                                    value={editForm.name}
+                                                    onChange={handleEditChange}
+                                                    required
+                                                    className="py-2"
+                                                />
+                                            </Form.Group>
+                                            <Form.Group className="mb-3">
+                                                <Form.Label className="text-muted small d-block">
+                                                    <FaPhone className="me-1" /> TELÉFONO
+                                                </Form.Label>
+                                                <Form.Control
+                                                    type="text"
+                                                    name="phoneNumber"
+                                                    value={editForm.phoneNumber}
+                                                    onChange={handleEditChange}
+                                                    placeholder="Ej: +58 412-1234567"
+                                                    className="py-2"
+                                                />
+                                            </Form.Group>
+                                            <Form.Group className="mb-3">
+                                                <Form.Label className="text-muted small d-block">DESCRIPCIÓN</Form.Label>
+                                                <Form.Control
+                                                    as="textarea"
+                                                    rows={3}
+                                                    name="description"
+                                                    value={editForm.description}
+                                                    onChange={handleEditChange}
+                                                    placeholder="Describe tu negocio para los clientes..."
+                                                    className="py-2"
+                                                />
+                                            </Form.Group>
+                                            <Form.Group className="mb-3">
+                                                <Form.Label className="text-muted small d-block">
+                                                    <FaImage className="me-1" /> IMAGEN (URL)
+                                                </Form.Label>
+                                                <Form.Control
+                                                    type="url"
+                                                    name="imageUrl"
+                                                    value={editForm.imageUrl}
+                                                    onChange={handleEditChange}
+                                                    placeholder="https://ejemplo.com/logo.png"
+                                                    className="py-2"
+                                                />
+                                            </Form.Group>
+                                            <Row>
+                                                <Col>
+                                                    <Form.Group className="mb-3">
+                                                        <Form.Label className="text-muted small d-block">
+                                                            <FaMapMarkerAlt className="me-1" /> LATITUD
+                                                        </Form.Label>
+                                                        <Form.Control
+                                                            type="number"
+                                                            step="any"
+                                                            name="latitude"
+                                                            value={editForm.latitude}
+                                                            onChange={handleEditChange}
+                                                            placeholder="Ej: 10.4806"
+                                                            className="py-2"
+                                                        />
+                                                    </Form.Group>
+                                                </Col>
+                                                <Col>
+                                                    <Form.Group className="mb-3">
+                                                        <Form.Label className="text-muted small d-block">LONGITUD</Form.Label>
+                                                        <Form.Control
+                                                            type="number"
+                                                            step="any"
+                                                            name="longitude"
+                                                            value={editForm.longitude}
+                                                            onChange={handleEditChange}
+                                                            placeholder="Ej: -66.9036"
+                                                            className="py-2"
+                                                        />
+                                                    </Form.Group>
+                                                </Col>
+                                            </Row>
+                                            <div className="d-flex gap-2 mt-3">
+                                                <Button variant="primary" type="submit" className="flex-grow-1 rounded-pill fw-bold py-2" disabled={submitting}>
+                                                    {submitting ? <Spinner size="sm" animation="border" /> : <><FaSave className="me-2" /> Guardar Cambios</>}
+                                                </Button>
+                                                <Button variant="outline-secondary" className="rounded-pill px-3" onClick={cancelEditing} disabled={submitting}>
+                                                    <FaTimes />
+                                                </Button>
+                                            </div>
+                                        </Form>
+                                    ) : (
+                                        <>
+                                            <div className="mb-3">
+                                                <label className="text-muted small d-block">NOMBRE COMERCIAL</label>
+                                                <span className="fs-5 fw-bold">{company?.name}</span>
+                                            </div>
+                                            {company?.phoneNumber && (
+                                                <div className="mb-3">
+                                                    <label className="text-muted small d-block"><FaPhone className="me-1" /> TELÉFONO</label>
+                                                    <span>{company.phoneNumber}</span>
+                                                </div>
+                                            )}
+                                            {company?.description && (
+                                                <div className="mb-3">
+                                                    <label className="text-muted small d-block">DESCRIPCIÓN</label>
+                                                    <span className="text-muted">{company.description}</span>
+                                                </div>
+                                            )}
+                                            <div className="mb-3">
+                                                <label className="text-muted small d-block">ID DE TIENDA</label>
+                                                <span className="text-muted">#{company?.id}</span>
+                                            </div>
+                                        </>
                                     )}
 
-                                    {company?.subscriptionStatus !== 'PAID' && (
-                                        <Button
-                                            variant="primary"
-                                            className="w-100 py-3 rounded-pill fw-bold"
-                                            onClick={() => setShowModal(true)}
-                                        >
-                                            <FaCrown className="me-2" /> Subir a Premium
-                                        </Button>
+                                    {!editing && (
+                                        <>
+                                            <hr className="my-4" />
+                                            <h5 className="fw-bold mb-3">Estado de Suscripción</h5>
+                                            <div className="mb-4">
+                                                {getStatusBadge(company?.subscriptionStatus)}
+                                            </div>
+
+                                            {company?.subscriptionEndDate && (
+                                                <div className="mb-3 p-3 bg-light rounded-3">
+                                                    <label className="text-muted small d-block">VENCIMIENTO</label>
+                                                    <span className="fw-bold">
+                                                        {new Date(company.subscriptionEndDate).toLocaleDateString()}
+                                                    </span>
+                                                </div>
+                                            )}
+
+                                            {company?.subscriptionStatus !== 'PAID' && (
+                                                <Button
+                                                    variant="primary"
+                                                    className="w-100 py-3 rounded-pill fw-bold"
+                                                    onClick={() => setShowModal(true)}
+                                                >
+                                                    <FaCrown className="me-2" /> Subir a Premium
+                                                </Button>
+                                            )}
+                                        </>
                                     )}
                                 </Card.Body>
                             </Card>

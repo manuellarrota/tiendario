@@ -41,17 +41,6 @@ const DashboardHome = () => {
 
     const isBlocked = user?.subscriptionStatus === 'PAST_DUE' || user?.subscriptionStatus === 'SUSPENDED' || isTrialExpired;
 
-    useEffect(() => {
-        loadData();
-
-        // 30 Seconds Polling for live updates
-        const interval = setInterval(() => {
-            loadData(true); // silent refresh
-        }, 30000);
-
-        return () => clearInterval(interval);
-    }, [isSuperAdmin, isBlocked]);
-
     const loadData = (silent = false) => {
         if (!silent) setLoading(true);
 
@@ -88,11 +77,23 @@ const DashboardHome = () => {
         }
     };
 
+    useEffect(() => {
+        loadData();
+
+        // 30 Seconds Polling for live updates
+        const interval = setInterval(() => {
+            loadData(true); // silent refresh
+        }, 30000);
+
+        return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isSuperAdmin, isBlocked]);
+
     const handleSubscriptionChange = (type) => {
         if (type === 'upgrade' || type === 'trial') {
             setProcessingPayment(true);
             PaymentService.simulateSuccess().then(
-                (res) => {
+                () => {
                     const nextStatus = type === 'trial' ? 'TRIAL' : 'PAID';
                     const updatedUser = { ...user, subscriptionStatus: nextStatus };
                     localStorage.setItem("user", JSON.stringify(updatedUser)); // Immediate feedback
@@ -117,7 +118,7 @@ const DashboardHome = () => {
                     localStorage.setItem("user", JSON.stringify(updatedUser));
                     window.location.reload();
                 },
-                (err) => setError("Error al cambiar plan.")
+                () => setError("Error al cambiar plan.")
             );
         }
     };
@@ -127,7 +128,7 @@ const DashboardHome = () => {
         setPaymentStatus({ loading: true, success: false, error: '' });
 
         PaymentService.submitPayment(paymentForm).then(
-            (res) => {
+            () => {
                 setPaymentStatus({ loading: false, success: true, error: '' });
                 setTimeout(() => {
                     setShowPaymentModal(false);
@@ -141,7 +142,7 @@ const DashboardHome = () => {
     };
 
     const renderTooltip = (props, text) => (
-        <Tooltip id={`tooltip-${Math.random()}`} {...props}>
+        <Tooltip id={`tooltip-${text?.toString().replace(/\s+/g, '-').toLowerCase()}`} {...props}>
             {text}
         </Tooltip>
     );
@@ -635,7 +636,7 @@ const DashboardHome = () => {
 };
 
 // Simple Layout wrapper for consistency
-const Layout = ({ children, isSuperAdmin, isBlocked }) => (
+const Layout = ({ children }) => (
     <div className="d-flex admin-layout">
         <Sidebar />
         <main className="flex-grow-1 p-3 p-md-4 pt-5 pt-md-4 mt-4 mt-md-0" style={{ background: '#f8fafc', minHeight: '100vh', overflowX: 'hidden' }}>

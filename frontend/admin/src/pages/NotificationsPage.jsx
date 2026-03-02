@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Card, ListGroup, Button, Badge, Modal, Row, Col, Form } from 'react-bootstrap';
+import { Container, Card, ListGroup, Button, Badge, Modal, Row, Col, Form, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaBell, FaCheck, FaEye, FaUser, FaPhoneAlt, FaMapMarkerAlt, FaClock, FaCheckCircle, FaTrash } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import NotificationService from '../services/notification.service';
@@ -10,15 +10,9 @@ const NotificationsPage = () => {
     const [loading, setLoading] = useState(true);
     const [selectedSale, setSelectedSale] = useState(null);
     const [showSaleModal, setShowSaleModal] = useState(false);
-    const [saleLoading, setSaleLoading] = useState(false);
-
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('CASH');
     const [saleToPay, setSaleToPay] = useState(null);
-
-    useEffect(() => {
-        loadNotifications();
-    }, []);
 
     const loadNotifications = () => {
         NotificationService.getNotifications().then(
@@ -26,12 +20,15 @@ const NotificationsPage = () => {
                 setNotifications(res.data);
                 setLoading(false);
             },
-            err => {
-                console.error(err);
+            () => {
                 setLoading(false);
             }
         );
     };
+
+    useEffect(() => {
+        loadNotifications();
+    }, []);
 
     const markAsRead = (id) => {
         NotificationService.markAsRead(id).then(() => {
@@ -41,20 +38,17 @@ const NotificationsPage = () => {
 
     const handleViewDetails = (notif) => {
         if (notif.type === 'SALE' && notif.referenceId) {
-            setSaleLoading(true);
             SaleService.getSaleById(notif.referenceId).then(
                 res => {
                     setSelectedSale(res.data);
                     setShowSaleModal(true);
-                    setSaleLoading(false);
                     // Mark as read automatically when opened
                     if (!notif.readStatus) {
                         markAsRead(notif.id);
                     }
                 },
-                err => {
+                () => {
                     alert("Error al cargar los detalles de la venta.");
-                    setSaleLoading(false);
                 }
             );
         } else {
@@ -71,9 +65,7 @@ const NotificationsPage = () => {
             return;
         }
 
-        if (window.confirm(`¿Seguro que quieres cambiar el estado a ${status}?`)) {
-            performStatusUpdate(id, status);
-        }
+        performStatusUpdate(id, status);
     };
 
     const confirmPayment = () => {
@@ -92,7 +84,7 @@ const NotificationsPage = () => {
                     setSelectedSale(prev => ({ ...prev, status: status, paymentMethod: method || prev.paymentMethod }));
                 }
             },
-            (error) => alert("Error al actualizar estado")
+            () => alert("Error al actualizar estado")
         );
     };
 
@@ -144,7 +136,7 @@ const NotificationsPage = () => {
                                                 <p className="mb-1 text-secondary">{notif.message}</p>
                                                 <div className="d-flex align-items-center gap-2">
                                                     <small className="text-muted">
-                                                        {new Date(notif.createdAt).toLocaleString()}
+                                                        {new Date(notif.createdAt).toLocaleString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
                                                     </small>
                                                     {notif.type === 'SALE' && <Badge bg="info" size="sm">Pedido</Badge>}
                                                 </div>
@@ -155,14 +147,16 @@ const NotificationsPage = () => {
                                                 </Button>
                                             ) : (
                                                 !notif.readStatus && (
-                                                    <Button
-                                                        variant="light"
-                                                        size="sm"
-                                                        className="rounded-circle"
-                                                        onClick={(e) => { e.stopPropagation(); markAsRead(notif.id); }}
-                                                    >
-                                                        <FaCheck className="text-success" />
-                                                    </Button>
+                                                    <OverlayTrigger overlay={<Tooltip>Marcar como leída</Tooltip>}>
+                                                        <Button
+                                                            variant="light"
+                                                            size="sm"
+                                                            className="rounded-circle"
+                                                            onClick={(e) => { e.stopPropagation(); markAsRead(notif.id); }}
+                                                        >
+                                                            <FaCheck className="text-success" />
+                                                        </Button>
+                                                    </OverlayTrigger>
                                                 )
                                             )}
                                         </div>
@@ -194,7 +188,7 @@ const NotificationsPage = () => {
                                 <h6 className="text-uppercase fw-bold text-muted small mb-3">Resumen del Pedido</h6>
                                 <div className="bg-light p-3 rounded-4 mb-4">
                                     <p className="mb-2"><strong>Estado Actual:</strong> {getStatusBadge(selectedSale.status)}</p>
-                                    <p className="mb-2"><strong>Fecha:</strong> {new Date(selectedSale.date).toLocaleString()}</p>
+                                    <p className="mb-2"><strong>Fecha:</strong> {new Date(selectedSale.date).toLocaleString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}</p>
                                     <h4 className="fw-bold text-success mb-0 mt-3">Total: ${selectedSale.totalAmount?.toLocaleString()}</h4>
                                 </div>
                             </Col>

@@ -13,14 +13,6 @@ const PurchaseHistoryPage = () => {
     const [filterDateFrom, setFilterDateFrom] = useState('');
     const [filterDateTo, setFilterDateTo] = useState('');
 
-    useEffect(() => {
-        loadPurchases();
-    }, []);
-
-    useEffect(() => {
-        applyFilters();
-    }, [purchases, filterSupplier, filterDateFrom, filterDateTo]);
-
     const loadPurchases = () => {
         PurchaseService.getAll().then(
             (response) => {
@@ -34,7 +26,7 @@ const PurchaseHistoryPage = () => {
         );
     };
 
-    const applyFilters = () => {
+    const applyFilters = React.useCallback(() => {
         let filtered = [...purchases];
 
         if (filterSupplier) {
@@ -58,7 +50,15 @@ const PurchaseHistoryPage = () => {
         }
 
         setFilteredPurchases(filtered);
-    };
+    }, [purchases, filterSupplier, filterDateFrom, filterDateTo]);
+
+    useEffect(() => {
+        loadPurchases();
+    }, []);
+
+    useEffect(() => {
+        applyFilters();
+    }, [applyFilters]);
 
     const toggleExpand = (id) => {
         setExpandedId(expandedId === id ? null : id);
@@ -84,7 +84,7 @@ const PurchaseHistoryPage = () => {
                         <Card.Body>
                             <h5 className="mb-3"><FaCalendarAlt className="me-2" />Filtros</h5>
                             <Row>
-                                <Col md={4}>
+                                <Col md={3}>
                                     <Form.Group className="mb-3">
                                         <Form.Label>Proveedor</Form.Label>
                                         <Form.Control
@@ -115,11 +115,18 @@ const PurchaseHistoryPage = () => {
                                         />
                                     </Form.Group>
                                 </Col>
-                                <Col md={2} className="d-flex align-items-end">
+                                <Col md={3} className="d-flex align-items-end gap-2">
+                                    <Button
+                                        variant="primary"
+                                        className="mb-3 w-100"
+                                        onClick={applyFilters}
+                                    >
+                                        Buscar
+                                    </Button>
                                     <Button
                                         variant="outline-secondary"
                                         className="mb-3 w-100"
-                                        onClick={clearFilters}
+                                        onClick={() => { clearFilters(); setFilteredPurchases(purchases); }}
                                     >
                                         Limpiar
                                     </Button>
@@ -167,7 +174,8 @@ const PurchaseHistoryPage = () => {
                                                                 month: 'short',
                                                                 day: 'numeric',
                                                                 hour: '2-digit',
-                                                                minute: '2-digit'
+                                                                minute: '2-digit',
+                                                                hour12: true
                                                             })}
                                                         </small>
                                                     </td>
@@ -205,7 +213,7 @@ const PurchaseHistoryPage = () => {
                                                                         <tr>
                                                                             <th>Producto</th>
                                                                             <th className="text-center">Cantidad</th>
-                                                                            <th className="text-end">Costo Unitario</th>
+                                                                            <th className="text-end">Costo de Adquisición</th>
                                                                             <th className="text-end">Subtotal</th>
                                                                         </tr>
                                                                     </thead>

@@ -9,9 +9,11 @@ import org.springframework.context.annotation.FilterType;
 import com.tiendario.repository.search.ProductSearchRepository;
 
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 @SpringBootApplication
 @EnableScheduling
+@EnableAsync
 @EnableJpaRepositories(basePackages = "com.tiendario.repository", excludeFilters = @ComponentScan.Filter(type = FilterType.ASSIGNABLE_TYPE, value = ProductSearchRepository.class))
 public class TiendarioApplication {
 

@@ -60,6 +60,7 @@ public class AuthControllerTest {
         // Create a test user
         testUser = new User();
         testUser.setUsername("testuser");
+        testUser.setEmail("testuser@tiendario.com");
         testUser.setPassword(passwordEncoder.encode("password123"));
         testUser.setRole(Role.ROLE_MANAGER);
         testUser.setCompany(testCompany);
@@ -97,6 +98,7 @@ public class AuthControllerTest {
     void signup_ShouldCreateNewUser_AsClient() throws Exception {
         SignupRequest signupRequest = new SignupRequest();
         signupRequest.setUsername("newclient");
+        signupRequest.setEmail("client@tiendario.com");
         signupRequest.setPassword("password123");
         Set<String> roles = new HashSet<>();
         roles.add("client");
@@ -106,7 +108,7 @@ public class AuthControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(signupRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message", containsString("registered successfully")));
+                .andExpect(jsonPath("$.message", containsString("Registro exitoso")));
 
         // Verify user was created
         assert userRepository.existsByUsername("newclient");
@@ -116,6 +118,7 @@ public class AuthControllerTest {
     void signup_ShouldCreateNewUser_AsManager_WithCompany() throws Exception {
         SignupRequest signupRequest = new SignupRequest();
         signupRequest.setUsername("newmanager");
+        signupRequest.setEmail("manager@tiendario.com");
         signupRequest.setPassword("password123");
         signupRequest.setCompanyName("My New Store");
         Set<String> roles = new HashSet<>();
@@ -126,7 +129,7 @@ public class AuthControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(signupRequest)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message", containsString("registered successfully")));
+                .andExpect(jsonPath("$.message", containsString("Registro exitoso")));
 
         // Verify user and company were created
         User newUser = userRepository.findByUsername("newmanager").orElse(null);
@@ -153,6 +156,7 @@ public class AuthControllerTest {
     void signup_ShouldCreateAdmin_WhenRoleIsAdmin() throws Exception {
         SignupRequest signupRequest = new SignupRequest();
         signupRequest.setUsername("newadmin");
+        signupRequest.setEmail("newadmin@tiendario.com");
         signupRequest.setPassword("adminpass123");
         Set<String> roles = new HashSet<>();
         roles.add("admin");
@@ -161,11 +165,7 @@ public class AuthControllerTest {
         mockMvc.perform(post("/api/auth/signup")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(signupRequest)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message", containsString("registered successfully")));
-
-        User newAdmin = userRepository.findByUsername("newadmin").orElse(null);
-        assert newAdmin != null;
-        assert newAdmin.getRole() == Role.ROLE_ADMIN;
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message", containsString("Super Admin registration is not allowed")));
     }
 }

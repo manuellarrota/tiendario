@@ -1,9 +1,11 @@
 package com.tiendario.repository;
 
+import com.tiendario.domain.Role;
 import com.tiendario.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -19,4 +21,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
 
     Optional<User> findByResetToken(String resetToken);
+
+    List<User> findByCompanyIdAndRole(Long companyId, Role role);
 }
