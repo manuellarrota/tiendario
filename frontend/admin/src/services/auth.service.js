@@ -2,14 +2,16 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL + "/auth/";
 
-const register = (username, email, password, role, companyName, phoneNumber) => {
+const register = (username, email, password, role, companyName, phoneNumber, latitude, longitude) => {
     return axios.post(API_URL + "signup", {
         username,
         email,
         password,
         role: [role],
         companyName,
-        phoneNumber
+        phoneNumber,
+        latitude,
+        longitude
     });
 };
 

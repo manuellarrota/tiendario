@@ -2,6 +2,29 @@ import React, { useState } from "react";
 import { Form, Button, Alert, Container, Card } from "react-bootstrap";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import AuthService from "../services/auth.service";
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Arreglo para los íconos por defecto de Leaflet en React
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+const LocationMarker = ({ position, setPosition }) => {
+    useMapEvents({
+        click(e) {
+            setPosition(e.latlng);
+        },
+    });
+
+    return position === null ? null : (
+        <Marker position={position}></Marker>
+    );
+};
 
 const RegisterPage = () => {
     const [username, setUsername] = useState("");
@@ -11,6 +34,7 @@ const RegisterPage = () => {
     const [phoneNumber, setPhoneNumber] = useState("");
     const [successful, setSuccessful] = useState(false);
     const [message, setMessage] = useState("");
+    const [position, setPosition] = useState(null);
 
     const [searchParams] = useSearchParams();
     const plan = searchParams.get("plan") || "free"; // 'free' or 'premium'
@@ -23,7 +47,10 @@ const RegisterPage = () => {
         setSuccessful(false);
 
         // Default role is manager for new registers via this form
-        AuthService.register(username, email, password, "manager", companyName, phoneNumber).then(
+        const lat = position ? position.lat : 0;
+        const lng = position ? position.lng : 0;
+
+        AuthService.register(username, email, password, "manager", companyName, phoneNumber, lat, lng).then(
             () => {
                 setMessage("✅ Registro exitoso. Cuenta creada pero INACTIVA. Revisa 'backend/verification_links.txt' para activar tu cuenta antes de iniciar sesión.");
                 setSuccessful(true);
@@ -69,8 +96,8 @@ const RegisterPage = () => {
                 </Container>
             </div>
 
-            <Container className="d-flex justify-content-center align-items-center flex-grow-1">
-                <Card className="glass-panel p-4 shadow border-0" style={{ width: "400px" }}>
+            <Container className="d-flex justify-content-center align-items-center flex-grow-1 py-5">
+                <Card className="glass-panel p-4 shadow border-0" style={{ width: "500px", maxWidth: "100%" }}>
                     <h2 className="text-center mb-2">Registrar Nueva Tienda</h2>
                     <p className="text-center text-secondary mb-4">Plan Seleccionado: <strong className="text-uppercase text-primary">{plan}</strong></p>
 
@@ -133,6 +160,22 @@ const RegisterPage = () => {
                                 required
                                 className="bg-white text-dark border"
                             />
+                        </Form.Group>
+
+                        <Form.Group className="mb-4">
+                            <Form.Label>Ubicación de la Tienda en el Mapa</Form.Label>
+                            <div style={{ height: '300px', width: '100%', borderRadius: '8px', overflow: 'hidden', border: '1px solid #dee2e6' }}>
+                                <MapContainer center={[10.4806, -66.9036]} zoom={11} style={{ height: '100%', width: '100%' }}>
+                                    <TileLayer
+                                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                                    />
+                                    <LocationMarker position={position} setPosition={setPosition} />
+                                </MapContainer>
+                            </div>
+                            <small className="text-secondary mt-1 d-block">
+                                Haz clic en el mapa para marcar o actualizar tu ubicación. {position && <span className="text-success fw-bold">(Ubicación registrada)</span>}
+                            </small>
                         </Form.Group>
 
                         {message && (
