@@ -82,7 +82,9 @@ public class PurchaseController {
             item.setUnitCost(itemRequest.getUnitCost());
 
             // Update product stock and cost
-            product.setStock(product.getStock() + itemRequest.getQuantity());
+            // Safely handle null stock (products created without initial stock)
+            int currentStock = product.getStock() != null ? product.getStock() : 0;
+            product.setStock(currentStock + itemRequest.getQuantity());
             product.setCostPrice(itemRequest.getUnitCost());
             productRepository.save(product);
 
