@@ -1,17 +1,27 @@
 version: '3.8'
 
+# Servicios externos para desarrollo local.
+# Ejecutar: docker-compose up -d
+# El backend usa H2 en memoria por defecto. Este compose es para
+# pruebas con PostgreSQL real y Elasticsearch.
+
 services:
   postgres:
-    image: postgres:15
+    image: postgres:13-alpine
     container_name: tiendario-postgres
     environment:
       POSTGRES_DB: tiendario
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U user -d tiendario" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
@@ -19,11 +29,16 @@ services:
     environment:
       - discovery.type=single-node
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
     ports:
       - "9200:9200"
-      - "9300:9300"
     volumes:
       - elastic_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9200" ]
+      interval: 20s
+      timeout: 10s
+      retries: 5
 
 volumes:
   postgres_data:

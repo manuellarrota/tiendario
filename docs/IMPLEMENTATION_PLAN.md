@@ -53,9 +53,13 @@ Este documento une el plan estratégico original con los avances técnicos actua
     - [x] Admin: Notificación de nuevo pedido.
     - [x] Admin: Flujo de cambio de estado (Pendiente -> Listo -> Pagado).
     - [x] Admin: Modal de confirmación de pago manual (Efectivo, Transferencia, etc.).
+7.  [x] **Implementar Multi-Moneda**:
+    - [x] Configuración de moneda primaria y secundaria desde SuperAdmin.
+    - [x] Precios convertidos en Marketplace y POS.
+    - [x] Tracking de moneda de pago en transacciones.
 
 ---
-*Ultima actualización: 2026-02-18 - Flujo "Solo Pedido" y Confirmación Manual Completados.*
+*Ultima actualización: 2026-03-03 - Multi-Moneda Completada. Entorno local verificado (Tests: ✅ 65 Backend + 19 Frontend).*
 
 ## 8. Fase 3: Preparación para Producción
 - [ ] **Despliegue (Infraestructura)**:

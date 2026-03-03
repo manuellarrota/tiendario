@@ -7,7 +7,7 @@ Este documento detalla la arquitectura técnica, decisiones de diseño y flujos 
 ## 1. Arquitectura del Sistema
 
 ### 1.1 Backend (Spring Boot)
-El núcleo del sistema es una API RESTful construida con **Spring Boot 2.7+** y **Java 17**.
+El núcleo del sistema es una API RESTful construida con **Spring Boot 2.7+** y **Java 11+**.
 - **Seguridad**: Implementa `Spring Security` con autenticación **JWT (JSON Web Tokens)**. Los tokens contienen información vital (`companyId`, `subscriptionStatus`, `roles`) para evitar consultas redundantes a la base de datos.
 - **Persistencia**:
     - **PostgreSQL**: Base de datos relacional primaria. Maneja usuarios, ventas, inventario y configuración.

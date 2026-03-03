@@ -55,32 +55,44 @@ Para desplegar en AWS, consulta nuestra **[Guía de Despliegue](docs/DEPLOYMENT.
 ## 🚀 Cómo Ejecutar el Proyecto
 
 ### 1. Requisitos Previos
-- Docker (para base de datos y buscador).
-- Java 11+.
-- Node.js 18+.
+- **Java 11+** (JDK).
+- **Node.js 18+**.
+- **Docker** (opcional — solo necesario si quieres usar PostgreSQL + Elasticsearch en lugar de H2 en memoria).
 
-### 2. Iniciar Servicios Externos
-```bash
-# Desde la raíz (si hay docker-compose)
-cd scripts && docker-compose up -d
-```
+### 2. Modo Rápido (Sin Docker — H2 en memoria)
+El backend arranca con una base de datos H2 en memoria por defecto. Ideal para desarrollo y pruebas:
 
-### 3. Iniciar el Backend
 ```bash
+# Terminal 1: Backend
 cd backend
 .\mvnw.cmd spring-boot:run
-```
 
-### 4. Iniciar los Frontends
-En terminales separadas:
-```bash
-# Admin Panel
+# Terminal 2: Admin Panel
 cd frontend/admin
 npm install && npm run dev
 
-# Marketplace
+# Terminal 3: Marketplace
 cd frontend/market
 npm install && npm run dev
+```
+
+> **Nota**: En este modo se usa H2 en memoria. Los datos se reinician cada vez que se detiene el backend.
+
+### 3. Modo Completo (Con Docker — PostgreSQL + Elasticsearch)
+Para persistencia real y búsqueda avanzada:
+
+```bash
+# Levantar PostgreSQL y Elasticsearch
+cd scripts && docker-compose up -d
+
+# Backend apuntando a PostgreSQL
+cd backend
+set SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/tiendario
+set SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
+set SPRING_DATASOURCE_USERNAME=user
+set SPRING_DATASOURCE_PASSWORD=password
+set SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect
+.\mvnw.cmd spring-boot:run
 ```
 
 ---
@@ -115,7 +127,7 @@ Utiliza estas cuentas pre-cargadas para probar los diferentes roles y planes del
 | :--- | :--- | :--- | :--- | :--- |
 | **Super Admin** | `admin` | `admin123` | [Admin Panel](http://localhost:8081) | Acceso global, gestión de plataforma. |
 | **Tienda Premium** | `manager_pro` | `manager123` | [Admin Panel](http://localhost:8081) | Plan PAID, Tienda Demo Premium. Acceso total. |
-| **Tienda Gratuita** | `manager_free` | `manager123` | [Admin Panel](http://localhost:8081) | Plan PAID, Tienda Egar. |
+| **Tienda Egar** | `manager_free` | `manager123` | [Admin Panel](http://localhost:8081) | Plan PAID, Tienda Egar. |
 | **Cliente** | `cliente` | `cliente123` | [Marketplace](http://localhost:8082) | Comprador del Marketplace, acumula puntos. |
 
 > **Nota**: Estas credenciales solo aplican para la base de datos en memoria (H2) de desarrollo.

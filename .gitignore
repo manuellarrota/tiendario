@@ -21,8 +21,12 @@ coverage/
 # Sensitive / Generated
 backend/verification_links.txt
 backend/password_reset_links.txt
+backend/emails_fallback.txt
 backend/logs/
 backend/build_errors*.txt
+backend/backend_test.log
+backend/test_output.txt
+signup_test.json
 
 # OS
 Thumbs.db
