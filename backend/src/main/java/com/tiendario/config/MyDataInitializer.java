@@ -107,6 +107,18 @@ public class MyDataInitializer implements CommandLineRunner {
                     Company c = new Company();
                     c.setName(name);
                     c.setSubscriptionStatus(status);
+
+                    if (name.equals("Tienda Demo Premium")) {
+                        c.setLatitude(7.7711);
+                        c.setLongitude(-72.2285);
+                    } else if (name.equals("Tienda Egar")) {
+                        c.setLatitude(7.7801);
+                        c.setLongitude(-72.2150);
+                    } else {
+                        c.setLatitude(0.0);
+                        c.setLongitude(0.0);
+                    }
+
                     return companyRepository.save(c);
                 });
     }

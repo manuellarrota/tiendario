@@ -93,7 +93,17 @@ const ProductDetailModal = ({
                                     <h6 className="fw-bold mb-0 text-primary" style={{ textDecoration: 'underline' }}>
                                         {selectedProduct.companyName}
                                     </h6>
-                                    <small className="text-muted">🏆 Mejor Precio del Marketplace</small>
+                                    <div className="d-flex align-items-center gap-2">
+                                        <small className="text-muted">🏆 Mejor Precio del Marketplace</small>
+                                        {mainSeller?.latitude && mainSeller?.longitude && mainSeller.latitude !== 0.0 && (
+                                            <a href={`https://www.google.com/maps/dir/?api=1&destination=${mainSeller.latitude},${mainSeller.longitude}`}
+                                                target="_blank" rel="noreferrer"
+                                                className="small text-decoration-none bg-white px-2 py-1 rounded shadow-sm"
+                                                onClick={(e) => e.stopPropagation()}>
+                                                📍 Ver Ubicación
+                                            </a>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                             {['PAID', 'TRIAL'].includes(mainSeller?.subscriptionStatus) ? (
@@ -143,6 +153,14 @@ const ProductDetailModal = ({
                                                 </div>
                                             ) : (
                                                 <small className="text-muted mt-1 d-block">Consultar Precio</small>
+                                            )}
+                                            {seller.latitude && seller.longitude && seller.latitude !== 0.0 && (
+                                                <a href={`https://www.google.com/maps/dir/?api=1&destination=${seller.latitude},${seller.longitude}`}
+                                                    target="_blank" rel="noreferrer"
+                                                    className="small text-decoration-none mt-1 d-inline-block"
+                                                    onClick={(e) => e.stopPropagation()}>
+                                                    📍 Ver Ubicación en Mapa
+                                                </a>
                                             )}
                                         </div>
                                         <Button

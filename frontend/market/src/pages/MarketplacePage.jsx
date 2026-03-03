@@ -788,26 +788,28 @@ const MarketplacePage = () => {
                                 </Col>
                                 <Col lg={6} className="bg-light d-flex flex-column h-100">
                                     <div className="flex-grow-1" style={{ minHeight: '500px' }}>
-                                        <iframe
-                                            width="100%"
-                                            height="100%"
-                                            frameBorder="0"
-                                            style={{ border: 0, minHeight: '500px' }}
-                                            srcDoc={`
-                                                <div style="width:100%;height:100%;background:#e5dbff;background-image:radial-gradient(#3b82f6 0.5px, #e5dbff 0.5px);background-size:20px 20px;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;padding:20px;text-align:center;">
-                                                    <div style="font-size:60px;margin-bottom:20px;filter:drop-shadow(0 10px 10px rgba(0,0,0,0.1));">🏢</div>
-                                                    <h4 style="margin:0 0 10px;color:#1e3a8a;">San Cristóbal, Táchira</h4>
-                                                    <p style="color:#4b5563;margin-bottom:30px;font-size:14px;">Coordenadas: ${selectedStore?.latitude || 7.76}, ${selectedStore?.longitude || -72.22}</p>
-                                                    <a href="https://www.google.com/maps/dir/?api=1&destination=${selectedStore?.latitude},${selectedStore?.longitude}" 
-                                                       target="_blank" 
-                                                       style="background:#3b82f6;color:white;padding:18px 40px;border-radius:40px;text-decoration:none;font-weight:bold;box-shadow:0 15px 30px rgba(59,130,246,0.4);display:inline-block;transition:transform 0.2s;">
-                                                       📍 Cómo llegar (Google Maps)
-                                                    </a>
-                                                    <p style="margin-top:20px;font-size:12px;color:#6b7280;">Estamos a pocos minutos de ti en el centro de San Cristóbal.</p>
-                                                </div>
-                                            `}
-                                            allowFullScreen
-                                        ></iframe>
+                                        {selectedStore?.latitude && selectedStore?.longitude && selectedStore.latitude !== 0.0 ? (
+                                            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                                <iframe
+                                                    width="100%"
+                                                    style={{ flexGrow: 1, border: 0, minHeight: '400px' }}
+                                                    src={`https://maps.google.com/maps?q=${selectedStore.latitude},${selectedStore.longitude}&z=15&output=embed`}
+                                                    allowFullScreen
+                                                ></iframe>
+                                                <a href={`https://www.google.com/maps/dir/?api=1&destination=${selectedStore.latitude},${selectedStore.longitude}`}
+                                                    target="_blank" rel="noreferrer"
+                                                    className="btn btn-primary rounded-0 py-3 fw-bold shadow-none"
+                                                    style={{ textDecoration: 'none', borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
+                                                    📍 Cómo llegar (Google Maps)
+                                                </a>
+                                            </div>
+                                        ) : (
+                                            <div className="d-flex flex-column align-items-center justify-content-center h-100 bg-light p-5 text-center">
+                                                <div className="display-1 mb-3">🏢</div>
+                                                <h4 className="fw-bold mb-2">Ubicación No Disponible</h4>
+                                                <p className="text-muted">Esta tienda no ha configurado sus coordenadas físicas en el mapa.</p>
+                                            </div>
+                                        )}
                                     </div>
                                 </Col>
                             </Row>
@@ -822,20 +824,21 @@ const MarketplacePage = () => {
                                 <p className="text-muted mb-5 mx-auto" style={{ maxWidth: '400px' }}>Esta tienda utiliza el catálogo digital para mostrar sus productos. Visítalos en su ubicación física en San Cristóbal.</p>
 
                                 <div className="rounded-4 overflow-hidden border shadow-sm mb-5" style={{ height: '350px' }}>
-                                    <iframe
-                                        width="100%"
-                                        height="100%"
-                                        frameBorder="0"
-                                        style={{ border: 0 }}
-                                        srcDoc={`
-                                            <div style="width:100%;height:100%;background:#f3f4f6;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;">
-                                                <div style="font-size:50px;margin-bottom:15px;">📍</div>
-                                                <b style="font-size:18px;color:#374151;">Ubicación en San Cristóbal</b>
-                                                <p style="color:#6b7280;margin:10px 0;">Punto referencial: ${selectedStore?.latitude}, ${selectedStore?.longitude}</p>
-                                                <p style="font-size:12px;color:#9ca3af;margin-top:20px;">Contacto directo para compras y pedidos.</p>
-                                            </div>
-                                        `}
-                                    ></iframe>
+                                    {selectedStore?.latitude && selectedStore?.longitude && selectedStore.latitude !== 0.0 ? (
+                                        <iframe
+                                            width="100%"
+                                            height="100%"
+                                            style={{ border: 0 }}
+                                            src={`https://maps.google.com/maps?q=${selectedStore.latitude},${selectedStore.longitude}&z=15&output=embed`}
+                                            allowFullScreen
+                                        ></iframe>
+                                    ) : (
+                                        <div className="d-flex flex-column align-items-center justify-content-center h-100 bg-light p-4 text-center">
+                                            <div className="display-4 mb-2">📍</div>
+                                            <h5 className="fw-bold mb-1">Ubicación Pendiente</h5>
+                                            <p className="text-muted small">Contactar directo para obtener la dirección exacta.</p>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="d-grid gap-2">
                                     <Button variant="primary" className="py-3 rounded-pill fw-bold shadow-sm" onClick={() => setShowStoreModal(false)}>
