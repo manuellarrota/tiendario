@@ -17,10 +17,10 @@ export const LoginModal = ({
             {loginError && <Alert variant="danger" className="py-2 small">{loginError}</Alert>}
             <Form onSubmit={onLogin}>
                 <Form.Group className="mb-3">
-                    <Form.Label className="small fw-bold">Correo Electrónico</Form.Label>
+                    <Form.Label className="small fw-bold">Usuario o Correo</Form.Label>
                     <Form.Control
-                        type="email"
-                        placeholder="tu@email.com"
+                        type="text"
+                        placeholder="tu@email.com o usuario"
                         className="py-2 rounded-3"
                         value={loginData.email}
                         onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
