@@ -239,6 +239,9 @@ public class PublicController {
                     map.put("enableSecondaryCurrency", config.isEnableSecondaryCurrency());
                     map.put("secondaryCurrencyLabel", config.getSecondaryCurrencyLabel());
                     map.put("secondaryCurrencySymbol", config.getSecondaryCurrencySymbol());
+                    map.put("baseCurrencyCode", config.getBaseCurrencyCode());
+                    map.put("baseCurrencySymbol", config.getBaseCurrencySymbol());
+                    map.put("currencies", config.getCurrencies());
                     return map;
                 })
                 .orElseGet(() -> {

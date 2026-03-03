@@ -44,6 +44,11 @@ public class Sale {
     private String customerEmail; // For marketplace order notifications
     private String customerPhone; // Optional contact number
 
+    // Multi-currency payment tracking
+    private String paymentCurrency; // e.g., "USD", "COP", "VES"
+    private BigDecimal paymentAmountInCurrency; // Amount in the payment currency
+    private BigDecimal exchangeRateUsed; // Exchange rate at time of transaction
+
     @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<SaleItem> items;
 }

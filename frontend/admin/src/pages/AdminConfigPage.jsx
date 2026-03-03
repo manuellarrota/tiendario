@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Form, Button, Alert, Spinner, InputGroup } from 'react-bootstrap';
-import { FaCogs, FaSave, FaExclamationTriangle, FaEnvelope, FaPhone, FaBullhorn, FaCreditCard, FaMoneyBillWave } from 'react-icons/fa';
+import { Container, Row, Col, Card, Form, Button, Alert, Spinner, InputGroup, Table } from 'react-bootstrap';
+import { FaCogs, FaSave, FaExclamationTriangle, FaEnvelope, FaPhone, FaBullhorn, FaCreditCard, FaMoneyBillWave, FaPlus, FaTrash, FaExchangeAlt } from 'react-icons/fa';
 import AdminService from '../services/admin.service';
 import Sidebar from '../components/Sidebar';
 
@@ -22,12 +22,16 @@ const AdminConfigPage = () => {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
+    const [currencies, setCurrencies] = useState([]);
 
     const loadConfig = () => {
         setLoading(true);
         AdminService.getPlatformConfig().then(
             (response) => {
                 setConfig(response.data);
+                try {
+                    setCurrencies(JSON.parse(response.data.currencies || '[]'));
+                } catch { setCurrencies([]); }
                 setLoading(false);
             },
             (error) => {
@@ -56,7 +60,9 @@ const AdminConfigPage = () => {
         setError("");
         setSuccess("");
 
-        AdminService.updatePlatformConfig(config).then(
+        const configToSave = { ...config, currencies: JSON.stringify(currencies) };
+
+        AdminService.updatePlatformConfig(configToSave).then(
             () => {
                 setSaving(false);
                 setSuccess("Configuración actualizada correctamente.");
@@ -67,6 +73,20 @@ const AdminConfigPage = () => {
                 setError("Error al guardar la configuración.");
             }
         );
+    };
+
+    const addCurrency = () => {
+        setCurrencies([...currencies, { code: '', symbol: '', name: '', rate: 1.0, enabled: true }]);
+    };
+
+    const updateCurrency = (index, field, value) => {
+        const updated = [...currencies];
+        updated[index] = { ...updated[index], [field]: field === 'rate' ? parseFloat(value) || 0 : field === 'enabled' ? value : value };
+        setCurrencies(updated);
+    };
+
+    const removeCurrency = (index) => {
+        setCurrencies(currencies.filter((_, i) => i !== index));
     };
 
     if (loading) {
@@ -199,62 +219,150 @@ const AdminConfigPage = () => {
                                     </Card.Body>
                                 </Card>
 
-                                {/* Configuración de Moneda */}
+                                {/* Configuración de Monedas */}
                                 <Card className="border-0 shadow-sm rounded-4 mb-4">
                                     <Card.Body className="p-4">
                                         <h5 className="fw-bold mb-4 d-flex align-items-center">
-                                            <FaMoneyBillWave className="me-2 text-success" /> Configuración de Moneda (Múltiples Divisas)
+                                            <FaMoneyBillWave className="me-2 text-success" /> Configuración de Monedas
                                         </h5>
-                                        <div className="mb-4 p-3 bg-success bg-opacity-10 rounded-3">
-                                            <Form.Check
-                                                type="switch"
-                                                id="secondary-currency-switch"
-                                                label="Habilitar Segunda Moneda"
-                                                name="enableSecondaryCurrency"
-                                                checked={config.enableSecondaryCurrency}
-                                                onChange={handleChange}
-                                                className="fw-bold text-success"
-                                            />
-                                            <p className="small text-muted mb-0 mt-2">Permite mostrar precios duales (ej: USD y VES) en el POS y Marketplace.</p>
-                                        </div>
 
-                                        {config.enableSecondaryCurrency && (
+                                        {/* Base Currency */}
+                                        <div className="mb-4 p-3 bg-primary bg-opacity-10 rounded-3">
+                                            <p className="small fw-bold text-primary mb-2"><FaExchangeAlt className="me-1" /> Moneda Base (Precios del sistema)</p>
                                             <Row>
-                                                <Col md={6}>
-                                                    <Form.Group className="mb-3">
-                                                        <Form.Label className="small fw-bold text-muted">TASA DE CAMBIO (1 USD = ?)</Form.Label>
+                                                <Col md={4}>
+                                                    <Form.Group className="mb-2">
+                                                        <Form.Label className="small fw-bold text-muted">CÓDIGO (EJ: USD)</Form.Label>
                                                         <Form.Control
-                                                            type="number"
-                                                            step="0.01"
-                                                            name="exchangeRate"
-                                                            value={config.exchangeRate}
+                                                            type="text"
+                                                            name="baseCurrencyCode"
+                                                            value={config.baseCurrencyCode || 'USD'}
                                                             onChange={handleChange}
+                                                            maxLength={5}
                                                         />
                                                     </Form.Group>
                                                 </Col>
-                                                <Col md={3}>
-                                                    <Form.Group className="mb-3">
-                                                        <Form.Label className="small fw-bold text-muted">ETIQUETA (EJ: VES)</Form.Label>
+                                                <Col md={4}>
+                                                    <Form.Group className="mb-2">
+                                                        <Form.Label className="small fw-bold text-muted">SÍMBOLO (EJ: $)</Form.Label>
                                                         <Form.Control
                                                             type="text"
-                                                            name="secondaryCurrencyLabel"
-                                                            value={config.secondaryCurrencyLabel}
+                                                            name="baseCurrencySymbol"
+                                                            value={config.baseCurrencySymbol || '$'}
                                                             onChange={handleChange}
-                                                        />
-                                                    </Form.Group>
-                                                </Col>
-                                                <Col md={3}>
-                                                    <Form.Group className="mb-3">
-                                                        <Form.Label className="small fw-bold text-muted">SÍMBOLO (EJ: BS.)</Form.Label>
-                                                        <Form.Control
-                                                            type="text"
-                                                            name="secondaryCurrencySymbol"
-                                                            value={config.secondaryCurrencySymbol}
-                                                            onChange={handleChange}
+                                                            maxLength={5}
                                                         />
                                                     </Form.Group>
                                                 </Col>
                                             </Row>
+                                        </div>
+
+                                        {/* Multi-currency table */}
+                                        <div className="mb-3">
+                                            <p className="small fw-bold text-muted mb-2">MONEDAS ADICIONALES PARA COBRO</p>
+                                            <p className="small text-muted">Configura las monedas en las que tu tienda puede cobrar. La tasa es cuánto vale 1 unidad de la moneda base.</p>
+                                        </div>
+
+                                        {currencies.length > 0 ? (
+                                            <Table responsive size="sm" className="align-middle">
+                                                <thead className="table-light">
+                                                    <tr>
+                                                        <th style={{ width: '80px' }}>Código</th>
+                                                        <th style={{ width: '70px' }}>Símbolo</th>
+                                                        <th>Nombre</th>
+                                                        <th style={{ width: '120px' }}>Tasa (1 {config.baseCurrencyCode || 'USD'} =)</th>
+                                                        <th style={{ width: '60px' }}>Activa</th>
+                                                        <th style={{ width: '40px' }}></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {currencies.map((curr, idx) => (
+                                                        <tr key={idx}>
+                                                            <td>
+                                                                <Form.Control
+                                                                    size="sm"
+                                                                    type="text"
+                                                                    value={curr.code}
+                                                                    onChange={(e) => updateCurrency(idx, 'code', e.target.value.toUpperCase())}
+                                                                    placeholder="COP"
+                                                                    maxLength={5}
+                                                                />
+                                                            </td>
+                                                            <td>
+                                                                <Form.Control
+                                                                    size="sm"
+                                                                    type="text"
+                                                                    value={curr.symbol}
+                                                                    onChange={(e) => updateCurrency(idx, 'symbol', e.target.value)}
+                                                                    placeholder="$"
+                                                                    maxLength={5}
+                                                                />
+                                                            </td>
+                                                            <td>
+                                                                <Form.Control
+                                                                    size="sm"
+                                                                    type="text"
+                                                                    value={curr.name}
+                                                                    onChange={(e) => updateCurrency(idx, 'name', e.target.value)}
+                                                                    placeholder="Peso Colombiano"
+                                                                />
+                                                            </td>
+                                                            <td>
+                                                                <Form.Control
+                                                                    size="sm"
+                                                                    type="number"
+                                                                    step="0.01"
+                                                                    value={curr.rate}
+                                                                    onChange={(e) => updateCurrency(idx, 'rate', e.target.value)}
+                                                                />
+                                                            </td>
+                                                            <td className="text-center">
+                                                                <Form.Check
+                                                                    type="switch"
+                                                                    checked={curr.enabled}
+                                                                    onChange={(e) => updateCurrency(idx, 'enabled', e.target.checked)}
+                                                                />
+                                                            </td>
+                                                            <td>
+                                                                <Button
+                                                                    variant="outline-danger"
+                                                                    size="sm"
+                                                                    onClick={() => removeCurrency(idx)}
+                                                                    title="Eliminar moneda"
+                                                                >
+                                                                    <FaTrash />
+                                                                </Button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </Table>
+                                        ) : (
+                                            <div className="text-center text-muted py-3 bg-light rounded-3 mb-3">
+                                                <p className="mb-0">No hay monedas adicionales configuradas.</p>
+                                                <small>Agrega monedas como COP, VES, EUR, etc.</small>
+                                            </div>
+                                        )}
+
+                                        <Button
+                                            variant="outline-success"
+                                            size="sm"
+                                            onClick={addCurrency}
+                                            className="d-flex align-items-center"
+                                        >
+                                            <FaPlus className="me-1" /> Agregar Moneda
+                                        </Button>
+
+                                        {/* Preview */}
+                                        {currencies.filter(c => c.enabled && c.code).length > 0 && (
+                                            <div className="mt-3 p-3 bg-success bg-opacity-10 rounded-3">
+                                                <p className="small fw-bold text-success mb-2">Vista previa (ejemplo: $10.00 {config.baseCurrencyCode || 'USD'}):</p>
+                                                {currencies.filter(c => c.enabled && c.code).map(c => (
+                                                    <span key={c.code} className="badge bg-success me-2 mb-1">
+                                                        {c.symbol} {(10 * c.rate).toLocaleString(undefined, { minimumFractionDigits: 2 })} {c.code}
+                                                    </span>
+                                                ))}
+                                            </div>
                                         )}
                                     </Card.Body>
                                 </Card>

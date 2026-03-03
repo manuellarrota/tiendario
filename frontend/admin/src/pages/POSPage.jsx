@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Container, Row, Col, Card, Form, Button, ListGroup, InputGroup, Table, Modal, Alert, OverlayTrigger, Tooltip } from 'react-bootstrap';
-import { FaSearch, FaPlus, FaTrash, FaShoppingCart, FaEdit, FaLock, FaExclamationTriangle } from 'react-icons/fa';
+import { FaSearch, FaPlus, FaTrash, FaShoppingCart, FaEdit, FaLock, FaExclamationTriangle, FaExchangeAlt } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import ProductService from '../services/product.service';
 import SaleService from '../services/sale.service';
@@ -13,6 +13,7 @@ const POSPage = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [message, setMessage] = useState("");
     const [paymentMethod, setPaymentMethod] = useState("CASH");
+    const [paymentCurrency, setPaymentCurrency] = useState("USD");
     const [customerName, setCustomerName] = useState("");
     const [customerCedula, setCustomerCedula] = useState("");
     const [customerPhone, setCustomerPhone] = useState("");
@@ -40,10 +41,40 @@ const POSPage = () => {
         );
     }, []);
 
+    // Parse currencies from platform config
+    const availableCurrencies = useMemo(() => {
+        if (!platformConfig) return [];
+        try {
+            const parsed = JSON.parse(platformConfig.currencies || '[]');
+            return parsed.filter(c => c.enabled);
+        } catch {
+            return [];
+        }
+    }, [platformConfig]);
+
+    const baseCurrencyCode = platformConfig?.baseCurrencyCode || 'USD';
+    const baseCurrencySymbol = platformConfig?.baseCurrencySymbol || '$';
+
     const formatSecondary = (amount) => {
         if (!platformConfig || !platformConfig.enableSecondaryCurrency) return null;
         const converted = amount * platformConfig.exchangeRate;
         return `${platformConfig.secondaryCurrencySymbol} ${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
+
+    // Convert amount to selected payment currency
+    const getSelectedCurrency = () => availableCurrencies.find(c => c.code === paymentCurrency);
+    const convertToPaymentCurrency = (amount) => {
+        if (paymentCurrency === baseCurrencyCode) return amount;
+        const curr = getSelectedCurrency();
+        return curr ? amount * curr.rate : amount;
+    };
+    const formatPaymentCurrency = (amount) => {
+        const converted = convertToPaymentCurrency(amount);
+        if (paymentCurrency === baseCurrencyCode) {
+            return `${baseCurrencySymbol}${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+        const curr = getSelectedCurrency();
+        return `${curr?.symbol || ''} ${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     const openQuantityModal = (product) => {
@@ -115,9 +146,13 @@ const POSPage = () => {
             finalName = finalName ? `${finalName} (C.I: ${customerCedula.trim()})` : `C.I: ${customerCedula.trim()}`;
         }
 
+        const selectedCurr = getSelectedCurrency();
         const saleData = {
             totalAmount: total,
             paymentMethod: paymentMethod,
+            paymentCurrency: paymentCurrency,
+            paymentAmountInCurrency: paymentCurrency === baseCurrencyCode ? total : convertToPaymentCurrency(total),
+            exchangeRateUsed: paymentCurrency === baseCurrencyCode ? 1 : (selectedCurr?.rate || 1),
             items: cart.map(item => ({
                 product: { id: item.product.id },
                 quantity: item.quantity,
@@ -134,6 +169,7 @@ const POSPage = () => {
                 setMessage("¡Venta realizada con éxito!");
                 setCart([]);
                 setPaymentMethod("CASH");
+                setPaymentCurrency(baseCurrencyCode);
                 setCustomerName("");
                 setCustomerCedula("");
                 setCustomerPhone("");
@@ -371,6 +407,47 @@ const POSPage = () => {
                                             <option value="TRANSFER">Transferencia 🏦</option>
                                         </Form.Select>
                                     </Form.Group>
+
+                                    {availableCurrencies.length > 0 && (
+                                        <Form.Group className="mb-3">
+                                            <Form.Label className="d-flex align-items-center">
+                                                <FaExchangeAlt className="me-2 text-info" /> Moneda de Cobro
+                                            </Form.Label>
+                                            <div className="d-flex gap-2 flex-wrap">
+                                                <Button
+                                                    variant={paymentCurrency === baseCurrencyCode ? 'primary' : 'outline-primary'}
+                                                    size="sm"
+                                                    onClick={() => setPaymentCurrency(baseCurrencyCode)}
+                                                    className="rounded-pill px-3"
+                                                >
+                                                    {baseCurrencySymbol} {baseCurrencyCode}
+                                                </Button>
+                                                {availableCurrencies.map(c => (
+                                                    <Button
+                                                        key={c.code}
+                                                        variant={paymentCurrency === c.code ? 'primary' : 'outline-primary'}
+                                                        size="sm"
+                                                        onClick={() => setPaymentCurrency(c.code)}
+                                                        className="rounded-pill px-3"
+                                                    >
+                                                        {c.symbol} {c.code}
+                                                    </Button>
+                                                ))}
+                                            </div>
+                                            {paymentCurrency !== baseCurrencyCode && cart.length > 0 && (
+                                                <div className="mt-2 p-2 bg-info bg-opacity-10 rounded-3 text-center">
+                                                    <small className="text-muted">Cobrar al cliente:</small>
+                                                    <div className="fw-bold fs-5 text-info">
+                                                        {formatPaymentCurrency(total)}
+                                                    </div>
+                                                    <small className="text-muted">
+                                                        Tasa: 1 {baseCurrencyCode} = {getSelectedCurrency()?.rate?.toLocaleString()} {paymentCurrency}
+                                                    </small>
+                                                </div>
+                                            )}
+                                        </Form.Group>
+                                    )}
+
                                     <Button
                                         variant="success"
                                         size="lg"
@@ -378,7 +455,9 @@ const POSPage = () => {
                                         onClick={handleCheckout}
                                         disabled={cart.length === 0}
                                     >
-                                        Realizar Venta
+                                        Realizar Venta {paymentCurrency !== baseCurrencyCode && cart.length > 0
+                                            ? `(${formatPaymentCurrency(total)})`
+                                            : ''}
                                     </Button>
                                 </div>
                             </Card.Body>
