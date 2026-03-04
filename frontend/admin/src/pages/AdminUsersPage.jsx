@@ -49,7 +49,7 @@ const AdminUsersPage = () => {
     const getRoleBadge = (role) => {
         switch (role) {
             case 'ROLE_ADMIN': return <Badge bg="dark"><FaUserShield className="me-1" /> Super Admin</Badge>;
-            case 'ROLE_MANAGER': return <Badge bg="primary"><FaStore className="me-1" /> Manager</Badge>;
+            case 'ROLE_MANAGER': return <Badge bg="primary"><FaStore className="me-1" /> Gestor</Badge>;
             case 'ROLE_CLIENT': return <Badge bg="secondary">Cliente</Badge>;
             default: return <Badge bg="light" text="dark">{role}</Badge>;
         }

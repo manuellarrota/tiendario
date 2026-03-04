@@ -157,7 +157,7 @@ const PurchaseHistoryPage = () => {
                                             <th className="border-0">ID</th>
                                             <th className="border-0">Fecha</th>
                                             <th className="border-0">Proveedor</th>
-                                            <th className="border-0 text-center">Items</th>
+                                            <th className="border-0 text-center">Artículos</th>
                                             <th className="border-0 text-end">Total</th>
                                             <th className="border-0 text-center">Detalles</th>
                                         </tr>
@@ -207,7 +207,7 @@ const PurchaseHistoryPage = () => {
                                                     <td colSpan="6" className="p-0 border-0">
                                                         <Collapse in={expandedId === purchase.id}>
                                                             <div className="bg-light p-3">
-                                                                <h6 className="mb-3">Detalle de Items</h6>
+                                                                <h6 className="mb-3">Detalle de Artículos</h6>
                                                                 <Table size="sm" className="mb-0">
                                                                     <thead>
                                                                         <tr>
@@ -255,7 +255,7 @@ const PurchaseHistoryPage = () => {
                                     </Col>
                                     <Col md={4}>
                                         <div className="text-center">
-                                            <h6 className="text-muted mb-1">Total Items</h6>
+                                            <h6 className="text-muted mb-1">Total Artículos</h6>
                                             <h3 className="fw-bold">
                                                 {filteredPurchases.reduce((acc, p) => acc + (p.items?.length || 0), 0)}
                                             </h3>

@@ -52,7 +52,7 @@ const RegisterPage = () => {
 
         AuthService.register(username, email, password, "manager", companyName, phoneNumber, lat, lng).then(
             () => {
-                setMessage("✅ Registro exitoso. Cuenta creada pero INACTIVA. Revisa 'backend/verification_links.txt' para activar tu cuenta antes de iniciar sesión.");
+                setMessage("✅ Registro exitoso. Revisa tu correo electrónico para activar tu cuenta antes de iniciar sesión.");
                 setSuccessful(true);
                 setTimeout(() => {
                     navigate("/");

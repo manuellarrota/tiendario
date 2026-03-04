@@ -317,7 +317,7 @@ const NewPurchasePage = () => {
                                                     >
                                                         <div className="fw-bold">{p.name}</div>
                                                         <div className="small text-muted d-flex justify-content-between">
-                                                            <span>{p.variant || 'Standard'}</span>
+                                                            <span>{p.variant || 'Estándar'}</span>
                                                             <span>SKU: {p.sku || 'N/A'}</span>
                                                         </div>
                                                     </div>
