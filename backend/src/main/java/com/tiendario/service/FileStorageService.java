@@ -35,7 +35,14 @@ public class FileStorageService {
 
         try {
             if (originalFileName.contains(".")) {
-                extension = originalFileName.substring(originalFileName.lastIndexOf("."));
+                extension = originalFileName.substring(originalFileName.lastIndexOf(".")).toLowerCase();
+            }
+
+            // Security check: only allow safe image formats
+            if (!extension.equals(".jpg") && !extension.equals(".jpeg") && !extension.equals(".png")
+                    && !extension.equals(".webp")) {
+                throw new RuntimeException(
+                        "Error: Formato de archivo inválido. Solo se admiten imágenes JPG, PNG o WEBP.");
             }
 
             // Create a unique file name to avoid collisions

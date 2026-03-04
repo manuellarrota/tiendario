@@ -135,6 +135,11 @@ public class PublicController {
     @PostMapping("/order")
     @Transactional
     public ResponseEntity<?> createOrder(@RequestBody PublicOrderRequest request) {
+        if (request.getQuantity() == null || request.getQuantity() <= 0) {
+            return ResponseEntity.badRequest()
+                    .body(new MessageResponse("Error: Cantidad de productos inválida. Debe ser mayor a cero."));
+        }
+
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 

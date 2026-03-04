@@ -96,11 +96,17 @@ public class SaleService {
             throw new RuntimeException("Error: Sale must have at least one item.");
         }
 
+        java.math.BigDecimal computedTotal = java.math.BigDecimal.ZERO;
+
         for (SaleItem item : sale.getItems()) {
             item.setSale(sale);
 
             if (item.getProduct() == null || item.getProduct().getId() == null) {
                 throw new RuntimeException("Error: Each item must have a product ID.");
+            }
+
+            if (item.getQuantity() == null || item.getQuantity() <= 0) {
+                throw new RuntimeException("Error: Cantidad inválida, debe ser mayor a cero.");
             }
 
             Product product = productRepository.findById(item.getProduct().getId())
@@ -115,8 +121,17 @@ public class SaleService {
             product.setStock(product.getStock() - item.getQuantity());
             productRepository.save(product);
 
+            // Force server-side calculation of pricing (Zero-Trust to frontend)
             item.setProduct(product);
+            item.setUnitPrice(product.getPrice());
+            java.math.BigDecimal subtotal = product.getPrice().multiply(new java.math.BigDecimal(item.getQuantity()));
+            item.setSubtotal(subtotal);
+
+            computedTotal = computedTotal.add(subtotal);
         }
+
+        // Ignore whatever the frontend said the total was
+        sale.setTotalAmount(computedTotal);
 
         saleRepository.save(sale);
 
