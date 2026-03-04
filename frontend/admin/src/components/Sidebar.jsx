@@ -4,7 +4,7 @@ import { OverlayTrigger, Tooltip, Nav } from 'react-bootstrap';
 import {
     FaBars, FaTimes, FaChevronLeft, FaChevronRight, FaStore, FaChartLine,
     FaMoneyBillWave, FaUsers, FaCog, FaHome, FaBell, FaShoppingBag,
-    FaCashRegister, FaBox, FaTags, FaHistory, FaTruck, FaSignOutAlt
+    FaCashRegister, FaBox, FaTags, FaHistory, FaTruck, FaSignOutAlt, FaRocket
 } from 'react-icons/fa';
 import AuthService from '../services/auth.service';
 import NotificationService from '../services/notification.service';
@@ -141,6 +141,7 @@ const Sidebar = () => {
                         {isSuperAdmin ? (
                             <>
                                 {!collapsed && <div className="nav-group-label">administración saas</div>}
+                                <NavItem to="/admin/onboarding" icon={FaRocket} label="Registrar Tienda" description="Wizard paso a paso para registrar un nuevo cliente en el sistema." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/dashboard" icon={FaChartLine} label="Métricas Globales" description="Visualiza el estado de todo el ecosistema Tiendario." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/admin/companies" icon={FaStore} label="Gestión de Empresas" description="Administra los comercios y sus suscripciones." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/admin/catalog" icon={FaBox} label="Catálogo Global" description="Gestiona los registros maestros de productos unificados." collapsed={collapsed} setIsOpen={setIsOpen} />

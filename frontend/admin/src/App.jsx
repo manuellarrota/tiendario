@@ -22,6 +22,7 @@ import AdminConfigPage from './pages/AdminConfigPage';
 import AdminCatalogPage from './pages/AdminCatalogPage';
 import SalesHistoryPage from './pages/SalesHistoryPage';
 import DailyClosingPage from './pages/DailyClosingPage';
+import AdminOnboardingPage from './pages/AdminOnboardingPage';
 
 
 import OfflineAlert from './components/OfflineAlert';
@@ -55,6 +56,7 @@ function App() {
           <Route path="/admin/users" element={<AdminUsersPage />} />
           <Route path="/admin/config" element={<AdminConfigPage />} />
           <Route path="/admin/catalog" element={<AdminCatalogPage />} />
+          <Route path="/admin/onboarding" element={<AdminOnboardingPage />} />
         </Routes>
       </div>
     </Router>

@@ -94,6 +94,34 @@ const deleteCatalogProduct = (id) => {
     });
 };
 
+const createStore = (data) => {
+    const user = AuthService.getCurrentUser();
+    return axios.post(API_URL + "onboard/create-store", data, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+const addCategoryToCompany = (companyId, data) => {
+    const user = AuthService.getCurrentUser();
+    return axios.post(API_URL + `onboard/${companyId}/categories`, data, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+const addProductToCompany = (companyId, data) => {
+    const user = AuthService.getCurrentUser();
+    return axios.post(API_URL + `onboard/${companyId}/products`, data, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+const getCategoriesByCompany = (companyId) => {
+    const user = AuthService.getCurrentUser();
+    return axios.get(API_URL + `onboard/${companyId}/categories`, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
 const AdminService = {
     getGlobalStats,
     getAllCompanies,
@@ -107,7 +135,11 @@ const AdminService = {
     updatePlatformConfig,
     getAllCatalogProducts,
     updateCatalogProduct,
-    deleteCatalogProduct
+    deleteCatalogProduct,
+    createStore,
+    addCategoryToCompany,
+    addProductToCompany,
+    getCategoriesByCompany,
 };
 
 export default AdminService;
