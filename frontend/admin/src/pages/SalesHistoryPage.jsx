@@ -115,7 +115,7 @@ const SalesHistoryPage = () => {
         <div className="d-flex" style={{ height: '100vh', overflow: 'hidden' }}>
             <Sidebar />
             <div className="flex-grow-1 p-4" style={{ overflowY: 'auto' }}>
-                {/* ... existing header and sales table ... */}
+
 
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <div>

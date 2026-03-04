@@ -438,7 +438,7 @@ const CompanyPage = () => {
                                         name="reference"
                                         value={paymentForm.reference}
                                         onChange={handleInputChange}
-                                        placeholder="Pegué aquí el ID o referencia de la transacción"
+                                        placeholder="Pegue aquí el ID o referencia de la transacción"
                                         required
                                         className="py-2"
                                     />

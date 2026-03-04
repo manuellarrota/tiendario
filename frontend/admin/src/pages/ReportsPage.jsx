@@ -97,7 +97,7 @@ const ReportsPage = () => {
                                     <tr key={s.id}>
                                         <td>#{s.id}</td>
                                         <td>{s.date ? new Date(s.date).toLocaleString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}</td>
-                                        <td>{s.items?.length || 0} items</td>
+                                        <td>{s.items?.length || 0} artículos</td>
                                         <td className="fw-bold text-success">${s.totalAmount?.toLocaleString() || '0'}</td>
                                     </tr>
                                 ))}

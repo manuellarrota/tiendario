@@ -252,7 +252,7 @@ const POSPage = () => {
                                                     <td>{p.name}</td>
                                                     <td><small className="text-muted">{p.sku}</small></td>
                                                     <td>
-                                                        <div>${p.price}</div>
+                                                        <div>{baseCurrencySymbol}{p.price}</div>
                                                         {platformConfig?.enableSecondaryCurrency && (
                                                             <small className="text-success fw-bold">{formatSecondary(p.price)}</small>
                                                         )}
@@ -305,7 +305,7 @@ const POSPage = () => {
                                                 <div className="flex-grow-1">
                                                     <h6 className="mb-1">{item.product.name}</h6>
                                                     <small className="text-muted">
-                                                        ${item.unitPrice} c/u
+                                                        {baseCurrencySymbol}{item.unitPrice} c/u
                                                         {platformConfig?.enableSecondaryCurrency && (
                                                             <span className="ms-2 text-success">({formatSecondary(item.unitPrice)})</span>
                                                         )}
@@ -474,7 +474,7 @@ const POSPage = () => {
                         {selectedProduct && (
                             <>
                                 <h5>{selectedProduct.name}</h5>
-                                <p className="text-muted">Precio al Público: ${selectedProduct.price} | Stock disponible: {selectedProduct.stock}</p>
+                                <p className="text-muted">Precio al Público: {baseCurrencySymbol}{selectedProduct.price} | Stock disponible: {selectedProduct.stock}</p>
                                 <Form.Group>
                                     <Form.Label>Cantidad</Form.Label>
                                     <Form.Control

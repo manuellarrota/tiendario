@@ -122,7 +122,8 @@ public class AuthController {
                 .orElse(null);
 
         if (user == null) {
-            return ResponseEntity.badRequest().body(new MessageResponse("Error: Invalid verification code!"));
+            return ResponseEntity.badRequest()
+                    .body(new MessageResponse("Error: Código de verificación inválido o expirado."));
         }
 
         user.setEnabled(true);
@@ -141,7 +142,7 @@ public class AuthController {
             if (!user.isEnabled()) {
                 return ResponseEntity.ok(
                         new MessageResponse(
-                                "Registro exitoso. Cuenta INACTIVA. Revisa 'backend/verification_links.txt' antes de iniciar sesión."));
+                                "Registro exitoso. Revisa tu correo electrónico para activar tu cuenta antes de iniciar sesión."));
             } else {
                 return ResponseEntity.ok(new MessageResponse("Registro exitoso."));
             }

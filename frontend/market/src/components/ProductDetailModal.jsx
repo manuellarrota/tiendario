@@ -125,7 +125,7 @@ const ProductDetailModal = ({
                                 <h6 className="fw-bold mb-0">Compara precios en otras tiendas</h6>
                                 {sellers.length > 1 && (
                                     <Button variant="link" size="sm" className="text-decoration-none p-0" onClick={onSortSellers}>
-                                        Orderar por Precio {sellerSortOrder === 'asc' ? '↑' : '↓'}
+                                        Ordenar por Precio {sellerSortOrder === 'asc' ? '↑' : '↓'}
                                     </Button>
                                 )}
                             </div>

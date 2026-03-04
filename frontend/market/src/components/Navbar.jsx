@@ -38,7 +38,7 @@ const MarketplaceNavbar = ({ onLoginClick, onRegisterClick }) => {
                                 </Dropdown.Toggle>
 
                                 <Dropdown.Menu>
-                                    <Dropdown.Item as={Link} to="/dashboard">Mi Panel (Dashboard)</Dropdown.Item>
+                                    <Dropdown.Item as={Link} to="/dashboard">Mi Panel de Cliente</Dropdown.Item>
                                     <Dropdown.Item onClick={handleLogout} className="text-danger">Cerrar Sesión</Dropdown.Item>
                                 </Dropdown.Menu>
                             </Dropdown>

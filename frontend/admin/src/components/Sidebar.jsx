@@ -129,7 +129,7 @@ const Sidebar = () => {
                             ) : (
                                 <div className="mt-3 border-top pt-3">
                                     <small className="fw-bold text-uppercase" style={{ fontSize: '0.6rem' }}>
-                                        {isSuperAdmin ? 'SA' : (user?.subscriptionStatus === 'PAID' ? 'PRO' : (user?.subscriptionStatus === 'TRIAL' ? 'TRY' : 'FREE'))}
+                                        {isSuperAdmin ? 'SA' : (user?.subscriptionStatus === 'PAID' ? 'PRO' : (user?.subscriptionStatus === 'TRIAL' ? 'PRB' : 'GRT'))}
                                     </small>
                                 </div>
                             )}

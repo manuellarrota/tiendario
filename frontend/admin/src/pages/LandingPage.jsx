@@ -358,7 +358,7 @@ const LandingPage = () => {
                                     <Form.Label>Usuario (Admin)</Form.Label>
                                     <Form.Control
                                         type="text"
-                                        placeholder="Username"
+                                        placeholder="Nombre de usuario"
                                         value={regUsername}
                                         onChange={(e) => setRegUsername(e.target.value)}
                                         required
@@ -382,7 +382,7 @@ const LandingPage = () => {
                                     <Form.Label>Contraseña</Form.Label>
                                     <Form.Control
                                         type="password"
-                                        placeholder="Min 6 caracteres"
+                                        placeholder="Mínimo 6 caracteres"
                                         value={regPassword}
                                         onChange={(e) => setRegPassword(e.target.value)}
                                         required

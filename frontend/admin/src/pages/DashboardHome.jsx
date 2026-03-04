@@ -291,7 +291,7 @@ const DashboardHome = () => {
                                             <div className="rounded-circle bg-success bg-opacity-10 p-3 mx-auto mb-3" style={{ width: 'fit-content' }}>
                                                 <FaGlobe className="text-success h3 mb-0" />
                                             </div>
-                                            <h5 className="fw-bold mb-1">GMV Global Platform</h5>
+                                            <h5 className="fw-bold mb-1">Volumen Global de la Plataforma</h5>
                                             <h2 className="fw-bold text-dark">${Number(summary?.globalGmv || 0).toLocaleString()}</h2>
                                             <p className="text-muted small">Monto total transaccionado</p>
                                         </Card.Body>
@@ -303,7 +303,7 @@ const DashboardHome = () => {
                                             <div className="rounded-circle bg-warning bg-opacity-10 p-3 mx-auto mb-3" style={{ width: 'fit-content' }}>
                                                 <FaChartLine className="text-warning h3 mb-0" />
                                             </div>
-                                            <h5 className="fw-bold mb-1">Ticket Promedio (Global)</h5>
+                                            <h5 className="fw-bold mb-1">Valor Promedio por Pedido (Global)</h5>
                                             <h2 className="fw-bold text-dark">${Number(summary?.globalAov || 0).toLocaleString()}</h2>
                                             <p className="text-muted small">Promedio por pedido</p>
                                         </Card.Body>

@@ -432,7 +432,7 @@ const MarketplacePage = () => {
                                     <FaStore size={20} />
                                 </span>
                                 <h3 className="fw-bold mb-0 text-white me-3" style={{ letterSpacing: '-0.5px' }}>Tiendario</h3>
-                                <Badge bg="primary" className="px-3 py-2 rounded-pill fw-bold">Marketplace Global v1.0</Badge>
+                                <Badge bg="primary" className="px-3 py-2 rounded-pill fw-bold">Catálogo Global v1.0</Badge>
                                 {user && (
                                     <Badge bg="warning" text="dark" className="px-3 py-2 rounded-pill fw-bold">
                                         ⭐ {userPoints} Puntos acumulados
@@ -669,7 +669,7 @@ const MarketplacePage = () => {
                                         <div className="opacity-25 display-1 mb-3">🔍</div>
                                         <h5 className="fw-bold">No encontramos coincidencias</h5>
                                         <p className="text-muted">Intenta con otros términos o explora las categorías principales.</p>
-                                        <Button variant="outline-primary" className="rounded-pill px-4" onClick={() => setSearchTerm('')}>Ver Todo el Catálogo</Button>
+                                        <Button variant="outline-primary" className="rounded-pill px-4" onClick={() => { setSearchQuery(''); setSelectedCategory('all'); }}>Ver Todo el Catálogo</Button>
                                     </div>
                                 )}
                             </>
