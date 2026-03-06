@@ -98,7 +98,7 @@ const SalesHistoryPage = () => {
 
     const getStatusBadge = (status) => {
         switch (status) {
-            case 'PAID': return <Badge bg="success" className="rounded-pill px-3">PAGADO</Badge>;
+            case 'PAID': return <Badge bg="success" className="rounded-pill px-3">COMPRA FINALIZADA</Badge>;
             case 'PREPARING': return <Badge bg="primary" className="rounded-pill px-3">EN PREPARACIÓN</Badge>;
             case 'READY_FOR_PICKUP': return <Badge bg="info" text="white" className="rounded-pill px-3">LISTO PARA RECOGER</Badge>;
             case 'PENDING': return <Badge bg="warning" text="dark" className="rounded-pill px-3">PENDIENTE</Badge>;
@@ -133,7 +133,7 @@ const SalesHistoryPage = () => {
                             <option value="PENDING">Pendientes</option>
                             <option value="PREPARING">En Preparación</option>
                             <option value="READY_FOR_PICKUP">Listos para Retiro</option>
-                            <option value="PAID">Pagados / Completados</option>
+                            <option value="PAID">Compra Finalizada</option>
                         </Form.Select>
                         <Button variant="outline-primary" onClick={loadSales} className="rounded-3 shadow-sm">
                             Actualizar
@@ -260,7 +260,7 @@ const SalesHistoryPage = () => {
                         )}
                         {selectedSale?.status === 'READY_FOR_PICKUP' && (
                             <Button variant="success" className="rounded-pill px-4 fw-bold" onClick={() => handleStatusUpdate(selectedSale.id, 'PAID')}>
-                                <FaCheckCircle className="me-2" /> Marcar como Pagado y Entregado
+                                <FaCheckCircle className="me-2" /> Marcar como Compra Finalizada
                             </Button>
                         )}
                         <Button variant="light" className="rounded-pill px-4" onClick={() => setShowDetail(false)}>

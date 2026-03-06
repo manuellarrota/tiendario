@@ -166,6 +166,16 @@ public class EmailService {
                 "Email: " + email + " | Link: " + verificationUrl);
     }
 
+    /**
+     * Send credentials email when SuperAdmin registers a new store.
+     */
+    @Async
+    public void sendStoreCredentials(String to, String storeName, String username, String password) {
+        String subject = "🚀 ¡Bienvenido a Tiendario! — Credenciales de " + storeName;
+        String html = buildStoreCredentialsHtml(storeName, username, password);
+        sendHtmlMessage(to, subject, html);
+    }
+
     // ─── HTML Templates ───────────────────────────────────────────────
 
     private String buildPasswordResetHtml(String username, String resetLink) {
@@ -184,6 +194,32 @@ public class EmailService {
                 + "<p style='color:#6b7280;font-size:14px;'>Este enlace expira en <strong>30 minutos</strong>. Si no solicitaste este cambio, puedes ignorar este correo sin problemas.</p>"
                 + "<hr style='border:none;border-top:1px solid #e5e7eb;margin:20px 0;'/>"
                 + "<p style='color:#9ca3af;font-size:12px;text-align:center;'>© Tiendario — San Cristóbal, Táchira, Venezuela</p>"
+                + "</div></body></html>";
+    }
+
+    private String buildStoreCredentialsHtml(String storeName, String username, String password) {
+        String adminUrl = frontendUrl + "/admin";
+        return "<!DOCTYPE html><html><body style='font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;'>"
+                + "<div style='background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:40px;border-radius:16px;text-align:center;color:white;'>"
+                + "<h1 style='margin:0 0 10px;font-size:28px;'>🚀 ¡Bienvenido a Tiendario!</h1>"
+                + "<p style='opacity:0.9;margin:0;'>Tu tienda " + storeName + " ha sido registrada</p>"
+                + "</div>"
+                + "<div style='padding:30px;background:#fafafa;border-radius:0 0 16px 16px;'>"
+                + "<p>¡Felicidades! Se ha creado la cuenta de administración para <strong>" + storeName
+                + "</strong>.</p>"
+                + "<div style='background:white;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin:20px 0;'>"
+                + "<p style='margin:0 0 10px;color:#374151;'><strong>Usuario:</strong> <code style='background:#f3f4f6;padding:2px 6px;border-radius:4px;'>"
+                + username + "</code></p>"
+                + "<p style='margin:0;color:#374151;'><strong>Contraseña:</strong> <code style='background:#f3f4f6;padding:2px 6px;border-radius:4px;'>"
+                + password + "</code></p>"
+                + "</div>"
+                + "<div style='text-align:center;margin:30px 0;'>"
+                + "<a href='" + adminUrl
+                + "' style='background:#6366f1;color:white;padding:16px 40px;border-radius:30px;text-decoration:none;font-weight:bold;display:inline-block;font-size:16px;'>Ingresar al Panel</a>"
+                + "</div>"
+                + "<p style='color:#6b7280;font-size:14px;'>Te recomendamos cambiar tu contraseña al ingresar por primera vez desde Configuraciones.</p>"
+                + "<hr style='border:none;border-top:1px solid #e5e7eb;margin:20px 0;'/>"
+                + "<p style='color:#9ca3af;font-size:12px;text-align:center;'>© Tiendario — Tu Marketplace Local</p>"
                 + "</div></body></html>";
     }
 

@@ -158,6 +158,7 @@ const PurchaseHistoryPage = () => {
                                             <th className="border-0">Fecha</th>
                                             <th className="border-0">Proveedor</th>
                                             <th className="border-0 text-center">Artículos</th>
+                                            <th className="border-0 text-center">Estado</th>
                                             <th className="border-0 text-end">Total</th>
                                             <th className="border-0 text-center">Detalles</th>
                                         </tr>
@@ -186,6 +187,9 @@ const PurchaseHistoryPage = () => {
                                                     <td className="text-center">
                                                         <Badge bg="info">{purchase.items?.length || 0}</Badge>
                                                     </td>
+                                                    <td className="text-center">
+                                                        <Badge bg="success" className="rounded-pill px-3">Compra Finalizada</Badge>
+                                                    </td>
                                                     <td className="text-end fw-bold text-success">
                                                         ${purchase.total?.toLocaleString() || 0}
                                                     </td>
@@ -204,7 +208,7 @@ const PurchaseHistoryPage = () => {
                                                     </td>
                                                 </tr>
                                                 <tr>
-                                                    <td colSpan="6" className="p-0 border-0">
+                                                    <td colSpan="7" className="p-0 border-0">
                                                         <Collapse in={expandedId === purchase.id}>
                                                             <div className="bg-light p-3">
                                                                 <h6 className="mb-3">Detalle de Artículos</h6>

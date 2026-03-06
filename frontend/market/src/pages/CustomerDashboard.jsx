@@ -20,7 +20,10 @@ const CustomerDashboard = () => {
         Promise.all([CustomerService.getDashboardStats(), CustomerService.getMyOrders()])
             .then(([statsRes, ordersRes]) => {
                 setStats(statsRes.data);
-                setOrders(ordersRes.data);
+                const sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                const filteredOrders = ordersRes.data.filter(o => new Date(o.date) >= sevenDaysAgo);
+                setOrders(filteredOrders);
                 setLastUpdated(new Date());
                 if (isInitial) setLoading(false);
             })

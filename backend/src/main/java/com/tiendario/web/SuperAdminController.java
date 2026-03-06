@@ -3,6 +3,7 @@ package com.tiendario.web;
 import com.tiendario.domain.*;
 import com.tiendario.payload.response.MessageResponse;
 import com.tiendario.repository.*;
+import com.tiendario.service.EmailService;
 import com.tiendario.service.SubscriptionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -38,6 +39,9 @@ public class SuperAdminController {
 
         @Autowired
         SubscriptionService subscriptionService;
+
+        @Autowired
+        EmailService emailService;
 
         @Autowired
         GlobalConfigRepository configRepository;
@@ -330,6 +334,13 @@ public class SuperAdminController {
                 user.setCompany(company);
                 userRepository.save(user);
 
+                // Enviar credenciales
+                try {
+                        emailService.sendStoreCredentials(email, company.getName(), username, password);
+                } catch (Exception e) {
+                        e.printStackTrace();
+                }
+
                 Map<String, Object> result = new HashMap<>();
                 result.put("companyId", company.getId());
                 result.put("userId", user.getId());
@@ -339,32 +350,35 @@ public class SuperAdminController {
         }
 
         /**
-         * Paso 2: Agregar una categoría a una empresa específica.
+         * Paso 2: Agregar una categoría global.
          * Body: { name, description }
          */
-        @PostMapping("/onboard/{companyId}/categories")
+        @PostMapping("/categories/global")
         @PreAuthorize("hasRole('ADMIN')")
-        public ResponseEntity<?> addCategoryToCompany(@PathVariable Long companyId,
-                        @RequestBody Map<String, String> body) {
-                Company company = companyRepository.findById(companyId)
-                                .orElse(null);
-                if (company == null) {
-                        return ResponseEntity.badRequest().body(new MessageResponse("Empresa no encontrada."));
+        public ResponseEntity<?> addGlobalCategory(@RequestBody Map<String, String> body) {
+                String catName = body.get("name");
+                if (catName == null || catName.trim().isEmpty()) {
+                        return ResponseEntity.badRequest().body(new MessageResponse("Nombre de categoría requerido."));
                 }
-                Category cat = new Category();
-                cat.setName(body.get("name"));
-                cat.setDescription(body.getOrDefault("description", ""));
-                cat.setCompany(company);
-                categoryRepository.save(cat);
+
+                Category cat = categoryRepository.findFirstByNameIgnoreCase(catName.trim()).orElse(null);
+                if (cat == null) {
+                        cat = new Category();
+                        cat.setName(catName.trim());
+                        cat.setDescription(body.getOrDefault("description", ""));
+                        cat = categoryRepository.save(cat);
+                }
                 return ResponseEntity.ok(cat);
         }
 
         /**
          * Paso 3: Agregar un producto al inventario de una empresa específica.
+         * Se vincula automáticamente al catálogo global por SKU.
          * Body: { name, sku, price, stock, category, costPrice, imageUrl, minStock }
          */
         @PostMapping("/onboard/{companyId}/products")
         @PreAuthorize("hasRole('ADMIN')")
+        @Transactional
         public ResponseEntity<?> addProductToCompany(@PathVariable Long companyId,
                         @RequestBody Map<String, Object> body) {
                 Company company = companyRepository.findById(companyId)
@@ -372,24 +386,61 @@ public class SuperAdminController {
                 if (company == null) {
                         return ResponseEntity.badRequest().body(new MessageResponse("Empresa no encontrada."));
                 }
+
+                String sku = (String) body.get("sku");
+                String name = (String) body.get("name");
+                String catName = (String) body.getOrDefault("category", "");
+
+                final String catNameTrim = (catName != null) ? catName.trim() : "";
+
+                // 1. Buscar o Crear Categoría Global
+                final Category category = catNameTrim.isEmpty() ? null
+                                : categoryRepository.findFirstByNameIgnoreCase(catNameTrim)
+                                                .orElseGet(() -> {
+                                                        Category newCat = new Category();
+                                                        newCat.setName(catNameTrim);
+                                                        return categoryRepository.save(newCat);
+                                                });
+
+                // 2. Buscar o Crear en Catálogo Maestro (por SKU)
+                CatalogProduct catalogProduct = null;
+                if (sku != null && !sku.trim().isEmpty()) {
+                        catalogProduct = catalogProductRepository.findBySku(sku.trim())
+                                        .orElseGet(() -> {
+                                                CatalogProduct cp = new CatalogProduct();
+                                                cp.setSku(sku.trim());
+                                                cp.setName(name);
+                                                cp.setDescription((String) body.getOrDefault("description", ""));
+                                                cp.setImageUrl((String) body.getOrDefault("imageUrl", ""));
+                                                cp.setCategory(category);
+                                                return catalogProductRepository.save(cp);
+                                        });
+                }
+
                 Product p = new Product();
-                p.setName((String) body.get("name"));
-                p.setSku((String) body.getOrDefault("sku", ""));
-                p.setCategory((String) body.getOrDefault("category", ""));
+                p.setName(name);
+                p.setSku(sku != null ? sku.trim() : "");
+                p.setCategory(catName != null ? catName.trim() : "");
                 p.setImageUrl((String) body.getOrDefault("imageUrl", ""));
                 p.setPrice(body.get("price") != null ? new BigDecimal(body.get("price").toString()) : BigDecimal.ZERO);
                 p.setCostPrice(body.get("costPrice") != null ? new BigDecimal(body.get("costPrice").toString()) : null);
                 p.setStock(body.get("stock") != null ? Integer.parseInt(body.get("stock").toString()) : 0);
                 p.setMinStock(body.get("minStock") != null ? Integer.parseInt(body.get("minStock").toString()) : 5);
                 p.setCompany(company);
+                p.setCatalogProduct(catalogProduct); // Vínculo Maestro
+
                 productRepository.save(p);
                 return ResponseEntity.ok(p);
         }
 
-        /** Obtener categorías de una empresa (para el wizard). */
-        @GetMapping("/onboard/{companyId}/categories")
+        @GetMapping("/categories/global")
         @PreAuthorize("hasRole('ADMIN')")
-        public ResponseEntity<?> getCategoriesByCompany(@PathVariable Long companyId) {
-                return ResponseEntity.ok(categoryRepository.findByCompanyId(companyId));
+        public ResponseEntity<?> getAllGlobalCategories() {
+                List<String> names = categoryRepository.findAll().stream()
+                                .map(Category::getName)
+                                .map(String::trim)
+                                .distinct()
+                                .collect(java.util.stream.Collectors.toList());
+                return ResponseEntity.ok(names);
         }
 }

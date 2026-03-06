@@ -63,18 +63,13 @@ public class MyDataInitializer implements CommandLineRunner {
             // Create Users (Admin, Managers, Client)
             createUsers(company1, company2);
 
-            // Create Categories for company1
-            createCategory("Ropa", company1);
-            createCategory("Tecnología", company1);
-            createCategory("Alimentos", company1);
-            createCategory("Deportes", company1);
+            // Create Categories (Globals)
+            createCategory("Ropa");
+            createCategory("Tecnología");
+            createCategory("Alimentos");
+            createCategory("Deportes");
 
-            // Categories for company2
-            createCategory("Ropa", company2);
-            createCategory("Alimentos", company2);
-            createCategory("Deportes", company2);
-
-            System.err.println("DEBUG: Categories created.");
+            System.err.println("DEBUG: Categories created globally.");
 
             // Create Demo Products
             createProduct("Zapatillas Nike Air", "DEPO-ZAPA-0001", new BigDecimal("120.00"), 50, "Deportes", company1);
@@ -123,11 +118,12 @@ public class MyDataInitializer implements CommandLineRunner {
                 });
     }
 
-    private void createCategory(String name, Company company) {
-        Category cat = new Category();
-        cat.setName(name);
-        cat.setCompany(company);
-        categoryRepository.save(cat);
+    private void createCategory(String name) {
+        if (!categoryRepository.findFirstByNameIgnoreCase(name).isPresent()) {
+            Category cat = new Category();
+            cat.setName(name);
+            categoryRepository.save(cat);
+        }
     }
 
     private void createProduct(String name, String sku, BigDecimal price, int stock, String categoryName,

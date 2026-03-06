@@ -13,6 +13,15 @@ const AdminPaymentsPage = () => {
     const [selectedPayment, setSelectedPayment] = useState(null);
     const [rejectReason, setRejectReason] = useState('');
 
+    // Details Modal
+    const [showDetailsModal, setShowDetailsModal] = useState(false);
+    const [detailsPayment, setDetailsPayment] = useState(null);
+
+    const openDetailsModal = (payment) => {
+        setDetailsPayment(payment);
+        setShowDetailsModal(true);
+    };
+
     const loadPayments = () => {
         setLoading(true);
         AdminService.getGlobalPayments().then(
@@ -163,7 +172,7 @@ const AdminPaymentsPage = () => {
                                                     </div>
                                                 )}
                                                 {p.status !== 'PENDING' && (
-                                                    <Button variant="link" size="sm" className="text-muted text-decoration-none">
+                                                    <Button variant="link" size="sm" className="text-muted text-decoration-none" onClick={() => openDetailsModal(p)}>
                                                         <FaEye /> Ver detalles
                                                     </Button>
                                                 )}
@@ -203,6 +212,35 @@ const AdminPaymentsPage = () => {
                         <Modal.Footer className="border-0">
                             <Button variant="light" onClick={() => setShowRejectModal(false)} className="rounded-pill px-4">Cancelar</Button>
                             <Button variant="danger" onClick={handleReject} className="rounded-pill px-4">Confirmar Rechazo</Button>
+                        </Modal.Footer>
+                    </Modal>
+
+                    {/* Details Modal */}
+                    <Modal show={showDetailsModal} onHide={() => setShowDetailsModal(false)} centered>
+                        <Modal.Header closeButton className="border-0">
+                            <Modal.Title className="fw-bold">Detalles del Pago</Modal.Title>
+                        </Modal.Header>
+                        <Modal.Body className="p-4">
+                            {detailsPayment && (
+                                <div>
+                                    <p><strong>ID:</strong> #{detailsPayment.id}</p>
+                                    <p><strong>Empresa:</strong> {detailsPayment.company?.name}</p>
+                                    <p><strong>Monto:</strong> ${detailsPayment.amount}</p>
+                                    <p><strong>Método:</strong> {detailsPayment.paymentMethod}</p>
+                                    <p><strong>Referencia:</strong> {detailsPayment.reference}</p>
+                                    <p><strong>Fecha:</strong> {new Date(detailsPayment.createdAt).toLocaleString()}</p>
+                                    <p><strong>Estado:</strong> {getStatusBadge(detailsPayment.status)}</p>
+                                    {detailsPayment.notes && (
+                                        <div className="mt-3 p-3 bg-light rounded text-danger">
+                                            <strong>Motivo / Nota:</strong><br />
+                                            {detailsPayment.notes}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </Modal.Body>
+                        <Modal.Footer className="border-0">
+                            <Button variant="primary" onClick={() => setShowDetailsModal(false)} className="rounded-pill px-4">Cerrar</Button>
                         </Modal.Footer>
                     </Modal>
                 </Container>

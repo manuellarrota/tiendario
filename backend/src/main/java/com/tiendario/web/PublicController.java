@@ -55,6 +55,9 @@ public class PublicController {
     public List<PublicProductDTO> getAllProducts() {
         return productRepository.findAll().stream()
                 .collect(Collectors.groupingBy(p -> {
+                    if (p.getSku() != null && !p.getSku().trim().isEmpty()) {
+                        return "SKU-" + p.getSku().trim().toUpperCase();
+                    }
                     if (p.getCatalogProduct() != null) {
                         return "CAT-" + p.getCatalogProduct().getId();
                     }
@@ -85,10 +88,18 @@ public class PublicController {
     }
 
     @GetMapping("/products/name/{name}/sellers")
-    public List<SellerOfferDTO> getSellersByName(@PathVariable String name) {
+    public List<SellerOfferDTO> getSellersByName(@PathVariable String name,
+            @RequestParam(required = false) String sku) {
         String normalizedName = name.trim().toLowerCase();
+        String normalizedSku = sku != null ? sku.trim().toUpperCase() : null;
+
         return productRepository.findAll().stream()
-                .filter(p -> p.getName().trim().toLowerCase().equals(normalizedName))
+                .filter(p -> {
+                    if (normalizedSku != null && p.getSku() != null) {
+                        return p.getSku().trim().toUpperCase().equals(normalizedSku);
+                    }
+                    return p.getName().trim().toLowerCase().equals(normalizedName);
+                })
                 .map(p -> {
                     SellerOfferDTO offer = new SellerOfferDTO();
                     offer.setProductId(p.getId());
@@ -117,6 +128,9 @@ public class PublicController {
 
         return results.stream()
                 .collect(Collectors.groupingBy(p -> {
+                    if (p.getSku() != null && !p.getSku().trim().isEmpty()) {
+                        return "SKU-" + p.getSku().trim().toUpperCase();
+                    }
                     if (p.getCatalogProduct() != null) {
                         return "CAT-" + p.getCatalogProduct().getId();
                     }

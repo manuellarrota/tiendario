@@ -6,7 +6,9 @@ import javax.persistence.*;
 
 @Data
 @Entity
-@Table(name = "categories")
+@Table(name = "categories", uniqueConstraints = {
+        @UniqueConstraint(columnNames = { "name" })
+})
 @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class Category {
     @Id
@@ -15,8 +17,4 @@ public class Category {
 
     private String name;
     private String description;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "company_id")
-    private Company company;
 }

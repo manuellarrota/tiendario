@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx';
 import { Container, Card, Button, Form, Alert, Badge, Spinner, Row, Col, ProgressBar } from 'react-bootstrap';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -38,7 +39,7 @@ const PLANS = [
     { value: 'FREE', label: 'Gratis', color: 'secondary' },
 ];
 
-const INITIAL_PRODUCT = { name: '', price: '', stock: '', category: '', costPrice: '' };
+const INITIAL_PRODUCT = { name: '', price: '', stock: '', category: '', costPrice: '', sku: '' };
 
 export default function AdminOnboardingPage() {
     const [step, setStep] = useState(0);
@@ -62,7 +63,15 @@ export default function AdminOnboardingPage() {
     // Step 2 — Categorías
     const [catInput, setCatInput] = useState('');
     const [categories, setCategories] = useState([]);
+    const [globalCategories, setGlobalCategories] = useState([]);
     const [catLoading, setCatLoading] = useState(false);
+
+    useEffect(() => {
+        AdminService.getGlobalCategories().then(
+            res => setGlobalCategories(res.data || []),
+            err => console.error("Error cargando categorías globales", err)
+        );
+    }, []);
 
     // Step 3 — Inventario
     const [products, setProducts] = useState([{ ...INITIAL_PRODUCT }]);
@@ -93,18 +102,69 @@ export default function AdminOnboardingPage() {
         }
     };
 
-    const handleAddCategory = async () => {
-        if (!catInput.trim()) return;
+    const addCategoryDirectly = async (name) => {
+        if (!name.trim()) return;
+        if (categories.find(c => c.name.toLowerCase() === name.toLowerCase())) return;
         setCatLoading(true);
         try {
-            const res = await AdminService.addCategoryToCompany(createdCompanyId, { name: catInput.trim() });
-            setCategories([...categories, res.data]);
-            setCatInput('');
+            const res = await AdminService.addGlobalCategory({ name: name.trim() });
+            setCategories(prev => [...prev, res.data]);
         } catch {
-            setError('Error al agregar la categoría.');
+            setError('Error al agregar la categoría ' + name);
         } finally {
             setCatLoading(false);
         }
+    };
+
+    const handleAddCategory = () => {
+        addCategoryDirectly(catInput);
+        setCatInput('');
+    };
+
+    // Excel Logic
+    const handleExcelUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const bstr = evt.target.result;
+            const wb = XLSX.read(bstr, { type: 'binary' });
+            const wsname = wb.SheetNames[0];
+            const ws = wb.Sheets[wsname];
+            const data = XLSX.utils.sheet_to_json(ws);
+            if (data && data.length > 0) {
+                const imported = data.map(row => ({
+                    name: row['Nombre'] || '',
+                    sku: row['SKU'] || '',
+                    price: row['Precio'] || '',
+                    stock: row['Cantidad'] || '',
+                    category: row['Categoría'] || '',
+                    costPrice: row['Precio Costo'] || ''
+                }));
+                // Also auto-add missing categories from Excel to current store categories
+                const newCats = imported.map(i => i.category).filter(c => c && c.trim());
+                const uniqueNewCats = [...new Set(newCats)];
+
+                uniqueNewCats.forEach(catName => {
+                    addCategoryDirectly(catName);
+                });
+
+                setProducts(prev => {
+                    if (prev.length === 1 && !prev[0].name) return imported;
+                    return [...prev, ...imported];
+                });
+            }
+        };
+        reader.readAsBinaryString(file);
+    };
+
+    const downloadExcelTemplate = () => {
+        const ws = XLSX.utils.json_to_sheet([
+            { 'Nombre': 'Ejemplo Producto', 'SKU': 'SKU-001', 'Precio': 100, 'Cantidad': 50, 'Categoría': 'Ropa', 'Precio Costo': 80 }
+        ]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Inventario");
+        XLSX.writeFile(wb, "Formato_Inventario.xlsx");
     };
 
     const handleSaveProducts = async () => {
@@ -116,7 +176,9 @@ export default function AdminOnboardingPage() {
         for (const p of valid) {
             try {
                 await AdminService.addProductToCompany(createdCompanyId, {
-                    name: p.name, price: parseFloat(p.price),
+                    name: p.name,
+                    sku: p.sku,
+                    price: parseFloat(p.price),
                     stock: parseInt(p.stock) || 0,
                     category: p.category,
                     costPrice: p.costPrice ? parseFloat(p.costPrice) : null,
@@ -356,6 +418,22 @@ export default function AdminOnboardingPage() {
                                     </Button>
                                 </div>
 
+                                <h6 className="fw-bold mb-3 d-flex align-items-center gap-2 mt-4">
+                                    <FaTags className="text-secondary" /> Sugerencias Globales
+                                </h6>
+                                <div className="d-flex flex-wrap gap-2 mb-4">
+                                    {globalCategories.slice(0, 15).map((gc, idx) => {
+                                        const alreadyAdded = categories.find(c => c.name.toLowerCase() === gc.toLowerCase());
+                                        if (alreadyAdded) return null;
+                                        return (
+                                            <Badge key={idx} bg="light" text="dark" className="border px-3 py-2 rounded-pill shadow-sm"
+                                                style={{ cursor: 'pointer' }} onClick={() => addCategoryDirectly(gc)}>
+                                                <FaPlus className="me-1 text-primary" /> {gc}
+                                            </Badge>
+                                        );
+                                    })}
+                                </div>
+
                                 <div className="d-flex flex-wrap gap-2 mb-4" style={{ minHeight: 48 }}>
                                     {categories.length === 0 ? (
                                         <small className="text-muted fst-italic">Aún no has agregado categorías. Puedes continuar sin ellas.</small>
@@ -386,17 +464,33 @@ export default function AdminOnboardingPage() {
                                 <h5 className="fw-bold mb-1 d-flex align-items-center gap-2">
                                     <FaBoxOpen className="text-primary" /> Inventario Inicial
                                 </h5>
-                                <p className="text-muted small mb-4">
-                                    Agrega los primeros productos de la tienda. Puedes agregar más desde el panel de la tienda.
-                                </p>
+                                <div className="d-flex justify-content-between align-items-center mb-4">
+                                    <p className="text-muted small mb-0">
+                                        Agrega los primeros productos de la tienda.
+                                    </p>
+                                    <div className="d-flex gap-2">
+                                        <Button variant="outline-success" size="sm" className="rounded-pill px-3 fw-bold" onClick={downloadExcelTemplate}>
+                                            <FaArrowRight className="me-1" /> Descargar Formato
+                                        </Button>
+                                        <div className="position-relative">
+                                            <Button variant="success" size="sm" className="rounded-pill px-3 fw-bold bg-success text-white border-0 shadow-sm" style={{ pointerEvents: 'none' }}>
+                                                <FaBoxOpen className="me-1" /> Importar Excel
+                                            </Button>
+                                            <input type="file" accept=".xlsx, .xls" onChange={handleExcelUpload}
+                                                style={{ opacity: 0, position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', cursor: 'pointer' }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
 
                                 <div className="table-responsive">
                                     <table className="table table-borderless align-middle mb-2">
                                         <thead>
                                             <tr className="bg-light rounded">
                                                 <th className="small fw-bold text-muted ps-2">Nombre del Producto</th>
+                                                <th className="small fw-bold text-muted">SKU (Grupo)</th>
                                                 <th className="small fw-bold text-muted">Precio</th>
-                                                <th className="small fw-bold text-muted">Stock</th>
+                                                <th className="small fw-bold text-muted">Cantidad</th>
                                                 <th className="small fw-bold text-muted">Categoría</th>
                                                 <th></th>
                                             </tr>
@@ -409,7 +503,12 @@ export default function AdminOnboardingPage() {
                                                             placeholder="Ej: Camiseta Azul"
                                                             value={p.name} onChange={e => updateProduct(i, 'name', e.target.value)} />
                                                     </td>
-                                                    <td style={{ width: 110 }}>
+                                                    <td style={{ width: 130 }}>
+                                                        <Form.Control size="sm" className="rounded-3"
+                                                            placeholder="SKU-XXX"
+                                                            value={p.sku} onChange={e => updateProduct(i, 'sku', e.target.value)} />
+                                                    </td>
+                                                    <td style={{ width: 100 }}>
                                                         <Form.Control size="sm" type="number" className="rounded-3"
                                                             placeholder="0.00" min="0" step="0.01"
                                                             value={p.price} onChange={e => updateProduct(i, 'price', e.target.value)} />

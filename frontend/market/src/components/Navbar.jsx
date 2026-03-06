@@ -31,17 +31,31 @@ const MarketplaceNavbar = ({ onLoginClick, onRegisterClick }) => {
                 <Navbar.Collapse className="justify-content-end">
                     <div className="d-flex align-items-center gap-3">
                         {user ? (
-                            <Dropdown align="end">
-                                <Dropdown.Toggle variant="light" id="dropdown-basic" className="d-flex align-items-center gap-2 border-0 bg-transparent">
-                                    <FaUserCircle size={24} className="text-primary" />
-                                    <span className="d-none d-md-block fw-bold">{displayName}</span>
-                                </Dropdown.Toggle>
+                            <div className="d-flex align-items-center gap-2">
+                                <Dropdown align="end">
+                                    <Dropdown.Toggle variant="light" className="rounded-pill px-3 py-2 border shadow-sm d-flex align-items-center gap-2">
+                                        <FaUserCircle size={20} className="text-primary" />
+                                        <div className="text-start d-none d-sm-block">
+                                            <div className="fw-bold small lh-1">{displayName}</div>
+                                            <small className="text-muted" style={{ fontSize: '0.7rem' }}>Panel de Cliente</small>
+                                        </div>
+                                    </Dropdown.Toggle>
 
-                                <Dropdown.Menu>
-                                    <Dropdown.Item as={Link} to="/dashboard">Mi Panel de Cliente</Dropdown.Item>
-                                    <Dropdown.Item onClick={handleLogout} className="text-danger">Cerrar Sesión</Dropdown.Item>
-                                </Dropdown.Menu>
-                            </Dropdown>
+                                    <Dropdown.Menu className="border-0 shadow-lg rounded-4 p-2 mt-2" style={{ minWidth: '220px' }}>
+                                        <div className="px-3 py-2 mb-2 bg-light rounded-3 text-center">
+                                            <small className="text-muted d-block text-uppercase fw-bold" style={{ fontSize: '0.65rem' }}>Puntos Acumulados</small>
+                                            <span className="h5 fw-bold text-primary mb-0">⭐ {user.points || 0} pts</span>
+                                        </div>
+                                        <Dropdown.Item as={Link} to="/dashboard" className="rounded-3 py-2">
+                                            🛒 Mis Pedidos (7 días)
+                                        </Dropdown.Item>
+                                        <Dropdown.Divider />
+                                        <Dropdown.Item onClick={handleLogout} className="text-danger rounded-3 py-2">
+                                            🚪 Cerrar Sesión
+                                        </Dropdown.Item>
+                                    </Dropdown.Menu>
+                                </Dropdown>
+                            </div>
                         ) : (
                             <>
                                 <Button variant="link" className="text-decoration-none fw-bold text-dark" onClick={onLoginClick}>Iniciar Sesión</Button>

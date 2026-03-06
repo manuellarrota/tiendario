@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Table, Badge, Button, Card, Spinner, Dropdown, Alert } from 'react-bootstrap';
+import { Container, Table, Badge, Button, Card, Spinner, Dropdown, Alert, Form } from 'react-bootstrap';
 import { FaBuilding, FaUsers, FaEdit, FaCheck, FaTimes } from 'react-icons/fa';
 import AdminService from '../services/admin.service';
 import Sidebar from '../components/Sidebar';
@@ -9,6 +9,9 @@ const AdminCompaniesPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [updating, setUpdating] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
 
     const loadCompanies = () => {
         setLoading(true);
@@ -57,15 +60,35 @@ const AdminCompaniesPage = () => {
         );
     }
 
+    const filteredCompanies = companies.filter(company =>
+        (company.name && company.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (company.id && company.id.toString().includes(searchTerm))
+    );
+
+    const totalPages = Math.ceil(filteredCompanies.length / ITEMS_PER_PAGE);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const paginatedCompanies = filteredCompanies.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
     return (
         <div className="d-flex admin-content-area overflow-hidden">
             <Sidebar />
             <div className="flex-grow-1 p-3 p-md-4 main-content-mobile-fix" style={{ overflowY: 'auto' }}>
                 <Container className="py-4">
-                    <h2 className="mb-4 d-flex align-items-center">
-                        <FaBuilding className="me-3 text-primary" />
-                        Gestión de Empresas (Tenants)
-                    </h2>
+                    <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+                        <h2 className="mb-0 d-flex align-items-center">
+                            <FaBuilding className="me-3 text-primary" />
+                            Gestión de Empresas (Tiendas)
+                        </h2>
+                        <div style={{ width: '100%', maxWidth: '300px' }}>
+                            <Form.Control
+                                type="text"
+                                placeholder="Buscar por ID o nombre..."
+                                value={searchTerm}
+                                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                                className="rounded-pill shadow-sm bg-white"
+                            />
+                        </div>
+                    </div>
 
                     {error && <Alert variant="danger">{error}</Alert>}
 
@@ -81,7 +104,7 @@ const AdminCompaniesPage = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {companies.map((company) => (
+                                    {paginatedCompanies.map((company) => (
                                         <tr key={company.id}>
                                             <td className="ps-4 fw-bold text-muted">#{company.id}</td>
                                             <td>
@@ -118,9 +141,19 @@ const AdminCompaniesPage = () => {
                                     ))}
                                 </tbody>
                             </Table>
-                            {companies.length === 0 && (
+                            {filteredCompanies.length > 0 && (
+                                <div className="d-flex flex-column flex-md-row justify-content-between align-items-center p-3 border-top gap-3">
+                                    <small className="text-muted">Mostrando {startIndex + 1} a {Math.min(startIndex + ITEMS_PER_PAGE, filteredCompanies.length)} de {filteredCompanies.length} empresas</small>
+                                    <div className="d-flex gap-2">
+                                        <Button variant="outline-primary" size="sm" className="rounded-pill px-3" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>Anterior</Button>
+                                        <div className="d-flex align-items-center px-3 bg-light rounded-pill fw-bold text-primary">{currentPage} de {totalPages || 1}</div>
+                                        <Button variant="outline-primary" size="sm" className="rounded-pill px-3" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(p => p + 1)}>Siguiente</Button>
+                                    </div>
+                                </div>
+                            )}
+                            {filteredCompanies.length === 0 && (
                                 <div className="text-center py-5">
-                                    <p className="text-muted">No hay empresas registradas aún.</p>
+                                    <p className="text-muted mb-0">No se encontraron empresas que coincidan con tu búsqueda.</p>
                                 </div>
                             )}
                         </Card.Body>

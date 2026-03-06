@@ -157,7 +157,7 @@ const MarketplacePage = () => {
     const handleDetailClick = (product) => {
         setSelectedProduct(product);
         setShowDetailModal(true);
-        SearchService.getSellersByName(product.name).then(
+        SearchService.getSellersByName(product.name, product.sku).then(
             (response) => {
                 const sortedSellers = [...response.data].sort((a, b) => a.price - b.price);
                 setSellers(sortedSellers);
@@ -945,8 +945,8 @@ const MarketplacePage = () => {
                 <Modal.Body className="p-0 overflow-hidden rounded-4">
                     <div className="bg-success text-white p-4 text-center">
                         <div className="display-4 mb-2">✅</div>
-                        <h3 className="fw-bold mb-1">¡Orden Confirmada!</h3>
-                        <p className="mb-0 opacity-75">Tu reserva ha sido enviada a las tiendas</p>
+                        <h3 className="fw-bold mb-1">Tu orden se ha enviado con éxito</h3>
+                        <p className="mb-0 opacity-75">{confirmedOrder?.stores?.length > 1 ? 'Tu pedido ha sido distribuido entre las tiendas seleccionadas' : 'Tu pedido ha sido recibido por la tienda'}</p>
                     </div>
 
                     {confirmedOrder && (
@@ -963,12 +963,11 @@ const MarketplacePage = () => {
                             </div>
 
                             <Alert variant="info" className="rounded-4 border-0 mb-4">
-                                <strong>💡 Click & Collect:</strong> Cada tienda preparará su parte del pedido por separado.
-                                Pagas y retiras directamente en cada local. Puedes modificar al llegar si lo necesitas.
+                                <strong>💡 {confirmedOrder.stores.length > 1 ? 'Retiro en múltiples tiendas:' : 'Retiro en tienda:'}</strong> {confirmedOrder.stores.length > 1 ? 'Cada tienda preparará su parte del pedido por separado. Pagas y retiras directamente en cada local. Puedes modificar al llegar si lo necesitas.' : 'La tienda preparará tu pedido. Pagas y retiras directamente en el local. Puedes modificar al llegar si lo necesitas.'}
                             </Alert>
 
                             <h6 className="fw-bold mb-3 text-uppercase text-muted" style={{ letterSpacing: '1px', fontSize: '0.75rem' }}>
-                                📦 Sub-órdenes por Tienda ({confirmedOrder.stores.length})
+                                📦 {confirmedOrder.stores.length > 1 ? `Sub-órdenes por Tienda (${confirmedOrder.stores.length})` : 'Detalle de Orden'}
                             </h6>
 
                             {confirmedOrder.stores.map((store, idx) => {

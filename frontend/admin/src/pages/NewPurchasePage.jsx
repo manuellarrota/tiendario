@@ -351,7 +351,7 @@ const NewPurchasePage = () => {
                                     </Col>
                                 </Row>
                                 <Button variant="outline-primary" className="w-100" onClick={addToCart}>
-                                    <FaPlus className="me-2" /> Agregar Producto
+                                    <FaPlus className="me-2" /> Agregar producto a Orden de Compra
                                 </Button>
                             </Card>
 

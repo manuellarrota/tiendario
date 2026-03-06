@@ -149,7 +149,7 @@ public class AuthControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(signupRequest)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message", containsString("already taken")));
+                .andExpect(jsonPath("$.message", containsString("ya está en uso")));
     }
 
     @Test
@@ -166,6 +166,6 @@ public class AuthControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(signupRequest)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message", containsString("Super Admin registration is not allowed")));
+                .andExpect(jsonPath("$.message", containsString("Super Administrador no está permitido")));
     }
 }

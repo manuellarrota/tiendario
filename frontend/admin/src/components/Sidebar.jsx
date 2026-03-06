@@ -51,10 +51,10 @@ const Sidebar = () => {
         const timer = setTimeout(() => {
             const activeLink = document.querySelector('.sidebar-nav-link.active');
             if (activeLink) {
-                // Mantener la altura del menu a la opcion seleccionada (centrado)
-                activeLink.scrollIntoView({ behavior: 'auto', block: 'center' });
+                // Ensure the active link is visible in the container
+                activeLink.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
             }
-        }, 50);
+        }, 100);
         return () => clearTimeout(timer);
     }, [location.pathname]);
 
@@ -106,7 +106,7 @@ const Sidebar = () => {
                 <div className={`admin-sidebar ${isOpen ? 'mobile-open' : ''}`}
                     style={{ width: '100%', height: '100vh', overflowY: 'auto', overflowX: 'hidden' }}>
 
-                    <div className="sidebar-header" style={{ padding: collapsed ? '20px 10px' : '30px' }}>
+                    <div className="sidebar-header" style={{ padding: collapsed ? '20px 10px' : '20px' }}>
                         <Link to="/dashboard" className={`sidebar-logo ${collapsed ? 'justify-content-center' : ''}`}>
                             <div className="logo-icon">
                                 <FaStore size={22} />

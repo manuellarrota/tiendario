@@ -139,7 +139,7 @@ public class SaleControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(newSale)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message", containsString("at least one item")));
+                .andExpect(jsonPath("$.message", containsString("al menos un artículo")));
     }
 
     @Test
@@ -160,7 +160,7 @@ public class SaleControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(newSale)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message", containsString("Insufficient stock")));
+                .andExpect(jsonPath("$.message", containsString("Stock insuficiente")));
     }
 
     @Test
@@ -179,7 +179,7 @@ public class SaleControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(newSale)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message", containsString("product ID")));
+                .andExpect(jsonPath("$.message", containsString("ID de producto")));
     }
 
     @Test

@@ -22,8 +22,9 @@ const getPlatformConfig = () => {
     return axios.get(API_URL + 'config');
 };
 
-const getSellersByName = (name) => {
-    return axios.get(API_URL + 'products/name/' + encodeURIComponent(name) + '/sellers');
+const getSellersByName = (name, sku) => {
+    const params = sku ? { sku } : {};
+    return axios.get(API_URL + 'products/name/' + encodeURIComponent(name) + '/sellers', { params });
 };
 
 const getCustomerPoints = (email) => {

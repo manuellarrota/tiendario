@@ -12,6 +12,11 @@ const AdminCatalogPage = () => {
     const [selectedItem, setSelectedItem] = useState(null);
     const [saving, setSaving] = useState(false);
 
+    // Pagination and search
+    const [searchTerm, setSearchTerm] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
+
     const loadCatalog = () => {
         setLoading(true);
         AdminService.getAllCatalogProducts().then(
@@ -75,15 +80,36 @@ const AdminCatalogPage = () => {
         );
     }
 
+    const filteredCatalog = catalog.filter(item =>
+        (item.name && item.name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.sku && item.sku.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (item.category?.name && item.category.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    const totalPages = Math.ceil(filteredCatalog.length / ITEMS_PER_PAGE);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const paginatedCatalog = filteredCatalog.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
     return (
         <div className="d-flex admin-content-area overflow-hidden">
             <Sidebar />
             <div className="flex-grow-1 p-3 p-md-4 main-content-mobile-fix" style={{ overflowY: 'auto' }}>
                 <Container className="py-4">
-                    <h2 className="mb-4 d-flex align-items-center">
-                        <FaBox className="me-3 text-primary" />
-                        Catálogo Global Maestro
-                    </h2>
+                    <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+                        <h2 className="mb-0 d-flex align-items-center">
+                            <FaBox className="me-3 text-primary" />
+                            Catálogo Global Maestro
+                        </h2>
+                        <div style={{ width: '100%', maxWidth: '350px' }}>
+                            <Form.Control
+                                type="text"
+                                placeholder="Buscar pos nombre, SKU o categoría..."
+                                value={searchTerm}
+                                onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                                className="rounded-pill shadow-sm bg-white"
+                            />
+                        </div>
+                    </div>
 
                     {error && <Alert variant="danger">{error}</Alert>}
 
@@ -100,7 +126,7 @@ const AdminCatalogPage = () => {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {catalog.map((item) => (
+                                    {paginatedCatalog.map((item) => (
                                         <tr key={item.id}>
                                             <td className="ps-4">
                                                 {item.imageUrl ?
@@ -123,9 +149,19 @@ const AdminCatalogPage = () => {
                                     ))}
                                 </tbody>
                             </Table>
-                            {catalog.length === 0 && (
+                            {filteredCatalog.length > 0 && (
+                                <div className="d-flex flex-column flex-md-row justify-content-between align-items-center p-3 border-top gap-3">
+                                    <small className="text-muted">Mostrando {startIndex + 1} a {Math.min(startIndex + ITEMS_PER_PAGE, filteredCatalog.length)} de {filteredCatalog.length} productos</small>
+                                    <div className="d-flex gap-2">
+                                        <Button variant="outline-primary" size="sm" className="rounded-pill px-3" disabled={currentPage === 1} onClick={() => setCurrentPage(p => p - 1)}>Anterior</Button>
+                                        <div className="d-flex align-items-center px-3 bg-light rounded-pill fw-bold text-primary">{currentPage} de {totalPages || 1}</div>
+                                        <Button variant="outline-primary" size="sm" className="rounded-pill px-3" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(p => p + 1)}>Siguiente</Button>
+                                    </div>
+                                </div>
+                            )}
+                            {filteredCatalog.length === 0 && (
                                 <div className="text-center py-5">
-                                    <p className="text-muted">El catálogo está vacío.</p>
+                                    <p className="text-muted mb-0">No se encontraron productos que coincidan con tu búsqueda.</p>
                                 </div>
                             )}
                         </Card.Body>

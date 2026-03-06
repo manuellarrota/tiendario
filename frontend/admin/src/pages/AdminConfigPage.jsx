@@ -131,6 +131,7 @@ const AdminConfigPage = () => {
                                                         name="freePlanProductLimit"
                                                         value={config.freePlanProductLimit}
                                                         onChange={handleChange}
+                                                        onFocus={e => e.target.select()}
                                                         required
                                                     />
                                                 </Form.Group>
@@ -146,6 +147,7 @@ const AdminConfigPage = () => {
                                                             name="premiumPlanMonthlyPrice"
                                                             value={config.premiumPlanMonthlyPrice}
                                                             onChange={handleChange}
+                                                            onFocus={e => e.target.select()}
                                                             required
                                                         />
                                                     </InputGroup>
@@ -159,6 +161,7 @@ const AdminConfigPage = () => {
                                                         name="trialDays"
                                                         value={config.trialDays}
                                                         onChange={handleChange}
+                                                        onFocus={e => e.target.select()}
                                                         required
                                                     />
                                                 </Form.Group>
@@ -314,6 +317,7 @@ const AdminConfigPage = () => {
                                                                     step="0.01"
                                                                     value={curr.rate}
                                                                     onChange={(e) => updateCurrency(idx, 'rate', e.target.value)}
+                                                                    onFocus={e => e.target.select()}
                                                                 />
                                                             </td>
                                                             <td className="text-center">
@@ -402,7 +406,7 @@ const AdminConfigPage = () => {
                                     <Card.Body className="p-4">
                                         <h6 className="fw-bold text-info"><FaCogs className="me-2" /> Nota del sistema</h6>
                                         <p className="small opacity-75 mb-0">
-                                            Los cambios realizados en esta sección afectan a todos los tenants de forma inmediata.
+                                            Los cambios realizados en esta sección afectan a todas las tiendas de forma inmediata.
                                             Asegúrate de comunicar cambios de precios o límites de productos con antelación.
                                         </p>
                                     </Card.Body>
