@@ -52,7 +52,7 @@ const Sidebar = () => {
             const activeLink = document.querySelector('.sidebar-nav-link.active');
             if (activeLink) {
                 // Ensure the active link is visible in the container
-                activeLink.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                activeLink.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }, 100);
         return () => clearTimeout(timer);
