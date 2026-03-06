@@ -87,7 +87,7 @@ const SalesHistoryPage = () => {
                 // Reload from server to ensure consistency (silently to avoid disrupt)
                 loadSales(true);
             },
-            () => alert("Error al actualizar estado")
+            () => alert("❌ Hubo un error al intentar actualizar el estado de la venta.")
         );
     };
 

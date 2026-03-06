@@ -30,4 +30,5 @@ public class Company {
     private String imageUrl;
 
     private String phoneNumber;
+    private String address;
 }

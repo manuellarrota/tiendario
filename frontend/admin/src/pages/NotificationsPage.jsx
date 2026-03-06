@@ -48,7 +48,7 @@ const NotificationsPage = () => {
                     }
                 },
                 () => {
-                    alert("Error al cargar los detalles de la venta.");
+                    alert("❌ Error al cargar los detalles de la venta. El registro podría no estar disponible.");
                 }
             );
         } else {
@@ -84,7 +84,7 @@ const NotificationsPage = () => {
                     setSelectedSale(prev => ({ ...prev, status: status, paymentMethod: method || prev.paymentMethod }));
                 }
             },
-            () => alert("Error al actualizar estado")
+            () => alert("❌ Error al intentar actualizar el estado del pedido.")
         );
     };
 

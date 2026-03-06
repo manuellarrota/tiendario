@@ -37,7 +37,7 @@ const InventoryPage = () => {
     const getFullImageUrl = (path) => {
         if (!path) return null;
         if (path.startsWith('http')) return path;
-        return (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080') + path;
+        return (import.meta.env.VITE_API_URL || '') + path;
     };
 
     const renderTooltip = (props, text) => (
@@ -186,7 +186,8 @@ const InventoryPage = () => {
                     loadProducts();
                 },
                 () => {
-                    alert("Error al eliminar");
+                    setMessage("❌ No pudimos eliminar el producto. Intente más tarde.");
+                    setTimeout(() => setMessage(""), 3500);
                 }
             );
         }
@@ -243,8 +244,9 @@ const InventoryPage = () => {
             },
             err => {
                 console.error("Upload failed", err);
-                alert("Error al subir la imagen");
+                setMessage("❌ Lo sentimos, no pudimos procesar la imagen.");
                 setIsUploading(false);
+                setTimeout(() => setMessage(""), 3500);
             }
         );
     };

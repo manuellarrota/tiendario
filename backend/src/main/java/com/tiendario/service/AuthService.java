@@ -36,11 +36,11 @@ public class AuthService {
     @Transactional
     public User registerUser(SignupRequest signUpRequest) {
         if (userRepository.existsByUsername(signUpRequest.getUsername())) {
-            throw new RuntimeException("Error: Username is already taken!");
+            throw new RuntimeException("Error: ¡El nombre de usuario ya está en uso!");
         }
 
         if (userRepository.existsByEmail(signUpRequest.getEmail())) {
-            throw new RuntimeException("Error: Email is already in use!");
+            throw new RuntimeException("Error: ¡El correo electrónico ya está en uso!");
         }
 
         // Create new user's account
@@ -56,13 +56,14 @@ public class AuthService {
 
         // Prevent Super Admin creation via public API
         if ("admin".equalsIgnoreCase(roleStr)) {
-            throw new RuntimeException("Error: Super Admin registration is not allowed via public API.");
+            throw new RuntimeException(
+                    "Error: El registro de Super Administrador no está permitido a través de la API pública.");
         }
 
         if ("manager".equalsIgnoreCase(roleStr)) {
             // Manager ALWAYS needs a Company
             if (signUpRequest.getCompanyName() == null || signUpRequest.getCompanyName().isEmpty()) {
-                throw new RuntimeException("Error: Company Name is required for Managers.");
+                throw new RuntimeException("Error: El nombre de la empresa es obligatorio.");
             }
             user.setRole(Role.ROLE_MANAGER);
 
@@ -80,7 +81,7 @@ public class AuthService {
             if (signUpRequest.getPhoneNumber() != null) {
                 company.setPhoneNumber(signUpRequest.getPhoneNumber());
             }
-
+            company.setAddress(signUpRequest.getAddress());
             companyRepository.save(company);
             user.setCompany(company);
         } else {

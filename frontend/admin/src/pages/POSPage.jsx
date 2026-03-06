@@ -90,7 +90,8 @@ const POSPage = () => {
         const existing = cart.find(item => item.product.id === selectedProduct.id);
         if (existing) {
             if (existing.quantity + qty > selectedProduct.stock) {
-                alert(`Stock insuficiente. Disponible: ${selectedProduct.stock}`);
+                setMessage(`❌ Stock insuficiente. Solo quedan ${selectedProduct.stock} unidades de ${selectedProduct.name}.`);
+                setTimeout(() => setMessage(""), 3500);
                 return;
             }
             setCart(cart.map(item =>
@@ -100,7 +101,8 @@ const POSPage = () => {
             ));
         } else {
             if (qty > selectedProduct.stock) {
-                alert(`Stock insuficiente. Disponible: ${selectedProduct.stock}`);
+                setMessage(`❌ Stock insuficiente para ${selectedProduct.name}. Disponible: ${selectedProduct.stock}`);
+                setTimeout(() => setMessage(""), 3500);
                 return;
             }
             setCart([...cart, {
@@ -121,7 +123,8 @@ const POSPage = () => {
 
         const product = products.find(p => p.id === productId);
         if (newQuantity > product.stock) {
-            alert(`Stock insuficiente. Disponible: ${product.stock}`);
+            setMessage(`❌ No puedes agregar más. Stock máximo: ${product.stock}`);
+            setTimeout(() => setMessage(""), 3500);
             return;
         }
 

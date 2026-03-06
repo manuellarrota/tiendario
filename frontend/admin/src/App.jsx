@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 import LandingPage from './pages/LandingPage';
-import RegisterPage from './pages/RegisterPage';
 import DashboardHome from './pages/DashboardHome';
 import InventoryPage from './pages/InventoryPage';
 import SupplierPage from './pages/SupplierPage';
@@ -25,18 +24,14 @@ import DailyClosingPage from './pages/DailyClosingPage';
 import AdminOnboardingPage from './pages/AdminOnboardingPage';
 
 
-import OfflineAlert from './components/OfflineAlert';
-
 
 function App() {
   return (
     <Router>
       <div className="app-container">
-        <OfflineAlert />
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Navigate to="/" replace />} />
-          <Route path="/register" element={<RegisterPage />} />
           <Route path="/dashboard" element={<DashboardHome />} />
           <Route path="/inventory" element={<InventoryPage />} />
           <Route path="/categories" element={<CategoriesPage />} />

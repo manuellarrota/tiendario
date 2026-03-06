@@ -40,7 +40,7 @@ const AdminCompaniesPage = () => {
             },
             (error) => {
                 console.error("Error updating company", error);
-                alert("Error al actualizar el estado");
+                alert("❌ Error al actualizar el estado de la suscripción.");
                 setUpdating(null);
             }
         );

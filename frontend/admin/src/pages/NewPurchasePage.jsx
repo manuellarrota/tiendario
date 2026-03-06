@@ -171,8 +171,8 @@ const NewPurchasePage = () => {
     };
 
     const handleSavePurchase = () => {
-        if (!selectedSupplier) { alert("Selecciona un proveedor"); return; }
-        if (cart.length === 0) { alert("El carrito está vacío"); return; }
+        if (!selectedSupplier) { alert("❌ Por favor, selecciona un proveedor antes de continuar."); return; }
+        if (cart.length === 0) { alert("❌ El carrito de compra está vacío. Agrega al menos un producto."); return; }
 
         const purchaseData = {
             supplierId: parseInt(selectedSupplier),

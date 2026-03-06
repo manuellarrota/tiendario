@@ -54,12 +54,12 @@ public class SaleService {
     @Transactional
     public void createSale(Sale sale, UserDetailsImpl userDetails) {
         if (userDetails.getCompanyId() == null) {
-            throw new RuntimeException("Error: User has no company assigned.");
+            throw new RuntimeException("Error: El usuario no tiene una empresa asignada.");
         }
 
         var company = companyRepository.findById(userDetails.getCompanyId()).orElse(null);
         if (company == null) {
-            throw new RuntimeException("Error: Company not found.");
+            throw new RuntimeException("Error: Empresa no encontrada.");
         }
 
         // Block sales for accounts without active subscription
@@ -93,7 +93,7 @@ public class SaleService {
         }
 
         if (sale.getItems() == null || sale.getItems().isEmpty()) {
-            throw new RuntimeException("Error: Sale must have at least one item.");
+            throw new RuntimeException("Error: La venta debe tener al menos un artículo.");
         }
 
         java.math.BigDecimal computedTotal = java.math.BigDecimal.ZERO;
@@ -102,7 +102,7 @@ public class SaleService {
             item.setSale(sale);
 
             if (item.getProduct() == null || item.getProduct().getId() == null) {
-                throw new RuntimeException("Error: Each item must have a product ID.");
+                throw new RuntimeException("Error: Cada artículo debe tener un ID de producto.");
             }
 
             if (item.getQuantity() == null || item.getQuantity() <= 0) {
@@ -114,7 +114,7 @@ public class SaleService {
 
             // Check stock and availability (reserve it even if pending)
             if (product.getStock() < item.getQuantity()) {
-                throw new RuntimeException("Error: Insufficient stock for " + product.getName());
+                throw new RuntimeException("Error: Stock insuficiente para " + product.getName());
             }
 
             // Update Stock

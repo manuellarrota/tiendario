@@ -230,7 +230,7 @@ public class ProductController {
         if (newSku != null && !newSku.equals(currentSku)) {
             if (productRepository.existsBySkuAndCompanyId(newSku, userDetails.getCompanyId())) {
                 return ResponseEntity.badRequest()
-                        .body(new MessageResponse("Error: SKU already exists in your inventory."));
+                        .body(new MessageResponse("Error: El SKU ya existe en tu inventario."));
             }
             product.setSku(newSku);
         }

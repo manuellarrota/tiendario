@@ -45,8 +45,7 @@ const AdminCatalogPage = () => {
                 setSaving(false);
             },
             (error) => {
-                console.error("Error updating catalog item", error);
-                alert("Error al actualizar el registro.");
+                alert("❌ Error al actualizar el registro global.");
                 setSaving(false);
             }
         );
@@ -59,8 +58,7 @@ const AdminCatalogPage = () => {
                     setCatalog(catalog.filter(c => c.id !== id));
                 },
                 (error) => {
-                    console.error("Error deleting catalog item", error);
-                    alert("No se pudo eliminar.");
+                    alert("❌ No se pudo eliminar el registro del catálogo.");
                 }
             );
         }

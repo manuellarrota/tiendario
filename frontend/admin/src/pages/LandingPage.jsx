@@ -1,9 +1,32 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Container, Row, Col, Badge, Form, Button, Alert, Card, Modal, Spinner } from 'react-bootstrap';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { FaCheck, FaRocket, FaStore, FaChartLine, FaLock, FaUser, FaEnvelope } from 'react-icons/fa';
 import AuthService from '../services/auth.service';
 import axios from 'axios';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import L from 'leaflet';
+
+// Fix for Leaflet default icons in React
+delete L.Icon.Default.prototype._getIconUrl;
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
+    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
+});
+
+const LocationMarker = ({ position, setPosition }) => {
+    useMapEvents({
+        click(e) {
+            setPosition(e.latlng);
+        },
+    });
+
+    return position === null ? null : (
+        <Marker position={position}></Marker>
+    );
+};
 
 const LandingPage = () => {
     const [username, setUsername] = useState("");
@@ -22,6 +45,9 @@ const LandingPage = () => {
     const [regSuccessful, setRegSuccessful] = useState(false);
     const [regPhone, setRegPhone] = useState("");
     const [regPlan, setRegPlan] = useState("free");
+    const [regPosition, setRegPosition] = useState(null);
+    const [regAddress, setRegAddress] = useState("");
+    const mapRef = useRef();
 
     // Forgot Password State
     const [showForgotModal, setShowForgotModal] = useState(false);
@@ -60,6 +86,14 @@ const LandingPage = () => {
         }
     }, [searchParams]);
 
+
+    // Relocate map effect when position changes
+    useEffect(() => {
+        if (regPosition && mapRef.current) {
+            mapRef.current.setView([regPosition.lat, regPosition.lng], 16);
+        }
+    }, [regPosition]);
+
     const handleLogin = (e) => {
         e.preventDefault();
         setMessage("");
@@ -97,18 +131,25 @@ const LandingPage = () => {
         setRegMessage("");
         setRegSuccessful(false);
 
-        AuthService.register(regUsername, regEmail, regPassword, "manager", regCompanyName, regPhone).then(
+        const lat = regPosition ? regPosition.lat : 0;
+        const lng = regPosition ? regPosition.lng : 0;
+
+        AuthService.register(regUsername, regEmail, regPassword, "manager", regCompanyName, regPhone, lat, lng, regAddress).then(
             (response) => {
-                setRegMessage(response.data.message);
+                setRegMessage("✅ ¡Registro exitoso! Por favor, revisa tu correo electrónico para activar tu cuenta antes de iniciar sesión.");
                 setRegSuccessful(true);
-                // Optionally auto-login or just close modal after delay
-                // alert("Registro exitoso. Ahora puedes iniciar sesión."); // Removed alert
-                // setShowRegisterModal(false);
-                // navigate("/login"); we are already here
             },
             (error) => {
                 const resMessage = (error.response && error.response.data && error.response.data.message) || error.message || error.toString();
-                setRegMessage(resMessage);
+                let userFriendlyMessage = resMessage;
+
+                if (resMessage.includes("Error: Company Name is required")) {
+                    userFriendlyMessage = "El nombre de la empresa es obligatorio.";
+                } else if (resMessage.includes("is already in use") || resMessage.includes("exists")) {
+                    userFriendlyMessage = "El usuario o correo ya está registrado.";
+                }
+
+                setRegMessage(userFriendlyMessage);
                 setRegSuccessful(false);
             }
         );
@@ -378,7 +419,19 @@ const LandingPage = () => {
                                     />
                                 </Form.Group>
 
-                                <Form.Group className="mb-4">
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Teléfono</Form.Label>
+                                    <Form.Control
+                                        type="tel"
+                                        placeholder="+58 412 1234567"
+                                        value={regPhone}
+                                        onChange={(e) => setRegPhone(e.target.value)}
+                                        required
+                                        className="rounded-3"
+                                    />
+                                </Form.Group>
+
+                                <Form.Group className="mb-3">
                                     <Form.Label>Contraseña</Form.Label>
                                     <Form.Control
                                         type="password"
@@ -391,15 +444,39 @@ const LandingPage = () => {
                                 </Form.Group>
 
                                 <Form.Group className="mb-4">
-                                    <Form.Label>Teléfono</Form.Label>
+                                    <Form.Label>Dirección Física de la Tienda</Form.Label>
                                     <Form.Control
-                                        type="tel"
-                                        placeholder="+58 412 1234567"
-                                        value={regPhone}
-                                        onChange={(e) => setRegPhone(e.target.value)}
+                                        type="text"
+                                        placeholder="Ej: Calle 5 con Av. Principal, Local 2"
+                                        value={regAddress}
+                                        onChange={(e) => setRegAddress(e.target.value)}
                                         required
                                         className="rounded-3"
                                     />
+                                    <small className="text-secondary mt-1 d-block">
+                                        Escribe la dirección exacta de tu local.
+                                    </small>
+                                </Form.Group>
+
+                                <Form.Group className="mb-4">
+                                    <Form.Label>Punto en el Mapa (Ubicación GPS)</Form.Label>
+                                    <div style={{ height: '250px', width: '100%', borderRadius: '12px', overflow: 'hidden', border: '1px solid #dee2e6' }}>
+                                        <MapContainer
+                                            center={[10.4806, -66.9036]}
+                                            zoom={11}
+                                            style={{ height: '100%', width: '100%' }}
+                                            ref={mapRef}
+                                        >
+                                            <TileLayer
+                                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                                            />
+                                            <LocationMarker position={regPosition} setPosition={setRegPosition} />
+                                        </MapContainer>
+                                    </div>
+                                    <small className="text-secondary mt-1 d-block">
+                                        Haz clic en el mapa para marcar tu ubicación exacta. {regPosition && <span className="text-success fw-bold">(Ubicación marcada)</span>}
+                                    </small>
                                 </Form.Group>
 
                                 {regMessage && (

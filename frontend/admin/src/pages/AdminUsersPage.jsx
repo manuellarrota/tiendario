@@ -40,7 +40,7 @@ const AdminUsersPage = () => {
             },
             (error) => {
                 console.error("Error toggling user", error);
-                alert("Error al cambiar el estado del usuario");
+                alert("❌ Error al cambiar el estado del usuario. Intenta de nuevo.");
                 setProcessing(null);
             }
         );
