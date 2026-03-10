@@ -48,9 +48,13 @@ const NewPurchasePage = () => {
     const globalCategories = ["Ropa", "Tecnología", "Alimentos", "Hogar", "Deportes", "Salud y Belleza", "Juguetes", "Libros"];
 
     const loadData = () => {
-        ProductService.getAll().then(res => setProducts(res.data));
-        SupplierService.getAll().then(res => setSuppliers(res.data));
-        CategoryService.getAll().then(res => setCategories(res.data));
+        ProductService.getAll().then(res => {
+            // Backend returns paginated object { products: [...] } or a plain array
+            const data = res.data;
+            setProducts(Array.isArray(data) ? data : (data.products || data.content || []));
+        });
+        SupplierService.getAll().then(res => setSuppliers(Array.isArray(res.data) ? res.data : []));
+        CategoryService.getAll().then(res => setCategories(Array.isArray(res.data) ? res.data : []));
     };
 
     useEffect(() => {
