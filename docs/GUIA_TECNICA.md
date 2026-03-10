@@ -1,90 +1,156 @@
-# 📘 Guía Técnica de Tiendario
+# Guía Técnica — Tiendario
 
-Este documento detalla la arquitectura técnica, decisiones de diseño y flujos críticos del sistema Tiendario.
-
----
-
-## 1. Arquitectura del Sistema
-
-### 1.1 Backend (Spring Boot)
-El núcleo del sistema es una API RESTful construida con **Spring Boot 2.7+** y **Java 11+**.
-- **Seguridad**: Implementa `Spring Security` con autenticación **JWT (JSON Web Tokens)**. Los tokens contienen información vital (`companyId`, `subscriptionStatus`, `roles`) para evitar consultas redundantes a la base de datos.
-- **Persistencia**:
-    - **PostgreSQL**: Base de datos relacional primaria. Maneja usuarios, ventas, inventario y configuración.
-    - **Elasticsearch**: Motor de búsqueda secundario. Indexa productos para búsquedas *full-text* rápidas en el Marketplace. Sincronizado vía eventos de aplicación.
-- **Micro-kernel**: Aunque monolítico en despliegue, el código está modularizado en dominios (`com.tiendario.core`, `com.tiendario.market`, `com.tiendario.admin`).
-
-### 1.2 Frontend (React + Vite)
-Dos aplicaciones SPA (Single Page Applications) independientes:
-- **Admin Panel (`/frontend/admin`)**:
-    - **Tecnología**: React 19, Bootstrap 5, Vite.
-    - **PWA**: Configurado con `vite-plugin-pwa` para instalación nativa y soporte offline básico.
-    - **Enfoque**: Gestión densa de datos, tablas, reportes y POS. 
-- **Marketplace (`/frontend/market`)**:
-    - **Tecnología**: React 19, CSS Modules, Vite.
-    - **Enfoque**: UX B2C, SEO amigable, carga rápida de imágenes, carrito persistente.
+Arquitectura, decisiones de diseño y flujos críticos del sistema.
 
 ---
 
-## 2. Sistema de Suscripciones
+## 1. Arquitectura General
 
-Tiendario implementa un modelo de negocio SaaS (Software as a Service) con restricciones fuertes a nivel de código.
+Tiendario sigue una arquitectura **Cliente-Servidor desacoplada**:
 
-### 2.1 Estados de Cuenta
-El enum `SubscriptionStatus` define el ciclo de vida:
-1.  **FREE**: Cuenta gratuita. Limitada a 10 productos. No puede registrar ventas.
-2.  **TRIAL (7 Días)**: Funcionalidad completa por tiempo limitado. Al vencer pasa a `PAST_DUE`.
-3.  **PAID**: Suscripción activa. Acceso ilimitado.
-4.  **PAST_DUE**: Pago vencido. Acceso a lectura, pero bloqueo de creación (Productos/Ventas).
-5.  **SUSPENDED**: Bloqueo total administrativo.
-
-### 2.2 Flujo de Bloqueo
-El frontend y backend colaboran para restringir el acceso:
-- **Backend (`ProductController`, `SaleController`)**: Interceptores `@PreAuthorize` o validaciones manuales revisan el estado. Retornan `403 Forbidden` si una cuenta `PAST_DUE` intenta escribir datos.
-- **Frontend (`AuthService`, `POSPage`)**:
-    - Al iniciar sesión, se almacena el estado en `localStorage`.
-    - Componentes visuales (`Alert`, `Button disabled`) bloquean la UI proactivamente.
-    - Un componente global `OfflineAlert` monitoriza la conexión.
-
-### 2.3 Simulación y Reactivación
-- **Simulación**: Un endpoint `/api/payments/simulate-success` permite a los usuarios "pagar" instantáneamente en desarrollo.
-- **Producción**: Preparado para integación con Stripe (librería `stripe-java` incluida).
+- **Backend**: API REST stateless en Spring Boot. Emite y valida JWT.
+- **Frontend Admin**: SPA React para managers — inventario, POS, compras, reportes.
+- **Frontend Market**: SPA React para clientes — marketplace, carrito, pedidos.
+- **PostgreSQL**: Persistencia relacional (usuarios, ventas, inventario, suscripciones).
+- **Elasticsearch**: Búsqueda full-text de productos en el marketplace (opcional, degradable).
 
 ---
 
-## 3. PWA (Progressive Web App)
+## 2. Backend (Spring Boot)
 
-El Panel Administrativo es una PWA instalable.
-- **Manifest**: `manifest.webmanifest` generado dinámicamente define nombre, colores e iconos.
-- **Service Worker**: Cachea recursos estáticos (JS, CSS, Imágenes) para carga instantánea.
-- **Instalación**: Los navegadores modernos ofrecerán instalar la app en el escritorio/móvil.
+### Estructura de paquetes
+```
+com.tiendario/
+├── domain/         # Entidades JPA (@Entity)
+├── repository/     # Spring Data JPA + Search repos
+├── service/        # Lógica de negocio
+├── web/            # Controladores REST (@RestController)
+├── payload/        # DTOs de request/response
+├── security/       # JWT filter, UserDetailsService
+└── config/         # CORS, Security, Elasticsearch config
+```
+
+### Seguridad
+- **JWT**: El token incluye `companyId`, `subscriptionStatus` y `roles` para evitar queries extra por request.
+- **Roles**: `ROLE_ADMIN` (superadmin global), `ROLE_MANAGER` (dueño de tienda), `ROLE_USER` (cliente marketplace).
+- **Autorización**: `@PreAuthorize("hasRole('ADMIN')")` en endpoints de superadmin. Validación de `companyId` en todos los endpoints de datos para prevenir acceso cross-tenant.
+
+### Identificación de Productos
+- **SKU**: Generado automáticamente por el sistema (formato `CAT-PROD-XXXX`). No editable.
+- **Barcode**: Campo opcional (`barcode`) para códigos de fabricante (EAN-13, UPC, etc.). Indexado en DB. El endpoint `GET /api/products/by-barcode/{barcode}` busca primero por barcode y hace fallback a SKU.
+
+### Controladores principales
+| Controller | Ruta base | Descripción |
+|---|---|---|
+| `AuthController` | `/api/auth` | Registro, login, verificación de email |
+| `ProductController` | `/api/products` | CRUD de productos + búsqueda por barcode |
+| `SaleController` | `/api/sales` | Registro de ventas y POS |
+| `PurchaseController` | `/api/purchases` | Órdenes de compra a proveedores |
+| `InventoryController` | `/api/inventory` | Ajustes de stock |
+| `DashboardController` | `/api/dashboard` | KPIs y métricas |
+| `SuperAdminController` | `/api/superadmin` | Gestión global de tenants y usuarios |
+| `PublicController` | `/api/public` | Marketplace (sin auth) |
+| `CompanyController` | `/api/company` | Configuración de empresa |
 
 ---
 
-## 4. Estructura de Proyecto
+## 3. Frontend Admin
 
-```text
-tiendario/
-├── backend/            # Código fuente Java (Maven)
-│   └── src/main/java/com/tiendario/
-│       ├── domain/     # Entidades JPA (Product, Sale, User)
-│       ├── repository/ # Interfaces Spring Data
-│       ├── service/    # Lógica de negocio 
-│       └── web/        # Controladores REST
-├── frontend/
-│   ├── admin/          # Panel PWA Admin
-│   └── market/         # Landing + Marketplace
-├── scripts/            # Utilidades
-│   ├── tests/          # Scripts de prueba E2E (Node.js)
-│   ├── archive/        # Scripts antiguos/debug
-│   └── final_mega_seeder.js # Poblado de datos maestro
-└── docs/               # Documentación del proyecto
+### Stack
+- React 19 · Vite · Bootstrap 5 · React Icons · Axios
+
+### Estructura
+```
+src/
+├── components/
+│   ├── Sidebar.jsx       # Navegación lateral dinámica por rol
+│   ├── Layout.jsx        # Wrapper con Sidebar + main content
+│   └── RequireRole.jsx   # Route guard de autenticación y roles
+├── pages/                # Una página por ruta
+├── services/             # Axios wrappers hacia la API
+└── App.jsx               # Router con rutas protegidas
+```
+
+### Protección de Rutas (`RequireRole`)
+```
+/ (landing)          → Público
+/dashboard, /pos, /inventory, etc. → Requiere token JWT válido
+/admin/*             → Requiere ROLE_ADMIN
+```
+Si el token está ausente o expirado → redirige a `/` (landing con login modal).
+Si el rol no alcanza → redirige a `/dashboard`.
+
+### Servicios
+Cada módulo tiene su service (`product.service.js`, `sale.service.js`, etc.) que:
+1. Lee el token de `localStorage` o `sessionStorage`
+2. Lo incluye en el header `Authorization: Bearer <token>`
+3. Llama a la API con Axios
+
+### POS — Lector de Barras
+El `POSPage` tiene un panel de escaneo de alta prioridad:
+- Campo de texto monoespaciado con auto-focus al cargar la página
+- Detecta entrada rápida (típica de scanner hardware) o Enter manual
+- Llama a `productService.findByBarcode(code)` → backend busca por barcode o SKU
+- Si encontrado → agrega al carrito automáticamente con feedback visual verde
+- Si no encontrado → feedback visual rojo con mensaje
+
+---
+
+## 4. Frontend Market
+
+### Stack
+- React 19 · Vite · CSS Modules
+
+### Rutas
+```
+/           → Marketplace (catálogo público)
+/dashboard  → Dashboard de cliente (requiere sesión de cliente)
+/terms      → Términos de servicio
+/privacy    → Política de privacidad
 ```
 
 ---
 
-## 5. Próximos Pasos Técnicos
+## 5. Sistema de Suscripciones
 
-1.  **Despliegue**: Dockerizar para producción (Nginx Reverse Proxy).
-2.  **Stripe**: Implementar `StripeWebhookController` para recibir confirmaciones de pago reales.
-3.  **CI/CD**: Automatizar tests con GitHub Actions.
+### Estados
+| Estado | Restricciones |
+|---|---|
+| `FREE` | Máx. 10 productos. Sin POS. Sin ventas. Solo exhibición en marketplace. |
+| `TRIAL` | 7 días con acceso completo. |
+| `PAID` | Sin restricciones. Pedidos en marketplace activos. |
+| `PAST_DUE` | Solo lectura. Backend retorna 403 en endpoints de escritura. |
+| `SUSPENDED` | Bloqueo total. Sin acceso. |
+
+### Flujo de bloqueo
+1. Al login, el JWT incluye `subscriptionStatus`.
+2. El frontend deshabilita botones/acciones según el estado.
+3. El backend valida independientemente — no confía en el frontend.
+
+---
+
+## 6. Elasticsearch
+
+Elasticsearch es **opcional y degradable**:
+- Si no está disponible, el backend continúa sin errores (los logs muestran warnings via SLF4J).
+- `ProductIndexService` maneja toda la interacción y captura excepciones.
+- El marketplace hace fallback a búsqueda en PostgreSQL si Elasticsearch falla.
+
+---
+
+## 7. PWA (Admin Panel)
+
+El panel admin es una PWA instalable:
+- `vite-plugin-pwa` genera el `manifest.webmanifest` y el Service Worker.
+- Cachea assets estáticos para carga offline.
+- Instalable en escritorio y móvil desde navegadores modernos.
+
+---
+
+## 8. Próximos Pasos Técnicos
+
+- [ ] Integración real con Stripe / MercadoPago (actualmente confirmación manual)
+- [ ] Google OAuth2 para login social
+- [ ] CI/CD con GitHub Actions
+- [ ] Dockerfile + Nginx para producción
+- [ ] Backup automático de PostgreSQL

@@ -1,120 +1,114 @@
-# Plan de Implementación Consolidado: Tiendario
+# Plan de Implementación — Tiendario
 
-Este documento une el plan estratégico original con los avances técnicos actuales, asegurando que todas las funcionalidades requeridas estén implementadas y verificadas.
+Estado actual del desarrollo y hoja de ruta.
 
-## 1. Planificación del Proyecto
-- [x] **Definir alcance y requisitos**: Tiendario (Landing + Reglas Free/Paid + Marketplace).
-- [x] **Definir Reglas de Marketplace**: FREE = Ver/Buscar, PAID = Comprar.
-- [x] **Diseñar modelo de datos**: Core (Empresa, Producto), Analytics, Geo, Orders (Ventas/Clientes).
-- [x] **Seleccionar stack tecnológico**: Backend Java (Spring Boot) + Security JWT + Frontend (React) + Postgres + Elasticsearch.
-- [x] **Aprobar plan de implementación**: Plan consolidado y en ejecución.
-
-## 2. Inicialización del Proyecto
-- [x] **Crear estructura del proyecto**: Monorepo con subcarpetas backend, frontend-admin, frontend-market.
-- [x] **Configurar herramientas de desarrollo**: Docker Compose, Maven, Node.js.
-
-## 3. Implementación Core (Backend & DevOps)
-- [x] **Desarrollar UI base (Diseño Premium)**: Implementado con paleta de colores moderna y componentes reutilizables.
-- [x] **Configurar Backend Spring Boot**: Proyecto Maven multi-módulo.
-- [x] **Configurar Docker Compose**: Orquestación de Postgres y Elasticsearch.
-- [x] **Configurar Spring Security + JWT**: Autenticación para Admin y Clientes Finales.
-- [x] **Implementar Persistencia**: JPA/Hibernate con PostgreSQL.
-- [x] **Implementar Servicio de Membresías**: Lógica de restricciones basada en el plan de la empresa (FREE vs PREMIUM).
-
-- [x] **Estructura Limpia del Proyecto**:
-    - [x] Backend en `/backend`.
-    - [x] Frontend organizado en `/frontend/admin` y `/frontend/market`.
-    - [x] Scripts de utilidad en `/scripts`.
-    - [x] Documentos de control en raíz (`README.md`, `IMPLEMENTATION_PLAN.md`).
-
-- [x] **Módulo de Control de Ventas e Inventario**: 
-    - [x] Funcionalidad de registro de salida (Ventas locales).
-    - [x] Registro de entrada de mercancía (Compras).
-    - [x] Gestión de Stock en tiempo real.
-
-- [x] **Marketplace y Fidelización**:
-    - [x] Buscador de productos local.
-    - [x] Sistema de Puntos de Lealtad (Acumulación por compra).
-    - [x] Panel de Cliente (Historial y Puntos).
-
-- [x] **Experiencia de Usuario Premium**:
-    - [x] Login embebido en Landing de Vendedores (Admin).
-    - [x] Login Modal embebido en Marketplace.
-    - [x] Diseño basado en Glassmorphism y tipografía 'Outfit'.
-
-### Próximos Pasos (Validación de Funciones):
-1.  [x] Validar flujo completo de Registro de Tienda -> Login -> Creación Producto -> Gestión Categorías.
-2.  [x] Validar flujo de Bloqueo por Suscripción (Paid -> Past Due -> Paid).
-3.  [x] Validar flujo de Compra en Marketplace -> Acumulación de Puntos -> Panel de Cliente.
-4.  [x] Validar funcionalidad de Reportes de Compras (Inventory Input).
-5.  [x] Verificar Dashboard de KPIs y reportes financieros automáticos.
-6.  [x] **Implementar Flujo "Solo Pedido"**:
-    - [x] Marketplace: Eliminar pasarela de pago, solo registrar pedido.
-    - [x] Admin: Notificación de nuevo pedido.
-    - [x] Admin: Flujo de cambio de estado (Pendiente -> Listo -> Pagado).
-    - [x] Admin: Modal de confirmación de pago manual (Efectivo, Transferencia, etc.).
-7.  [x] **Implementar Multi-Moneda**:
-    - [x] Configuración de moneda primaria y secundaria desde SuperAdmin.
-    - [x] Precios convertidos en Marketplace y POS.
-    - [x] Tracking de moneda de pago en transacciones.
+_Última actualización: 2026-03-10_
 
 ---
-*Ultima actualización: 2026-03-03 - Multi-Moneda Completada. Entorno local verificado (Tests: ✅ 65 Backend + 19 Frontend).*
 
-## 8. Fase 3: Preparación para Producción
-- [ ] **Despliegue (Infraestructura)**:
-    - [ ] Configurar servidor en la nube (VPS/PaaS).
-    - [ ] Configurar Dominio y SSL (HTTPS).
-    - [ ] Configurar Proxy Inverso (Nginx) para producción.
-- [ ] **Configuraciones Críticas**:
-    - [ ] Configurar servidor SMTP (Emails transaccionales y recuperación de contraseña).
-    - [ ] Implementar Google OAuth2 para login social.
-- [ ] **Optimizaciones Técnicas**:
-    - [ ] CI/CD Pipeline para despliegues automáticos.
-    - [ ] Backup automático de Base de Datos.
-    - [ ] Monitoreo de logs y salud del servidor.
-- [ ] **Futuras Expansiones**:
-    - [ ] Integración de Delivery (Rastreo y asignación).
-    - [ ] Pasarela de pagos online (Stripe/MercadoPago) - *Actualmente se usa confirmación manual*.
+## Estado General
 
-## 5. Reglas de Marketplace (Detalle)
-### **FREE Plan**
-- [x] Ver catálogo de productos.
-- [x] Búsqueda de productos (Elasticsearch).
-- [x] **Bloqueo**: No puede agregar al carrito ni recibir pedidos (Solo Exhibición).
-
-### **PAID Plan**
-- [x] Ver catálogo de productos.
-- [x] Búsqueda de productos.
-- [x] Agregar al carrito y realizar **Pedidos** (Click & Collect / ACordar con tienda).
-- [x] Acceso a KPIs y Dashboard avanzado.
-
-## 7. Módulo SuperAdmin (SaaS Manager)
-- [x] **Dashboard Global de SuperAdmin**:
-    - [x] Vista resumida de métricas de la plataforma (Empresas totales, ventas globales).
-- [x] **Gestión de Empresas (Tenants)**:
-    - [x] Listado maestro de todas las empresas registradas.
-    - [x] Capacidad de activar/desactivar o cambiar planes de forma manual.
-- [x] **Validación de Pagos de Suscripción**:
-    - [x] Flujo de carga de comprobantes por parte de las empresas.
-    - [x] Panel de aprobación/rechazo para el SuperAdmin.
-    - [x] Actualización automática de fechas de vencimiento al aprobar.
-- [x] **Gestión de Usuarios Global**:
-    - [x] Listado maestro de todos los usuarios (Admin, Manager, Clientes).
-    - [x] Capacidad de activar/desactivar cuentas de forma global.
-- [x] **Configuraciones de Plataforma**:
-    - [x] Gestión global de precios de planes y días de prueba.
-    - [x] Límites de productos para cuentas gratuitas.
-    - [x] Modo mantenimiento y anuncios globales para el Marketplace.
+✅ **Funcionalidad Core completa y verificada en entorno local.**
+🔜 **Pendiente: Despliegue en producción e integraciones externas.**
 
 ---
-### Confirmación de Funcionalidades
-Se confirma que el sistema cumple con:
-1.  **Multitenancy**: Cada empresa gestiona su inventario y clientes.
-2.  **Marketplace**: Búsqueda global de productos con carrito unificado.
-3.  **Modelo Freemium**: Restricciones automáticas y planes de suscripción.
-4.  **Sistema de Lealtad**: Acumulación automática de puntos para incentivar compras.
-5.  **Experiencia de Usuario**: Portal de cliente y Admin con estética de vanguardia.
-6.  **SaaS Management**: Gestión global operativa por parte del SuperAdmin.
-7.  **Operación Unificada**: Control de Ventas (Salidas) y Registro de Compras (Entradas) integrados con stock.
-8.  **Gestión de Pedidos**: Flujo "Click & Collect" donde la tienda confirma el pago y la entrega.
+
+## Funcionalidades Completadas ✅
+
+### Infraestructura
+- [x] Monorepo: `backend/`, `frontend/admin/`, `frontend/market/`
+- [x] Docker Compose (PostgreSQL + Elasticsearch)
+- [x] Spring Boot con Spring Security + JWT multitenancy
+- [x] Persistencia JPA/Hibernate con PostgreSQL
+- [x] Elasticsearch opcional y degradable (con fallback)
+- [x] PWA: Admin panel instalable con Service Worker
+
+### Autenticación y Seguridad
+- [x] Registro con verificación de email
+- [x] Login JWT con soporte `rememberMe` (localStorage vs sessionStorage)
+- [x] Roles: `ROLE_ADMIN`, `ROLE_MANAGER`, `ROLE_USER`
+- [x] Route guards frontend (`RequireRole`) — rutas autenticadas y por rol
+- [x] Validaciones server-side: cantidades, precios, tipos de archivo
+- [x] Protección cross-tenant: cada empresa solo ve sus datos
+
+### Panel Admin (Managers)
+- [x] Inventario: CRUD de productos con paginación, filtros y búsqueda
+- [x] SKU autogenerado por sistema (no editable)
+- [x] **Barcode**: Campo opcional para código de fabricante (EAN-13, UPC)
+- [x] Variantes de producto (Color, Talla, etc.)
+- [x] Subida de imágenes de productos
+- [x] Categorías: globales del sistema + personalizadas por tienda
+- [x] **Punto de Venta (POS)**: lector de barras, búsqueda, carrito, checkout
+- [x] **Comprar Mercancía**: órdenes de compra con actualización automática de stock
+- [x] Historial de Ventas y Compras con filtros
+- [x] Gestión de Proveedores
+- [x] Gestión de Clientes con acumulación de puntos de lealtad
+- [x] Dashboard de KPIs: ventas, ingresos, stock bajo, top productos
+- [x] Control de Caja: cierre diario
+- [x] Notificaciones internas (stock bajo, nuevos pedidos)
+- [x] Ajustes de Tienda: nombre, dirección, ubicación geográfica, logo
+- [x] Suscripciones: pago manual con comprobante + aprobación del SuperAdmin
+
+### Marketplace (Clientes)
+- [x] Catálogo público sincronizado con inventarios de tiendas
+- [x] Búsqueda full-text con Elasticsearch (fallback a PostgreSQL)
+- [x] Filtros por categoría, precio y tienda
+- [x] Carrito persistente por tienda
+- [x] Sistema de pedidos (Click & Collect)
+- [x] Dashboard de cliente: historial de pedidos y puntos
+- [x] Geolocalización: mapa de tiendas (Google Maps iframe)
+- [x] Modal de login embebido (sin página de login separada)
+- [x] Términos de Servicio y Política de Privacidad
+
+### Super Admin (Plataforma)
+- [x] Dashboard global: métricas de la plataforma
+- [x] Gestión de Empresas: activar/desactivar/cambiar plan
+- [x] Validación de pagos de suscripción (aprobación/rechazo)
+- [x] Gestión de Usuarios: activar/desactivar cuentas globalmente
+- [x] Catálogo Global de productos
+- [x] Sugerencias de Categorías: flujo de aprobación
+- [x] Configuración de Plataforma: planes, límites, modo mantenimiento
+- [x] Onboarding guiado para nuevas tiendas
+
+### Modelo de Suscripción
+- [x] Estados: `FREE`, `TRIAL`, `PAID`, `PAST_DUE`, `SUSPENDED`
+- [x] Restricciones automáticas en frontend y backend por estado
+- [x] Simulación de pago en desarrollo
+- [x] Multi-moneda: moneda primaria y secundaria configurables
+
+---
+
+## Pendiente 🔜
+
+### Despliegue en Producción
+- [ ] Dockerfile para backend y frontends
+- [ ] Nginx como reverse proxy
+- [ ] Dominio y certificado SSL (HTTPS)
+- [ ] Variables de entorno en producción (sin hardcoding)
+
+### Integraciones Externas
+- [ ] Servidor SMTP real para emails transaccionales
+- [ ] Stripe / MercadoPago para pagos online (actualmente confirmación manual)
+- [ ] Google OAuth2 para login social
+
+### DevOps
+- [ ] Pipeline CI/CD con GitHub Actions
+- [ ] Backup automático de PostgreSQL
+- [ ] Monitoreo de logs y health checks
+
+### Futuras Funcionalidades
+- [ ] Módulo de Delivery con rastreo de pedidos
+- [ ] App móvil (React Native)
+- [ ] Integración con lectores de barras físicos vía Bluetooth
+
+---
+
+## Reglas del Marketplace
+
+| Plan | Puede ver catálogo | Puede comprar | Marketplace activo |
+|---|---|---|---|
+| `FREE` | ✅ | ❌ | ❌ (solo exhibición) |
+| `TRIAL` | ✅ | ✅ | ✅ |
+| `PAID` | ✅ | ✅ | ✅ |
+| `PAST_DUE` | ✅ | ❌ | ❌ |
+| `SUSPENDED` | ❌ | ❌ | ❌ |

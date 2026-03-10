@@ -1,136 +1,161 @@
-# 🚀 Tiendario - SaaS de Control de Inventario y Marketplace
+# Tiendario
 
-Tiendario es una solución integral para comercios locales que combina un potente sistema de gestión interna (**Control de Ventas e Inventario**) con un **Marketplace Global** sincronizado.
+**SaaS de Gestión de Inventario, Punto de Venta y Marketplace para Comercios Locales**
 
----
-
-## 🏗️ Arquitectura del Sistema
-El proyecto sigue una arquitectura **Cliente-Servidor (Desacoplada)** de alto rendimiento:
-
-1.  **Backend (API de Servicios)**: Desarrollado en **Java 11+ / Spring Boot 2.7+**.
-    -   **Organización**: Dividido en capas (*Controller, Service, Repository, Domain*).
-    -   **Persistencia Híbrida**: 
-        -   **Relacional**: PostgreSQL para transacciones, usuarios, pedidos y suscripciones.
-        -   **NoSQL / Búsqueda**: Elasticsearch para indexación global y búsquedas ultra-rápidas en el Marketplace.
-    -   **Seguridad**: Spring Security con **JWT** para sesiones sin estado.
-2.  **Frontend (Hub de Aplicaciones)**: Dos aplicaciones **React 19+** independientes optimizadas con **Vite**.
-    -   **Frontend Admin**: Panel interno para dueños de comercios. Gestión de stock, registro de compras/ventas y KPIs.
-    -   **Frontend Market**: Portal para clientes finales. Carrito, catálogo compartido y gestión de puntos.
-3.  **UI/UX Moderno**: Estética basada en **Glassmorphism**, paletas de colores vibrantes y tipografía premium (**Outfit**).
+Tiendario combina un **Panel Administrativo** completo (inventario, POS, compras, reportes) con un **Marketplace Público** sincronizado en tiempo real, bajo un modelo de suscripción multitenancy.
 
 ---
 
-## 📂 Estructura Organizada
-```text
+## Stack Tecnológico
+
+| Capa | Tecnología |
+|---|---|
+| Backend | Java 11 · Spring Boot 2.7 · Spring Security · JWT |
+| Base de datos | PostgreSQL (relacional) · Elasticsearch (búsqueda full-text) |
+| Frontend Admin | React 19 · Bootstrap 5 · Vite · PWA |
+| Frontend Market | React 19 · CSS Modules · Vite |
+| Seguridad | JWT · BCrypt · Route Guards (frontend) · @PreAuthorize (backend) |
+
+---
+
+## Arquitectura
+
+```
 tiendario/
-├── backend/            # Servidor API REST (Spring Boot)
-├── frontend/           # Aplicaciones de usuario
-│   ├── admin/          # Panel PWA de Gestión (localhost:8081)
-│   └── market/         # Marketplace y Portal (localhost:8082)
-├── scripts/            # Herramientas de automatización
-│   ├── tests/          # Scripts de validación E2E
-│   └── legacy/         # Scripts antiguos
-├── docs/               # Documentación Técnica y Funcional
-├── README.md           # Resumen Ejecutivo
-└── docs/IMPLEMENTATION_PLAN.md # Hoja de Ruta
+├── backend/                        # API REST (Spring Boot + Maven)
+│   └── src/main/java/com/tiendario/
+│       ├── domain/                 # Entidades JPA
+│       ├── repository/             # Spring Data JPA + Elasticsearch
+│       ├── service/                # Lógica de negocio
+│       ├── web/                    # Controladores REST
+│       ├── security/               # JWT + Spring Security
+│       └── config/                 # Configuración global
+├── frontend/
+│   ├── admin/                      # Panel de gestión (puerto 8081)
+│   └── market/                     # Marketplace público (puerto 8082)
+├── docs/                           # Documentación técnica y funcional
+├── .agent/workflows/               # Workflows de desarrollo
+├── docker-compose.yml              # PostgreSQL + Elasticsearch
+└── README.md
 ```
-> 📘 Para detalles profundos sobre arquitectura y flujos, ver [docs/GUIA_TECNICA.md](docs/GUIA_TECNICA.md).
 
 ---
 
-## 🛠️ Tecnologías Principales
-- **Backend**: Spring Boot, Hibernate, JPA, Java 11+.
-- **Bases de Datos**: PostgreSQL, Elasticsearch.
-- **Frontend**: React, React-Bootstrap, Vite.
-- **Estilos**: Vanilla CSS (Modern CSS 3), Glassmorphism.
-- **Seguridad**: JWT, BCrypt.
+## Puertos de Desarrollo
+
+| Servicio | Puerto | URL |
+|---|---|---|
+| Backend API | 8080 | http://localhost:8080 |
+| Frontend Admin | 8081 | http://localhost:8081 |
+| Frontend Market | 8082 | http://localhost:8082 |
+| PostgreSQL | 5432 | (interno) |
+| Elasticsearch | 9200 | http://localhost:9200 |
 
 ---
 
-## ☁️ Despliegue en Producción
-Para desplegar en AWS, consulta nuestra **[Guía de Despliegue](docs/DEPLOYMENT.md)**.
+## Cómo Levantar el Entorno
 
----
+### Requisitos
+- Java 11+ (JDK)
+- Node.js 18+
+- Docker (para PostgreSQL + Elasticsearch)
 
-## 🚀 Cómo Ejecutar el Proyecto
-
-### 1. Requisitos Previos
-- **Java 11+** (JDK).
-- **Node.js 18+**.
-- **Docker** (opcional — solo necesario si quieres usar PostgreSQL + Elasticsearch en lugar de H2 en memoria).
-
-### 2. Modo Rápido (Sin Docker — H2 en memoria)
-El backend arranca con una base de datos H2 en memoria por defecto. Ideal para desarrollo y pruebas:
-
+### 1. Base de datos (Docker)
 ```bash
-# Terminal 1: Backend
+docker-compose up -d
+```
+
+### 2. Backend
+```bash
 cd backend
 .\mvnw.cmd spring-boot:run
+```
 
-# Terminal 2: Admin Panel
+### 3. Frontend Admin
+```bash
 cd frontend/admin
-npm install && npm run dev
-
-# Terminal 3: Marketplace
-cd frontend/market
-npm install && npm run dev
+npm install
+npm run dev
 ```
 
-> **Nota**: En este modo se usa H2 en memoria. Los datos se reinician cada vez que se detiene el backend.
-
-### 3. Modo Completo (Con Docker — PostgreSQL + Elasticsearch)
-Para persistencia real y búsqueda avanzada:
-
+### 4. Frontend Market
 ```bash
-# Levantar PostgreSQL y Elasticsearch
-cd scripts && docker-compose up -d
-
-# Backend apuntando a PostgreSQL
-cd backend
-set SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/tiendario
-set SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver
-set SPRING_DATASOURCE_USERNAME=user
-set SPRING_DATASOURCE_PASSWORD=password
-set SPRING_JPA_DATABASE_PLATFORM=org.hibernate.dialect.PostgreSQLDialect
-.\mvnw.cmd spring-boot:run
+cd frontend/market
+npm install
+npm run dev
 ```
 
----
-
-## 📈 Funcionalidades Clave
-- ✅ **Control Total**: Registro de entrada (Compras) y salida (Ventas locales).
-- ✅ **Gestión Flexible**: Categorías dinámicas (Globales + Personalizadas).
-- ✅ **Visibilidad Global**: Sincronización automática de stock con el Marketplace.
-- ✅ **Suscripciones**: Sistema completo de planes (FREE, TRIAL, PAID) con gestión de estados (Vencido, Suspendido), simulación de pagos y restricciones de acceso.
-- ✅ **Multimedia Core**: Subida directa de imágenes de productos y servidor de archivos estáticos integrado.
-- ✅ **Centro de Comunicaciones**: Sistema de emails HTML branded y notificaciones internas en tiempo real.
-- ✅ **Fidelización y Cercanía**: Acumulación de puntos por compras y búsqueda de tiendas por geolocalización.
-- ✅ **Confianza Legal**: Páginas integradas de Términos de Servicio y Privacidad.
-- ✅ **Diseño Premium**: Interfaz fluida y profesional con estética Glassmorphism.
+> **Tip:** Ver el workflow completo en [`.agent/workflows/start-dev.md`](.agent/workflows/start-dev.md)
 
 ---
 
-Servicio | Estado | URL de Acceso
----|---|---
-Backend API | ✅ Up (Started) | http://localhost:8080
-Base de Datos | ✅ Healthy | Puerto 5432 (Interno)
-Elasticsearch | ✅ Healthy | http://localhost:9200
-Frontend Admin | ✅ Up (Started) | http://localhost:8081
-Frontend Market | ✅ Up (Started) | http://localhost:8082
+## Credenciales de Prueba (Entorno Local)
+
+| Rol | Usuario | Contraseña | Panel |
+|---|---|---|---|
+| **Super Admin** | `admin` | `Admin123!` | [Admin](http://localhost:8081) |
+| **Manager (PAID)** | `manager_pro` | `Manager123!` | [Admin](http://localhost:8081) |
+| **Manager (FREE)** | `manager_free` | `Manager123!` | [Admin](http://localhost:8081) |
+| **Cliente** | `cliente` | `Cliente123!` | [Market](http://localhost:8082) |
+
+> **Nota:** Las cuentas nuevas registradas desde el formulario quedan **inactivas** hasta que el Super Admin las apruebe, o se valide el link en `backend/verification_links.txt`.
 
 ---
 
-## 🔐 Credenciales de Prueba (Entorno Local)
-Utiliza estas cuentas pre-cargadas para probar los diferentes roles y planes del sistema:
+## Funcionalidades Principales
 
-| Rol | Usuario | Contraseña | Acceso | Descripción |
-| :--- | :--- | :--- | :--- | :--- |
-| **Super Admin** | `admin` | `admin123` | [Admin Panel](http://localhost:8081) | Acceso global, gestión de plataforma. |
-| **Tienda Premium** | `manager_pro` | `manager123` | [Admin Panel](http://localhost:8081) | Plan PAID, Tienda Demo Premium. Acceso total. |
-| **Tienda Egar** | `manager_free` | `manager123` | [Admin Panel](http://localhost:8081) | Plan PAID, Tienda Egar. |
-| **Cliente** | `cliente` | `cliente123` | [Marketplace](http://localhost:8082) | Comprador del Marketplace, acumula puntos. |
+### Panel Admin (Managers)
+- **Inventario**: CRUD de productos con SKU autogenerado, barcode, variantes, imágenes y categorías
+- **Punto de Venta (POS)**: Lector de código de barras integrado, búsqueda por nombre/SKU/barcode, carrito y checkout
+- **Comprar Mercancía**: Registro de órdenes de compra a proveedores con actualización automática de stock
+- **Historial de Ventas y Compras**: Trazabilidad completa de movimientos
+- **Clientes**: Gestión de clientes y acumulación de puntos de lealtad
+- **Reportes**: KPIs financieros y dashboard de métricas
+- **Control de Caja**: Cierre diario con cuadre de efectivo
+- **Notificaciones**: Centro de alertas internas (stock bajo, nuevos pedidos)
+- **Ajustes de Tienda**: Configuración de empresa, ubicación y suscripción
 
-> **Nota**: Estas credenciales solo aplican para la base de datos en memoria (H2) de desarrollo.
-> En producción con PostgreSQL se deben crear usuarios reales.
+### Marketplace (Clientes)
+- Catálogo global de productos sincronizado desde los inventarios de las tiendas
+- Búsqueda full-text con Elasticsearch
+- Carrito y sistema de pedidos (Click & Collect)
+- Dashboard de cliente: historial de pedidos y puntos acumulados
+- Búsqueda de tiendas por geolocalización
 
-> **Importante**: Si registras **nuevas** tiendas desde el formulario, se crean **inactivas**. Para activarlas en desarrollo, abre el archivo `backend/verification_links.txt` y copia el enlace de validación.
+### Super Admin (Plataforma)
+- Gestión de empresas: activar/desactivar/cambiar plan
+- Validación manual de pagos de suscripción
+- Gestión global de usuarios
+- Configuración de planes, límites y modo mantenimiento
+- Catálogo global y sugerencias de categorías
+
+---
+
+## Modelo de Suscripción
+
+| Estado | Descripción |
+|---|---|
+| `FREE` | Hasta 10 productos. Sin ventas ni POS. Solo exhibición en marketplace. |
+| `TRIAL` | 7 días con funcionalidad completa. |
+| `PAID` | Acceso ilimitado. Marketplace activo para pedidos. |
+| `PAST_DUE` | Pago vencido. Solo lectura. Bloqueo de creación. |
+| `SUSPENDED` | Bloqueo total por el administrador. |
+
+---
+
+## Seguridad
+
+- **Backend**: Todos los endpoints protegidos con JWT. Roles `ROLE_ADMIN`, `ROLE_MANAGER`, `ROLE_USER` aplicados con `@PreAuthorize`.
+- **Frontend**: Route guards (`RequireRole`) protegen todas las rutas autenticadas. Las rutas `/admin/*` requieren `ROLE_ADMIN`.
+- **Validaciones**: Cantidades, precios y tipos de archivo validados server-side.
+
+---
+
+## Documentación
+
+| Documento | Descripción |
+|---|---|
+| [`docs/GUIA_TECNICA.md`](docs/GUIA_TECNICA.md) | Arquitectura, decisiones de diseño y flujos críticos |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Guía de despliegue en producción (AWS) |
+| [`docs/DOCUMENTO_FUNCIONAL.md`](docs/DOCUMENTO_FUNCIONAL.md) | Especificación funcional del sistema |
+| [`docs/PLAN_DE_PRUEBAS_E2E.md`](docs/PLAN_DE_PRUEBAS_E2E.md) | Plan de pruebas end-to-end |

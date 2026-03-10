@@ -1,40 +1,42 @@
-# 🔐 Credenciales de Acceso (Entorno Local/Demo)
+# Credenciales de Acceso — Entorno Local
 
-Estas cuentas han sido generadas automáticamente por el `DataInitializer` para pruebas.
+Cuentas pre-cargadas para pruebas en desarrollo.
 
----
-
-## 👑 Super Admin (Gestión Global)
-*   **URL**: [http://localhost:8081](http://localhost:8081) (Accede con rol Admin)
-*   **Usuario**: `admin`
-*   **Contraseña**: `admin123`
-
-## 💼 Manager (Dueño de Tienda) - Panel Administrativo
-Accede desde: [http://localhost:8081](http://localhost:8081)
-
-### Opción A: Plan PREMIUM
-*   **Usuario**: `manager_pro`
-*   **Contraseña**: `manager123`
-*   **Tienda**: "Tienda Demo Premium"
-*   **Características**: Suscripción activa (PAID), acceso total.
-
-### Opción B: Tienda Egar
-*   **Usuario**: `manager_free`
-*   **Contraseña**: `manager123`
-*   **Tienda**: "Tienda Egar"
-*   **Características**: Suscripción PAID, acceso total.
-
-## 🛒 Cliente Final - Marketplace
-Accede desde: [http://localhost:8082](http://localhost:8082)
-
-*   **Usuario**: `cliente`
-*   **Contraseña**: `cliente123`
-*   **Rol**: Comprador
-*   **Puntos**: 0 (Inicial)
+> **Importante:** Estas credenciales son solo para entorno local con PostgreSQL.
+> En producción se deben crear usuarios reales y cambiar todas las contraseñas.
 
 ---
 
-> **Nota**: Estas credenciales solo aplican para la base de datos en memoria (H2) de desarrollo.
-> En producción con PostgreSQL se deben crear usuarios reales.
+## Super Admin
 
-> **Importante**: Si registras **nuevas** tiendas desde el formulario, se crean **inactivas**. Para activarlas en desarrollo, abre el archivo `backend/verification_links.txt` y copia el enlace de validación en el navegador.
+| Campo | Valor |
+|---|---|
+| URL | http://localhost:8081 |
+| Usuario | `admin` |
+| Contraseña | `Admin123!` |
+| Acceso | Panel completo + secciones `/admin/*` |
+
+## Managers (Panel Administrativo)
+
+| Usuario | Contraseña | Tienda | Plan |
+|---|---|---|---|
+| `manager_pro` | `Manager123!` | Tienda Demo Premium | PAID |
+| `manager_free` | `Manager123!` | Tienda Egar | PAID |
+
+URL de acceso: http://localhost:8081
+
+## Clientes (Marketplace)
+
+| Usuario | Contraseña | Rol |
+|---|---|---|
+| `cliente` | `Cliente123!` | Comprador |
+
+URL de acceso: http://localhost:8082
+
+---
+
+## Notas
+
+- Las cuentas nuevas creadas desde el formulario de registro quedan **inactivas** hasta ser aprobadas.
+  Para activarlas en desarrollo, usa el link en `backend/verification_links.txt` o aprueba desde el Super Admin.
+- El Super Admin puede activar/desactivar cualquier cuenta desde `/admin/users`.
