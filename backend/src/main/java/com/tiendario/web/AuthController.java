@@ -123,17 +123,35 @@ public class AuthController {
                                 .orElse(null);
 
                 if (user == null) {
-                        return ResponseEntity.badRequest()
-                                        .body(new MessageResponse(
-                                                        "Error: Código de verificación inválido o expirado."));
+                        return ResponseEntity.status(org.springframework.http.HttpStatus.FOUND)
+                                        .location(java.net.URI.create(frontendUrl
+                                                        + "/?verified=error&message=Invalid+verification+code"))
+                                        .build();
                 }
 
                 user.setEnabled(true);
                 user.setVerificationCode(null);
                 userRepository.save(user);
 
+                // Auto-login logic
+                UserDetailsImpl userDetails = UserDetailsImpl.build(user);
+                Authentication authentication = new UsernamePasswordAuthenticationToken(
+                                userDetails, null, userDetails.getAuthorities());
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                String jwt = jwtUtils.generateJwtToken(authentication);
+                String roles = userDetails.getAuthorities().stream()
+                                .map(item -> item.getAuthority())
+                                .collect(java.util.stream.Collectors.joining(","));
+
+                // Redirect with payload for frontend auto-login
                 return ResponseEntity.status(org.springframework.http.HttpStatus.FOUND)
-                                .location(java.net.URI.create(frontendUrl + "/?verified=true"))
+                                .location(java.net.URI.create(frontendUrl + "/?verified=true&token=" + jwt +
+                                                "&username=" + user.getUsername() +
+                                                "&roles=" + roles +
+                                                "&id=" + user.getId() +
+                                                "&companyId="
+                                                + (user.getCompany() != null ? user.getCompany().getId() : "")))
                                 .build();
         }
 

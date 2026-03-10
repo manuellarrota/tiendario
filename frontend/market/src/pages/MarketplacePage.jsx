@@ -723,7 +723,7 @@ const MarketplacePage = () => {
             />
 
             {/* Notification Toast */}
-            <ToastContainer position="bottom-center" className="pb-5 mb-5" style={{ zIndex: 3000 }}>
+            <ToastContainer position="top-center" className="pt-5 mt-5" style={{ zIndex: 3000 }}>
                 <Toast
                     onClose={() => setShowToast(false)}
                     show={showToast}

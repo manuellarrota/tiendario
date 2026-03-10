@@ -21,48 +21,64 @@ import java.util.List;
 @RequestMapping("/api/inventory")
 public class InventoryController {
 
-    @Autowired
-    InventoryService inventoryService;
+        @Autowired
+        InventoryService inventoryService;
 
-    @GetMapping("/export/excel")
-    @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<Resource> exportToExcel() throws IOException {
-        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
-                .getPrincipal();
-        ByteArrayInputStream in = inventoryService.exportToExcel(userDetails.getCompanyId());
+        @GetMapping("/export/excel")
+        @PreAuthorize("hasRole('MANAGER')")
+        public ResponseEntity<Resource> exportToExcel() throws IOException {
+                UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
+                                .getPrincipal();
+                ByteArrayInputStream in = inventoryService.exportToExcel(userDetails.getCompanyId());
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Content-Disposition", "attachment; filename=inventario.xlsx");
+                HttpHeaders headers = new HttpHeaders();
+                headers.add("Content-Disposition", "attachment; filename=inventario.xlsx");
 
-        return ResponseEntity.ok()
-                .headers(headers)
-                .contentType(
-                        MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
-                .body(new InputStreamResource(in));
-    }
+                return ResponseEntity.ok()
+                                .headers(headers)
+                                .contentType(
+                                                MediaType.parseMediaType(
+                                                                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                                .body(new InputStreamResource(in));
+        }
 
-    @GetMapping("/export/pdf")
-    @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<Resource> exportToPdf() throws IOException {
-        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
-                .getPrincipal();
-        ByteArrayInputStream in = inventoryService.exportToPdf(userDetails.getCompanyId());
+        @GetMapping("/export/pdf")
+        @PreAuthorize("hasRole('MANAGER')")
+        public ResponseEntity<Resource> exportToPdf() throws IOException {
+                UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
+                                .getPrincipal();
+                ByteArrayInputStream in = inventoryService.exportToPdf(userDetails.getCompanyId());
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Content-Disposition", "attachment; filename=inventario.pdf");
+                HttpHeaders headers = new HttpHeaders();
+                headers.add("Content-Disposition", "attachment; filename=inventario.pdf");
 
-        return ResponseEntity.ok()
-                .headers(headers)
-                .contentType(MediaType.APPLICATION_PDF)
-                .body(new InputStreamResource(in));
-    }
+                return ResponseEntity.ok()
+                                .headers(headers)
+                                .contentType(MediaType.APPLICATION_PDF)
+                                .body(new InputStreamResource(in));
+        }
 
-    @PostMapping("/import")
-    @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<List<String>> importExcel(@RequestParam("file") MultipartFile file) throws IOException {
-        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
-                .getPrincipal();
-        List<String> logs = inventoryService.importFromExcel(file, userDetails.getCompanyId());
-        return ResponseEntity.ok(logs);
-    }
+        @PostMapping("/import")
+        @PreAuthorize("hasRole('MANAGER')")
+        public ResponseEntity<List<String>> importExcel(@RequestParam("file") MultipartFile file) throws IOException {
+                UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
+                                .getPrincipal();
+                List<String> logs = inventoryService.importFromExcel(file, userDetails.getCompanyId());
+                return ResponseEntity.ok(logs);
+        }
+
+        @GetMapping("/template")
+        @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+        public ResponseEntity<Resource> getTemplate() throws IOException {
+                ByteArrayInputStream in = inventoryService.generateExcelTemplate();
+
+                HttpHeaders headers = new HttpHeaders();
+                headers.add("Content-Disposition", "attachment; filename=formato_carga_inventario.xlsx");
+
+                return ResponseEntity.ok()
+                                .headers(headers)
+                                .contentType(MediaType.parseMediaType(
+                                                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                                .body(new InputStreamResource(in));
+        }
 }

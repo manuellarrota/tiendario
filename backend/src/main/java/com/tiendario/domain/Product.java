@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
 import javax.persistence.*;
+import javax.persistence.Index;
 import java.math.BigDecimal;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;
@@ -13,6 +14,8 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 @Entity
 @Table(name = "products", uniqueConstraints = {
         @UniqueConstraint(columnNames = { "sku", "company_id" })
+}, indexes = {
+        @Index(name = "idx_product_barcode_company", columnList = "barcode, company_id")
 })
 @Document(indexName = "products")
 @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
@@ -29,7 +32,11 @@ public class Product {
 
     @Column
     @Field(type = FieldType.Keyword)
-    private String sku; // Barcode
+    private String sku; // Internal system-generated identifier
+
+    @Column
+    @Field(type = FieldType.Keyword)
+    private String barcode; // External barcode (EAN-13, UPC, etc.) - optional
 
     @Field(type = FieldType.Double)
     private BigDecimal price;

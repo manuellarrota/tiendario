@@ -20,9 +20,25 @@ const CustomerDashboard = () => {
         Promise.all([CustomerService.getDashboardStats(), CustomerService.getMyOrders()])
             .then(([statsRes, ordersRes]) => {
                 setStats(statsRes.data);
+
+                // Helper to parse dates correctly even if they arrive as arrays
+                const parseDate = (dateVal) => {
+                    if (!dateVal) return new Date(0);
+                    if (Array.isArray(dateVal)) {
+                        return new Date(dateVal[0], dateVal[1] - 1, dateVal[2], dateVal[3] || 0, dateVal[4] || 0);
+                    }
+                    return new Date(dateVal);
+                };
+
                 const sevenDaysAgo = new Date();
                 sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-                const filteredOrders = ordersRes.data.filter(o => new Date(o.date) >= sevenDaysAgo);
+                sevenDaysAgo.setHours(0, 0, 0, 0);
+
+                const filteredOrders = ordersRes.data.filter(o => {
+                    const d = parseDate(o.date);
+                    return d >= sevenDaysAgo;
+                });
+
                 setOrders(filteredOrders);
                 setLastUpdated(new Date());
                 if (isInitial) setLoading(false);
@@ -169,7 +185,15 @@ const CustomerDashboard = () => {
                                     {orders.map(order => (
                                         <tr key={order.id}>
                                             <td className="px-4 py-3 fw-bold">#{order.id}</td>
-                                            <td className="py-3 text-secondary">{new Date(order.date).toLocaleString()}</td>
+                                            <td className="py-3 text-secondary">
+                                                {(() => {
+                                                    const d = order.date;
+                                                    if (Array.isArray(d)) {
+                                                        return `${d[2]}/${d[1]}/${d[0]} ${String(d[3]).padStart(2, '0')}:${String(d[4]).padStart(2, '0')}`;
+                                                    }
+                                                    return new Date(d).toLocaleString();
+                                                })()}
+                                            </td>
                                             <td className="py-3">
                                                 <div className="d-flex align-items-center">
                                                     <div className="bg-light rounded-circle p-2 me-2" style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>

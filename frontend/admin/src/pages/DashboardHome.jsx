@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Alert, Spinner, Button, Badge, Modal, Form, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import Sidebar from '../components/Sidebar';
+import Layout from '../components/Layout';
 import AuthService from '../services/auth.service';
 import DashboardService from '../services/dashboard.service';
 import CompanyService from '../services/company.service';
@@ -634,15 +635,5 @@ const DashboardHome = () => {
         </Layout >
     );
 };
-
-// Simple Layout wrapper for consistency
-const Layout = ({ children }) => (
-    <div className="d-flex admin-layout">
-        <Sidebar />
-        <main className="flex-grow-1 p-3 p-md-4 pt-5 pt-md-4 mt-4 mt-md-0" style={{ background: '#f8fafc', minHeight: '100vh', overflowX: 'hidden' }}>
-            {children}
-        </main>
-    </div>
-);
 
 export default DashboardHome;

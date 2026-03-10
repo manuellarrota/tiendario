@@ -136,12 +136,65 @@ public class ProductController {
         return catalogProductRepository.findByNameContainingIgnoreCase(q);
     }
 
-    @GetMapping
-    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
-    public List<Product> getCompanyProducts() {
+    @GetMapping("/by-barcode/{barcode}")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<?> findByBarcode(@PathVariable String barcode) {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
-        return productRepository.findByCompanyId(userDetails.getCompanyId());
+
+        // Try barcode first, then fall back to SKU (backwards compatibility)
+        Product product = productRepository.findByBarcodeAndCompanyId(barcode, userDetails.getCompanyId())
+                .orElseGet(() -> productRepository.findBySkuAndCompanyId(barcode, userDetails.getCompanyId()).orElse(null));
+
+        if (product == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(product);
+    }
+
+    @GetMapping
+    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+    public ResponseEntity<?> getCompanyProducts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id,desc") String[] sort) {
+
+        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
+                .getPrincipal();
+
+        try {
+            List<org.springframework.data.domain.Sort.Order> orders = new java.util.ArrayList<>();
+
+            if (sort[0].contains(",")) {
+                // will sort more than 2 fields
+                // sort=[field, direction]
+                for (String sortOrder : sort) {
+                    String[] _sort = sortOrder.split(",");
+                    orders.add(new org.springframework.data.domain.Sort.Order(
+                            org.springframework.data.domain.Sort.Direction.fromString(_sort[1]), _sort[0]));
+                }
+            } else {
+                // sort=[field, direction]
+                orders.add(new org.springframework.data.domain.Sort.Order(
+                        org.springframework.data.domain.Sort.Direction.fromString(sort[1]), sort[0]));
+            }
+
+            org.springframework.data.domain.Pageable paging = org.springframework.data.domain.PageRequest.of(page, size,
+                    org.springframework.data.domain.Sort.by(orders));
+
+            org.springframework.data.domain.Page<Product> pageProds = productRepository
+                    .findByCompanyId(userDetails.getCompanyId(), paging);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("products", pageProds.getContent());
+            response.put("currentPage", pageProds.getNumber());
+            response.put("totalItems", pageProds.getTotalElements());
+            response.put("totalPages", pageProds.getTotalPages());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @PostMapping

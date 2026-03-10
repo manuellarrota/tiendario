@@ -176,6 +176,66 @@ h4,
   flex-shrink: 0;
 }
 
+.sidebar-container {
+  display: flex;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  z-index: 2000;
+}
+
+.desktop-sidebar-toggle {
+  position: absolute;
+  right: -15px;
+  top: 30px;
+  width: 30px;
+  height: 30px;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2001;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  color: #64748b;
+  transition: all 0.3s ease;
+}
+
+.desktop-sidebar-toggle:hover {
+  background: #f8fafc;
+  color: #2563eb;
+  transform: scale(1.1);
+}
+
+.collapsed-mode .admin-sidebar {
+  width: 80px !important;
+}
+
+.collapsed-mode .nav-group-label {
+  display: none;
+}
+
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f8fafc;
+}
+
+.main-content {
+  flex-grow: 1;
+  padding: 2rem;
+  overflow-x: hidden;
+  position: relative;
+}
+
+@media (max-width: 991px) {
+  .main-content {
+    padding-top: 5rem;
+  }
+}
+
 @media (max-width: 991px) {
   .mobile-sidebar-toggle {
     display: block;

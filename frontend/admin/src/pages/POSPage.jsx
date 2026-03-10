@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Container, Row, Col, Card, Form, Button, ListGroup, InputGroup, Table, Modal, Alert, OverlayTrigger, Tooltip } from 'react-bootstrap';
-import { FaSearch, FaPlus, FaTrash, FaShoppingCart, FaEdit, FaLock, FaExclamationTriangle, FaExchangeAlt } from 'react-icons/fa';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { Container, Row, Col, Card, Form, Button, ListGroup, InputGroup, Table, Modal, Alert, OverlayTrigger, Tooltip, Spinner } from 'react-bootstrap';
+import { FaSearch, FaPlus, FaTrash, FaShoppingCart, FaEdit, FaLock, FaExclamationTriangle, FaExchangeAlt, FaUserPlus, FaUserAlt, FaUserCheck, FaBarcode } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import ProductService from '../services/product.service';
 import SaleService from '../services/sale.service';
 import AuthService from '../services/auth.service';
 import PublicService from '../services/public.service';
+import CustomerService from '../services/customer.service';
 
 const POSPage = () => {
     const [products, setProducts] = useState([]);
@@ -19,6 +20,13 @@ const POSPage = () => {
     const [customerPhone, setCustomerPhone] = useState("");
     const [platformConfig, setPlatformConfig] = useState(null);
 
+    // Customer Selection State
+    const [customers, setCustomers] = useState([]);
+    const [selectedCustomer, setSelectedCustomer] = useState(null); // null = "Cliente General"
+    const [customerSearch, setCustomerSearch] = useState("");
+    const [showNewCustomerModal, setShowNewCustomerModal] = useState(false);
+    const [newCustomer, setNewCustomer] = useState({ name: "", cedula: "", phone: "", email: "" });
+
     // Subscription status check
     const user = AuthService.getCurrentUser();
     const subscriptionStatus = user?.subscriptionStatus || 'FREE';
@@ -29,9 +37,18 @@ const POSPage = () => {
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [inputQuantity, setInputQuantity] = useState('1');
 
+    // Barcode scanner
+    const [barcodeInput, setBarcodeInput] = useState('');
+    const [barcodeStatus, setBarcodeStatus] = useState(null); // null | 'searching' | 'found' | 'not_found'
+    const barcodeInputRef = useRef(null);
+    const barcodeTimerRef = useRef(null);
+
     useEffect(() => {
-        ProductService.getCompanyProducts().then(
-            (response) => setProducts(response.data),
+        ProductService.getPOSProducts().then(
+            (response) => {
+                // Backend now returns paginated object { products: [], ... }
+                setProducts(response.data.products || response.data);
+            },
             (error) => console.error("Error fetching products", error)
         );
 
@@ -39,6 +56,14 @@ const POSPage = () => {
             (response) => setPlatformConfig(response.data),
             (error) => console.error("Error fetching platform config", error)
         );
+
+        CustomerService.getAll().then(
+            (response) => setCustomers(response.data),
+            (error) => console.error("Error fetching customers", error)
+        );
+
+        // Auto-focus the barcode input so the scanner works immediately on page load
+        setTimeout(() => { if (barcodeInputRef.current) barcodeInputRef.current.focus(); }, 300);
     }, []);
 
     // Parse currencies from platform config
@@ -75,6 +100,73 @@ const POSPage = () => {
         }
         const curr = getSelectedCurrency();
         return `${curr?.symbol || ''} ${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    };
+
+    // --- BARCODE SCANNER LOGIC ---
+    const addProductToCartById = useCallback((foundProduct, qty = 1) => {
+        if (!foundProduct) return;
+        if (foundProduct.stock < 1) {
+            setMessage(`❌ "${foundProduct.name}" no tiene stock disponible.`);
+            setTimeout(() => setMessage(''), 3500);
+            return;
+        }
+        setCart(prev => {
+            const existing = prev.find(item => item.product.id === foundProduct.id);
+            if (existing) {
+                if (existing.quantity + qty > foundProduct.stock) {
+                    setMessage(`❌ Stock insuficiente. Solo quedan ${foundProduct.stock} unidades.`);
+                    setTimeout(() => setMessage(''), 3500);
+                    return prev;
+                }
+                return prev.map(item =>
+                    item.product.id === foundProduct.id
+                        ? { ...item, quantity: item.quantity + qty, subtotal: (item.quantity + qty) * foundProduct.price }
+                        : item
+                );
+            }
+            return [...prev, { product: foundProduct, quantity: qty, unitPrice: foundProduct.price, subtotal: qty * foundProduct.price }];
+        });
+    }, []);
+
+    const handleBarcodeSearch = useCallback((code) => {
+        if (!code || code.trim() === '') return;
+        setBarcodeStatus('searching');
+        ProductService.findByBarcode(code.trim()).then(
+            (response) => {
+                const found = response.data;
+                setBarcodeStatus('found');
+                addProductToCartById(found, 1);
+                // Refresh local products list to show updated stock
+                ProductService.getPOSProducts().then(r => setProducts(r.data.products || r.data));
+                setTimeout(() => setBarcodeStatus(null), 1500);
+            },
+            () => {
+                setBarcodeStatus('not_found');
+                setTimeout(() => setBarcodeStatus(null), 2000);
+            }
+        );
+    }, [addProductToCartById]);
+
+    const handleBarcodeKeyDown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const code = barcodeInput.trim();
+            setBarcodeInput('');
+            handleBarcodeSearch(code);
+        }
+    };
+
+    // Detect rapid input typical of hardware barcode scanners (fires Enter after ~50ms)
+    const handleBarcodeChange = (e) => {
+        const val = e.target.value;
+        setBarcodeInput(val);
+        // Clear previous timer
+        if (barcodeTimerRef.current) clearTimeout(barcodeTimerRef.current);
+        // If the value already ends with '\n' (some scanners), process immediately
+        if (val.endsWith('\n')) {
+            setBarcodeInput('');
+            handleBarcodeSearch(val.trim());
+        }
     };
 
     const openQuantityModal = (product) => {
@@ -144,11 +236,6 @@ const POSPage = () => {
     const handleCheckout = () => {
         if (cart.length === 0) return;
 
-        let finalName = customerName.trim();
-        if (customerCedula.trim()) {
-            finalName = finalName ? `${finalName} (C.I: ${customerCedula.trim()})` : `C.I: ${customerCedula.trim()}`;
-        }
-
         const selectedCurr = getSelectedCurrency();
         const saleData = {
             totalAmount: total,
@@ -162,8 +249,9 @@ const POSPage = () => {
                 unitPrice: item.unitPrice,
                 subtotal: item.subtotal
             })),
-            customerName: finalName,
-            customerPhone: customerPhone.trim(),
+            customer: selectedCustomer ? { id: selectedCustomer.id } : null,
+            customerName: selectedCustomer ? selectedCustomer.name : (customerName.trim() || customerSearch.trim() || 'Cliente General'),
+            customerPhone: selectedCustomer ? selectedCustomer.phone : customerPhone.trim(),
             status: 'PAID'
         };
 
@@ -176,8 +264,10 @@ const POSPage = () => {
                 setCustomerName("");
                 setCustomerCedula("");
                 setCustomerPhone("");
+                setSelectedCustomer(null);
+                setCustomerSearch("");
                 // Refresh product stock
-                ProductService.getCompanyProducts().then(r => setProducts(r.data));
+                ProductService.getPOSProducts().then(r => setProducts(r.data.products || r.data));
                 setTimeout(() => setMessage(""), 3000);
             },
             (error) => {
@@ -187,16 +277,35 @@ const POSPage = () => {
         );
     };
 
+    const handleNewCustomerSubmit = (e) => {
+        e.preventDefault();
+        CustomerService.create(newCustomer).then(
+            (response) => {
+                const created = response.data;
+                setCustomers([...customers, created]);
+                setSelectedCustomer(created);
+                setShowNewCustomerModal(false);
+                setNewCustomer({ name: "", cedula: "", phone: "", email: "" });
+                setMessage("✅ Cliente registrado y seleccionado.");
+                setTimeout(() => setMessage(""), 3000);
+            },
+            (error) => {
+                alert("Error al registrar cliente: " + (error.response?.data?.message || error.message));
+            }
+        );
+    };
+
     const filteredProducts = products.filter(p =>
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.sku.toLowerCase().includes(searchTerm.toLowerCase())
+        p.sku.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (p.barcode && p.barcode.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     return (
         <div className="d-flex" style={{ height: '100vh', overflow: 'hidden' }}>
             <Sidebar />
             <div className="flex-grow-1 p-4" style={{ overflowY: 'auto' }}>
-                <h2 className="mb-4">Control de Ventas (Registro de Salida)</h2>
+                <h2 className="mb-4">Control de Ventas (Carrito de compras)</h2>
 
                 {message && <div className={`alert ${message.includes('éxito') ? 'alert-success' : 'alert-danger'}`}>{message}</div>}
 
@@ -229,6 +338,52 @@ const POSPage = () => {
                     <Col md={7}>
                         <Card className="shadow-sm border-0 mb-4">
                             <Card.Body>
+                                {/* === BARCODE SCANNER INPUT === */}
+                                <div className={`mb-3 p-3 rounded-3 border-2 ${
+                                    barcodeStatus === 'found' ? 'border border-success bg-success bg-opacity-10' :
+                                    barcodeStatus === 'not_found' ? 'border border-danger bg-danger bg-opacity-10' :
+                                    barcodeStatus === 'searching' ? 'border border-primary bg-primary bg-opacity-10' :
+                                    'border border-secondary bg-light'
+                                }`} style={{ transition: 'all 0.2s ease' }}>
+                                    <div className="d-flex align-items-center gap-2 mb-2">
+                                        <FaBarcode className={`
+                                            ${barcodeStatus === 'found' ? 'text-success' :
+                                              barcodeStatus === 'not_found' ? 'text-danger' :
+                                              barcodeStatus === 'searching' ? 'text-primary' :
+                                              'text-secondary'}
+                                        `} size={20} />
+                                        <span className="fw-bold small text-uppercase text-secondary">Lector de Código de Barras</span>
+                                        {barcodeStatus === 'searching' && <Spinner animation="border" size="sm" variant="primary" />}
+                                        {barcodeStatus === 'found' && <span className="badge bg-success ms-auto">✓ Producto agregado</span>}
+                                        {barcodeStatus === 'not_found' && <span className="badge bg-danger ms-auto">✗ Código no encontrado</span>}
+                                    </div>
+                                    <InputGroup>
+                                        <InputGroup.Text className={`border-end-0 ${
+                                            barcodeStatus === 'found' ? 'bg-success text-white border-success' :
+                                            barcodeStatus === 'not_found' ? 'bg-danger text-white border-danger' :
+                                            'bg-white'
+                                        }`}>
+                                            <FaBarcode />
+                                        </InputGroup.Text>
+                                        <Form.Control
+                                            ref={barcodeInputRef}
+                                            placeholder="Escanear código de barras o ingresar y presionar Enter..."
+                                            value={barcodeInput}
+                                            onChange={handleBarcodeChange}
+                                            onKeyDown={handleBarcodeKeyDown}
+                                            className={`border-start-0 ${
+                                                barcodeStatus === 'found' ? 'border-success' :
+                                                barcodeStatus === 'not_found' ? 'border-danger' : ''
+                                            }`}
+                                            style={{ fontFamily: 'monospace', fontSize: '1rem', letterSpacing: '0.05em' }}
+                                        />
+                                    </InputGroup>
+                                    <small className="text-muted mt-1 d-block">
+                                        Apunta el lector al código de barras del producto — se agrega automáticamente al carrito.
+                                    </small>
+                                </div>
+
+                                {/* Regular text search */}
                                 <InputGroup className="mb-3">
                                     <InputGroup.Text className="bg-white"><FaSearch /></InputGroup.Text>
                                     <Form.Control
@@ -378,24 +533,93 @@ const POSPage = () => {
                                     </div>
 
                                     <Form.Group className="mb-3">
-                                        <Form.Label>Datos del Cliente (Opcional)</Form.Label>
-                                        <Form.Control
-                                            className="mb-2"
-                                            placeholder="Nombre del cliente..."
-                                            value={customerName}
-                                            onChange={(e) => setCustomerName(e.target.value)}
-                                        />
-                                        <Form.Control
-                                            className="mb-2"
-                                            placeholder="Cédula / Identificación..."
-                                            value={customerCedula}
-                                            onChange={(e) => setCustomerCedula(e.target.value)}
-                                        />
-                                        <Form.Control
-                                            placeholder="Teléfono de contacto..."
-                                            value={customerPhone}
-                                            onChange={(e) => setCustomerPhone(e.target.value)}
-                                        />
+                                        <Form.Label className="d-flex justify-content-between align-items-center">
+                                            <span>Cliente</span>
+                                            <Button variant="link" className="p-0 text-decoration-none small" onClick={() => setShowNewCustomerModal(true)}>
+                                                <FaUserPlus className="me-1" /> Nuevo Cliente
+                                            </Button>
+                                        </Form.Label>
+
+                                        <div className="position-relative">
+                                            <InputGroup className="mb-2 shadow-sm">
+                                                <InputGroup.Text className="bg-white border-end-0">
+                                                    <FaSearch className="text-muted" />
+                                                </InputGroup.Text>
+                                                <Form.Control
+                                                    placeholder="Buscar por cédula o nombre..."
+                                                    className="border-start-0 ps-0"
+                                                    value={customerSearch}
+                                                    onChange={(e) => setCustomerSearch(e.target.value)}
+                                                />
+                                            </InputGroup>
+
+                                            {customerSearch.length > 0 && (
+                                                <ListGroup className="position-absolute w-100 shadow-lg" style={{ zIndex: 1000, maxHeight: '200px', overflowY: 'auto' }}>
+                                                    <ListGroup.Item
+                                                        action
+                                                        className="text-primary fw-bold"
+                                                        onClick={() => {
+                                                            setSelectedCustomer(null);
+                                                            setCustomerName("Cliente General");
+                                                            setCustomerSearch("");
+                                                        }}
+                                                    >
+                                                        <FaUserAlt className="me-2" /> Cliente General (Público)
+                                                    </ListGroup.Item>
+                                                    {customers
+                                                        .filter(c =>
+                                                            c.name.toLowerCase().includes(customerSearch.toLowerCase()) ||
+                                                            (c.cedula && c.cedula.includes(customerSearch))
+                                                        )
+                                                        .map(c => (
+                                                            <ListGroup.Item
+                                                                key={c.id}
+                                                                action
+                                                                onClick={() => {
+                                                                    setSelectedCustomer(c);
+                                                                    setCustomerSearch("");
+                                                                }}
+                                                            >
+                                                                <div className="fw-bold">{c.name}</div>
+                                                                <small className="text-muted">{c.cedula ? `C.I: ${c.cedula}` : 'Sin ID'} | {c.phone || 'Sin telf.'}</small>
+                                                            </ListGroup.Item>
+                                                        ))
+                                                    }
+                                                </ListGroup>
+                                            )}
+                                        </div>
+
+                                        <Card className="bg-light border-0 rounded-3 mb-2 shadow-sm">
+                                            <Card.Body className="p-2 d-flex align-items-center justify-content-between">
+                                                <div className="d-flex align-items-center">
+                                                    <div className="bg-white rounded-circle p-2 me-2 shadow-sm text-primary">
+                                                        {selectedCustomer ? <FaUserCheck /> : <FaUserAlt />}
+                                                    </div>
+                                                    <div>
+                                                        <div className="fw-bold" style={{ fontSize: '0.9rem' }}>
+                                                            {selectedCustomer ? selectedCustomer.name : (customerName || "Cliente General")}
+                                                        </div>
+                                                        <small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>
+                                                            {selectedCustomer
+                                                                ? `${selectedCustomer.cedula || 'Sin ID'} | ${selectedCustomer.phone || '-'}`
+                                                                : "Venta a público general"}
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                                {(selectedCustomer || customerName) && (
+                                                    <Button
+                                                        variant="link"
+                                                        className="text-danger p-0 ms-2"
+                                                        onClick={() => {
+                                                            setSelectedCustomer(null);
+                                                            setCustomerName("");
+                                                        }}
+                                                    >
+                                                        <FaTrash size={12} />
+                                                    </Button>
+                                                )}
+                                            </Card.Body>
+                                        </Card>
                                     </Form.Group>
 
                                     <Form.Group className="mb-3">
@@ -501,6 +725,65 @@ const POSPage = () => {
                             Agregar al Carrito
                         </Button>
                     </Modal.Footer>
+                </Modal>
+
+                {/* New Customer Modal */}
+                <Modal show={showNewCustomerModal} onHide={() => setShowNewCustomerModal(false)} centered>
+                    <Modal.Header closeButton className="border-0">
+                        <Modal.Title className="fw-bold"><FaUserPlus className="me-2 text-primary" />Registrar Nuevo Cliente</Modal.Title>
+                    </Modal.Header>
+                    <Form onSubmit={handleNewCustomerSubmit}>
+                        <Modal.Body className="p-4">
+                            <Form.Group className="mb-3">
+                                <Form.Label>Nombre Completo *</Form.Label>
+                                <Form.Control
+                                    required
+                                    value={newCustomer.name}
+                                    onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                                    placeholder="Ej: Juan Pérez"
+                                />
+                            </Form.Group>
+                            <Row>
+                                <Col md={6}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Cédula / RIF</Form.Label>
+                                        <Form.Control
+                                            value={newCustomer.cedula}
+                                            onChange={(e) => setNewCustomer({ ...newCustomer, cedula: e.target.value })}
+                                            placeholder="V-12345678"
+                                        />
+                                    </Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Teléfono</Form.Label>
+                                        <Form.Control
+                                            value={newCustomer.phone}
+                                            onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                                            placeholder="0412..."
+                                        />
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Correo Electrónico</Form.Label>
+                                <Form.Control
+                                    type="email"
+                                    value={newCustomer.email}
+                                    onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                                    placeholder="correo@ejemplo.com"
+                                />
+                            </Form.Group>
+                        </Modal.Body>
+                        <Modal.Footer className="border-0">
+                            <Button variant="light" onClick={() => setShowNewCustomerModal(false)}>
+                                Cancelar
+                            </Button>
+                            <Button variant="primary" type="submit" className="px-4">
+                                Guardar y Seleccionar
+                            </Button>
+                        </Modal.Footer>
+                    </Form>
                 </Modal>
             </div>
         </div>

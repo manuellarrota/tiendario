@@ -12,8 +12,19 @@ const getAuthHeader = () => {
     }
 }
 
-const getAll = () => {
-    return axios.get(API_URL, { headers: getAuthHeader() });
+const getAll = (params) => {
+    return axios.get(API_URL, {
+        params,
+        headers: getAuthHeader()
+    });
+};
+
+const getPOSProducts = () => {
+    // POS might need all products or a larger page size
+    return axios.get(API_URL, {
+        params: { page: 0, size: 2000 },
+        headers: getAuthHeader()
+    });
 };
 
 const create = (data) => {
@@ -53,6 +64,12 @@ const uploadImage = (file) => {
     });
 };
 
+const findByBarcode = (barcode) => {
+    return axios.get(API_URL + `by-barcode/${encodeURIComponent(barcode)}`, {
+        headers: getAuthHeader()
+    });
+};
+
 const ProductService = {
     getAll,
     getCompanyProducts: getAll,
@@ -61,7 +78,9 @@ const ProductService = {
     remove,
     getSuggestedSku,
     searchCatalog,
-    uploadImage
+    uploadImage,
+    getPOSProducts,
+    findByBarcode
 };
 
 export default ProductService;

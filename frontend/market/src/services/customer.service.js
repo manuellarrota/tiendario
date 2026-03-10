@@ -1,7 +1,7 @@
 import axios from 'axios';
 import authHeader from './auth-header';
 
-const API_URL = import.meta.env.VITE_API_URL + '/customer/';
+const API_URL = import.meta.env.VITE_API_URL + '/customer-portal/';
 
 const getDashboardStats = () => {
     return axios.get(API_URL + 'dashboard', { headers: authHeader() });

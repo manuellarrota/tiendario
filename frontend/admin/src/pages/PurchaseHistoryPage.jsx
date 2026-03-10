@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Table, Card, Badge, Collapse, Button, Row, Col, Form } from 'react-bootstrap';
+import { Container, Table, Card, Badge, Collapse, Button, Row, Col, Form, Pagination } from 'react-bootstrap';
 import { FaChevronDown, FaChevronUp, FaHistory, FaCalendarAlt, FaTruck } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import PurchaseService from '../services/purchase.service';
@@ -12,6 +12,9 @@ const PurchaseHistoryPage = () => {
     const [filterSupplier, setFilterSupplier] = useState('');
     const [filterDateFrom, setFilterDateFrom] = useState('');
     const [filterDateTo, setFilterDateTo] = useState('');
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
     const loadPurchases = () => {
         PurchaseService.getAll().then(
@@ -49,7 +52,11 @@ const PurchaseHistoryPage = () => {
             );
         }
 
+        // Sort by date descending so the most recent is always first
+        filtered.sort((a, b) => new Date(b.date) - new Date(a.date));
+
         setFilteredPurchases(filtered);
+        setCurrentPage(1); // Reset to page 1 when filtering
     }, [purchases, filterSupplier, filterDateFrom, filterDateTo]);
 
     useEffect(() => {
@@ -68,7 +75,15 @@ const PurchaseHistoryPage = () => {
         setFilterSupplier('');
         setFilterDateFrom('');
         setFilterDateTo('');
+        setCurrentPage(1);
     };
+
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentPurchases = filteredPurchases.slice(indexOfFirstItem, indexOfLastItem);
+    const totalPages = Math.ceil(filteredPurchases.length / itemsPerPage);
+
+    const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
     return (
         <div className="d-flex" style={{ height: '100vh', overflow: 'hidden' }}>
@@ -151,97 +166,123 @@ const PurchaseHistoryPage = () => {
                                     <p>Las compras que realices aparecerán aquí</p>
                                 </div>
                             ) : (
-                                <Table hover responsive>
-                                    <thead className="bg-light">
-                                        <tr>
-                                            <th className="border-0">ID</th>
-                                            <th className="border-0">Fecha</th>
-                                            <th className="border-0">Proveedor</th>
-                                            <th className="border-0 text-center">Artículos</th>
-                                            <th className="border-0 text-center">Estado</th>
-                                            <th className="border-0 text-end">Total</th>
-                                            <th className="border-0 text-center">Detalles</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {filteredPurchases.map((purchase) => (
-                                            <React.Fragment key={purchase.id}>
-                                                <tr>
-                                                    <td className="fw-bold">#{purchase.id}</td>
-                                                    <td>
-                                                        <small className="text-muted">
-                                                            {new Date(purchase.date).toLocaleDateString('es-ES', {
-                                                                year: 'numeric',
-                                                                month: 'short',
-                                                                day: 'numeric',
-                                                                hour: '2-digit',
-                                                                minute: '2-digit',
-                                                                hour12: true
-                                                            })}
-                                                        </small>
-                                                    </td>
-                                                    <td>
-                                                        <FaTruck className="me-2 text-muted" />
-                                                        {purchase.supplier?.name || 'N/A'}
-                                                    </td>
-                                                    <td className="text-center">
-                                                        <Badge bg="info">{purchase.items?.length || 0}</Badge>
-                                                    </td>
-                                                    <td className="text-center">
-                                                        <Badge bg="success" className="rounded-pill px-3">Compra Finalizada</Badge>
-                                                    </td>
-                                                    <td className="text-end fw-bold text-success">
-                                                        ${purchase.total?.toLocaleString() || 0}
-                                                    </td>
-                                                    <td className="text-center">
-                                                        <Button
-                                                            variant="link"
-                                                            size="sm"
-                                                            onClick={() => toggleExpand(purchase.id)}
-                                                        >
-                                                            {expandedId === purchase.id ? (
-                                                                <FaChevronUp />
-                                                            ) : (
-                                                                <FaChevronDown />
-                                                            )}
-                                                        </Button>
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td colSpan="7" className="p-0 border-0">
-                                                        <Collapse in={expandedId === purchase.id}>
-                                                            <div className="bg-light p-3">
-                                                                <h6 className="mb-3">Detalle de Artículos</h6>
-                                                                <Table size="sm" className="mb-0">
-                                                                    <thead>
-                                                                        <tr>
-                                                                            <th>Producto</th>
-                                                                            <th className="text-center">Cantidad</th>
-                                                                            <th className="text-end">Costo de Adquisición</th>
-                                                                            <th className="text-end">Subtotal</th>
-                                                                        </tr>
-                                                                    </thead>
-                                                                    <tbody>
-                                                                        {purchase.items?.map((item, idx) => (
-                                                                            <tr key={idx}>
-                                                                                <td>{item.product?.name || 'Producto'}</td>
-                                                                                <td className="text-center">{item.quantity}</td>
-                                                                                <td className="text-end">${item.unitCost}</td>
-                                                                                <td className="text-end fw-bold">
-                                                                                    ${(item.quantity * item.unitCost).toFixed(2)}
-                                                                                </td>
+                                <>
+                                    <Table hover responsive>
+                                        <thead className="bg-light">
+                                            <tr>
+                                                <th className="border-0">ID</th>
+                                                <th className="border-0">Fecha</th>
+                                                <th className="border-0">Proveedor</th>
+                                                <th className="border-0 text-center">Artículos</th>
+                                                <th className="border-0 text-center">Estado</th>
+                                                <th className="border-0 text-end">Total</th>
+                                                <th className="border-0 text-center">Detalles</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {currentPurchases.map((purchase) => (
+                                                <React.Fragment key={purchase.id}>
+                                                    <tr>
+                                                        <td className="fw-bold">#{purchase.id}</td>
+                                                        <td>
+                                                            <small className="text-muted">
+                                                                {new Date(purchase.date).toLocaleDateString('es-ES', {
+                                                                    year: 'numeric',
+                                                                    month: 'short',
+                                                                    day: 'numeric',
+                                                                    hour: '2-digit',
+                                                                    minute: '2-digit',
+                                                                    hour12: true
+                                                                })}
+                                                            </small>
+                                                        </td>
+                                                        <td>
+                                                            <FaTruck className="me-2 text-muted" />
+                                                            {purchase.supplier?.name || 'N/A'}
+                                                        </td>
+                                                        <td className="text-center">
+                                                            <Badge bg="info">{purchase.items?.length || 0}</Badge>
+                                                        </td>
+                                                        <td className="text-center">
+                                                            <Badge bg="success" className="rounded-pill px-3">Compra Finalizada</Badge>
+                                                        </td>
+                                                        <td className="text-end fw-bold text-success">
+                                                            ${purchase.total?.toLocaleString() || 0}
+                                                        </td>
+                                                        <td className="text-center">
+                                                            <Button
+                                                                variant="link"
+                                                                size="sm"
+                                                                onClick={() => toggleExpand(purchase.id)}
+                                                            >
+                                                                {expandedId === purchase.id ? (
+                                                                    <FaChevronUp />
+                                                                ) : (
+                                                                    <FaChevronDown />
+                                                                )}
+                                                            </Button>
+                                                        </td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td colSpan="7" className="p-0 border-0">
+                                                            <Collapse in={expandedId === purchase.id}>
+                                                                <div className="bg-light p-3">
+                                                                    <h6 className="mb-3">Detalle de Artículos</h6>
+                                                                    <Table size="sm" className="mb-0">
+                                                                        <thead>
+                                                                            <tr>
+                                                                                <th>Producto</th>
+                                                                                <th className="text-center">Cantidad</th>
+                                                                                <th className="text-end">Costo de Adquisición</th>
+                                                                                <th className="text-end">Subtotal</th>
                                                                             </tr>
-                                                                        ))}
-                                                                    </tbody>
-                                                                </Table>
-                                                            </div>
-                                                        </Collapse>
-                                                    </td>
-                                                </tr>
-                                            </React.Fragment>
-                                        ))}
-                                    </tbody>
-                                </Table>
+                                                                        </thead>
+                                                                        <tbody>
+                                                                            {purchase.items?.map((item, idx) => (
+                                                                                <tr key={idx}>
+                                                                                    <td>{item.product?.name || 'Producto'}</td>
+                                                                                    <td className="text-center">{item.quantity}</td>
+                                                                                    <td className="text-end">${item.unitCost}</td>
+                                                                                    <td className="text-end fw-bold">
+                                                                                        ${(item.quantity * item.unitCost).toFixed(2)}
+                                                                                    </td>
+                                                                                </tr>
+                                                                            ))}
+                                                                        </tbody>
+                                                                    </Table>
+                                                                </div>
+                                                            </Collapse>
+                                                        </td>
+                                                    </tr>
+                                                </React.Fragment>
+                                            ))}
+                                        </tbody>
+                                    </Table>
+
+                                    {totalPages > 1 && (
+                                        <div className="d-flex justify-content-center mt-4">
+                                            <Pagination>
+                                                <Pagination.First onClick={() => handlePageChange(1)} disabled={currentPage === 1} />
+                                                <Pagination.Prev onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1} />
+                                                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+                                                    if (page === 1 || page === totalPages || (page >= currentPage - 2 && page <= currentPage + 2)) {
+                                                        return (
+                                                            <Pagination.Item key={page} active={page === currentPage} onClick={() => handlePageChange(page)}>
+                                                                {page}
+                                                            </Pagination.Item>
+                                                        );
+                                                    }
+                                                    if (page === currentPage - 3 || page === currentPage + 3) {
+                                                        return <Pagination.Ellipsis key={page} disabled />;
+                                                    }
+                                                    return null;
+                                                })}
+                                                <Pagination.Next onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages} />
+                                                <Pagination.Last onClick={() => handlePageChange(totalPages)} disabled={currentPage === totalPages} />
+                                            </Pagination>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </Card.Body>
                     </Card>

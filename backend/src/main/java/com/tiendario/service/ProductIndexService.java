@@ -2,6 +2,8 @@ package com.tiendario.service;
 
 import com.tiendario.domain.Product;
 import com.tiendario.repository.search.ProductSearchRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -9,6 +11,8 @@ import java.util.List;
 
 @Service
 public class ProductIndexService {
+
+    private static final Logger log = LoggerFactory.getLogger(ProductIndexService.class);
 
     @Autowired(required = false)
     private ProductSearchRepository productSearchRepository;
@@ -18,8 +22,7 @@ public class ProductIndexService {
             try {
                 productSearchRepository.save(product);
             } catch (Exception e) {
-                // Elasticsearch might not be running, log but don't fail
-                System.err.println("Warning: Could not index product in Elasticsearch: " + e.getMessage());
+                log.warn("Could not index product in Elasticsearch: {}", e.getMessage());
             }
         }
     }
@@ -29,7 +32,7 @@ public class ProductIndexService {
             try {
                 productSearchRepository.deleteById(id);
             } catch (Exception e) {
-                System.err.println("Warning: Could not delete product from Elasticsearch: " + e.getMessage());
+                log.warn("Could not delete product from Elasticsearch: {}", e.getMessage());
             }
         }
     }
@@ -39,7 +42,7 @@ public class ProductIndexService {
             try {
                 return productSearchRepository.findByNameContainingOrDescriptionContaining(query, query);
             } catch (Exception e) {
-                System.err.println("Warning: Elasticsearch search failed: " + e.getMessage());
+                log.warn("Elasticsearch search failed: {}", e.getMessage());
                 return List.of();
             }
         }
@@ -59,10 +62,9 @@ public class ProductIndexService {
                 for (Product product : products) {
                     productSearchRepository.save(product);
                 }
-                System.out.println("Re-indexed " + products.size() + " products for company " + companyId);
+                log.info("Re-indexed {} products for company {}", products.size(), companyId);
             } catch (Exception e) {
-                System.err.println(
-                        "Warning: Could not re-index products for company " + companyId + ": " + e.getMessage());
+                log.warn("Could not re-index products for company {}: {}", companyId, e.getMessage());
             }
         }
     }

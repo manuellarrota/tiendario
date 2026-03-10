@@ -69,22 +69,52 @@ const LandingPage = () => {
     const [searchParams] = useSearchParams();
     const API_URL = import.meta.env.VITE_API_URL;
 
-    // Check URL for reset token on mount
+    // Check URL for verification or reset token on mount
     useEffect(() => {
-        const token = searchParams.get('token');
-        if (token) {
-            setResetToken(token);
+        const tokenToken = searchParams.get('token');
+        if (tokenToken && !searchParams.get('verified')) {
+            setResetToken(tokenToken);
             setShowResetModal(true);
         }
 
         const verified = searchParams.get('verified');
         if (verified === 'true') {
-            setVerificationSuccess(true);
-            setMessage("✅ ¡Cuenta verificada con éxito! Ya puedes iniciar sesión.");
+            const token = searchParams.get('token');
+            const username = searchParams.get('username');
+            const rolesStr = searchParams.get('roles');
+            const id = searchParams.get('id');
+            const companyId = searchParams.get('companyId');
+
+            if (token && username) {
+                // Perform auto-login
+                const userData = {
+                    token: token,
+                    username: username,
+                    roles: rolesStr ? rolesStr.split(',') : [],
+                    id: id,
+                    companyId: companyId,
+                    subscriptionStatus: 'TRIAL' // Default for new managers
+                };
+                localStorage.setItem("user", JSON.stringify(userData));
+                setVerificationSuccess(true);
+                setMessage("✅ ¡Cuenta verificada con éxito! Iniciando sesión...");
+                setTimeout(() => {
+                    navigate("/dashboard");
+                    window.location.reload();
+                }, 1500);
+            } else {
+                setVerificationSuccess(true);
+                setMessage("✅ ¡Cuenta verificada con éxito! Ya puedes iniciar sesión.");
+            }
             // Clean URL
             window.history.replaceState({}, '', '/');
+        } else if (verified === 'error') {
+            const errorMsg = searchParams.get('message') || "Código de verificación inválido o expirado.";
+            setVerificationSuccess(false);
+            setMessage(`❌ ${errorMsg}`);
+            window.history.replaceState({}, '', '/');
         }
-    }, [searchParams]);
+    }, [searchParams, navigate]);
 
 
     // Relocate map effect when position changes

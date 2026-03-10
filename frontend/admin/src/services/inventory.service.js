@@ -1,17 +1,17 @@
 import axios from 'axios';
 import authHeader from './auth-header';
 
-const API_URL = import.meta.env.VITE_API_URL + '/inventory/';
+const API_URL = import.meta.env.VITE_API_URL + '/inventory';
 
 const exportExcel = () => {
-    return axios.get(API_URL + 'export/excel', {
+    return axios.get(API_URL + '/export/excel', {
         headers: authHeader(),
         responseType: 'blob'
     });
 };
 
 const exportPdf = () => {
-    return axios.get(API_URL + 'export/pdf', {
+    return axios.get(API_URL + '/export/pdf', {
         headers: authHeader(),
         responseType: 'blob'
     });
@@ -20,7 +20,7 @@ const exportPdf = () => {
 const importExcel = (file) => {
     const formData = new FormData();
     formData.append('file', file);
-    return axios.post(API_URL + 'import', formData, {
+    return axios.post(API_URL + '/import', formData, {
         headers: {
             ...authHeader(),
             'Content-Type': 'multipart/form-data'
@@ -28,10 +28,18 @@ const importExcel = (file) => {
     });
 };
 
+const downloadTemplate = () => {
+    return axios.get(API_URL + '/template', {
+        headers: authHeader(),
+        responseType: 'blob'
+    });
+};
+
 const InventoryService = {
     exportExcel,
     exportPdf,
-    importExcel
+    importExcel,
+    downloadTemplate
 };
 
 export default InventoryService;

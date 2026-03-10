@@ -186,6 +186,37 @@ public class InventoryService {
         return logs;
     }
 
+    public ByteArrayInputStream generateExcelTemplate() throws IOException {
+        String[] columns = { "SKU (Obligatorio)", "Nombre", "Categoría", "Presentación/Variante", "Precio Venta",
+                "Precio Costo", "Stock Actual", "Stock Mínimo", "Descripción" };
+
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("Importar Productos");
+
+            // Row 0: Headers
+            Row headerRow = sheet.createRow(0);
+            for (int i = 0; i < columns.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(columns[i]);
+            }
+
+            // Row 1: Example Data
+            Row exampleRow = sheet.createRow(1);
+            exampleRow.createCell(0).setCellValue("PROD-001");
+            exampleRow.createCell(1).setCellValue("Producto de Ejemplo");
+            exampleRow.createCell(2).setCellValue("General");
+            exampleRow.createCell(3).setCellValue("Única");
+            exampleRow.createCell(4).setCellValue(1500.0);
+            exampleRow.createCell(5).setCellValue(1000.0);
+            exampleRow.createCell(6).setCellValue(10);
+            exampleRow.createCell(7).setCellValue(2);
+            exampleRow.createCell(8).setCellValue("Breve descripción del producto");
+
+            workbook.write(out);
+            return new ByteArrayInputStream(out.toByteArray());
+        }
+    }
+
     private String getCellValueAsString(Cell cell) {
         if (cell == null)
             return null;
