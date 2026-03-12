@@ -18,13 +18,16 @@ const MarketplaceNavbar = ({ onLoginClick, onRegisterClick }) => {
     };
 
     return (
-        <Navbar bg="white" expand="lg" className="sticky-top shadow-sm py-3" style={{ backdropFilter: 'blur(10px)', backgroundColor: 'rgba(255,255,255,0.9)' }}>
+        <Navbar bg="white" expand="lg" className="sticky-top shadow-sm py-2" style={{ borderBottom: '1px solid #f1f5f9' }}>
             <Container>
                 <Navbar.Brand as={Link} to="/" className="fw-bold d-flex align-items-center gap-2 fs-4">
-                    <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white p-2" style={{ width: 35, height: 35, background: 'var(--primary-gradient)' }}>
-                        <FaStore size={18} />
+                    <img src="/logo_placeholder.svg" className="d-none" alt="logo" /> {/* In case there's an actual logo */}
+                    <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white" style={{ width: 32, height: 32 }}>
+                        <FaStore size={16} />
                     </div>
-                    <span className="text-dark">Tiendario <span className="text-primary" style={{ fontWeight: 800 }}>Market</span></span>
+                    <span className="text-dark fw-800 fs-4" style={{ letterSpacing: '-0.5px' }}>
+                        Tiendario <span className="text-primary">Market</span>
+                    </span>
                 </Navbar.Brand>
 
                 <Navbar.Toggle />

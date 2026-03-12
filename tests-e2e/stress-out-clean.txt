@@ -1,0 +1,111 @@
+﻿
+ÔòöÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòù
+Ôòæ       TIENDARIO ÔÇö STRESS TEST SUITE             Ôòæ
+ÔòÜÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòÉÔòØ
+  Target: http://localhost:8080  |  08:55:29
+
+
+ÔöüÔöüÔöü FASE 0 ÔÇö Setup: Autenticaci├│n inicial ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+  Ô£ô Login OK ÔÇö companyId: 1 ÔÇö latency: 199ms
+  Ô£ô Producto de muestra: ID=5 (Aceite de Oliva 500ml)
+
+ÔöüÔöüÔöü FASE 1 ÔÇö Auth: Login bajo carga ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+  Running 50 requests (10 concurrent)... .....
+
+  Login (10 concurrent, 50 total)
+  Ô£ô 50 ok  Ô£ù 0 err  (100.0% success)
+  Throughput: 43 req/s
+  Latency (ms): min=112  avg=167  p50=159  p95=229  p99=246  max=246
+  Status codes: {"200":50}
+  Running 100 requests (25 concurrent)... ....
+
+  Login (25 concurrent, 100 total)
+  Ô£ô 100 ok  Ô£ù 0 err  (100.0% success)
+  Throughput: 54 req/s
+  Latency (ms): min=119  avg=299  p50=314  p95=466  p99=479  max=479
+  Status codes: {"200":100}
+
+ÔöüÔöüÔöü FASE 2 ÔÇö Products: Listado paginado ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+  Running 100 requests (20 concurrent)... .....
+
+  GET /products (20 concurrent, 100 total)
+  Ô£ô 100 ok  Ô£ù 0 err  (100.0% success)
+  Throughput: 752 req/s
+  Latency (ms): min=8  avg=18  p50=18  p95=31  p99=39  max=39
+  Status codes: {"200":100}
+  Running 200 requests (50 concurrent)... ....
+
+  GET /products (50 concurrent, 200 total)
+  Ô£ô 200 ok  Ô£ù 0 err  (100.0% success)
+  Throughput: 1026 req/s
+  Latency (ms): min=8  avg=33  p50=29  p95=64  p99=65  max=66
+  Status codes: {"200":200}
+
+ÔöüÔöüÔöü FASE 3 ÔÇö Marketplace: B├║squeda p├║blica (sin auth) Ôöü
+  Running 150 requests (30 concurrent)... .....
+
+  GET /public/products (30 concurrent, 150 total)
+  Ô£ô 150 ok  Ô£ù 0 err  (100.0% success)
+  Throughput: 16 req/s
+  Latency (ms): min=348  avg=1156  p50=1167  p95=1759  p99=1859  max=1876
+  Status codes: {"200":150}
+  Running 300 requests (60 concurrent)... .....
+
+  GET /public/products (60 concurrent, 300 total)
+  Ô£ô 300 ok  Ô£ù 0 err  (100.0% success)
+  Throughput: 14 req/s
+  Latency (ms): min=386  avg=2360  p50=2323  p95=4109  p99=4304  max=4352
+  Status codes: {"200":300}
+
+ÔöüÔöüÔöü FASE 4 ÔÇö POS: Registrar ventas (escritura a DB) ÔöüÔöüÔöü
+  Running 20 requests (5 concurrent)... ....
+
+  POST /sales (5 concurrent, 20 total)
+  Ô£ô 0 ok  Ô£ù 20 err  (0.0% success)
+  Throughput: 500 req/s
+  Latency (ms): min=5  avg=9  p50=8  p95=17  p99=17  max=17
+  Status codes: {"400":20}
+  Running 60 requests (15 concurrent)... ....
+
+  POST /sales (15 concurrent, 60 total)
+  Ô£ô 0 ok  Ô£ù 60 err  (0.0% success)
+  Throughput: 845 req/s
+  Latency (ms): min=9  avg=15  p50=15  p95=19  p99=20  max=20
+  Status codes: {"400":60}
+
+ÔöüÔöüÔöü FASE 5 ÔÇö Dashboard: KPIs y m├®tricas ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+  Running 50 requests (10 concurrent)... .....
+
+  GET /dashboard/stats (10 concurrent, 50 total)
+  Ô£ô 0 ok  Ô£ù 50 err  (0.0% success)
+  Throughput: 694 req/s
+  Latency (ms): min=7  avg=13  p50=10  p95=31  p99=32  max=32
+  Status codes: {"404":50}
+
+ÔöüÔöüÔöü REPORTE FINAL ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+  Test                                             RPS   p95ms   p99ms  Success
+  ÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇÔöÇ
+  Login (10 concurrent, 50 total)                   43     229     246   100.0%
+  Login (25 concurrent, 100 total)                  54     466     479   100.0%
+  GET /products (20 concurrent, 100 total)         752      31      39   100.0%
+  GET /products (50 concurrent, 200 total)        1026      64      65   100.0%
+  GET /public/products (30 concurrent, 150 total)     16    1759    1859   100.0%
+  GET /public/products (60 concurrent, 300 total)     14    4109    4304   100.0%
+  POST /sales (5 concurrent, 20 total)             500      17      17     0.0%
+  POST /sales (15 concurrent, 60 total)            845      19      20     0.0%
+  GET /dashboard/stats (10 concurrent, 50 total)    694      31      32     0.0%
+
+  Fin: 08:56:09
+
+ÔöüÔöüÔöü ESTIMACI├ôN DE C├ôMPUTO PARA PRODUCCI├ôN ÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöüÔöü
+  Throughput m├íximo observado: ~1026 req/s en entorno local
+  Latencia p95 m├íxima: 4109ms
+  Endpoints problem├íticos (< 95% success): 3
+
+  Recomendaci├│n AWS (estimado para 2x headroom):
+  ÔÇó Backend API: t3.small (2 vCPU, 2GB RAM) con Auto Scaling (min 1, max 3)
+  ÔÇó PostgreSQL:  db.t3.micro RDS (1 vCPU, 1GB) para <50 usuarios concurrentes
+  ÔÇó              db.t3.small  RDS (2 vCPU, 2GB) si p95 > 500ms en FASE 2
+  ÔÇó Elasticsearch: t3.small.elasticsearch (opcional, mejorar b├║squeda p├║blica)
+  ÔÇó Frontend:    S3 + CloudFront ($0 c├│mputo ÔÇö archivos est├íticos)
+

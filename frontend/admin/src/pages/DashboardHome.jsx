@@ -245,218 +245,246 @@ const DashboardHome = () => {
                         {isSuperAdmin ? (
                             <Row className="g-4">
                                 <Col lg={3} md={6}>
-                                    <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-primary">
-                                        <Card.Body className="p-4">
-                                            <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Empresas Totales</span>
-                                            <h1 className="display-5 fw-bold text-dark mb-1">{summary?.totalCompanies || 0}</h1>
-                                            <div className="d-flex align-items-center gap-2">
-                                                <Badge bg="success" className="rounded-pill px-2 py-1">
-                                                    {summary?.conversionRate || 0}% de Pago
-                                                </Badge>
-                                                <small className="text-muted fw-medium">Tasa Conversión</small>
-                                            </div>
-                                        </Card.Body>
-                                    </Card>
+                                    <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Cantidad total de empresas registradas en la plataforma, incluyendo todos los planes.")}>
+                                        <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-primary" style={{ cursor: 'help' }}>
+                                            <Card.Body className="p-4">
+                                                <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Empresas Totales</span>
+                                                <h1 className="display-5 fw-bold text-dark mb-1">{summary?.totalCompanies || 0}</h1>
+                                                <div className="d-flex align-items-center gap-2">
+                                                    <Badge bg="success" className="rounded-pill px-2 py-1">
+                                                        {summary?.conversionRate || 0}% de Pago
+                                                    </Badge>
+                                                    <small className="text-muted fw-medium">Tasa Conversión</small>
+                                                </div>
+                                            </Card.Body>
+                                        </Card>
+                                    </OverlayTrigger>
                                 </Col>
                                 <Col lg={3} md={6}>
-                                    <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-info">
-                                        <Card.Body className="p-4">
-                                            <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Tiendas Activas</span>
-                                            <h1 className="display-5 fw-bold text-info mb-1">{summary?.activeShops || 0}</h1>
-                                            <small className="text-muted fw-medium"><FaClock className="me-1" /> Últimos 30 días</small>
-                                        </Card.Body>
-                                    </Card>
+                                    <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Número de tiendas que han registrado al menos una venta en los últimos 30 días.")}>
+                                        <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-info" style={{ cursor: 'help' }}>
+                                            <Card.Body className="p-4">
+                                                <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Tiendas Activas</span>
+                                                <h1 className="display-5 fw-bold text-info mb-1">{summary?.activeShops || 0}</h1>
+                                                <small className="text-muted fw-medium"><FaClock className="me-1" /> Últimos 30 días con ventas</small>
+                                            </Card.Body>
+                                        </Card>
+                                    </OverlayTrigger>
                                 </Col>
                                 <Col lg={3} md={6}>
-                                    <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-success">
-                                        <Card.Body className="p-4">
-                                            <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Ingresos (MRR)</span>
-                                            <h1 className="display-5 fw-bold text-success mb-1">${Number(summary?.mrr || 0).toLocaleString()}</h1>
-                                            <small className="text-muted fw-medium"><FaMoneyBillWave className="me-1" /> Recurrencia Mensual</small>
-                                        </Card.Body>
-                                    </Card>
+                                    <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Monthly Recurring Revenue: Ingresos mensuales estimados basados en las suscripciones activas.")}>
+                                        <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-success" style={{ cursor: 'help' }}>
+                                            <Card.Body className="p-4">
+                                                <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Ingresos (MRR)</span>
+                                                <h1 className="display-5 fw-bold text-success mb-1">${Number(summary?.mrr || 0).toLocaleString()}</h1>
+                                                <small className="text-muted fw-medium"><FaMoneyBillWave className="me-1" /> Recurrencia Mensual</small>
+                                            </Card.Body>
+                                        </Card>
+                                    </OverlayTrigger>
                                 </Col>
                                 <Col lg={3} md={6}>
-                                    <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-danger">
-                                        <Card.Body className="p-4">
-                                            <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Alertas Churn</span>
-                                            <h1 className="display-5 fw-bold text-danger mb-1">{summary?.churnedShops || 0}</h1>
-                                            <small className="text-muted fw-medium">Tiendas inactivas (15d)</small>
-                                        </Card.Body>
-                                    </Card>
+                                    <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Tiendas en riesgo de abandono. Incluye empresas que no han registrado ventas en los últimos 15 días.")}>
+                                        <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-danger" style={{ cursor: 'help' }}>
+                                            <Card.Body className="p-4">
+                                                <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Alertas Churn</span>
+                                                <h1 className="display-5 fw-bold text-danger mb-1">{summary?.churnedShops || 0}</h1>
+                                                <small className="text-muted fw-medium">Tiendas inactivas (+15d)</small>
+                                            </Card.Body>
+                                        </Card>
+                                    </OverlayTrigger>
                                 </Col>
 
                                 <Col lg={4} md={6}>
-                                    <Card className="glass-card-admin h-100 border-0 shadow-sm">
-                                        <Card.Body className="p-4 text-center">
-                                            <div className="rounded-circle bg-success bg-opacity-10 p-3 mx-auto mb-3" style={{ width: 'fit-content' }}>
-                                                <FaGlobe className="text-success h3 mb-0" />
-                                            </div>
-                                            <h5 className="fw-bold mb-1">Volumen Global de la Plataforma</h5>
-                                            <h2 className="fw-bold text-dark">${Number(summary?.globalGmv || 0).toLocaleString()}</h2>
-                                            <p className="text-muted small">Monto total transaccionado</p>
-                                        </Card.Body>
-                                    </Card>
+                                    <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Gross Merchandise Value: Volumen total de dinero procesado por todas las tiendas de la red.")}>
+                                        <Card className="glass-card-admin h-100 border-0 shadow-sm" style={{ cursor: 'help' }}>
+                                            <Card.Body className="p-4 text-center">
+                                                <div className="rounded-circle bg-success bg-opacity-10 p-3 mx-auto mb-3" style={{ width: 'fit-content' }}>
+                                                    <FaGlobe className="text-success h3 mb-0" />
+                                                </div>
+                                                <h5 className="fw-bold mb-1">Volumen Global de la Plataforma</h5>
+                                                <h2 className="fw-bold text-dark">${Number(summary?.globalGmv || 0).toLocaleString()}</h2>
+                                                <p className="text-muted small">Monto total transaccionado</p>
+                                            </Card.Body>
+                                        </Card>
+                                    </OverlayTrigger>
                                 </Col>
                                 <Col lg={4} md={6}>
-                                    <Card className="glass-card-admin h-100 border-0 shadow-sm">
-                                        <Card.Body className="p-4 text-center">
-                                            <div className="rounded-circle bg-warning bg-opacity-10 p-3 mx-auto mb-3" style={{ width: 'fit-content' }}>
-                                                <FaChartLine className="text-warning h3 mb-0" />
-                                            </div>
-                                            <h5 className="fw-bold mb-1">Valor Promedio por Pedido (Global)</h5>
-                                            <h2 className="fw-bold text-dark">${Number(summary?.globalAov || 0).toLocaleString()}</h2>
-                                            <p className="text-muted small">Promedio por pedido</p>
-                                        </Card.Body>
-                                    </Card>
+                                    <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Average Order Value: Valor promedio de los pedidos en toda la plataforma.")}>
+                                        <Card className="glass-card-admin h-100 border-0 shadow-sm" style={{ cursor: 'help' }}>
+                                            <Card.Body className="p-4 text-center">
+                                                <div className="rounded-circle bg-warning bg-opacity-10 p-3 mx-auto mb-3" style={{ width: 'fit-content' }}>
+                                                    <FaChartLine className="text-warning h3 mb-0" />
+                                                </div>
+                                                <h5 className="fw-bold mb-1">Valor Promedio por Pedido (Global)</h5>
+                                                <h2 className="fw-bold text-dark">${Number(summary?.globalAov || 0).toLocaleString()}</h2>
+                                                <p className="text-muted small">Promedio por pedido</p>
+                                            </Card.Body>
+                                        </Card>
+                                    </OverlayTrigger>
                                 </Col>
                                 <Col lg={4} md={12}>
-                                    <Card className="glass-card-admin h-100 border-0 shadow-sm">
-                                        <Card.Body className="p-4">
-                                            <h6 className="fw-bold mb-4">Mezcla de Suscripciones</h6>
-                                            <div className="d-flex align-items-center justify-content-between mb-2">
-                                                <span>Planes Premium</span>
-                                                <span className="fw-bold">{summary?.paidPlanCount || 0}</span>
-                                            </div>
-                                            <div className="progress mb-4" style={{ height: '8px' }}>
-                                                <div className="progress-bar bg-success" style={{ width: `${(summary?.paidPlanCount / summary?.totalCompanies) * 100}%` }}></div>
-                                            </div>
-                                            <div className="d-flex align-items-center justify-content-between mb-2">
-                                                <span>Planes Gratuitos</span>
-                                                <span className="fw-bold">{summary?.freePlanCount || 0}</span>
-                                            </div>
-                                            <div className="progress" style={{ height: '8px' }}>
-                                                <div className="progress-bar bg-secondary" style={{ width: `${(summary?.freePlanCount / summary?.totalCompanies) * 100}%` }}></div>
-                                            </div>
-                                        </Card.Body>
-                                    </Card>
+                                    <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Distribución de los planes de suscripción (Premium vs. Gratuitos) entre todas las empresas.")}>
+                                        <Card className="glass-card-admin h-100 border-0 shadow-sm" style={{ cursor: 'help' }}>
+                                            <Card.Body className="p-4">
+                                                <h6 className="fw-bold mb-4">Mezcla de Suscripciones</h6>
+                                                <div className="d-flex align-items-center justify-content-between mb-2">
+                                                    <span>Planes Premium</span>
+                                                    <span className="fw-bold">{summary?.paidPlanCount || 0}</span>
+                                                </div>
+                                                <div className="progress mb-4" style={{ height: '8px' }}>
+                                                    <div className="progress-bar bg-success" style={{ width: `${(summary?.paidPlanCount / (summary?.totalCompanies || 1)) * 100}%` }}></div>
+                                                </div>
+                                                <div className="d-flex align-items-center justify-content-between mb-2">
+                                                    <span>Planes Gratuitos</span>
+                                                    <span className="fw-bold">{summary?.freePlanCount || 0}</span>
+                                                </div>
+                                                <div className="progress" style={{ height: '8px' }}>
+                                                    <div className="progress-bar bg-secondary" style={{ width: `${(summary?.freePlanCount / (summary?.totalCompanies || 1)) * 100}%` }}></div>
+                                                </div>
+                                            </Card.Body>
+                                        </Card>
+                                    </OverlayTrigger>
                                 </Col>
                             </Row>
                         ) : (
                             <>
                                 <Row className="g-4">
                                     <Col lg={3} md={6}>
-                                        <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-dark">
-                                            <Card.Body className="p-4">
-                                                <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Inventario Total</span>
-                                                <h1 className="display-5 fw-bold text-dark mb-1">{summary?.totalProducts || 0}</h1>
-                                                <small className="text-muted">Productos Disponibles</small>
-                                            </Card.Body>
-                                        </Card>
+                                        <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Cantidad total de productos únicos que tienes registrados en tu inventario.")}>
+                                            <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-dark" style={{ cursor: 'help' }}>
+                                                <Card.Body className="p-4">
+                                                    <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Inventario Total</span>
+                                                    <h1 className="display-5 fw-bold text-dark mb-1">{summary?.totalProducts || 0}</h1>
+                                                    <small className="text-muted">Productos Disponibles</small>
+                                                </Card.Body>
+                                            </Card>
+                                        </OverlayTrigger>
                                     </Col>
 
                                     <Col lg={3} md={6}>
-                                        <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-primary">
-                                            <Card.Body className="p-4">
-                                                <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Ventas Hoy</span>
-                                                <h1 className="display-5 fw-bold text-primary mb-1">${Number(summary?.revenueToday || 0).toLocaleString()}</h1>
-                                                <div className="d-flex align-items-center gap-2">
-                                                    {summary?.revenueGrowth >= 0 ? (
-                                                        <span className="text-success small fw-bold">↑ {summary?.revenueGrowth}%</span>
-                                                    ) : (
-                                                        <span className="text-danger small fw-bold">↓ {Math.abs(summary?.revenueGrowth)}%</span>
-                                                    )}
-                                                    <small className="text-muted">vs ayer (${Number(summary?.revenueYesterday || 0).toLocaleString()})</small>
-                                                </div>
-                                            </Card.Body>
-                                        </Card>
+                                        <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Monto neto de ventas realizadas el día de hoy comparado con el cierre de ayer.")}>
+                                            <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-primary" style={{ cursor: 'help' }}>
+                                                <Card.Body className="p-4">
+                                                    <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Ventas Hoy</span>
+                                                    <h1 className="display-5 fw-bold text-primary mb-1">${Number(summary?.revenueToday || 0).toLocaleString()}</h1>
+                                                    <div className="d-flex align-items-center gap-2">
+                                                        {summary?.revenueGrowth >= 0 ? (
+                                                            <span className="text-success small fw-bold">↑ {summary?.revenueGrowth}%</span>
+                                                        ) : (
+                                                            <span className="text-danger small fw-bold">↓ {Math.abs(summary?.revenueGrowth)}%</span>
+                                                        )}
+                                                        <small className="text-muted">vs ayer (${Number(summary?.revenueYesterday || 0).toLocaleString()})</small>
+                                                    </div>
+                                                </Card.Body>
+                                            </Card>
+                                        </OverlayTrigger>
                                     </Col>
 
                                     <Col lg={3} md={6}>
-                                        <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-warning">
-                                            <Card.Body className="p-4">
-                                                <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Ticket Promedio</span>
-                                                <h1 className="display-5 fw-bold text-warning mb-1">${Number(summary?.shopAov || 0).toLocaleString()}</h1>
-                                                <small className="text-muted">Promedio por Venta</small>
-                                            </Card.Body>
-                                        </Card>
+                                        <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Average Order Value: Valor promedio de tus ventas hoy.")}>
+                                            <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-warning" style={{ cursor: 'help' }}>
+                                                <Card.Body className="p-4">
+                                                    <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Ticket Promedio</span>
+                                                    <h1 className="display-5 fw-bold text-warning mb-1">${Number(summary?.shopAov || 0).toLocaleString()}</h1>
+                                                    <small className="text-muted">Promedio por Venta</small>
+                                                </Card.Body>
+                                            </Card>
+                                        </OverlayTrigger>
                                     </Col>
 
                                     <Col lg={3} md={6}>
-                                        <Card className={`glass-card-admin h-100 border-0 shadow-sm border-start border-4 ${summary?.lowStockCount > 0 ? 'border-danger' : 'border-success'}`}>
-                                            <Card.Body className="p-4">
-                                                <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Semáforo de Stock</span>
-                                                <h1 className={`display-5 fw-bold mb-1 ${summary?.lowStockCount > 0 ? 'text-danger' : 'text-success'}`}>
-                                                    {summary?.lowStockCount || 0}
-                                                </h1>
-                                                <small className={`${summary?.lowStockCount > 0 ? 'text-danger' : 'text-muted'} fw-medium`}>
-                                                    {summary?.lowStockCount > 0 ? '¡Atención! Stock Crítico' : 'Stock saludable'}
-                                                </small>
-                                            </Card.Body>
-                                        </Card>
+                                        <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Estado de alerta de tu inventario. Indica cuántos productos están por debajo del stock mínimo.")}>
+                                            <Card className={`glass-card-admin h-100 border-0 shadow-sm border-start border-4 ${summary?.lowStockCount > 0 ? 'border-danger' : 'border-success'}`} style={{ cursor: 'help' }}>
+                                                <Card.Body className="p-4">
+                                                    <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Semáforo de Stock</span>
+                                                    <h1 className={`display-5 fw-bold mb-1 ${summary?.lowStockCount > 0 ? 'text-danger' : 'text-success'}`}>
+                                                        {summary?.lowStockCount || 0}
+                                                    </h1>
+                                                    <small className={`${summary?.lowStockCount > 0 ? 'text-danger' : 'text-muted'} fw-medium`}>
+                                                        {summary?.lowStockCount > 0 ? '¡Atención! Stock Crítico' : 'Stock saludable'}
+                                                    </small>
+                                                </Card.Body>
+                                            </Card>
+                                        </OverlayTrigger>
                                     </Col>
 
                                     <Col lg={4} md={12}>
-                                        <Card className="glass-card-admin border-0 shadow-sm rounded-4 h-100">
-                                            <Card.Header className="bg-white border-0 py-3 px-4">
-                                                <h6 className="fw-bold mb-0">Estado de los Pedidos</h6>
-                                            </Card.Header>
-                                            <Card.Body className="px-4 pb-4">
-                                                <div className="d-flex flex-column gap-3">
-                                                    <div className="d-flex justify-content-between align-items-center">
-                                                        <span className="text-muted"><FaClock className="me-2" /> Recibidos (Pendientes)</span>
-                                                        <Badge bg="warning" text="dark" className="rounded-pill">{summary?.pendingOrders || 0}</Badge>
-                                                    </div>
-                                                    <div className="d-flex justify-content-between align-items-center">
-                                                        <span className="text-muted"><FaCog className="me-2" /> En Preparación</span>
-                                                        <Badge bg="primary" className="rounded-pill">{summary?.preparingOrders || 0}</Badge>
-                                                    </div>
-                                                    <div className="d-flex justify-content-between align-items-center">
-                                                        <span className="text-muted"><FaReceipt className="me-2" /> Listos para Recoger</span>
-                                                        <Badge bg="info" className="rounded-pill">{summary?.readyOrders || 0}</Badge>
-                                                    </div>
-                                                    <div className="d-flex justify-content-between align-items-center">
-                                                        <span className="text-danger"><FaTimesCircle className="me-2" /> Cancelados</span>
-                                                        <Badge bg="danger" className="rounded-pill">{summary?.cancelledOrders || 0}</Badge>
-                                                    </div>
-                                                </div>
-                                            </Card.Body>
-                                        </Card>
-                                    </Col>
-
-                                    <Col lg={4} md={6}>
-                                        <Card className="glass-card-admin border-0 shadow-sm rounded-4 h-100 bg-primary bg-opacity-10">
-                                            <Card.Body className="p-4 d-flex flex-column align-items-center justify-content-center text-center">
-                                                <div className="rounded-circle bg-primary p-3 mb-3 text-white shadow-sm">
-                                                    <FaRocket style={{ fontSize: '1.5rem' }} />
-                                                </div>
-                                                <h6 className="text-primary text-uppercase fw-bold small mb-2">Producto Estrella</h6>
-                                                <h4 className="fw-bold text-dark mb-1">{summary?.topProductName || "Sin ventas"}</h4>
-                                                {summary?.topProductQty && (
-                                                    <p className="text-primary fw-bold mb-0">{summary.topProductQty} unidades vendidas</p>
-                                                )}
-                                                <p className="text-muted small mt-2 mb-0">¡El preferido de tus clientes!</p>
-                                            </Card.Body>
-                                        </Card>
-                                    </Col>
-
-                                    <Col lg={4} md={6}>
-                                        <Card className="glass-card-admin border-0 shadow-sm rounded-4 h-100">
-                                            <Card.Header className="bg-white border-0 py-3 px-4">
-                                                <h6 className="fw-bold mb-0">Canales de Pago</h6>
-                                            </Card.Header>
-                                            <Card.Body className="px-4 pb-4">
-                                                {summary?.paymentMethods ? (
-                                                    Object.entries(summary.paymentMethods).map(([method, count], idx) => (
-                                                        <div key={idx} className="mb-3">
-                                                            <div className="d-flex justify-content-between small mb-1">
-                                                                <span className="text-muted">{method === 'CASH' ? 'Efectivo' : method === 'CARD' ? 'Tarjeta' : method === 'TRANSFER' ? 'Transferencia' : method}</span>
-                                                                <span className="fw-bold">{count}</span>
-                                                            </div>
-                                                            <div className="progress" style={{ height: '5px' }}>
-                                                                <div
-                                                                    className="progress-bar rounded-pill"
-                                                                    role="progressbar"
-                                                                    style={{ width: `${summary.totalOrdersCount > 0 ? (count / summary.totalOrdersCount) * 100 : 10}%`, background: 'var(--primary-gradient)' }}
-                                                                ></div>
-                                                            </div>
+                                        <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Resumen del flujo de tus pedidos actuales desde que se reciben hasta que se entregan.")}>
+                                            <Card className="glass-card-admin border-0 shadow-sm rounded-4 h-100" style={{ cursor: 'help' }}>
+                                                <Card.Header className="bg-white border-0 py-3 px-4">
+                                                    <h6 className="fw-bold mb-0">Estado de los Pedidos</h6>
+                                                </Card.Header>
+                                                <Card.Body className="px-4 pb-4">
+                                                    <div className="d-flex flex-column gap-3">
+                                                        <div className="d-flex justify-content-between align-items-center">
+                                                            <span className="text-muted"><FaClock className="me-2" /> Recibidos (Pendientes)</span>
+                                                            <Badge bg="warning" text="dark" className="rounded-pill">{summary?.pendingOrders || 0}</Badge>
                                                         </div>
-                                                    ))
-                                                ) : (
-                                                    <p className="text-muted text-center py-4">Esperando datos...</p>
-                                                )}
-                                            </Card.Body>
-                                        </Card>
+                                                        <div className="d-flex justify-content-between align-items-center">
+                                                            <span className="text-muted"><FaCog className="me-2" /> En Preparación</span>
+                                                            <Badge bg="primary" className="rounded-pill">{summary?.preparingOrders || 0}</Badge>
+                                                        </div>
+                                                        <div className="d-flex justify-content-between align-items-center">
+                                                            <span className="text-muted"><FaReceipt className="me-2" /> Listos para Recoger</span>
+                                                            <Badge bg="info" className="rounded-pill">{summary?.readyOrders || 0}</Badge>
+                                                        </div>
+                                                        <div className="d-flex justify-content-between align-items-center">
+                                                            <span className="text-danger"><FaTimesCircle className="me-2" /> Cancelados</span>
+                                                            <Badge bg="danger" className="rounded-pill">{summary?.cancelledOrders || 0}</Badge>
+                                                        </div>
+                                                    </div>
+                                                </Card.Body>
+                                            </Card>
+                                        </OverlayTrigger>
+                                    </Col>
+
+                                    <Col lg={4} md={6}>
+                                        <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "El producto que más ha generado ventas en tu tienda recientemente.")}>
+                                            <Card className="glass-card-admin border-0 shadow-sm rounded-4 h-100 bg-primary bg-opacity-10" style={{ cursor: 'help' }}>
+                                                <Card.Body className="p-4 d-flex flex-column align-items-center justify-content-center text-center">
+                                                    <div className="rounded-circle bg-primary p-3 mb-3 text-white shadow-sm">
+                                                        <FaRocket style={{ fontSize: '1.5rem' }} />
+                                                    </div>
+                                                    <h6 className="text-primary text-uppercase fw-bold small mb-2">Producto Estrella</h6>
+                                                    <h4 className="fw-bold text-dark mb-1">{summary?.topProductName || "Sin ventas"}</h4>
+                                                    {summary?.topProductQty && (
+                                                        <p className="text-primary fw-bold mb-0">{summary.topProductQty} unidades vendidas</p>
+                                                    )}
+                                                    <p className="text-muted small mt-2 mb-0">¡El preferido de tus clientes!</p>
+                                                </Card.Body>
+                                            </Card>
+                                        </OverlayTrigger>
+                                    </Col>
+
+                                    <Col lg={4} md={6}>
+                                        <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Distribución de los métodos de pago utilizados por tus clientes.")}>
+                                            <Card className="glass-card-admin border-0 shadow-sm rounded-4 h-100" style={{ cursor: 'help' }}>
+                                                <Card.Header className="bg-white border-0 py-3 px-4">
+                                                    <h6 className="fw-bold mb-0">Canales de Pago</h6>
+                                                </Card.Header>
+                                                <Card.Body className="px-4 pb-4">
+                                                    {summary?.paymentMethods ? (
+                                                        Object.entries(summary.paymentMethods).map(([method, count], idx) => (
+                                                            <div key={idx} className="mb-3">
+                                                                <div className="d-flex justify-content-between small mb-1">
+                                                                    <span className="text-muted">{method === 'CASH' ? 'Efectivo' : method === 'CARD' ? 'Tarjeta' : method === 'TRANSFER' ? 'Transferencia' : method}</span>
+                                                                    <span className="fw-bold">{count}</span>
+                                                                </div>
+                                                                <div className="progress" style={{ height: '5px' }}>
+                                                                    <div
+                                                                        className="progress-bar rounded-pill"
+                                                                        role="progressbar"
+                                                                        style={{ width: `${summary.totalOrdersCount > 0 ? (count / summary.totalOrdersCount) * 100 : 10}%`, background: 'var(--primary-gradient)' }}
+                                                                    ></div>
+                                                                </div>
+                                                            </div>
+                                                        ))
+                                                    ) : (
+                                                        <p className="text-muted text-center py-4">Esperando datos...</p>
+                                                    )}
+                                                </Card.Body>
+                                            </Card>
+                                        </OverlayTrigger>
                                     </Col>
                                 </Row>
 

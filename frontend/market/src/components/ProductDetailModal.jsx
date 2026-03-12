@@ -9,7 +9,7 @@ const ProductDetailModal = ({
     show, onHide, selectedProduct, sellers,
     sellerSortOrder, onSortSellers, onBuyFromSeller,
     onStoreClick, platformConfig, formatSecondary,
-    getCategoryEmoji
+    getCategoryEmoji, getCategoryPlaceholder
 }) => {
     if (!selectedProduct) return null;
 
@@ -18,9 +18,9 @@ const ProductDetailModal = ({
         ? ['PAID', 'TRIAL'].includes(mainSeller.subscriptionStatus)
         : ['PAID', 'TRIAL'].includes(selectedProduct.subscriptionStatus);
 
-    // Helper for full image URL
-    const getFullImageUrl = (path) => {
-        if (!path) return null;
+    // Helper for full image URL with category placeholders
+    const getFullImageUrl = (path, category, name) => {
+        if (!path) return getCategoryPlaceholder(category, name);
         if (path.startsWith('http')) return path;
         return (import.meta.env.VITE_API_URL || '') + path;
     };
@@ -30,17 +30,11 @@ const ProductDetailModal = ({
             <Modal.Body className="p-0 overflow-hidden rounded-4">
                 <Row className="g-0">
                     <Col md={5} className="bg-light d-flex align-items-center justify-content-center p-0 overflow-hidden" style={{ minHeight: '350px' }}>
-                        {selectedProduct.imageUrl ? (
-                            <img
-                                src={getFullImageUrl(selectedProduct.imageUrl)}
-                                alt={selectedProduct.name}
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            />
-                        ) : (
-                            <div style={{ fontSize: '150px' }}>
-                                {getCategoryEmoji(selectedProduct.category)}
-                            </div>
-                        )}
+                        <img
+                            src={getFullImageUrl(selectedProduct.imageUrl, selectedProduct.category, selectedProduct.name)}
+                            alt={selectedProduct.name}
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
                     </Col>
                     <Col md={7} className="p-5">
                         <div className="d-flex justify-content-between align-items-start mb-2">
@@ -91,11 +85,11 @@ const ProductDetailModal = ({
                                 </div>
                                 <div>
                                     <h6 className="fw-bold mb-0 text-primary" style={{ textDecoration: 'underline' }}>
-                                        {selectedProduct.companyName}
+                                        {['PAID', 'TRIAL'].includes(mainSeller?.subscriptionStatus) ? selectedProduct.companyName : 'Tienda con Membresía Vencida'}
                                     </h6>
                                     <div className="d-flex align-items-center gap-2">
                                         <small className="text-muted">🏆 Mejor Precio del Marketplace</small>
-                                        {mainSeller?.latitude && mainSeller?.longitude && mainSeller.latitude !== 0.0 && (
+                                        {['PAID', 'TRIAL'].includes(mainSeller?.subscriptionStatus) && mainSeller?.latitude && mainSeller?.longitude && mainSeller.latitude !== 0.0 && (
                                             <a href={`https://www.google.com/maps/dir/?api=1&destination=${mainSeller.latitude},${mainSeller.longitude}`}
                                                 target="_blank" rel="noreferrer"
                                                 className="small text-decoration-none bg-white px-2 py-1 rounded shadow-sm"
@@ -137,7 +131,7 @@ const ProductDetailModal = ({
                                                 <h6 className="fw-bold mb-0 small text-primary"
                                                     style={{ cursor: 'pointer', textDecoration: 'underline' }}
                                                     onClick={() => onStoreClick(seller)}>
-                                                    {seller.companyName}
+                                                    {['PAID', 'TRIAL'].includes(seller.subscriptionStatus) ? seller.companyName : 'Tienda Vencida'}
                                                 </h6>
                                                 {['PAID', 'TRIAL'].includes(seller.subscriptionStatus) &&
                                                     <Badge bg="primary" className="rounded-circle p-1" style={{ fontSize: '0.6rem' }}><FaStar size={8} /></Badge>
@@ -154,7 +148,7 @@ const ProductDetailModal = ({
                                             ) : (
                                                 <small className="text-muted mt-1 d-block">Consultar Precio</small>
                                             )}
-                                            {seller.latitude && seller.longitude && seller.latitude !== 0.0 && (
+                                            {['PAID', 'TRIAL'].includes(seller.subscriptionStatus) && seller.latitude && seller.longitude && seller.latitude !== 0.0 && (
                                                 <a href={`https://www.google.com/maps/dir/?api=1&destination=${seller.latitude},${seller.longitude}`}
                                                     target="_blank" rel="noreferrer"
                                                     className="small text-decoration-none mt-1 d-inline-block"

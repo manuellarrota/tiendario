@@ -152,6 +152,9 @@ const Sidebar = () => {
                             </>
                         ) : (
                             <>
+                                {!collapsed && <div className="nav-group-label">Panel Principal</div>}
+                                <NavItem to="/dashboard" icon={FaHome} label="Dashboard" description="Resumen rápido de tus ventas y actividad reciente." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                
                                 {!collapsed && <div className="nav-group-label">Ventas y Atención</div>}
                                 <NavItem to="/pos" icon={FaShoppingBag} label="Punto de Venta" description="Realiza ventas rápidas en mostrador y genera tickets." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/notifications" icon={FaBell} label="Notificaciones" badge={unreadCount} description="Novedades, pedidos nuevos y alertas de sistema." collapsed={collapsed} setIsOpen={setIsOpen} />
@@ -168,7 +171,6 @@ const Sidebar = () => {
                                 <NavItem to="/categories" icon={FaTags} label="Categorías" description="Mira las categorías globales y sugiere nuevas para el catálogo." collapsed={collapsed} setIsOpen={setIsOpen} />
 
                                 {!collapsed && <div className="nav-group-label">Análisis y Ajustes</div>}
-                                <NavItem to="/dashboard" icon={FaHome} label="Dashboard" description="Resumen rápido de tus ventas y actividad reciente." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/reports" icon={FaChartLine} label="Reportes" description="Analítica avanzada, productos más vendidos y ganancias." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/customers" icon={FaUsers} label="Clientes" description="Directorio y base de datos de tus clientes" collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/company" icon={FaCog} label="Ajustes de Tienda" description="Configura los detalles de tu negocio." collapsed={collapsed} setIsOpen={setIsOpen} />

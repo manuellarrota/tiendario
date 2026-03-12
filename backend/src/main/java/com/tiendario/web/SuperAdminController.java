@@ -256,8 +256,16 @@ public class SuperAdminController {
                 cp.setName(details.getName());
                 cp.setDescription(details.getDescription());
                 cp.setImageUrl(details.getImageUrl());
-                // Also update all local products pointing to this catalog product for
-                // consistency in search
+
+                // Update category if provided
+                if (details.getCategory() != null && details.getCategory().getName() != null) {
+                        Category cat = categoryRepository.findFirstByNameIgnoreCase(details.getCategory().getName().trim())
+                                        .orElse(null);
+                        cp.setCategory(cat);
+                } else {
+                        cp.setCategory(null);
+                }
+
                 CatalogProduct saved = catalogProductRepository.save(cp);
 
                 // Optional: Trigger a background task to sync all local products or just rely

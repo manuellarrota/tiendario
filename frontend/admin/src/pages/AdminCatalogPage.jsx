@@ -11,6 +11,7 @@ const AdminCatalogPage = () => {
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
     const [saving, setSaving] = useState(false);
+    const [categories, setCategories] = useState([]);
 
     // Pagination and search
     const [searchTerm, setSearchTerm] = useState('');
@@ -34,7 +35,17 @@ const AdminCatalogPage = () => {
 
     useEffect(() => {
         loadCatalog();
+        loadCategories();
     }, []);
+
+    const loadCategories = () => {
+        AdminService.getGlobalCategories().then(
+            (response) => {
+                setCategories(response.data);
+            },
+            (error) => console.error("Error loading global categories", error)
+        );
+    };
 
     const handleEdit = (item) => {
         setSelectedItem({ ...item });
@@ -198,7 +209,7 @@ const AdminCatalogPage = () => {
                                 />
                             </Form.Group>
 
-                            <Form.Group className="mb-3">
+                             <Form.Group className="mb-3">
                                 <Form.Label className="fw-semibold">URL de Imagen Premium</Form.Label>
                                 <Form.Control
                                     type="text"
@@ -207,6 +218,27 @@ const AdminCatalogPage = () => {
                                     className="rounded-3"
                                 />
                                 <Form.Text className="text-muted small">Asegúrate de que sea una imagen de alta calidad.</Form.Text>
+                            </Form.Group>
+
+                            <Form.Group className="mb-3">
+                                <Form.Label className="fw-semibold">Categoría Global</Form.Label>
+                                <Form.Select
+                                    value={selectedItem.category?.name || ""}
+                                    onChange={(e) => {
+                                        const catName = e.target.value;
+                                        setSelectedItem({ 
+                                            ...selectedItem, 
+                                            category: catName ? { name: catName } : null 
+                                        });
+                                    }}
+                                    className="rounded-3"
+                                >
+                                    <option value="">Sin Categoría</option>
+                                    {categories.map((cat, idx) => (
+                                        <option key={idx} value={cat}>{cat}</option>
+                                    ))}
+                                </Form.Select>
+                                <Form.Text className="text-muted small">Vincular este producto a una categoría maestra para mejor organización.</Form.Text>
                             </Form.Group>
                         </Form>
                     )}

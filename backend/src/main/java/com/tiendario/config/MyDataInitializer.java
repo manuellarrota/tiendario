@@ -43,6 +43,9 @@ public class MyDataInitializer implements CommandLineRunner {
             long count = productRepository.count();
             System.err.println("DEBUG: Product count: " + count);
 
+            // Ensure base categories always exist
+            seedBaseCategories();
+
             // Only initialize if there are no products
             if (count > 0) {
                 System.err.println("Database seems already initialized. checking Users...");
@@ -62,29 +65,22 @@ public class MyDataInitializer implements CommandLineRunner {
 
             // Create Users (Admin, Managers, Client)
             createUsers(company1, company2);
-
-            // Create Categories (Globals)
-            createCategory("Ropa");
-            createCategory("Tecnología");
-            createCategory("Alimentos");
-            createCategory("Deportes");
-
-            System.err.println("DEBUG: Categories created globally.");
+            System.err.println("DEBUG: Users and Companies created/verified.");
 
             // Create Demo Products
-            createProduct("Zapatillas Nike Air", "DEPO-ZAPA-0001", new BigDecimal("120.00"), 50, "Deportes", company1);
-            createProduct("Camiseta Adidas", "ROPA-CAMI-0002", new BigDecimal("35.00"), 100, "Ropa", company1);
-            createProduct("Reloj Casio Digital", "TECN-RELO-0003", new BigDecimal("55.00"), 25, "Tecnología", company1);
-            createProduct("Arroz Integral 1kg", "ALIM-ARRO-0004", new BigDecimal("3.50"), 200, "Alimentos", company1);
-            createProduct("Aceite de Oliva 500ml", "ALIM-ACEI-0005", new BigDecimal("8.90"), 75, "Alimentos", company1);
+            createProduct("Zapatillas Nike Air", "DEPO-ZAPA-0001", new BigDecimal("120.00"), 50, "Zapatería", company1);
+            createProduct("Camiseta Adidas", "ROPA-CAMI-0002", new BigDecimal("35.00"), 100, "Tienda de ropa", company1);
+            createProduct("Reloj Casio Digital", "TECN-RELO-0003", new BigDecimal("55.00"), 25, "Electrónica / celulares", company1);
+            createProduct("Arroz Integral 1kg", "ALIM-ARRO-0004", new BigDecimal("3.50"), 200, "Supermercado", company1);
+            createProduct("Aceite de Oliva 500ml", "ALIM-ACEI-0005", new BigDecimal("8.90"), 75, "Supermercado", company1);
 
-            createProduct("Gorra Puma", "ROPA-GORR-0006", new BigDecimal("25.00"), 30, "Ropa", company2);
-            createProduct("Café Colombiano", "ALIM-CAFE-0007", new BigDecimal("12.00"), 60, "Alimentos", company2);
+            createProduct("Gorra Puma", "ROPA-GORR-0006", new BigDecimal("25.00"), 30, "Tienda de ropa", company2);
+            createProduct("Café Colombiano", "ALIM-CAFE-0007", new BigDecimal("12.00"), 60, "Supermercado", company2);
 
             // Shared Products (multi-store verification)
             // Same SKU as company1, different price/stock
-            createProduct("Camiseta Adidas", "ROPA-CAMI-0002", new BigDecimal("32.50"), 15, "Ropa", company2);
-            createProduct("Zapatillas Nike Air", "DEPO-ZAPA-0001", new BigDecimal("118.00"), 5, "Deportes", company2);
+            createProduct("Camiseta Adidas", "ROPA-CAMI-0002", new BigDecimal("32.50"), 15, "Tienda de ropa", company2);
+            createProduct("Zapatillas Nike Air", "DEPO-ZAPA-0001", new BigDecimal("118.00"), 5, "Zapatería", company2);
 
             System.err.println("✓ Database initialized successfully with " + productRepository.count() + " products!");
 
@@ -116,6 +112,35 @@ public class MyDataInitializer implements CommandLineRunner {
 
                     return companyRepository.save(c);
                 });
+    }
+
+    private void seedBaseCategories() {
+        String[] baseCategories = {
+                "Restaurante", "Cafetería", "Panadería", "Pastelería", "Heladería",
+                "Mini market / Bodega", "Supermercado", "Carnicería", "Pescadería",
+                "Frutería / Verdulería", "Farmacia", "Ferretería", "Tienda de ropa",
+                "Zapatería", "Electrónica / celulares", "Tienda de mascotas",
+                "Licorería", "Floristería", "Tienda de regalos / variedades", "Papelería"
+        };
+
+        // Clean up old categories that are no longer needed
+        String[] oldCategories = {"Ropa", "Tecnología", "Alimentos", "Deportes"};
+        for (String old : oldCategories) {
+            categoryRepository.findFirstByNameIgnoreCase(old).ifPresent(c -> {
+                // Check if any product is using it before deleting or just let it fail/handle it
+                // For a "clean up" we'll just delete them
+                try {
+                    categoryRepository.delete(c);
+                } catch (Exception e) {
+                    System.err.println("Could not delete category " + old + " (probably in use)");
+                }
+            });
+        }
+
+        for (String catName : baseCategories) {
+            createCategory(catName);
+        }
+        System.err.println("✓ Base categories verified/created.");
     }
 
     private void createCategory(String name) {
@@ -153,17 +178,17 @@ public class MyDataInitializer implements CommandLineRunner {
     }
 
     private void createUsers(Company company1, Company company2) {
-        createUser("admin", "admin123", Role.ROLE_ADMIN, null);
-        createUser("manager_pro", "manager123", Role.ROLE_MANAGER, company1);
-        createUser("manager_free", "manager123", Role.ROLE_MANAGER, company2);
-        createUser("cliente", "cliente123", Role.ROLE_CLIENT, null);
+        createUser("admin", "Admin123!", Role.ROLE_ADMIN, null);
+        createUser("manager_pro", "Manager123!", Role.ROLE_MANAGER, company1);
+        createUser("manager_free", "Manager123!", Role.ROLE_MANAGER, company2);
+        createUser("cliente", "Cliente123!", Role.ROLE_CLIENT, null);
 
         System.err.println("═══════════════════════════════════════════");
         System.err.println("  DEV CREDENTIALS (H2 in-memory DB only):");
-        System.err.println("  admin       / admin123     (Super Admin)");
-        System.err.println("  manager_pro / manager123   (Tienda Demo Premium)");
-        System.err.println("  manager_free/ manager123   (Tienda Egar)");
-        System.err.println("  cliente     / cliente123   (Cliente marketplace)");
+        System.err.println("  admin       / Admin123!     (Super Admin)");
+        System.err.println("  manager_pro / Manager123!   (Tienda Demo Premium)");
+        System.err.println("  manager_free/ Manager123!   (Tienda Egar)");
+        System.err.println("  cliente     / Cliente123!   (Cliente marketplace)");
         System.err.println("═══════════════════════════════════════════");
     }
 
