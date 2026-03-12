@@ -290,6 +290,7 @@ const LandingPage = () => {
                                             placeholder="Nombre de usuario"
                                             value={username}
                                             onChange={(e) => setUsername(e.target.value)}
+                                            autoComplete="username"
                                             required
                                         />
                                     </div>
@@ -304,6 +305,7 @@ const LandingPage = () => {
                                             placeholder="••••••••"
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
+                                            autoComplete="current-password"
                                             required
                                         />
                                     </div>

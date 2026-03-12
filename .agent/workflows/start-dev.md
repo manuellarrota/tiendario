@@ -49,21 +49,22 @@ npm run dev
 ```
 Super Admin:
   URL:      http://localhost:8081
-  Usuario:  superadmin
-  Password: Admin123!
+  Usuario:  admin
+  Password: admin123
 
 Manager Premium:
   URL:      http://localhost:8081
-  Usuario:  manager_pro  (o tienda_premium)
-  Password: Manager123!
+  Usuario:  manager_pro
+  Password: manager123
 
 Manager Free:
   URL:      http://localhost:8081
-  Usuario:  manager_free (o tienda_free)
-  Password: Manager123!
+  Usuario:  manager_free
+  Password: manager123
 
 Cliente Marketplace:
   URL:      http://localhost:8082
-  Email:    cliente@test.com
-  Password: Cliente123!
+  Usuario:  cliente
+  Password: cliente123
+  (email: cliente@tiendario.com)
 ```

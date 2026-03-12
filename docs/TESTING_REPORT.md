@@ -163,7 +163,7 @@ const handleLogout = () => {
 ### Acceso
 
 - **URL Admin**: http://localhost:8081
-- **Credenciales de prueba**: Crear nueva cuenta en /register
+- **Credenciales de prueba**: Crear nueva cuenta desde http://localhost:8081 (modal de registro embebido en la landing)
 - **Plan por defecto**: FREE (puede upgradear desde el dashboard)
 
 ---
@@ -201,3 +201,43 @@ const handleLogout = () => {
   7. Verificación final Cliente: El pedido aparece como `ENTREGADO/PAGADO`.
 
 **Observación**: La actualización de estado en el admin requiere refrescar la página en algunos casos para reflejar el cambio visualmente, aunque la lógica backend funciona.
+
+---
+
+#### 10. **Parches de Seguridad en Backend** 🟢
+- **Fecha**: 2026-03-04
+- **Estado**: Aplicado y validado
+- **Ajustes**: Validación estricta para cantidades, cálculos de precios desde el lado del servidor y restricción de tipos de archivos para evitar vulnerabilidades de robo de inventario, fraude y subida de archivos no autorizados.
+
+#### 11. **Refactorización de Rutas (Eliminación de `/login`)** 🟢
+- **Fecha**: 2026-03-05
+- **Estado**: Funcional
+- **Ajustes**: La interfaz `/login` fue simplificada y movida a modales integrados en Landing y Marketplace para reducir la redundancia y mejorar la experiencia de usuario.
+
+#### 12. **Pruebas de Flujos Funcionales y Sincronización** 🟢
+- **Fecha**: 2026-03-10
+- **Estado**: Funcional
+- **Flujos Verificados**: 
+  1. Sincronización del catálogo (entre los catálogos de tiendas individuales y el catálogo global).
+  2. Eliminación confirmada de delay en visibilidad de pedidos tras finalizar el pago (checkout).
+  3. Proceso completo de compra desde marketplace y confirmación.
+
+#### 13. **Pruebas de Estrés y Rendimiento (Stress Testing)** 🟢
+- **Fecha**: 2026-03-10
+- **Estado**: Completado satisfactoriamente
+- **Ajustes**: Ejecución de scripts K6 simulando carga alta (Auth, Productos, POS, Dashboard y Búsqueda del Marketplace). Sistema estable para requerimientos computacionales mínimos y en producción.
+
+#### 14. **Verificación E2E de Pagos y Suscripciones (Validación Manual de Comprobantes)** 🟢
+- **Fecha**: 2026-03-11
+- **Estado**: Funcional
+- **Flujo Verificado**: 
+  1. Activación de período de prueba. 
+  2. Simulación de expiración de plan. 
+  3. Subida del comprobante de pago por el manager. 
+  4. Revisión y aprobación vía el panel Super Admin y reactivación exitosa de la suscripción (Estado PAID).
+
+---
+
+### Estado General de QA (Actualizado)
+
+🟢 **SISTEMA ESTABLE Y FLUIDO**: Flujos principales de suscripciones, compras E2E y seguridad han sido cubiertos y solucionados satisfactoriamente.

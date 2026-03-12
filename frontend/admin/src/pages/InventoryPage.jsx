@@ -167,11 +167,23 @@ const InventoryPage = () => {
         setSku(product.sku);
         setPrice(product.price);
         setStock(product.stock);
-        setCategory(product.category);
+        setCategory(product.category || "");
         setVariant(product.variant || "");
         setCostPrice(product.costPrice || "");
         setImageUrl(product.imageUrl || "");
         setBarcode(product.barcode || "");
+
+        // Ensure the product's category is in the list so the <select> can pre-select it
+        if (product.category) {
+            setCategories(prev => {
+                const exists = prev.some(c => c.name === product.category);
+                if (!exists) {
+                    return [...prev, { id: 'edit-temp-' + product.id, name: product.category }];
+                }
+                return prev;
+            });
+        }
+
         setShowModal(true);
     };
 

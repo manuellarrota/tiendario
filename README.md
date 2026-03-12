@@ -136,7 +136,7 @@ npm run dev
 | Estado | Descripción |
 |---|---|
 | `FREE` | Hasta 10 productos. Sin ventas ni POS. Solo exhibición en marketplace. |
-| `TRIAL` | 7 días con funcionalidad completa. |
+| `TRIAL` | 30 días con funcionalidad completa. |
 | `PAID` | Acceso ilimitado. Marketplace activo para pedidos. |
 | `PAST_DUE` | Pago vencido. Solo lectura. Bloqueo de creación. |
 | `SUSPENDED` | Bloqueo total por el administrador. |

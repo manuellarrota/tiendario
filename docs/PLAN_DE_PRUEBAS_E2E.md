@@ -28,22 +28,23 @@
 ### Credenciales de Prueba (crear durante pruebas)
 ```
 Super Admin:
-  Usuario: superadmin
-  Contraseña: Admin123!
+  Usuario: admin
+  Contraseña: admin123
 
-Manager (Plan FREE):
-  Usuario: tienda_free
-  Contraseña: Manager123!
-  Empresa: Tienda Demo Free
-
-Manager (Plan PAID):
-  Usuario: tienda_premium
-  Contraseña: Manager123!
+Manager (Plan PAID/Premium):
+  Usuario: manager_pro
+  Contraseña: manager123
   Empresa: Tienda Demo Premium
 
+Manager (Plan FREE — en realidad PAID, se puede cambiar desde SuperAdmin):
+  Usuario: manager_free
+  Contraseña: manager123
+  Empresa: Tienda Egar
+
 Cliente:
-  Usuario: cliente@test.com
-  Contraseña: Cliente123!
+  Usuario: cliente
+  Contraseña: cliente123
+  Email: cliente@tiendario.com
 ```
 
 ---
@@ -53,14 +54,14 @@ Cliente:
 ### 1.1 Registro de Nueva Tienda (Manager)
 | ID | Caso de Prueba | Pasos | Resultado Esperado |
 |----|----------------|-------|-------------------|
-| AUTH-01 | Registro exitoso de tienda | 1. Ir a /register 2. Llenar nombre empresa 3. Llenar usuario 4. Llenar contraseña 5. Click "Registrar" | Mensaje exitoso, redirección a login |
+| AUTH-01 | Registro exitoso de tienda | 1. Ir a http://localhost:8081 2. Click en "Registrarse" (modal embebido) 3. Llenar nombre empresa, usuario y contraseña 4. Click "Registrar" | Mensaje de éxito, sesión iniciada |
 | AUTH-02 | Registro con usuario duplicado | 1. Intentar registrar con usuario existente | Mensaje de error "username already taken" |
 | AUTH-03 | Registro con campos vacíos | 1. Dejar campos vacíos 2. Click registrar | Validación HTML5 previene envío |
 
 ### 1.2 Login
 | ID | Caso de Prueba | Pasos | Resultado Esperado |
 |----|----------------|-------|-------------------|
-| AUTH-04 | Login exitoso Manager | 1. Ir a /login 2. Ingresar credenciales válidas 3. Click "Ingresar" | Redirección a /dashboard |
+| AUTH-04 | Login exitoso Manager | 1. Ir a http://localhost:8081 2. Ingresar credenciales válidas 3. Click "Ingresar" | Redirección a /dashboard |
 | AUTH-05 | Login con credenciales inválidas | 1. Ingresar contraseña incorrecta | Mensaje error "Invalid credentials" |
 | AUTH-06 | Login con "Recuérdame" activado | 1. Marcar checkbox 2. Login 3. Cerrar navegador 4. Reabrir | Sesión persistida en localStorage |
 | AUTH-07 | Login sin "Recuérdame" | 1. Login sin checkbox 2. Cerrar navegador 4. Reabrir | Sesión no persistida |
@@ -287,3 +288,14 @@ Cliente:
 ---
 
 **Total de Casos de Prueba**: 67
+
+---
+
+## 🟢 ESTADO DE EJECUCIÓN (A marzo de 2026)
+
+Este plan de pruebas E2E ha sido ejecutado iterativamente hasta cubrir satisfactoriamente todos los flujos principales de Tiendario, obteniendo una gran estabilidad sistémica. A continuación un resumen de las campañas de test ejecutadas con éxito:
+
+- **Autenticación y Seguridad (MÓDULO 1 y Backend)**: Implementados parches para evitar vulnerabilidades. Restricciones server-side y cálculo de precios reconfigurados exitosamente. Interfaces limpieladas sin modal-drills o rutas desfasadas como `/login`.
+- **Managers, Pedidos y Super Admin (MÓDULOS 2, 3 y 4)**: Creados, testeados y verificados. Verificada la funcionalidad manual de activación de suscripciones tras finalizada la expiración de la licencia (Super Admin valida vouchers y Manager recibe permisos Premium de vuelta).
+- **Marketplace y Sincronizaciones (MÓDULO 5 y 6)**: Sincronización entre tiendas validada E2E. Proceso de búsqueda y creación de órdenes confirmada sin latencia asincrónica.
+- **Rendimiento Sistémico (Performance & Stress Testing)**: Validado el 10 de marzo. APIs core probadas con alto volumen utilizando K6 con métricas satisfactorias.
