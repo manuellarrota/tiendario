@@ -55,8 +55,8 @@ const AdminCatalogPage = () => {
     const handleSave = () => {
         setSaving(true);
         AdminService.updateCatalogProduct(selectedItem.id, selectedItem).then(
-            () => {
-                setCatalog(catalog.map(c => c.id === selectedItem.id ? selectedItem : c));
+            (response) => {
+                setCatalog(catalog.map(c => c.id === selectedItem.id ? response.data : c));
                 setShowEditModal(false);
                 setSaving(false);
             },

@@ -401,14 +401,10 @@ public class SuperAdminController {
 
                 final String catNameTrim = (catName != null) ? catName.trim() : "";
 
-                // 1. Buscar o Crear Categoría Global
+                // 1. Buscar Categoría Global (Solo si existe)
                 final Category category = catNameTrim.isEmpty() ? null
                                 : categoryRepository.findFirstByNameIgnoreCase(catNameTrim)
-                                                .orElseGet(() -> {
-                                                        Category newCat = new Category();
-                                                        newCat.setName(catNameTrim);
-                                                        return categoryRepository.save(newCat);
-                                                });
+                                                .orElse(null);
 
                 // 2. Buscar o Crear en Catálogo Maestro (por SKU)
                 CatalogProduct catalogProduct = null;

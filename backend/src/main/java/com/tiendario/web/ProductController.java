@@ -50,6 +50,9 @@ public class ProductController {
     @Autowired
     FileStorageService fileStorageService;
 
+    @Autowired
+    com.tiendario.repository.CategoryRepository categoryRepository;
+
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
 
@@ -244,7 +247,14 @@ public class ProductController {
             catalog.setName(product.getName());
             catalog.setDescription(product.getDescription());
             catalog.setImageUrl(product.getImageUrl());
-            // Optional: catalog.setCategory(product.getCategory());
+            
+            // Map String category to Category entity
+            if (product.getCategory() != null && !product.getCategory().isEmpty()) {
+                com.tiendario.domain.Category cat = categoryRepository.findFirstByNameIgnoreCase(product.getCategory().trim())
+                        .orElse(null);
+                catalog.setCategory(cat);
+            }
+            
             catalog = catalogProductRepository.save(catalog);
         }
         product.setCatalogProduct(catalog);
@@ -295,19 +305,26 @@ public class ProductController {
             catalog.setName(productDetails.getName());
             catalog.setDescription(productDetails.getDescription());
             catalog.setImageUrl(productDetails.getImageUrl());
-            // Note: catalog.category is a @ManyToOne entity, product.category is a String.
-            // Category sync between catalog and product is handled at the Product level,
-            // not here.
+            
+            // Map String category to Category entity
+            if (productDetails.getCategory() != null && !productDetails.getCategory().isEmpty()) {
+                com.tiendario.domain.Category cat = categoryRepository.findFirstByNameIgnoreCase(productDetails.getCategory().trim())
+                        .orElse(null);
+                catalog.setCategory(cat);
+            }
             catalog = catalogProductRepository.save(catalog);
         } else {
-            // If updating common info, we update the catalog (making it the source of truth
-            // for everyone)
+            // If updating common info, we update the catalog (making it the source of truth for everyone)
             catalog.setName(productDetails.getName());
             catalog.setDescription(productDetails.getDescription());
             catalog.setImageUrl(productDetails.getImageUrl());
-            // Note: catalog.category is a @ManyToOne entity, product.category is a String.
-            // Category sync between catalog and product is handled at the Product level,
-            // not here.
+            
+            // Map String category to Category entity
+            if (productDetails.getCategory() != null && !productDetails.getCategory().isEmpty()) {
+                com.tiendario.domain.Category cat = categoryRepository.findFirstByNameIgnoreCase(productDetails.getCategory().trim())
+                        .orElse(null);
+                catalog.setCategory(cat);
+            }
             catalog = catalogProductRepository.save(catalog);
 
             // Sync local fields too for compatibility
