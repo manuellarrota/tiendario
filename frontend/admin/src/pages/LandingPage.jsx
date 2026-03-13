@@ -267,9 +267,9 @@ const LandingPage = () => {
                         Sistema POS + Marketplace Local
                     </Badge>
                 </div>
-                <div className="d-flex gap-3 align-items-center">
-                    <Button variant="link" onClick={() => setShowLoginModal(true)} className="text-primary text-decoration-none fw-bold d-none d-sm-block">Entrar</Button>
-                    <Button onClick={() => openRegister('free')} className="btn btn-primary rounded-pill px-4 shadow">Crear Tienda</Button>
+                <div className="d-flex gap-2 align-items-center">
+                    <Button variant="link" onClick={() => setShowLoginModal(true)} className="text-primary text-decoration-none fw-bold px-2" style={{ fontSize: '0.9rem' }}>Entrar</Button>
+                    <Button onClick={() => openRegister('free')} className="btn btn-primary rounded-pill px-3 shadow-sm" style={{ fontSize: '0.9rem' }}>Crear Tienda</Button>
                 </div>
             </nav>
 

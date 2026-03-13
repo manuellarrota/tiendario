@@ -90,9 +90,9 @@ const Sidebar = () => {
                 ></div>
             )}
 
-            {/* Sidebar Container Wrapper to handle positioning context without clipping */}
+            {/* Sidebar Container Wrapper */}
             <div className={`sidebar-container ${collapsed ? 'collapsed-mode' : ''}`}
-                style={{ width: sidebarWidth, minWidth: sidebarWidth, flexShrink: 0, position: 'relative', transition: 'all 0.3s ease', zIndex: 1000 }}>
+                style={{ flexShrink: 0, position: 'relative', transition: 'all 0.3s ease', zIndex: 2500 }}>
 
                 {/* Desktop Toggle Button - Now outside the scrollable sidebar */}
                 <button
@@ -107,33 +107,40 @@ const Sidebar = () => {
                     style={{ width: '100%', height: '100vh', overflowY: 'auto', overflowX: 'hidden' }}>
 
                     <div className="sidebar-header" style={{ padding: collapsed ? '20px 10px' : '20px' }}>
-                        <Link to="/dashboard" className={`sidebar-logo ${collapsed ? 'justify-content-center' : ''}`}>
-                            <div className="logo-icon">
-                                <FaStore size={22} />
-                            </div>
-                            {!collapsed && <span>Tiendario</span>}
-                        </Link>
-
-                        <div className={`user-profile-summary text-center ${collapsed ? 'mt-2' : ''}`}>
-                            {!collapsed && (
-                                <div className="mb-2">
-                                    <span className={isSuperAdmin ? 'premium-badge-v1 bg-dark text-white' : (user?.subscriptionStatus === 'PAID' ? 'premium-badge-v1' : (user?.subscriptionStatus === 'TRIAL' ? 'trial-badge-v1' : 'free-badge-v1'))}>
-                                        {isSuperAdmin ? 'Super Admin' : (user?.subscriptionStatus === 'PAID' ? 'Suscripción Pro' : (user?.subscriptionStatus === 'TRIAL' ? 'Modo Prueba' : 'Plan Básico'))}
-                                    </span>
+                        <div className="d-flex align-items-center justify-content-between w-100">
+                            <Link to="/dashboard" className={`sidebar-logo ${collapsed ? 'justify-content-center' : ''}`}>
+                                <div className="logo-icon">
+                                    <FaStore size={22} />
                                 </div>
-                            )}
-                            {!collapsed ? (
-                                <small className="d-block text-dark opacity-75 fw-bold text-truncate px-2">
-                                    {user?.username || 'Invitado'}
-                                </small>
-                            ) : (
-                                <div className="mt-3 border-top pt-3">
-                                    <small className="fw-bold text-uppercase" style={{ fontSize: '0.6rem' }}>
-                                        {isSuperAdmin ? 'SA' : (user?.subscriptionStatus === 'PAID' ? 'PRO' : (user?.subscriptionStatus === 'TRIAL' ? 'PRB' : 'GRT'))}
+                                {!collapsed && <span>Tiendario</span>}
+                            </Link>
+                            
+                            {/* Mobile Close Button hidden on desktop */}
+                            <button className="d-lg-none btn border-0 p-1 text-muted" onClick={() => setIsOpen(false)}>
+                                <FaTimes size={20} />
+                            </button>
+                        </div>
+
+                        {!collapsed && (
+                            <div className="user-profile-summary mt-3">
+                                <div className="d-flex align-items-center gap-2 mb-2">
+                                    <span className={isSuperAdmin ? 'premium-badge-v1 bg-dark text-white' : (user?.subscriptionStatus === 'PAID' ? 'premium-badge-v1' : (user?.subscriptionStatus === 'TRIAL' ? 'trial-badge-v1' : 'free-badge-v1'))}>
+                                        {isSuperAdmin ? 'Super Admin' : (user?.subscriptionStatus === 'PAID' ? 'PRO' : (user?.subscriptionStatus === 'TRIAL' ? 'TRIAL' : 'FREE'))}
+                                    </span>
+                                    <small className="fw-bold text-dark text-truncate" style={{ maxWidth: '120px' }}>
+                                        {user?.username || 'Invitado'}
                                     </small>
                                 </div>
-                            )}
-                        </div>
+                            </div>
+                        )}
+
+                        {collapsed && (
+                            <div className="mt-3 border-top pt-3 text-center">
+                                <small className="fw-bold text-uppercase" style={{ fontSize: '0.6rem' }}>
+                                    {isSuperAdmin ? 'SA' : (user?.subscriptionStatus === 'PAID' ? 'PRO' : (user?.subscriptionStatus === 'TRIAL' ? 'PRB' : 'GRT'))}
+                                </small>
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex-grow-1" style={{ overflowY: 'visible', padding: '0 10px' }}>
