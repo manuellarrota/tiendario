@@ -22,7 +22,7 @@ const Sidebar = () => {
 
     useEffect(() => {
         let isMounted = true;
-        if (user) {
+        if (user && !isSuperAdmin) {
             NotificationService.getUnreadCount()
                 .then(res => {
                     if (isMounted && typeof res.data === 'number') {
@@ -45,7 +45,7 @@ const Sidebar = () => {
                 clearInterval(interval);
             };
         }
-    }, [user]);
+    }, [user, isSuperAdmin]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -140,7 +140,6 @@ const Sidebar = () => {
 
                         {isSuperAdmin ? (
                             <>
-                                {!collapsed && <div className="nav-group-label">administración saas</div>}
                                 <NavItem to="/admin/onboarding" icon={FaRocket} label="Registrar Tienda" description="Wizard paso a paso para registrar un nuevo cliente en el sistema." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/dashboard" icon={FaChartLine} label="Métricas Globales" description="Visualiza el estado de todo el ecosistema Tiendario." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/admin/companies" icon={FaStore} label="Gestión de Empresas" description="Administra los comercios y sus suscripciones." collapsed={collapsed} setIsOpen={setIsOpen} />
@@ -152,25 +151,16 @@ const Sidebar = () => {
                             </>
                         ) : (
                             <>
-                                {!collapsed && <div className="nav-group-label">Panel Principal</div>}
                                 <NavItem to="/dashboard" icon={FaHome} label="Dashboard" description="Resumen rápido de tus ventas y actividad reciente." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                
-                                {!collapsed && <div className="nav-group-label">Ventas y Atención</div>}
                                 <NavItem to="/pos" icon={FaShoppingBag} label="Punto de Venta" description="Realiza ventas rápidas en mostrador y genera tickets." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/notifications" icon={FaBell} label="Notificaciones" badge={unreadCount} description="Novedades, pedidos nuevos y alertas de sistema." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/sales/history" icon={FaHistory} label="Historial de Ventas" description="Monitorea el estado de tus ventas y pedidos pendientes." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/daily-closing" icon={FaCashRegister} label="Control de Caja" description="Arqueo diario y balance de ingresos en efectivo/digital." collapsed={collapsed} setIsOpen={setIsOpen} />
-
-                                {!collapsed && <div className="nav-group-label">Abastecimiento</div>}
                                 <NavItem to="/purchases/new" icon={FaTruck} label="Comprar Mercancía" description="Registra compras a proveedores y suma al stock." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/purchases/history" icon={FaHistory} label="Historial de Compras" description="Revisa cuándo y a cuánto compraste tus productos." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/suppliers" icon={FaUsers} label="Proveedores" description="Guarda los datos de contacto de quienes te surten." collapsed={collapsed} setIsOpen={setIsOpen} />
-
-                                {!collapsed && <div className="nav-group-label">Catálogo de Productos</div>}
                                 <NavItem to="/inventory" icon={FaBox} label="Inventario" description="Controla stocks, precios, imágenes y exportación." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/categories" icon={FaTags} label="Categorías" description="Mira las categorías globales y sugiere nuevas para el catálogo." collapsed={collapsed} setIsOpen={setIsOpen} />
-
-                                {!collapsed && <div className="nav-group-label">Análisis y Ajustes</div>}
                                 <NavItem to="/reports" icon={FaChartLine} label="Reportes" description="Analítica avanzada, productos más vendidos y ganancias." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/customers" icon={FaUsers} label="Clientes" description="Directorio y base de datos de tus clientes" collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/company" icon={FaCog} label="Ajustes de Tienda" description="Configura los detalles de tu negocio." collapsed={collapsed} setIsOpen={setIsOpen} />

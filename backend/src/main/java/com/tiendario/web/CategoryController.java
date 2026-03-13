@@ -22,7 +22,6 @@ public class CategoryController {
     CompanyRepository companyRepository;
 
     @GetMapping
-    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
     public List<Category> getCategories() {
         return categoryRepository.findAll();
     }

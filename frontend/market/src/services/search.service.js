@@ -6,8 +6,8 @@ const searchProducts = (query) => {
     return axios.get(API_URL + 'search', { params: { q: query } });
 };
 
-const getAllProducts = () => {
-    return axios.get(API_URL + 'products');
+const getAllProducts = (params) => {
+    return axios.get(API_URL + 'products', { params });
 };
 
 const getProductDetail = (id) => {
@@ -20,6 +20,10 @@ const createOrder = (orderData) => {
 
 const getPlatformConfig = () => {
     return axios.get(API_URL + 'config');
+};
+
+const getCategories = () => {
+    return axios.get(API_URL + 'categories');
 };
 
 const getSellersByName = (name, sku) => {
@@ -37,6 +41,7 @@ const SearchService = {
     getProductDetail,
     createOrder,
     getPlatformConfig,
+    getCategories,
     getSellersByName,
     getCustomerPoints
 };

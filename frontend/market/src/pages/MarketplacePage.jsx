@@ -16,9 +16,13 @@ const MarketplacePage = () => {
     const [loginError, setLoginError] = useState('');
     const [loginLoading, setLoginLoading] = useState(false);
     const [products, setProducts] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [filteredProducts, setFilteredProducts] = useState([]);
     const [searchQuery, setSearchQuery] = useState('');
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalItems, setTotalItems] = useState(0);
     const [showBuyModal, setShowBuyModal] = useState(false);
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
@@ -29,7 +33,14 @@ const MarketplacePage = () => {
     const [orderStatus, setOrderStatus] = useState({ loading: false, success: false, error: '' });
     const [userPoints, setUserPoints] = useState(0);
     const [showLoyaltyModal, setShowLoyaltyModal] = useState(false);
-    const [cart, setCart] = useState([]);
+    const [cart, setCart] = useState(() => {
+        const saved = localStorage.getItem('tiendario_cart');
+        return saved ? JSON.parse(saved) : [];
+    });
+    useEffect(() => {
+        localStorage.setItem('tiendario_cart', JSON.stringify(cart));
+    }, [cart]);
+
     const [showCartModal, setShowCartModal] = useState(false);
     const [platformConfig, setPlatformConfig] = useState(null);
     const [sellers, setSellers] = useState([]);
@@ -55,13 +66,49 @@ const MarketplacePage = () => {
                 res => setUserPoints(res.data.points || 0),
                 err => { if (process.env.NODE_ENV === 'development') console.error("Error loading points", err); }
             );
+
+            // AUTO-CONTINUE CHECKOUT: If user just logged in and had a pending checkout
+            if (sessionStorage.getItem('pending_checkout') === 'true' && cart.length > 0) {
+                sessionStorage.removeItem('pending_checkout');
+                // Small delay to ensure everything is loaded
+                setTimeout(() => {
+                    handleCheckout();
+                }, 500);
+            }
         }
     }, [user]);
 
+
     useEffect(() => {
-        loadProducts();
+        loadProducts(0, true);
         loadConfig();
+        loadCategories();
     }, []);
+
+    // SEO: Dynamic Titles and Descriptions
+    useEffect(() => {
+        let title = "Tiendario - Encuentre y compre productos locales";
+        let description = "Localice y compre productos en tiendas de su zona. Tiendario conecta inventarios locales para que encuentre lo que necesita cerca de ti.";
+
+        if (selectedCategory !== 'all') {
+            title = `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} cerca de mí - Tiendario`;
+            description = `Busque y compre ${selectedCategory} en tiendas locales. Encuentre los mejores precios y stock disponible cerca de su ubicación.`;
+        } else if (searchQuery) {
+            title = `Buscando "${searchQuery}" en tiendas locales - Tiendario`;
+            description = `Resultados para "${searchQuery}" en su zona. Encuentre dónde comprarlo al mejor precio cerca de usted.`;
+        }
+
+        document.title = title;
+        const metaDesc = document.querySelector('meta[name="description"]');
+        if (metaDesc) metaDesc.setAttribute('content', description);
+    }, [selectedCategory, searchQuery]);
+
+    const loadCategories = () => {
+        SearchService.getCategories().then(
+            (response) => setCategories(response.data),
+            (error) => { if (process.env.NODE_ENV === 'development') console.error("Error loading categories", error); }
+        );
+    };
 
     const loadConfig = () => {
         SearchService.getPlatformConfig().then(
@@ -77,82 +124,55 @@ const MarketplacePage = () => {
     };
 
     useEffect(() => {
-        applyFilters();
-    }, [searchQuery, products, priceRange, selectedStores, sortBy, selectedCategory]);
+        setPage(0);
+        loadProducts(0, true);
+    }, [searchQuery, selectedCategory, sortBy, priceRange]);
 
-    const applyFilters = () => {
-        let filtered = [...products];
-
-        // Category Filter (Restrict search to this category if selected)
-        if (selectedCategory !== 'all') {
-            filtered = filtered.filter(p =>
-                p.category && p.category.toLowerCase() === selectedCategory.toLowerCase()
-            );
-        }
-
-        // Search Query (Text search within the filtered set)
-        if (searchQuery) {
-            const query = searchQuery.toLowerCase();
-            filtered = filtered.filter(p =>
-                p.name.toLowerCase().includes(query) ||
-                (p.description && p.description.toLowerCase().includes(query))
-            );
-        }
-
-        // Price Range
-        if (priceRange.min) {
-            filtered = filtered.filter(p => p.price >= parseFloat(priceRange.min));
-        }
-        if (priceRange.max) {
-            filtered = filtered.filter(p => p.price <= parseFloat(priceRange.max));
-        }
-
-        // Store Filter
-        if (selectedStores.length > 0) {
-            filtered = filtered.filter(p => selectedStores.includes(p.companyName));
-        }
-
-        // Sorting
-        if (sortBy === 'price_asc') {
-            filtered.sort((a, b) => a.price - b.price);
-        } else if (sortBy === 'price_desc') {
-            filtered.sort((a, b) => b.price - a.price);
-        } else if (sortBy === 'name_asc') {
-            filtered.sort((a, b) => a.name.localeCompare(b.name));
-        }
-
-        setFilteredProducts(filtered);
-    };
-
-    const loadProducts = () => {
+    const loadProducts = (pageNum, reset = false) => {
         setLoading(true);
-        SearchService.getAllProducts().then(
+        const params = {
+            page: pageNum,
+            size: 12,
+            category: selectedCategory === 'all' ? null : selectedCategory,
+            q: searchQuery || null,
+            minPrice: priceRange.min || null,
+            maxPrice: priceRange.max || null
+        };
+
+        SearchService.getAllProducts(params).then(
             (response) => {
-                const data = Array.isArray(response.data) ? response.data : [];
-                setProducts(data);
-                setFilteredProducts(data);
+                const newProducts = response.data.products || [];
+                if (reset) {
+                    setProducts(newProducts);
+                    setFilteredProducts(newProducts);
+                } else {
+                    setProducts(prev => [...prev, ...newProducts]);
+                    setFilteredProducts(prev => [...prev, ...newProducts]);
+                }
+                setTotalPages(response.data.totalPages);
+                setTotalItems(response.data.totalItems);
                 setLoading(false);
             },
             (error) => {
                 console.error('Error loading products', error);
-                setProducts([]);
-                setFilteredProducts([]);
+                if (reset) {
+                    setProducts([]);
+                    setFilteredProducts([]);
+                }
                 setLoading(false);
             }
         );
     };
 
+    const handleLoadMore = () => {
+        const nextPage = page + 1;
+        setPage(nextPage);
+        loadProducts(nextPage);
+    };
+
     const handleSearch = () => {
-        if (searchQuery.trim()) {
-            SearchService.searchProducts(searchQuery).then(
-                (response) => {
-                    setFilteredProducts(response.data);
-                },
-                (error) => {
-                    console.error('Error searching products', error);
-                }
-            );
-        }
+        setPage(0);
+        loadProducts(0, true);
     };
 
     const handleDetailClick = (product) => {
@@ -239,11 +259,13 @@ const MarketplacePage = () => {
 
     const handleCheckout = () => {
         if (!user) {
-            // El login es un modal embebido — no redirigir a /login
+            // Guardar intención para después del login
+            sessionStorage.setItem('pending_checkout', 'true');
             setShowCartModal(false);
             setShowLoginModal(true);
             return;
         }
+
         // Prefill customer data
         setCustomerData({
             name: user.username || '',
@@ -418,287 +440,244 @@ const MarketplacePage = () => {
     };
 
     return (
-        <div className="bg-light min-vh-100 pb-5">
+        <div className="marketplace-page position-relative">
+            {/* Background Mesh */}
+            <div className="bg-mesh"></div>
+
             <MarketplaceNavbar onLoginClick={() => setShowLoginModal(true)} onRegisterClick={() => setShowRegisterModal(true)} />
+            
             {platformConfig?.announcementMessage && (
-                <div className="bg-primary text-white py-2 text-center small fw-bold shadow-sm announce-bar" style={{ fontSize: '0.8rem' }}>
+                <div className="bg-primary text-white py-2 text-center small fw-bold shadow-sm announce-bar" style={{ fontSize: '0.8rem', position: 'relative', zIndex: 100 }}>
                     <FaInfoCircle className="me-2" /> {platformConfig.announcementMessage}
                 </div>
             )}
-            {/* Premium Hero Section */}
-            <div className="hero-premium text-center">
-                <Container>
-                    <div className="animate-fade-in">
-                        <h1 className="display-3 fw-800 text-white mb-3 text-letter-spacing">
-                            Tiendario <span className="text-white opacity-90">Market</span>
-                        </h1>
-                        <p className="lead fs-4 text-white opacity-80 mb-5 mx-auto" style={{ maxWidth: '700px' }}>
-                            Todo lo que buscas, al instante, en tu ciudad
-                        </p>
-                        
-                        <div className="d-flex flex-wrap justify-content-center gap-5 mb-5">
-                            <div className="text-center animate-fade-in" style={{ transitionDelay: '0.1s' }}>
-                                <div className="stat-icon-circle bg-white bg-opacity-10 text-white mx-auto mb-2 mb-md-3" style={{ width: '50px', height: '50px', border: '1px solid rgba(255,255,255,0.2)' }}>
-                                    <FaSearch size={20} />
-                                </div>
-                                <div className="text-white fw-600 small px-2">Busca productos</div>
-                            </div>
-                            <div className="text-center animate-fade-in" style={{ transitionDelay: '0.2s' }}>
-                                <div className="stat-icon-circle bg-white bg-opacity-10 text-white mx-auto mb-2 mb-md-3" style={{ width: '50px', height: '50px', border: '1px solid rgba(255,255,255,0.2)' }}>
-                                    <FaStore size={20} />
-                                </div>
-                                <div className="text-white fw-600 small px-2">Descubre tiendas</div>
-                            </div>
-                            <div className="text-center animate-fade-in" style={{ transitionDelay: '0.3s' }}>
-                                <div className="stat-icon-circle bg-white bg-opacity-10 text-white mx-auto mb-2 mb-md-3" style={{ width: '50px', height: '50px', border: '1px solid rgba(255,255,255,0.2)' }}>
-                                    <FaShoppingCart size={20} />
-                                </div>
-                                <div className="text-white fw-600 small px-2">Compra rápido</div>
-                            </div>
-                        </div>
 
-                        <div className="search-container-premium">
-                            <FaSearch className="text-muted ms-3" size={20} />
+            {/* Ultra-Compact Premium Hero */}
+            <div className="market-hero-premium py-3 mb-3 position-relative overflow-hidden">
+                <Container className="py-1 text-center">
+                    <div className="mx-auto animate-fade-in" style={{ maxWidth: '850px' }}>
+                        <h2 className="display-6 mb-2 fw-800" style={{ color: '#1e293b', letterSpacing: '-1.5px' }}>
+                            Todo lo que necesitas, <span className="text-gradient">cerca de ti.</span>
+                        </h2>
+                        
+                        {/* Ultra-Compact Glass Search */}
+                        <div className="glass-panel p-1 shadow-lg d-flex align-items-center mb-3 mx-auto" style={{ borderRadius: '100px', maxWidth: '600px' }}>
+                            <FaSearch className="text-muted ms-3 mr-2" size={16} />
                             <Form.Control
-                                className="search-input-premium"
-                                placeholder="Busca frutas, ropa o tu tienda favorita..."
+                                className="border-0 bg-transparent py-2"
+                                style={{ boxShadow: 'none', fontSize: '0.95rem' }}
+                                placeholder="Busca en el mercado local..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                             />
-                            <Button variant="primary" className="search-button-premium" onClick={handleSearch}>
+                            <Button onClick={handleSearch} className="btn btn-primary rounded-pill px-4 py-2 shadow-md fw-bold btn-sm">
                                 Buscar
                             </Button>
+                        </div>
+
+                        <div className="d-flex justify-content-center gap-4 align-items-center opacity-75">
+                            <div className="stat-item-compact">
+                                <span className="fw-bold text-dark small">{totalItems}+</span> <small className="text-muted" style={{ fontSize: '0.7rem' }}>Productos</small>
+                            </div>
+                            <div className="stat-item-compact border-start ps-4">
+                                <span className="fw-bold text-dark small">{featuredStores.length}</span> <small className="text-muted" style={{ fontSize: '0.7rem' }}>Tiendas</small>
+                            </div>
+                            <div className="stat-item-compact border-start ps-4">
+                                <span className="fw-bold text-dark small">{categories.length}</span> <small className="text-muted" style={{ fontSize: '0.7rem' }}>Categorías</small>
+                            </div>
                         </div>
                     </div>
                 </Container>
             </div>
 
-            <Container className="position-relative" style={{ zIndex: 20, marginTop: '-60px' }}>
-                {/* Stats Cards Section */}
-                <Row className="g-4 mb-5">
-                    <Col md={4}>
-                        <div className="stat-card-modern">
-                            <div className="stat-icon-circle bg-primary bg-opacity-10 text-primary">
-                                <FaStore size={28} />
-                            </div>
-                            <div>
-                                <h3 className="fw-bold text-primary mb-0">{products.length}+</h3>
-                                <div className="text-dark fw-700 h6 mb-0">Productos Activos</div>
-                            </div>
+            {/* Mobile Categories - Only visible on small screens */}
+            <div className="d-lg-none sticky-top bg-white bg-opacity-90 backdrop-blur border-bottom py-2 shadow-sm" style={{ zIndex: 100, top: '0' }}>
+                <Container>
+                    <div className="categories-wrapper d-flex align-items-center py-1">
+                        <div 
+                            className={`mobile-cat-chip ${selectedCategory === 'all' ? 'active' : ''}`}
+                            onClick={() => setSelectedCategory('all')}
+                        >
+                            📦 Todo
                         </div>
-                    </Col>
-                    <Col md={4}>
-                        <div className="stat-card-modern">
-                            <div className="stat-icon-circle bg-success bg-opacity-10 text-success">
-                                <FaGem size={28} />
+                        {categories.sort((a, b) => a.name.localeCompare(b.name)).map((cat, idx) => (
+                            <div
+                                key={idx}
+                                className={`mobile-cat-chip ${selectedCategory === cat.name ? 'active' : ''}`}
+                                onClick={() => setSelectedCategory(cat.name)}
+                            >
+                                {cat.name}
                             </div>
-                            <div>
-                                <h3 className="fw-bold text-success mb-0">{featuredStores.length}</h3>
-                                <div className="text-dark fw-700 h6 mb-0">Tiendas de Confianza</div>
-                            </div>
-                        </div>
-                    </Col>
-                    <Col md={4}>
-                        <div className="stat-card-modern">
-                            <div className="stat-icon-circle bg-warning bg-opacity-10 text-warning">
-                                <FaStar size={28} />
-                            </div>
-                            <div>
-                                <div className="text-warning mb-1">
-                                    <FaStar size={12}/><FaStar size={12}/><FaStar size={12}/><FaStar size={12}/><FaStar size={12}/>
-                                </div>
-                                <div className="text-dark fw-700 h6 mb-0">Confianza 5⭐ Garantizada</div>
-                            </div>
-                        </div>
-                    </Col>
-                </Row>
+                        ))}
+                    </div>
+                </Container>
+            </div>
 
-                <Row>
-                    {/* Sidebar: Categories & Filters */}
+            <Container className="mb-5 pb-5 mt-4 mt-lg-0">
+                <Row className="g-4">
+                    {/* Sidebar: Restored as requested (Desktop only) */}
                     <Col lg={3} className="d-none d-lg-block">
-                        <div className="mb-4">
-                            <div className="bg-white rounded-4 shadow-sm p-4 border border-light">
-                                <h5 className="fw-bold mb-4 text-dark">Categorías Populares</h5>
-                                
-                                <div className="d-flex flex-column gap-1 mb-4">
-                                    <div 
-                                        className={`sidebar-category-item ${selectedCategory === 'all' ? 'active' : ''}`}
-                                        onClick={() => setSelectedCategory('all')}
-                                    >
-                                        <span className="fs-5">📦</span>
-                                        <span className="fw-600">Todos los Productos</span>
-                                    </div>
-                                    
-                                    {[...new Set(products.map(p => p.category).filter(Boolean))].sort().map((cat, idx) => (
-                                        <div
-                                            key={idx}
-                                            className={`sidebar-category-item ${selectedCategory === cat ? 'active' : ''}`}
-                                            onClick={() => setSelectedCategory(cat)}
-                                        >
-                                            <span className="fs-5">{getCategoryEmoji(cat)}</span>
-                                            <span className="fw-600 capitalize">{cat}</span>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <hr className="my-4 opacity-50" />
-                                
-                                <h6 className="fw-bold mb-3 small text-uppercase text-muted letter-spacing-1">Filtrar por Precio</h6>
-                                <div className="d-flex gap-2 align-items-center mb-3">
-                                    <InputGroup size="sm">
-                                        <InputGroup.Text className="bg-light border-0">$</InputGroup.Text>
-                                        <Form.Control 
-                                            type="number" 
-                                            placeholder="Min" 
-                                            className="border-0 bg-light"
-                                            value={priceRange.min}
-                                            onChange={(e) => setPriceRange({...priceRange, min: e.target.value})}
-                                        />
-                                    </InputGroup>
-                                    <InputGroup size="sm">
-                                        <InputGroup.Text className="bg-light border-0">$</InputGroup.Text>
-                                        <Form.Control 
-                                            type="number" 
-                                            placeholder="Max" 
-                                            className="border-0 bg-light"
-                                            value={priceRange.max}
-                                            onChange={(e) => setPriceRange({...priceRange, max: e.target.value})}
-                                        />
-                                    </InputGroup>
-                                </div>
-                                
-                                <Button 
-                                    variant="link" 
-                                    className="w-100 text-decoration-none small fw-bold p-0 text-muted"
-                                    onClick={() => {
-                                        setSelectedCategory('all');
-                                        setPriceRange({ min: '', max: '' });
-                                        setSelectedStores([]);
-                                        setSearchQuery('');
-                                        setSortBy('relevant');
-                                    }}
+                        <div className="glass-panel p-4 sticky-top" style={{ top: '100px', zIndex: 10 }}>
+                            <h5 className="fw-bold mb-4 d-flex align-items-center gap-2">
+                                <FaStore className="text-primary" size={18} />
+                                Categorías
+                            </h5>
+                            <div className="d-flex flex-column gap-1">
+                                <div 
+                                    className={`sidebar-cat-item ${selectedCategory === 'all' ? 'active' : ''}`}
+                                    onClick={() => setSelectedCategory('all')}
                                 >
-                                    Limpiar todos los filtros
-                                </Button>
+                                    <span>📦 Todo el Mercado</span>
+                                </div>
+                                {categories.sort((a, b) => a.name.localeCompare(b.name)).map((cat, idx) => (
+                                    <div
+                                        key={idx}
+                                        className={`sidebar-cat-item ${selectedCategory === cat.name ? 'active' : ''}`}
+                                        onClick={() => setSelectedCategory(cat.name)}
+                                    >
+                                        <span>{getCategoryEmoji(cat.name)} {cat.name}</span>
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="mt-5 pt-4 border-top">
+                                <div className="p-3 rounded-4 bg-primary bg-opacity-10">
+                                    <h6 className="fw-bold text-primary mb-2">¿Eres Vendedor?</h6>
+                                    <p className="small text-muted mb-3">Únete a la red más grande de San Cristóbal y vende más.</p>
+                                    <Button 
+                                        variant="primary" 
+                                        size="sm" 
+                                        className="w-100 rounded-pill fw-bold"
+                                        onClick={() => window.open(import.meta.env.VITE_ADMIN_URL || 'http://localhost:8081', '_blank')}
+                                    >
+                                        Empezar Ahora
+                                    </Button>
+                                </div>
                             </div>
                         </div>
                     </Col>
 
                     {/* Main Content: Products */}
                     <Col lg={9}>
-                        <div className="d-flex flex-column mb-4">
-                            <div className="d-flex justify-content-between align-items-center mb-3">
-                                <h4 className="fw-bold mb-0 text-dark">Explora Productos</h4>
-                                <div className="d-flex align-items-center gap-2">
-                                    <Form.Select
-                                        className="rounded-pill border-0 shadow-sm px-3 py-2 small fw-bold bg-white"
-                                        style={{ minWidth: '160px' }}
-                                        value={sortBy}
-                                        onChange={(e) => setSortBy(e.target.value)}
-                                    >
-                                        <option value="relevant">Más relevantes</option>
-                                        <option value="price_asc">Menor precio</option>
-                                        <option value="price_desc">Mayor precio</option>
-                                        <option value="name_asc">Nombre A-Z</option>
-                                    </Form.Select>
-                                    <small className="text-muted fw-500 ms-3 d-none d-md-inline">Mostrando {filteredProducts.length} productos disponibles</small>
-                                </div>
+                        {/* Title and Sort Info */}
+                        <div className="glass-panel p-4 mb-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+                            <div>
+                                <h4 className="fw-bold mb-1 text-dark">
+                                    {selectedCategory === 'all' ? 'Novedades de Hoy' : selectedCategory}
+                                </h4>
+                                <p className="text-muted small mb-0 fw-500">
+                                    Mostrando {filteredProducts.length} de {totalItems} resultados en tu área
+                                </p>
                             </div>
-
+                            
+                            <div className="d-flex gap-3 align-items-center">
+                                <Form.Select 
+                                    className="border-0 shadow-sm rounded-pill px-4 bg-light fw-bold"
+                                    style={{ width: 'auto', minWidth: '180px', fontSize: '0.9rem' }}
+                                    value={sortBy}
+                                    onChange={(e) => setSortBy(e.target.value)}
+                                >
+                                    <option value="relevant">Más Relevantes</option>
+                                    <option value="price_low">Precio: Menor a Mayor</option>
+                                    <option value="price_high">Precio: Mayor a Menor</option>
+                                    <option value="newest">Lo más Nuevo</option>
+                                </Form.Select>
+                            </div>
                         </div>
 
-                        {loading ? (
-                            <div className="text-center py-5">
-                                <Spinner animation="border" variant="primary" size="lg" />
-                                <p className="mt-4 text-muted fw-500">Buscando productos de calidad...</p>
-                            </div>
+                        {loading && page === 0 ? (
+                            <Row className="g-4">
+                                {[1, 2, 3, 4, 5, 6].map(n => (
+                                    <Col key={n} xs={12} sm={6} md={4}>
+                                        <div className="glass-panel p-3 h-100 placeholder-glow">
+                                            <div className="placeholder rounded-4 w-100 mb-3" style={{ height: '200px' }}></div>
+                                            <div className="placeholder w-75 mb-2"></div>
+                                            <div className="placeholder w-50"></div>
+                                        </div>
+                                    </Col>
+                                ))}
+                            </Row>
                         ) : (
                             <Row className="g-4">
                                 {filteredProducts.length > 0 ? (
                                     filteredProducts.map((product, index) => (
-                                        <Col key={index} xs={12} sm={6} md={6} lg={4} className="animate-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
-                                            <Card className="product-card-premium h-100 border-0 shadow-sm overflow-hidden" 
+                                        <Col key={index} xs={12} sm={6} md={4} className="animate-fade-in" style={{ animationDelay: `${index * 0.05}s` }}>
+                                            <Card className="glass-panel border-0 card-hover h-100 p-2 overflow-hidden" 
                                                 onClick={() => handleDetailClick(product)} 
-                                                style={{ cursor: 'pointer', borderRadius: '20px' }}>
-                                                <div className="img-wrapper position-relative" style={{ height: '220px', overflow: 'hidden' }}>
+                                                style={{ cursor: 'pointer' }}>
+                                                <div className="position-relative overflow-hidden rounded-4 mb-3" style={{ height: '200px' }}>
                                                     <Card.Img
                                                         variant="top"
                                                         src={getFullImageUrl(product.imageUrl, product.category, product.name)}
-                                                        style={{ height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }}
-                                                        className="product-img-hover"
+                                                        style={{ height: '100%', objectFit: 'cover' }}
+                                                        className="transition-all"
                                                     />
-                                                    <div className="position-absolute top-0 start-0 m-3">
-                                                        <Badge bg="white" text="primary" className="rounded-pill shadow-sm py-2 px-3 fw-bold">
-                                                            {getCategoryEmoji(product.category)} {product.category || 'Varios'}
+                                                    <div className="position-absolute top-0 end-0 m-2">
+                                                        <Badge bg="white" text="dark" className="rounded-pill shadow-sm py-2 px-3 fw-bold border-0">
+                                                            ${product.price ? product.price.toFixed(2) : '0.00'}
                                                         </Badge>
                                                     </div>
-                                                    <div className="position-absolute bottom-0 end-0 m-3 opacity-0 product-cart-icon transition-all">
-                                                        <div className="bg-primary text-white p-2 rounded-circle shadow-lg d-flex align-items-center justify-content-center" style={{ width: '45px', height: '45px' }}>
-                                                            <FaShoppingCart size={20} />
+                                                </div>
+                                                <Card.Body className="p-2 d-flex flex-column">
+                                                    <div className="d-flex justify-content-between align-items-start mb-2">
+                                                        <small className="text-primary fw-bold text-uppercase" style={{ fontSize: '0.65rem', letterSpacing: '0.5px' }}>
+                                                            {product.category || 'General'}
+                                                        </small>
+                                                        <div className="d-flex align-items-center gap-1 text-warning small">
+                                                            <FaStar size={10} /> <span className="fw-bold" style={{ fontSize: '0.7rem' }}>4.9</span>
                                                         </div>
                                                     </div>
-                                                </div>
-                                                <Card.Body className="p-4 d-flex flex-column">
-                                                    <div className="mb-2">
-                                                        <div className="text-warning mb-1" style={{ fontSize: '0.8rem' }}>
-                                                            <FaStar /><FaStar /><FaStar /><FaStar /><FaStar className="opacity-50" />
-                                                            <span className="ms-2 text-muted fw-bold">(4.0)</span>
-                                                        </div>
-                                                        <Card.Title className="fw-bold mb-1 text-truncate h5" title={product.name}>
-                                                            {product.name}
-                                                        </Card.Title>
-                                                        <div className="small text-muted mb-3 d-flex align-items-center gap-1">
-                                                            <FaStore className="text-primary" /> {product.companyName}
-                                                        </div>
+                                                    <h6 className="fw-bold text-dark mb-1 text-truncate" title={product.name}>{product.name}</h6>
+                                                    <div className="small text-muted mb-3 d-flex align-items-center gap-1">
+                                                        <FaStore className="text-primary opacity-75" size={10} /> 
+                                                        <span className="text-truncate fw-500" style={{ fontSize: '0.75rem' }}>{product.companyName}</span>
                                                     </div>
                                                     
-                                                    <div className="mt-auto pt-3 border-top d-flex justify-content-between align-items-center">
-                                                        <div>
-                                                            <div className="h4 fw-800 text-primary mb-0">$ {product.price.toLocaleString()}</div>
-                                                            {formatSecondary(product.price) && (
-                                                                <div className="small text-muted fw-600">{formatSecondary(product.price)}</div>
-                                                            )}
-                                                        </div>
-                                                        <div className="d-flex gap-2">
-                                                            <Button 
-                                                                variant="outline-primary" 
-                                                                size="sm" 
-                                                                className="rounded-pill px-3 fw-bold d-flex align-items-center gap-2"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleAddToCart(product);
-                                                                }}
-                                                            >
-                                                                <FaShoppingCart size={14} />
-                                                                <span className="d-none d-md-inline">Al Carrito</span>
-                                                            </Button>
-                                                            <Button 
-                                                                variant="primary" 
-                                                                size="sm" 
-                                                                className="rounded-pill px-3 fw-bold"
-                                                                onClick={(e) => {
-                                                                    e.stopPropagation();
-                                                                    handleDetailClick(product);
-                                                                }}
-                                                            >
-                                                                Ver más
-                                                            </Button>
-                                                        </div>
+                                                    <div className="mt-auto d-grid">
+                                                        <Button 
+                                                            variant="primary" 
+                                                            size="sm" 
+                                                            className="rounded-pill fw-bold py-2 shadow-sm"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleAddToCart(product);
+                                                            }}
+                                                        >
+                                                            Añadir al Carrito
+                                                        </Button>
                                                     </div>
                                                 </Card.Body>
                                             </Card>
                                         </Col>
                                     ))
-                                ) : (
+                                 ) : (
                                     <Col lg={12} className="text-center py-5">
                                         <div className="display-1 mb-4" style={{ opacity: 0.1 }}>📦</div>
                                         <h4 className="fw-bold text-muted">No encontramos productos</h4>
-                                        <p className="text-muted">Prueba buscando otros términos o ajustando el rango de precio.</p>
-                                        <Button variant="primary" className="rounded-pill px-4 mt-3" onClick={() => { setSearchQuery(''); setSelectedCategory('all'); setPriceRange({min:'', max:''}); }}>Ver Todo</Button>
+                                        <p className="text-muted">Prueba buscando otros términos o ajustando los filtros.</p>
                                     </Col>
                                 )}
                             </Row>
+                        )}
+
+                        {/* Load More Button */}
+                        {!loading && page < totalPages - 1 && (
+                            <div className="text-center mt-5 mb-5">
+                                <Button 
+                                    variant="outline-primary" 
+                                    className="rounded-pill px-5 py-3 fw-bold shadow-sm border-2"
+                                    onClick={handleLoadMore}
+                                >
+                                    Cargar más productos
+                                </Button>
+                            </div>
+                        )}
+                        
+                        {loading && page > 0 && (
+                            <div className="text-center mt-5 mb-5">
+                                <Spinner animation="border" variant="primary" />
+                            </div>
                         )}
                     </Col>
                 </Row>

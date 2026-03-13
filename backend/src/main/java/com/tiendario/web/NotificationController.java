@@ -19,18 +19,20 @@ public class NotificationController {
     NotificationRepository notificationRepository;
 
     @GetMapping
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
     public List<Notification> getNotifications() {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
+        if (userDetails.getCompanyId() == null) return List.of();
         return notificationRepository.findByCompanyIdOrderByCreatedAtDesc(userDetails.getCompanyId());
     }
 
     @GetMapping("/unread-count")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
     public long getUnreadCount() {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
+        if (userDetails.getCompanyId() == null) return 0;
         return notificationRepository.countByCompanyIdAndReadStatusFalse(userDetails.getCompanyId());
     }
 

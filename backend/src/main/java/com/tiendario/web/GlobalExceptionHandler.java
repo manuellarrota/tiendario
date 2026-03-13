@@ -36,8 +36,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
-        logger.warn("Access denied: {}", ex.getMessage());
+    public ResponseEntity<Map<String, Object>> handleAccessDenied(org.springframework.security.access.AccessDeniedException ex, javax.servlet.http.HttpServletRequest request) {
+        logger.warn("Access denied on URI {}: {}", request.getRequestURI(), ex.getMessage());
         return buildResponse(HttpStatus.FORBIDDEN, "Acceso denegado. No tienes permisos para esta acción.");
     }
 

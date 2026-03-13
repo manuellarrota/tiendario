@@ -2,7 +2,6 @@ package com.tiendario.repository;
 
 import com.tiendario.domain.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -29,4 +28,6 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     java.util.Optional<Product> findByBarcodeAndCompanyId(String barcode, Long companyId);
 
     List<Product> findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String name, String description);
+
+    long countByCategory(String category);
 }

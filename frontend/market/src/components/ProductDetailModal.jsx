@@ -1,6 +1,6 @@
-import React from 'react';
 import { Modal, Row, Col, Badge, Button, Card } from 'react-bootstrap';
 import { FaStore, FaStar, FaShoppingCart, FaInfoCircle } from 'react-icons/fa';
+import { useEffect } from 'react';
 
 /**
  * Product Detail Modal — shows product info and all sellers offering it.
@@ -24,6 +24,49 @@ const ProductDetailModal = ({
         if (path.startsWith('http')) return path;
         return (import.meta.env.VITE_API_URL || '') + path;
     };
+
+    // SEO: JSON-LD for Search Engines
+    useEffect(() => {
+        if (!show || !selectedProduct) return;
+
+        const scriptId = 'json-ld-product';
+        let existingScript = document.getElementById(scriptId);
+        if (existingScript) existingScript.remove();
+
+        const jsonLd = {
+            "@context": "https://schema.org/",
+            "@type": "Product",
+            "name": selectedProduct.name,
+            "description": selectedProduct.description || `Comprar ${selectedProduct.name} en tiendas locales con Tiendario.`,
+            "image": [getFullImageUrl(selectedProduct.imageUrl, selectedProduct.category, selectedProduct.name)],
+            "brand": {
+                "@type": "Brand",
+                "name": selectedProduct.companyName
+            },
+            "offers": {
+                "@type": "Offer",
+                "url": window.location.href,
+                "priceCurrency": "COP",
+                "price": selectedProduct.price,
+                "availability": selectedProduct.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
+                "seller": {
+                    "@type": "LocalBusiness",
+                    "name": selectedProduct.companyName
+                }
+            }
+        };
+
+        const script = document.createElement('script');
+        script.id = scriptId;
+        script.type = 'application/ld+json';
+        script.text = JSON.stringify(jsonLd);
+        document.head.appendChild(script);
+
+        return () => {
+            const scriptToRemove = document.getElementById(scriptId);
+            if (scriptToRemove) scriptToRemove.remove();
+        };
+    }, [show, selectedProduct]);
 
     return (
         <Modal show={show} onHide={onHide} size="lg" centered className="modal-premium">

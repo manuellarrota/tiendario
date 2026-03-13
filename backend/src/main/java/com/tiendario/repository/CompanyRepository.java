@@ -14,4 +14,6 @@ public interface CompanyRepository extends JpaRepository<Company, Long> {
             LocalDateTime date);
 
     List<Company> findByLatitudeBetweenAndLongitudeBetween(double minLat, double maxLat, double minLon, double maxLon);
+
+    java.util.Optional<Company> findByName(String name);
 }

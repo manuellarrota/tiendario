@@ -217,16 +217,28 @@ const POSPage = () => {
         setShowQuantityModal(false);
     };
 
+    const removeFromCart = (productId) => {
+        setCart(prev => prev.filter(item => item.product.id !== productId));
+    };
+
     const handleNewCustomerSubmit = (e) => {
         e.preventDefault();
         CustomerService.create(newCustomer).then((response) => {
             const created = response.data;
-            setCustomers([...customers, created]);
-            setSelectedCustomer(created);
-            setShowNewCustomerModal(false);
-            setNewCustomer({ name: "", cedula: "", phone: "", email: "" });
-            triggerToast("✅ Cliente registrado.");
-        }).catch(err => alert("Error al registrar cliente: " + (err.response?.data?.message || err.message)));
+            if (created && created.id) {
+                setCustomers(prev => [...prev, created]);
+                setSelectedCustomer(created);
+                setShowNewCustomerModal(false);
+                setNewCustomer({ name: "", cedula: "", phone: "", email: "" });
+                setCustomerSearch("");
+                triggerToast("✅ Cliente registrado.");
+            } else {
+                triggerToast("Error: Datos del cliente incompletos", "error");
+            }
+        }).catch(err => {
+            console.error("Error creating customer:", err);
+            triggerToast("Error al registrar cliente: " + (err.response?.data?.message || err.message), "error");
+        });
     };
 
     // 6. EFFECTS

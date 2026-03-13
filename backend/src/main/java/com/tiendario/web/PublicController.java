@@ -6,6 +6,7 @@ import com.tiendario.payload.response.MessageResponse;
 import com.tiendario.payload.response.PublicProductDTO;
 import com.tiendario.payload.response.SellerOfferDTO;
 import com.tiendario.repository.*;
+import com.tiendario.domain.Category;
 import com.tiendario.service.EmailService;
 import com.tiendario.service.ProductIndexService;
 import lombok.extern.slf4j.Slf4j;
@@ -51,9 +52,48 @@ public class PublicController {
     @Autowired
     GlobalConfigRepository globalConfigRepository;
 
+    @Autowired
+    CategoryRepository categoryRepository;
+
     @GetMapping("/products")
-    public List<PublicProductDTO> getAllProducts() {
-        return productRepository.findAll().stream()
+    public ResponseEntity<Map<String, Object>> getAllProducts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "12") int size,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice) {
+
+        // Note: For complex grouping (best price per SKU/Name), we still need to process.
+        // But we can filter by category at the database level first.
+        List<Product> allProducts;
+        if (category != null && !category.equalsIgnoreCase("all")) {
+            allProducts = productRepository.findAll().stream()
+                    .filter(p -> p.getCategory() != null && p.getCategory().equalsIgnoreCase(category))
+                    .collect(Collectors.toList());
+        } else {
+            allProducts = productRepository.findAll();
+        }
+
+        if (q != null && !q.trim().isEmpty()) {
+            String query = q.toLowerCase();
+            allProducts = allProducts.stream()
+                    .filter(p -> p.getName().toLowerCase().contains(query) || (p.getDescription() != null && p.getDescription().toLowerCase().contains(query)))
+                    .collect(Collectors.toList());
+        }
+
+        if (minPrice != null) {
+            allProducts = allProducts.stream()
+                    .filter(p -> p.getPrice().compareTo(minPrice) >= 0)
+                    .collect(Collectors.toList());
+        }
+        if (maxPrice != null) {
+            allProducts = allProducts.stream()
+                    .filter(p -> p.getPrice().compareTo(maxPrice) <= 0)
+                    .collect(Collectors.toList());
+        }
+
+        List<PublicProductDTO> groupedProducts = allProducts.stream()
                 .collect(Collectors.groupingBy(p -> {
                     if (p.getSku() != null && !p.getSku().trim().isEmpty()) {
                         return "SKU-" + p.getSku().trim().toUpperCase();
@@ -70,7 +110,22 @@ public class PublicController {
                             .orElse(list.get(0));
                     return this.mapToDTO(bestPriceProduct);
                 })
+                .sorted(Comparator.comparing(PublicProductDTO::getName))
                 .collect(Collectors.toList());
+
+        int totalItems = groupedProducts.size();
+        int start = Math.min(page * size, totalItems);
+        int end = Math.min((page + 1) * size, totalItems);
+        
+        List<PublicProductDTO> pageContent = groupedProducts.subList(start, end);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("products", pageContent);
+        response.put("currentPage", page);
+        response.put("totalItems", totalItems);
+        response.put("totalPages", (int) Math.ceil((double) totalItems / size));
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/products/{id}")
@@ -243,6 +298,11 @@ public class PublicController {
 
         return ResponseEntity.ok(new MessageResponse(
                 "Order placed successfully! Order ID: " + sale.getId()));
+    }
+
+    @GetMapping("/categories")
+    public List<Category> getPublicCategories() {
+        return categoryRepository.findAll();
     }
 
     @GetMapping("/config")

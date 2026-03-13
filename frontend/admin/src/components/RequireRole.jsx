@@ -28,7 +28,15 @@ const RequireRole = ({ roles, children }) => {
         const userRoles = user.roles || [];
         const hasRole = roles.some(role => userRoles.includes(role));
         if (!hasRole) {
-            return <Navigate to="/dashboard" replace />;
+            // Redirect based on what they ARE
+            if (userRoles.includes('ROLE_CLIENT')) {
+                window.location.href = import.meta.env.VITE_MARKET_URL || 'http://localhost:8080';
+                return null;
+            }
+            if (userRoles.includes('ROLE_MANAGER')) {
+                return <Navigate to="/dashboard" replace />;
+            }
+            return <Navigate to="/" replace />;
         }
     }
 

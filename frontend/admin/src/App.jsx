@@ -28,8 +28,9 @@ import AdminCategorySuggestionsPage from './pages/AdminCategorySuggestionsPage';
 import RequireRole from './components/RequireRole';
 
 // Shorthand guards
-const Auth = ({ children }) => <RequireRole>{children}</RequireRole>;
+const Auth = ({ children }) => <RequireRole roles={['ROLE_MANAGER', 'ROLE_ADMIN']}>{children}</RequireRole>;
 const AdminOnly = ({ children }) => <RequireRole roles={['ROLE_ADMIN']}>{children}</RequireRole>;
+const ClientOnly = ({ children }) => <RequireRole roles={['ROLE_CLIENT']}>{children}</RequireRole>;
 
 function App() {
   return (
@@ -38,7 +39,7 @@ function App() {
         <Routes>
           {/* ── PUBLIC ─────────────────────────────────────── */}
           <Route path="/"      element={<LandingPage />} />
-          <Route path="/login" element={<Navigate to="/" replace />} />
+
 
           {/* ── AUTHENTICATED (any logged-in manager/admin) ── */}
           <Route path="/dashboard"         element={<Auth><DashboardHome /></Auth>} />

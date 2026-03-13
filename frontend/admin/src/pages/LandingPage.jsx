@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Container, Row, Col, Badge, Form, Button, Alert, Card, Modal, Spinner } from 'react-bootstrap';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { FaCheck, FaRocket, FaStore, FaChartLine, FaLock, FaUser, FaEnvelope } from 'react-icons/fa';
+import { FaCheck, FaRocket, FaStore, FaChartLine, FaLock, FaUser, FaEnvelope, FaBolt, FaChartBar, FaMapMarkerAlt, FaGlobe } from 'react-icons/fa';
+
 import AuthService from '../services/auth.service';
 import axios from 'axios';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
@@ -34,6 +35,10 @@ const LandingPage = () => {
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
     const navigate = useNavigate();
+
+    // Login Modal State
+    const [showLoginModal, setShowLoginModal] = useState(false);
+
 
     // Register Modal State
     const [showRegisterModal, setShowRegisterModal] = useState(false);
@@ -71,7 +76,14 @@ const LandingPage = () => {
 
     // Check URL for verification or reset token on mount
     useEffect(() => {
+        const user = AuthService.getCurrentUser();
+        if (user) {
+            navigate("/dashboard");
+            return;
+        }
+
         const tokenToken = searchParams.get('token');
+
         if (tokenToken && !searchParams.get('verified')) {
             setResetToken(tokenToken);
             setShowResetModal(true);
@@ -131,9 +143,11 @@ const LandingPage = () => {
 
         AuthService.login(username, password, true).then(
             () => {
+                setShowLoginModal(false);
                 navigate("/dashboard");
                 window.location.reload();
             },
+
             (error) => {
                 const message = (error.response && error.response.data && error.response.data.message) || error.message || error.toString();
                 let userFriendlyMessage = message;
@@ -242,105 +256,112 @@ const LandingPage = () => {
 
             {/* Navbar */}
             <nav className="d-flex justify-content-between align-items-center p-4 container" style={{ maxWidth: '1200px' }}>
-                <div className="d-flex align-items-center gap-2">
-                    <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white" style={{ width: '40px', height: '40px' }}>
+                <div className="d-flex align-items-center gap-3">
+                    <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white" style={{ width: '40px', height: '40px', boxShadow: '0 4px 12px rgba(0, 123, 255, 0.3)' }}>
                         <FaStore size={20} />
                     </div>
-                    <h4 className="m-0 fw-bold text-dark" style={{ background: 'none', WebkitTextFillColor: 'initial' }}>Tiendario</h4>
+                    <h4 className="m-0 fw-bold text-dark" style={{ letterSpacing: '-0.5px' }}>Tiendario</h4>
+                    <Badge pill bg="primary" className="ms-2 px-3 py-2 d-none d-md-block" style={{ backgroundColor: '#007bff !important', fontWeight: '600' }}>
+                        Sistema POS + Marketplace Local
+                    </Badge>
                 </div>
-                <div>
-                    <Button onClick={() => openRegister('free')} className="btn btn-primary rounded-pill px-4">Crear Tienda</Button>
+                <div className="d-flex gap-3 align-items-center">
+                    <Button variant="link" onClick={() => setShowLoginModal(true)} className="text-primary text-decoration-none fw-bold d-none d-sm-block">Entrar</Button>
+                    <Button onClick={() => openRegister('free')} className="btn btn-primary rounded-pill px-4 shadow">Crear Tienda</Button>
                 </div>
             </nav>
 
             {/* Hero Section */}
-            <Container className="mt-5 pt-4 mb-5 position-relative">
+            <Container className="mt-5 pt-2 mb-5">
                 <Row className="align-items-center">
                     <Col lg={7} className="text-start pe-lg-5">
-                        <Badge bg="primary" className="mb-3 px-3 py-2 rounded-pill">SaaS para Comercios Locales</Badge>
-                        <h1 className="display-3 mb-4 fw-bolder" style={{ lineHeight: '1.1' }}>
-                            Tu Tienda,<br />
-                            <span className="text-gradient">En Control Total.</span>
+                        <h1 className="display-3 mb-4 fw-bolder" style={{ lineHeight: '1.1', background: 'none', WebkitTextFillColor: 'initial', color: '#1e293b' }}>
+                            Administra tu tienda.<br />
+                            <span className="text-gradient">Vende más. Pierde menos.</span>
                         </h1>
-                        <p className="lead text-secondary mb-5 fs-4" style={{ maxWidth: '600px' }}>
-                            Gestiona inventario, ventas y proveedores con elegancia. Sincronía perfecta entre tu local y el Marketplace.
+                        <p className="lead text-secondary mb-5 fs-4" style={{ maxWidth: '550px' }}>
+                            Controla inventario, ventas y participa en el marketplace local automáticamente.
                         </p>
                         <div className="d-flex gap-3">
-                            <Button onClick={() => openRegister('free')} className="btn btn-primary btn-lg px-4 py-3 shadow-glow">
-                                Registrar mi Negocio
+                            <Button onClick={() => openRegister('free')} className="btn btn-primary btn-lg px-4 py-3 shadow-lg">
+                                Crear mi Tienda Gratis
                             </Button>
-                            <button className="btn btn-outline-primary btn-lg px-4 py-3">
+                            <Button variant="outline-primary" className="btn-lg px-4 py-3">
                                 Ver Demo
-                            </button>
+                            </Button>
                         </div>
                     </Col>
 
                     <Col lg={5} className="mt-5 mt-lg-0">
-                        <Card className="glass-panel p-4 border-0 shadow-lg animate-fade-in">
-                            <h3 className="mb-4 text-center">Acceso Vendedores</h3>
-                            <p className="text-center text-secondary small mb-4">Ingresa para gestionar tu inventario y ventas.</p>
-                            <Form onSubmit={handleLogin}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label className="small fw-bold">Usuario</Form.Label>
-                                    <div className="position-relative">
-                                        <FaUser className="position-absolute text-muted" style={{ top: '12px', left: '15px' }} />
-                                        <Form.Control
-                                            type="text"
-                                            className="ps-5 py-2 rounded-3"
-                                            placeholder="Nombre de usuario"
-                                            value={username}
-                                            onChange={(e) => setUsername(e.target.value)}
-                                            autoComplete="username"
-                                            required
-                                        />
-                                    </div>
-                                </Form.Group>
-                                <Form.Group className="mb-4">
-                                    <Form.Label className="small fw-bold">Contraseña</Form.Label>
-                                    <div className="position-relative">
-                                        <FaLock className="position-absolute text-muted" style={{ top: '12px', left: '15px' }} />
-                                        <Form.Control
-                                            type="password"
-                                            className="ps-5 py-2 rounded-3"
-                                            placeholder="••••••••"
-                                            value={password}
-                                            onChange={(e) => setPassword(e.target.value)}
-                                            autoComplete="current-password"
-                                            required
-                                        />
-                                    </div>
-                                </Form.Group>
-
-                                {message && <Alert variant={verificationSuccess ? "success" : "danger"} className="py-2 small">{message}</Alert>}
-
-                                <Button variant="primary" type="submit" className="w-100 py-2 fs-5 shadow-sm" disabled={loading}>
-                                    {loading ? "Iniciando..." : "Entrar al Panel"}
-                                </Button>
-                            </Form>
-                            <div className="text-center mt-3">
-                                <small className="text-secondary">¿Olvidaste tu contraseña? <a href="#" onClick={(e) => { e.preventDefault(); setShowForgotModal(true); setForgotMessage(''); setForgotEmail(''); setForgotSuccess(false); }}>Recuperar</a></small>
+                        <div className="glass-panel p-5 border-0 shadow-xl text-center bg-white" style={{ borderRadius: '32px' }}>
+                            <div className="mx-auto bg-primary rounded-circle d-flex align-items-center justify-content-center text-white mb-4" style={{ width: '70px', height: '70px', boxShadow: '0 10px 20px rgba(0, 123, 255, 0.2)' }}>
+                                <FaStore size={35} />
                             </div>
-                        </Card>
+                            <h3 className="mb-2 fw-bold" style={{ background: 'none', WebkitTextFillColor: 'initial', color: '#1e293b' }}>Administrar mi Tienda</h3>
+                            <p className="text-secondary mb-4">Acceso para Comerciantes.</p>
+                            <Button onClick={() => setShowLoginModal(true)} className="btn btn-primary btn-lg w-100 rounded-4 py-3 fw-bold mb-3 shadow-lg" style={{ fontSize: '1.2rem' }}>
+                                Entrar al Panel
+                            </Button>
+                            <div className="small text-muted">¿Ya tienes una tienda? <a href="#" className="text-primary fw-bold text-decoration-none" onClick={(e) => { e.preventDefault(); setShowLoginModal(true); }}>Inicia sesión aquí</a></div>
+                        </div>
                     </Col>
                 </Row>
             </Container>
 
-            {/* Mockup / Visual Element */}
-            <Container className="text-center mb-5 mt-5">
-                <div className="mx-auto glass-panel p-2 d-inline-block shadow-lg" style={{ maxWidth: '90%' }}>
-                    <div className="bg-white rounded-4 overflow-hidden position-relative" style={{ height: '300px', width: '800px', background: 'linear-gradient(to bottom, #f8fafc, #e2e8f0)' }}>
-                        <div className="border-bottom p-3 d-flex gap-2 align-items-center bg-white">
-                            <div className="rounded-circle bg-danger" style={{ width: 10, height: 10 }}></div>
-                            <div className="rounded-circle bg-warning" style={{ width: 10, height: 10 }}></div>
-                            <div className="rounded-circle bg-success" style={{ width: 10, height: 10 }}></div>
+            {/* Features Section */}
+            <Container className="py-5 mb-5">
+                <Row className="g-4">
+                    <Col md={4}>
+                        <div className="d-flex align-items-center gap-3">
+                            <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center text-primary" style={{ width: '56px', height: '56px', minWidth: '56px', fontSize: '24px' }}>
+                                <FaBolt />
+                            </div>
+                            <div>
+                                <h6 className="fw-bold mb-1">Configura tu tienda en minutos</h6>
+                                <p className="text-secondary small mb-0">Sin instalaciones ni técnicos.</p>
+                            </div>
                         </div>
-                        <div className="p-5 text-center text-secondary">
-                            <FaChartLine size={60} className="mb-3 opacity-25" />
-                            <h5>Panel de Control Inteligente</h5>
+                    </Col>
+                    <Col md={4}>
+                        <div className="d-flex align-items-center gap-3">
+                            <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center text-primary" style={{ width: '56px', height: '56px', minWidth: '56px', fontSize: '24px' }}>
+                                <FaChartBar />
+                            </div>
+                            <div>
+                                <h6 className="fw-bold mb-1">Controla inventario y ventas</h6>
+                                <p className="text-secondary small mb-0">Todo desde un solo panel.</p>
+                            </div>
                         </div>
-                    </div>
+                    </Col>
+                    <Col md={4}>
+                        <div className="d-flex align-items-center gap-3">
+                            <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center text-primary" style={{ width: '56px', height: '56px', minWidth: '56px', fontSize: '24px' }}>
+                                <FaMapMarkerAlt />
+                            </div>
+                            <div>
+                                <h6 className="fw-bold mb-1">Aparece en el marketplace local</h6>
+                                <p className="text-secondary small mb-0">Más clientes descubren tu tienda.</p>
+                            </div>
+                        </div>
+                    </Col>
+                </Row>
+            </Container>
+
+            {/* Mockup Section */}
+            <Container className="text-center mb-5 pb-5">
+                <div className="mx-auto shadow-2xl rounded-4 overflow-hidden border border-light" style={{ maxWidth: '1000px', transform: 'perspective(1000px) rotateX(2deg)', boxShadow: '0 50px 100px -20px rgba(0,0,0,0.2)' }}>
+                    <img 
+                        src="/tiendario_dashboard_mockup_1773425385989.png" 
+                        alt="Tiendario Dashboard" 
+                        className="img-fluid"
+                        onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = "https://images.unsplash.com/photo-1460925895917-afdab827c52f?ixlib=rb-4.0.3&auto=format&fit=crop&w=2426&q=80";
+                        }}
+                    />
                 </div>
             </Container>
+
 
             {/* Pricing Section */}
             <Container className="py-5 mt-5" >
@@ -616,6 +637,58 @@ const LandingPage = () => {
                     </Form>
                 </Modal.Body>
             </Modal>
+
+            {/* Login Modal */}
+            <Modal show={showLoginModal} onHide={() => setShowLoginModal(false)} centered className="modal-premium">
+                <Modal.Header closeButton className="border-0 pb-0">
+                    <Modal.Title className="fw-bold">Acceso Vendedores</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="p-4">
+                    <p className="text-center text-secondary small mb-4">Ingresa para gestionar tu inventario y ventas.</p>
+                    <Form onSubmit={handleLogin}>
+                        <Form.Group className="mb-3">
+                            <Form.Label className="small fw-bold">Usuario</Form.Label>
+                            <div className="position-relative">
+                                <FaUser className="position-absolute text-muted" style={{ top: '12px', left: '15px' }} />
+                                <Form.Control
+                                    type="text"
+                                    className="ps-5 py-2 rounded-3"
+                                    placeholder="Nombre de usuario"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
+                                    autoComplete="username"
+                                    required
+                                />
+                            </div>
+                        </Form.Group>
+                        <Form.Group className="mb-4">
+                            <Form.Label className="small fw-bold">Contraseña</Form.Label>
+                            <div className="position-relative">
+                                <FaLock className="position-absolute text-muted" style={{ top: '12px', left: '15px' }} />
+                                <Form.Control
+                                    type="password"
+                                    className="ps-5 py-2 rounded-3"
+                                    placeholder="••••••••"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    autoComplete="current-password"
+                                    required
+                                />
+                            </div>
+                        </Form.Group>
+
+                        {message && <Alert variant={verificationSuccess ? "success" : "danger"} className="py-2 small">{message}</Alert>}
+
+                        <Button variant="primary" type="submit" className="w-100 py-3 rounded-4 fw-bold shadow" disabled={loading}>
+                            {loading ? <Spinner size="sm" animation="border" className="me-2" /> : "Entrar al Panel"}
+                        </Button>
+                    </Form>
+                    <div className="text-center mt-3">
+                        <small className="text-secondary">¿Olvidaste tu contraseña? <a href="#" onClick={(e) => { e.preventDefault(); setShowLoginModal(false); setShowForgotModal(true); setForgotMessage(''); setForgotEmail(''); setForgotSuccess(false); }}>Recuperar</a></small>
+                    </div>
+                </Modal.Body>
+            </Modal>
+
         </div >
     );
 };

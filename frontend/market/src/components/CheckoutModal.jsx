@@ -70,6 +70,10 @@ const CheckoutModal = ({
                                 <Form.Control className="mb-2 rounded-3 py-2 px-3" placeholder="Teléfono / WhatsApp (Opcional)"
                                     value={customerData.phone} onChange={(e) => setCustomerData({ ...customerData, phone: e.target.value })} />
                             </Col>
+                            <Col md={12}>
+                                <Form.Control className="mb-2 rounded-3 py-2 px-3" placeholder="Dirección de Entrega"
+                                    value={customerData.address} onChange={(e) => setCustomerData({ ...customerData, address: e.target.value })} required />
+                            </Col>
                         </Row>
 
                         <Alert variant="info" className="rounded-4 mb-4 border-0">
