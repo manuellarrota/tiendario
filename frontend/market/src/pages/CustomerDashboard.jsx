@@ -101,20 +101,8 @@ const CustomerDashboard = () => {
             <Navbar />
             <div className="bg-primary py-5 text-white" style={{ background: 'var(--primary-gradient)', borderRadius: '0 0 40px 40px' }}>
                 <Container>
-                    <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-4">
-                        <div>
-                            <h1 className="display-5 fw-800 mb-2">Mi Panel de Cliente</h1>
-                            <p className="lead opacity-75 mb-0">Gestiona tus compras y puntos de lealtad en un solo lugar.</p>
-                        </div>
-                        <Button 
-                            onClick={() => navigate("/")} 
-                            variant="white" 
-                            className="glass-panel rounded-pill px-4 py-3 border-0 shadow-lg fw-bold text-primary d-flex align-items-center gap-2"
-                            style={{ height: 'fit-content' }}
-                        >
-                            🛒 Seguir Comprando
-                        </Button>
-                    </div>
+                    <h1 className="display-5 fw-800 mb-2">Mi Panel de Cliente</h1>
+                    <p className="lead opacity-75 mb-0">Gestiona tus compras y puntos de lealtad en un solo lugar.</p>
                 </Container>
             </div>
 

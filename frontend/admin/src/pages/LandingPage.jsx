@@ -77,7 +77,9 @@ const LandingPage = () => {
     // Check URL for verification or reset token on mount
     useEffect(() => {
         const user = AuthService.getCurrentUser();
-        if (user) {
+        // Only redirect if they are a manager/admin. Clients should stay on the landing page 
+        // to be able to register a new store if they want.
+        if (user && (user.roles?.includes('ROLE_MANAGER') || user.roles?.includes('ROLE_ADMIN'))) {
             navigate("/dashboard");
             return;
         }

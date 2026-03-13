@@ -2,11 +2,13 @@ import React from 'react';
 import { Navbar, Container, Button, Nav, Dropdown } from 'react-bootstrap';
 import { FaStore, FaUserCircle } from 'react-icons/fa';
 import AuthService from '../services/auth.service';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 
 const MarketplaceNavbar = ({ onLoginClick, onRegisterClick }) => {
     const user = AuthService.getCurrentUser();
     const navigate = useNavigate();
+    const location = useLocation();
+    const isDashboard = location.pathname === '/dashboard';
 
     // Use email part as fallback for display name
     const displayName = user?.username || user?.email?.split('@')[0] || 'Mi Cuenta';
@@ -36,12 +38,16 @@ const MarketplaceNavbar = ({ onLoginClick, onRegisterClick }) => {
                             <div className="d-flex align-items-center gap-3">
                                 <Button 
                                     as={Link} 
-                                    to="/dashboard" 
+                                    to={isDashboard ? "/" : "/dashboard"} 
                                     variant="white" 
                                     className="glass-panel-sm rounded-pill px-3 py-2 border-0 shadow-sm d-none d-md-flex align-items-center gap-2 fw-bold text-dark"
                                     style={{ fontSize: '0.85rem' }}
                                 >
-                                    📦 <span className="d-none d-xl-inline">Mis Pedidos</span>
+                                    {isDashboard ? (
+                                        <>🛒 <span className="d-none d-xl-inline">Seguir Comprando</span></>
+                                    ) : (
+                                        <>📦 <span className="d-none d-xl-inline">Mis Pedidos</span></>
+                                    )}
                                 </Button>
 
                                 <Dropdown align="end">
@@ -58,11 +64,11 @@ const MarketplaceNavbar = ({ onLoginClick, onRegisterClick }) => {
                                             <small className="text-muted d-block text-uppercase fw-bold" style={{ fontSize: '0.65rem' }}>Puntos Tiendario</small>
                                             <span className="h5 fw-bold text-primary mb-0">⭐ {user.points || 0} pts</span>
                                         </div>
-                                        <Dropdown.Item as={Link} to="/dashboard" className="rounded-3 py-2 fw-500 d-md-none">
-                                            📦 Mis Pedidos
+                                        <Dropdown.Item as={Link} to={isDashboard ? "/" : "/dashboard"} className="rounded-3 py-2 fw-500 d-md-none">
+                                            {isDashboard ? "🛒 Seguir Comprando" : "📦 Mis Pedidos"}
                                         </Dropdown.Item>
                                         
-                                        {(user.role === 'ROLE_MANAGER' || user.role === 'ROLE_ADMIN') ? (
+                                        {user.roles?.some(r => r === 'ROLE_MANAGER' || r === 'ROLE_ADMIN') ? (
                                             <Dropdown.Item onClick={() => window.open(import.meta.env.VITE_ADMIN_URL || 'http://localhost:8081', '_blank')} className="rounded-3 py-2 fw-500">
                                                 🏢 Ir a Panel Administrativo
                                             </Dropdown.Item>

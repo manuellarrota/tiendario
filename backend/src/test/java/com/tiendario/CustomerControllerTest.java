@@ -92,7 +92,8 @@ public class CustomerControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(newCustomer)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message", containsString("created")));
+                .andExpect(jsonPath("$.name", is("Jane Smith")))
+                .andExpect(jsonPath("$.email", is("jane@example.com")));
     }
 
     @Test

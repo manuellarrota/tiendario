@@ -47,9 +47,9 @@ public class CustomerController {
         }
 
         customer.setCompany(companyRepository.findById(userDetails.getCompanyId()).orElse(null));
-        customerRepository.save(customer);
+        Customer savedCustomer = customerRepository.save(customer);
 
-        return ResponseEntity.ok(new MessageResponse("Customer created successfully!"));
+        return ResponseEntity.ok(savedCustomer);
     }
 
     @PutMapping("/{id}")
@@ -66,6 +66,7 @@ public class CustomerController {
         customer.setName(customerDetails.getName());
         customer.setEmail(customerDetails.getEmail());
         customer.setPhone(customerDetails.getPhone());
+        customer.setCedula(customerDetails.getCedula());
         customer.setAddress(customerDetails.getAddress());
 
         customerRepository.save(customer);
