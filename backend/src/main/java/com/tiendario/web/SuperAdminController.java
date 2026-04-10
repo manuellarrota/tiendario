@@ -70,14 +70,14 @@ public class SuperAdminController {
 
                 // 3. Subscription Breakdown
                 List<Company> allCompanies = companyRepository.findAll();
-                long freePlanCount = allCompanies.stream()
-                                .filter(c -> SubscriptionStatus.FREE.equals(c.getSubscriptionStatus()))
+                long trialPlanCount = allCompanies.stream()
+                                .filter(c -> SubscriptionStatus.TRIAL.equals(c.getSubscriptionStatus()))
                                 .count();
                 long paidPlanCount = allCompanies.stream()
                                 .filter(c -> SubscriptionStatus.PAID.equals(c.getSubscriptionStatus()))
                                 .count();
 
-                stats.put("freePlanCount", freePlanCount);
+                stats.put("trialPlanCount", trialPlanCount);
                 stats.put("paidPlanCount", paidPlanCount);
 
                 // 4. Global Revenue (Sales) - This is GMV (Gross Merchandise Value) of the

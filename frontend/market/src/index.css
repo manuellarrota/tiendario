@@ -215,3 +215,31 @@ body {
   50% { transform: translateY(-10px); }
   100% { transform: translateY(0px); }
 }
+
+/* Sidebar Scroll & Sticky Fix */
+.sidebar-sticky {
+  position: sticky;
+  top: 20px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  padding-right: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 123, 255, 0.2) transparent;
+}
+
+.sidebar-sticky::-webkit-scrollbar {
+  width: 5px;
+}
+
+.sidebar-sticky::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-sticky::-webkit-scrollbar-thumb {
+  background: rgba(0, 123, 255, 0.15);
+  border-radius: 10px;
+}
+
+.sidebar-sticky:hover::-webkit-scrollbar-thumb {
+  background: rgba(0, 123, 255, 0.3);
+}

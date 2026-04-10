@@ -93,12 +93,12 @@ public class CompanyController {
                 Company company = companyRepository.findById(userDetails.getCompanyId())
                                 .orElseThrow(() -> new RuntimeException("Error: Company not found."));
 
-                company.setSubscriptionStatus(SubscriptionStatus.FREE);
+                company.setSubscriptionStatus(SubscriptionStatus.PAST_DUE);
                 companyRepository.save(company);
 
                 // TRIGGER RE-INDEXING
                 productIndexService.reindexCompanyProducts(company.getId());
 
-                return ResponseEntity.ok(new MessageResponse("Subscription downgraded to FREE."));
+                return ResponseEntity.ok(new MessageResponse("Subscription downgraded to PAST_DUE (Vencida)."));
         }
 }

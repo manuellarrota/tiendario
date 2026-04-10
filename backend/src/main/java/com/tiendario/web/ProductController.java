@@ -229,14 +229,6 @@ public class ProductController {
                                 "Tu cuenta está suspendida. Contacta al administrador para reactivarla."));
             }
 
-            if (com.tiendario.domain.SubscriptionStatus.FREE.equals(status)) {
-                long currentCount = productRepository.countByCompanyId(userDetails.getCompanyId());
-                if (currentCount >= 10) {
-                    return ResponseEntity.badRequest()
-                            .body(new MessageResponse(
-                                    "Límite alcanzado: El plan GRATUITO solo permite hasta 10 productos. ¡Mejora a PREMIUM para productos ilimitados!"));
-                }
-            }
         }
 
         // --- CATALOG UNIFICATION LOGIC ---

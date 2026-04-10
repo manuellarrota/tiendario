@@ -4,7 +4,7 @@ import AuthService from '../services/auth.service';
 /**
  * Route guard that checks authentication and optional role requirements.
  *
- * - If not logged in → redirects to / (landing page with login modal)
+ * - If not logged in → redirects to / (landing page where login is embedded)
  * - If logged in but missing required role → redirects to /dashboard
  * - If OK → renders children
  *
@@ -18,7 +18,7 @@ import AuthService from '../services/auth.service';
 const RequireRole = ({ roles, children }) => {
     const user = AuthService.getCurrentUser();
 
-    // Not authenticated at all → go to landing/login
+    // Not authenticated at all → go to landing page
     if (!user || !user.token) {
         return <Navigate to="/" replace />;
     }

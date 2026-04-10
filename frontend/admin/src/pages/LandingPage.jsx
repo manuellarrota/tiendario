@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Container, Row, Col, Badge, Form, Button, Alert, Card, Modal, Spinner } from 'react-bootstrap';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { FaCheck, FaRocket, FaStore, FaChartLine, FaLock, FaUser, FaEnvelope, FaBolt, FaChartBar, FaMapMarkerAlt, FaGlobe } from 'react-icons/fa';
+import { Container, Row, Col, Badge, Form, Button, Alert, Modal, Spinner } from 'react-bootstrap';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { FaCheck, FaTimes, FaRocket, FaStore, FaLock, FaUser, FaEnvelope, FaBolt, FaChartBar, FaMapMarkerAlt } from 'react-icons/fa';
 
 import AuthService from '../services/auth.service';
 import axios from 'axios';
@@ -39,7 +39,6 @@ const LandingPage = () => {
     // Login Modal State
     const [showLoginModal, setShowLoginModal] = useState(false);
 
-
     // Register Modal State
     const [showRegisterModal, setShowRegisterModal] = useState(false);
     const [regCompanyName, setRegCompanyName] = useState("");
@@ -71,43 +70,43 @@ const LandingPage = () => {
     const [resetLoading, setResetLoading] = useState(false);
     const [verificationSuccess, setVerificationSuccess] = useState(false);
 
+    // Billing toggle
+    const [billingAnnual, setBillingAnnual] = useState(false);
+
     const [searchParams] = useSearchParams();
     const API_URL = import.meta.env.VITE_API_URL;
 
     // Check URL for verification or reset token on mount
     useEffect(() => {
         const user = AuthService.getCurrentUser();
-        // Only redirect if they are a manager/admin. Clients should stay on the landing page 
-        // to be able to register a new store if they want.
         if (user && (user.roles?.includes('ROLE_MANAGER') || user.roles?.includes('ROLE_ADMIN'))) {
             navigate("/dashboard");
             return;
         }
 
-        const tokenToken = searchParams.get('token');
+        const token = searchParams.get('token');
 
-        if (tokenToken && !searchParams.get('verified')) {
-            setResetToken(tokenToken);
+        if (token && !searchParams.get('verified')) {
+            setResetToken(token);
             setShowResetModal(true);
         }
 
         const verified = searchParams.get('verified');
         if (verified === 'true') {
-            const token = searchParams.get('token');
-            const username = searchParams.get('username');
+            const verifiedToken = searchParams.get('token');
+            const verifiedUsername = searchParams.get('username');
             const rolesStr = searchParams.get('roles');
             const id = searchParams.get('id');
             const companyId = searchParams.get('companyId');
 
-            if (token && username) {
-                // Perform auto-login
+            if (verifiedToken && verifiedUsername) {
                 const userData = {
-                    token: token,
-                    username: username,
+                    token: verifiedToken,
+                    username: verifiedUsername,
                     roles: rolesStr ? rolesStr.split(',') : [],
                     id: id,
                     companyId: companyId,
-                    subscriptionStatus: 'TRIAL' // Default for new managers
+                    subscriptionStatus: 'TRIAL'
                 };
                 localStorage.setItem("user", JSON.stringify(userData));
                 setVerificationSuccess(true);
@@ -120,7 +119,6 @@ const LandingPage = () => {
                 setVerificationSuccess(true);
                 setMessage("✅ ¡Cuenta verificada con éxito! Ya puedes iniciar sesión.");
             }
-            // Clean URL
             window.history.replaceState({}, '', '/');
         } else if (verified === 'error') {
             const errorMsg = searchParams.get('message') || "Código de verificación inválido o expirado.";
@@ -129,7 +127,6 @@ const LandingPage = () => {
             window.history.replaceState({}, '', '/');
         }
     }, [searchParams, navigate]);
-
 
     // Relocate map effect when position changes
     useEffect(() => {
@@ -149,20 +146,15 @@ const LandingPage = () => {
                 navigate("/dashboard");
                 window.location.reload();
             },
-
             (error) => {
-                const message = (error.response && error.response.data && error.response.data.message) || error.message || error.toString();
-                let userFriendlyMessage = message;
+                const msg = (error.response && error.response.data && error.response.data.message) || error.message || error.toString();
+                let userFriendlyMessage = msg;
 
                 if (error.response && error.response.status === 401) {
-                    if (message && message.includes("Error:")) {
-                        userFriendlyMessage = message;
-                    } else {
-                        userFriendlyMessage = "Usuario o contraseña incorrectos.";
-                    }
-                } else if (message.includes("401")) {
+                    userFriendlyMessage = msg.includes("Error:") ? msg : "Usuario o contraseña incorrectos.";
+                } else if (msg.includes("401")) {
                     userFriendlyMessage = "Usuario o contraseña incorrectos.";
-                } else if (message.includes("Network Error")) {
+                } else if (msg.includes("Network Error")) {
                     userFriendlyMessage = "Error de conexión. Verifique que el servidor esté activo.";
                 }
 
@@ -181,7 +173,7 @@ const LandingPage = () => {
         const lng = regPosition ? regPosition.lng : 0;
 
         AuthService.register(regUsername, regEmail, regPassword, "manager", regCompanyName, regPhone, lat, lng, regAddress).then(
-            (response) => {
+            () => {
                 setRegMessage("✅ ¡Registro exitoso! Por favor, revisa tu correo electrónico para activar tu cuenta antes de iniciar sesión.");
                 setRegSuccessful(true);
             },
@@ -269,7 +261,7 @@ const LandingPage = () => {
                 </div>
                 <div className="d-flex gap-2 align-items-center">
                     <Button variant="link" onClick={() => setShowLoginModal(true)} className="text-primary text-decoration-none fw-bold px-2" style={{ fontSize: '0.9rem' }}>Entrar</Button>
-                    <Button onClick={() => openRegister('free')} className="btn btn-primary rounded-pill px-3 shadow-sm" style={{ fontSize: '0.9rem' }}>Crear Tienda</Button>
+                    <Button onClick={() => document.getElementById('planes').scrollIntoView({ behavior: 'smooth' })} className="btn btn-primary rounded-pill px-3 shadow-sm" style={{ fontSize: '0.9rem' }}>Ver Planes</Button>
                 </div>
             </nav>
 
@@ -282,79 +274,56 @@ const LandingPage = () => {
                             <span className="text-gradient">Vende más. Pierde menos.</span>
                         </h1>
                         <p className="lead text-secondary mb-5 fs-4" style={{ maxWidth: '550px' }}>
-                            Controla inventario, ventas y participa en el marketplace local automáticamente.
+                            Punto de venta, control de inventario y presencia automática en el marketplace local — todo desde un solo panel.
                         </p>
                         <div className="d-flex gap-3">
                             <Button onClick={() => openRegister('free')} className="btn btn-primary btn-lg px-4 py-3 shadow-lg">
                                 Crear mi Tienda Gratis
                             </Button>
-                            <Button variant="outline-primary" className="btn-lg px-4 py-3">
-                                Ver Demo
+                            <Button
+                                variant="outline-primary"
+                                className="btn-lg px-4 py-3"
+                                onClick={() => navigate('/demo')}
+                            >
+                                🎭 Ver Demo
                             </Button>
                         </div>
                     </Col>
 
+                    {/* Hero stats panel — replaces redundant login card */}
                     <Col lg={5} className="mt-5 mt-lg-0">
-                        <div className="glass-panel p-5 border-0 shadow-xl text-center bg-white" style={{ borderRadius: '32px' }}>
-                            <div className="mx-auto bg-primary rounded-circle d-flex align-items-center justify-content-center text-white mb-4" style={{ width: '70px', height: '70px', boxShadow: '0 10px 20px rgba(0, 123, 255, 0.2)' }}>
-                                <FaStore size={35} />
+                        <div className="glass-panel p-5 border-0 shadow-xl bg-white" style={{ borderRadius: '32px' }}>
+                            <p className="text-secondary small fw-bold text-uppercase mb-4" style={{ letterSpacing: '1px' }}>¿Qué incluye Tiendario?</p>
+                            <div className="d-flex flex-column gap-3">
+                                {[
+                                    { icon: <FaBolt className="text-primary" />, text: "Punto de venta (POS) para cobros rápidos" },
+                                    { icon: <FaChartBar className="text-primary" />, text: "Inventario y métricas de ventas en tiempo real" },
+                                    { icon: <FaMapMarkerAlt className="text-primary" />, text: "Presencia automática en el marketplace local" },
+                                    { icon: <FaRocket className="text-primary" />, text: "Listo en minutos, sin instalaciones ni técnicos" },
+                                ].map((item, i) => (
+                                    <div key={i} className="d-flex align-items-center gap-3">
+                                        <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px', minWidth: '40px', fontSize: '16px' }}>
+                                            {item.icon}
+                                        </div>
+                                        <span className="text-dark" style={{ fontSize: '0.95rem' }}>{item.text}</span>
+                                    </div>
+                                ))}
                             </div>
-                            <h3 className="mb-2 fw-bold" style={{ background: 'none', WebkitTextFillColor: 'initial', color: '#1e293b' }}>Administrar mi Tienda</h3>
-                            <p className="text-secondary mb-4">Acceso para Comerciantes.</p>
-                            <Button onClick={() => setShowLoginModal(true)} className="btn btn-primary btn-lg w-100 rounded-4 py-3 fw-bold mb-3 shadow-lg" style={{ fontSize: '1.2rem' }}>
-                                Entrar al Panel
+                            <hr className="my-4" />
+                            <Button onClick={() => setShowLoginModal(true)} variant="outline-primary" className="w-100 rounded-pill fw-bold">
+                                Ya tengo cuenta — Entrar
                             </Button>
-                            <div className="small text-muted">¿Ya tienes una tienda? <a href="#" className="text-primary fw-bold text-decoration-none" onClick={(e) => { e.preventDefault(); setShowLoginModal(true); }}>Inicia sesión aquí</a></div>
-                        </div>
-                    </Col>
-                </Row>
-            </Container>
-
-            {/* Features Section */}
-            <Container className="py-5 mb-5">
-                <Row className="g-4">
-                    <Col md={4}>
-                        <div className="d-flex align-items-center gap-3">
-                            <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center text-primary" style={{ width: '56px', height: '56px', minWidth: '56px', fontSize: '24px' }}>
-                                <FaBolt />
-                            </div>
-                            <div>
-                                <h6 className="fw-bold mb-1">Configura tu tienda en minutos</h6>
-                                <p className="text-secondary small mb-0">Sin instalaciones ni técnicos.</p>
-                            </div>
-                        </div>
-                    </Col>
-                    <Col md={4}>
-                        <div className="d-flex align-items-center gap-3">
-                            <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center text-primary" style={{ width: '56px', height: '56px', minWidth: '56px', fontSize: '24px' }}>
-                                <FaChartBar />
-                            </div>
-                            <div>
-                                <h6 className="fw-bold mb-1">Controla inventario y ventas</h6>
-                                <p className="text-secondary small mb-0">Todo desde un solo panel.</p>
-                            </div>
-                        </div>
-                    </Col>
-                    <Col md={4}>
-                        <div className="d-flex align-items-center gap-3">
-                            <div className="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center text-primary" style={{ width: '56px', height: '56px', minWidth: '56px', fontSize: '24px' }}>
-                                <FaMapMarkerAlt />
-                            </div>
-                            <div>
-                                <h6 className="fw-bold mb-1">Aparece en el marketplace local</h6>
-                                <p className="text-secondary small mb-0">Más clientes descubren tu tienda.</p>
-                            </div>
                         </div>
                     </Col>
                 </Row>
             </Container>
 
             {/* Mockup Section */}
-            <Container className="text-center mb-5 pb-5">
+            <Container id="mockup" className="text-center mb-5 pb-5">
                 <div className="mx-auto shadow-2xl rounded-4 overflow-hidden border border-light" style={{ maxWidth: '1000px', transform: 'perspective(1000px) rotateX(2deg)', boxShadow: '0 50px 100px -20px rgba(0,0,0,0.2)' }}>
-                    <img 
-                        src="/tiendario_dashboard_mockup_1773425385989.png" 
-                        alt="Tiendario Dashboard" 
+                    <img
+                        src="/tiendario_dashboard_mockup_1773425385989.png"
+                        alt="Tiendario Dashboard"
                         className="img-fluid"
                         onError={(e) => {
                             e.target.onerror = null;
@@ -364,34 +333,54 @@ const LandingPage = () => {
                 </div>
             </Container>
 
-
             {/* Pricing Section */}
-            <Container className="py-5 mt-5" >
+            <Container id="planes" className="py-5 mt-5">
                 <div className="text-center mb-5">
                     <h2 className="mb-3">Planes Transparentes</h2>
                     <p className="text-secondary fs-5">Escala a medida que creces. Sin sorpresas.</p>
+
+                    {/* Billing Toggle */}
+                    <div className="d-inline-flex align-items-center gap-3 mt-2 bg-light rounded-pill px-4 py-2">
+                        <span className={`fw-bold small ${!billingAnnual ? 'text-primary' : 'text-secondary'}`}>Mensual</span>
+                        <div
+                            className="position-relative"
+                            style={{ cursor: 'pointer', width: '48px', height: '26px', background: billingAnnual ? '#007bff' : '#dee2e6', borderRadius: '13px', transition: 'background 0.3s' }}
+                            onClick={() => setBillingAnnual(!billingAnnual)}
+                        >
+                            <div style={{
+                                position: 'absolute', top: '3px', left: billingAnnual ? '25px' : '3px',
+                                width: '20px', height: '20px', borderRadius: '50%', background: '#fff',
+                                transition: 'left 0.3s', boxShadow: '0 1px 4px rgba(0,0,0,0.2)'
+                            }} />
+                        </div>
+                        <span className={`fw-bold small ${billingAnnual ? 'text-primary' : 'text-secondary'}`}>
+                            Anual <Badge bg="success" pill className="ms-1" style={{ fontSize: '0.65rem' }}>-17%</Badge>
+                        </span>
+                    </div>
                 </div>
 
-                <Row className="justify-content-center g-4">
-                    {/* Free Plan */}
+                <Row className="justify-content-center g-4 align-items-stretch">
+
+                    {/* Free Trial Plan */}
                     <Col md={5} lg={4}>
                         <div className="glass-panel p-5 h-100 d-flex flex-column card-hover bg-white">
                             <div className="mb-4">
-                                <span className="badge bg-light text-secondary rounded-pill px-3 py-2">Inicial</span>
+                                <span className="badge bg-light text-secondary rounded-pill px-3 py-2">Para empezar</span>
                             </div>
-                            <h3 className="mb-2 text-dark" style={{ background: 'none', WebkitTextFillColor: 'initial' }}>Gratis</h3>
-                            <div className="d-flex align-items-baseline mb-4">
+                            <h3 className="mb-1 text-dark" style={{ background: 'none', WebkitTextFillColor: 'initial' }}>Gratis</h3>
+                            <div className="d-flex align-items-baseline mb-1">
                                 <span className="display-4 fw-bold text-dark">$0</span>
-                                <span className="text-secondary ms-2">/mes</span>
+                                <span className="text-secondary ms-2">/ 1 mes</span>
                             </div>
+                            <p className="text-muted small mb-4">Prueba todo Tiendario sin compromiso durante 30 días.</p>
                             <ul className="list-unstyled flex-grow-1 text-secondary">
-                                <li className="mb-3 d-flex align-items-center"><FaCheck className="text-primary me-2" /> 1 Empresa & Inventario</li>
-                                <li className="mb-3 d-flex align-items-center"><FaCheck className="text-primary me-2" /> Presencia en Marketplace</li>
-                                <li className="mb-3 d-flex align-items-center opacity-50"><FaCheck className="me-2" /> Control de Ventas & Inventario</li>
-                                <li className="mb-3 d-flex align-items-center opacity-50"><FaCheck className="me-2" /> Métricas Financieras</li>
+                                <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Acceso completo por 30 días</li>
+                                <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> POS, inventario y ventas</li>
+                                <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Presencia en Marketplace</li>
+                                <li className="mb-3 d-flex align-items-center gap-2 text-muted"><FaTimes className="text-danger flex-shrink-0" /> Sin tarjeta de crédito requerida</li>
                             </ul>
-                            <Button onClick={() => openRegister('free')} className="btn btn-outline-primary w-100 mt-3 rounded-pill">
-                                Comenzar Gratis
+                            <Button onClick={() => openRegister('free')} variant="outline-primary" className="w-100 mt-3 rounded-pill">
+                                Comenzar Ahora Gratis
                             </Button>
                         </div>
                     </Col>
@@ -405,35 +394,46 @@ const LandingPage = () => {
                             <div className="mb-4">
                                 <span className="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">Profesional</span>
                             </div>
-                            <h3 className="mb-2 text-dark" style={{ background: 'none', WebkitTextFillColor: 'initial' }}>Premium</h3>
-                            <div className="d-flex align-items-baseline mb-4">
-                                <span className="display-4 fw-bold text-dark">$10</span>
-                                <span className="text-secondary ms-2">/mes</span>
+                            <h3 className="mb-1 text-dark" style={{ background: 'none', WebkitTextFillColor: 'initial' }}>Premium</h3>
+                            <div className="d-flex align-items-baseline mb-1">
+                                <span className="display-4 fw-bold text-dark">
+                                    {billingAnnual ? '$200' : '$20'}
+                                </span>
+                                <span className="text-secondary ms-2">
+                                    {billingAnnual ? '/año' : '/mes'}
+                                </span>
                             </div>
+                            {billingAnnual
+                                ? <p className="text-success small fw-bold mb-4">Ahorras $40 vs. pago mensual</p>
+                                : <p className="text-muted small mb-4">Después del primer mes gratuito.</p>
+                            }
                             <ul className="list-unstyled flex-grow-1 text-secondary">
-                                <li className="mb-3 d-flex align-items-center"><FaCheck className="text-primary me-2" /> <strong>Todo lo del plan Gratis</strong></li>
-                                <li className="mb-3 d-flex align-items-center"><FaCheck className="text-primary me-2" /> Control de Ventas e Inventario</li>
-                                <li className="mb-3 d-flex align-items-center"><FaCheck className="text-primary me-2" /> Métricas de Rendimiento SaaS</li>
-                                <li className="mb-3 d-flex align-items-center"><FaCheck className="text-primary me-2" /> Presencia Destacada en Market</li>
+                                <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Punto de Venta (POS) completo</li>
+                                <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Control de Ventas e Inventario</li>
+                                <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Métricas Financieras en tiempo real</li>
+                                <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Reportes de Ventas avanzados</li>
+                                <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Presencia Destacada en Marketplace</li>
                             </ul>
                             <Button onClick={() => openRegister('premium')} className="btn btn-primary w-100 mt-3 rounded-pill shadow-lg">
-                                Obtener Premium
+                                {billingAnnual ? 'Obtener Premium Anual' : 'Obtener Premium'}
                             </Button>
                         </div>
                     </Col>
+
                 </Row>
-            </Container >
+            </Container>
 
             <div className="py-5 text-center text-secondary small">
                 &copy; 2026 Tiendario Inc. Hecho con ❤️ para emprendedores.
             </div>
 
-            {/* Registration Modal Embedded */}
+
+            {/* Registration Modal */}
             <div className={`modal fade ${showRegisterModal ? 'show' : ''}`} style={{ display: showRegisterModal ? 'block' : 'none', backgroundColor: 'rgba(0,0,0,0.5)' }} tabIndex="-1">
                 <div className="modal-dialog modal-dialog-centered">
                     <div className="modal-content rounded-4 border-0 shadow-lg">
                         <div className="modal-header border-0 pb-0">
-                            <h5 className="modal-title fw-bold">Crear Tienda - Plan {regPlan.toUpperCase()}</h5>
+                            <h5 className="modal-title fw-bold">Crear Tienda — Plan {regPlan.toUpperCase()}</h5>
                             <button type="button" className="btn-close" onClick={() => setShowRegisterModal(false)}></button>
                         </div>
                         <div className="modal-body p-4">
@@ -530,7 +530,7 @@ const LandingPage = () => {
                                         </MapContainer>
                                     </div>
                                     <small className="text-secondary mt-1 d-block">
-                                        Haz clic en el mapa para marcar tu ubicación exacta. {regPosition && <span className="text-success fw-bold">(Ubicación marcada)</span>}
+                                        Haz clic en el mapa para marcar tu ubicación exacta. {regPosition && <span className="text-success fw-bold">(Ubicación marcada ✓)</span>}
                                     </small>
                                 </Form.Group>
 
@@ -562,13 +562,13 @@ const LandingPage = () => {
                 </Modal.Header>
                 <Modal.Body className="p-4">
                     <p className="text-muted small mb-3">
-                        Ingresa tu email o nombre de usuario y te enviaremos instrucciones para restablecer tu contraseña.
+                        Ingresa tu email y te enviaremos instrucciones para restablecer tu contraseña.
                     </p>
                     <Form onSubmit={handleForgotPassword}>
                         <Form.Group className="mb-3">
                             <Form.Control
                                 type="text"
-                                placeholder="Email o nombre de usuario"
+                                placeholder="tu@email.com"
                                 value={forgotEmail}
                                 onChange={(e) => setForgotEmail(e.target.value)}
                                 required
@@ -691,7 +691,7 @@ const LandingPage = () => {
                 </Modal.Body>
             </Modal>
 
-        </div >
+        </div>
     );
 };
 

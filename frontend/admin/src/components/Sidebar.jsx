@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom';
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
-import { OverlayTrigger, Tooltip, Nav } from 'react-bootstrap';
+import { Nav } from 'react-bootstrap';
 import {
     FaBars, FaTimes, FaChevronLeft, FaChevronRight, FaStore, FaChartLine,
     FaMoneyBillWave, FaUsers, FaCog, FaHome, FaBell, FaShoppingBag,
@@ -51,7 +52,6 @@ const Sidebar = () => {
         const timer = setTimeout(() => {
             const activeLink = document.querySelector('.sidebar-nav-link.active');
             if (activeLink) {
-                // Ensure the active link is visible in the container
                 activeLink.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         }, 100);
@@ -60,8 +60,7 @@ const Sidebar = () => {
 
     const handleLogout = () => {
         AuthService.logout();
-        navigate('/');
-        window.location.reload();
+        window.location.href = '/';
     };
 
     const toggleSidebar = () => setIsOpen(!isOpen);
@@ -71,8 +70,6 @@ const Sidebar = () => {
         setCollapsed(newState);
         localStorage.setItem('sidebar_collapsed', newState);
     };
-
-    const sidebarWidth = collapsed ? '80px' : '280px';
 
     return (
         <>
@@ -87,14 +84,15 @@ const Sidebar = () => {
                     className="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50"
                     style={{ zIndex: 1999 }}
                     onClick={toggleSidebar}
-                ></div>
+                />
             )}
 
             {/* Sidebar Container Wrapper */}
-            <div className={`sidebar-container ${collapsed ? 'collapsed-mode' : ''}`}
-                style={{ flexShrink: 0, position: 'relative', transition: 'all 0.3s ease', zIndex: 2500 }}>
-
-                {/* Desktop Toggle Button - Now outside the scrollable sidebar */}
+            <div
+                className={`sidebar-container ${collapsed ? 'collapsed-mode' : ''}`}
+                style={{ flexShrink: 0, position: 'relative', transition: 'all 0.3s ease', zIndex: 2500 }}
+            >
+                {/* Desktop Toggle Button */}
                 <button
                     className="desktop-sidebar-toggle"
                     onClick={toggleDesktop}
@@ -103,9 +101,10 @@ const Sidebar = () => {
                     {collapsed ? <FaChevronRight size={14} /> : <FaChevronLeft size={14} />}
                 </button>
 
-                <div className={`admin-sidebar ${isOpen ? 'mobile-open' : ''}`}
-                    style={{ width: '100%', height: '100vh', overflowY: 'auto', overflowX: 'hidden' }}>
-
+                <div
+                    className={`admin-sidebar ${isOpen ? 'mobile-open' : ''}`}
+                    style={{ width: '100%', height: '100vh', overflowY: 'auto', overflowX: 'hidden' }}
+                >
                     <div className="sidebar-header" style={{ padding: collapsed ? '20px 10px' : '20px' }}>
                         <div className="d-flex align-items-center justify-content-between w-100">
                             <Link to="/dashboard" className={`sidebar-logo ${collapsed ? 'justify-content-center' : ''}`}>
@@ -114,8 +113,8 @@ const Sidebar = () => {
                                 </div>
                                 {!collapsed && <span>Tiendario</span>}
                             </Link>
-                            
-                            {/* Mobile Close Button hidden on desktop */}
+
+                            {/* Mobile Close Button */}
                             <button className="d-lg-none btn border-0 p-1 text-muted" onClick={() => setIsOpen(false)}>
                                 <FaTimes size={20} />
                             </button>
@@ -124,7 +123,15 @@ const Sidebar = () => {
                         {!collapsed && (
                             <div className="user-profile-summary mt-3">
                                 <div className="d-flex align-items-center gap-2 mb-2">
-                                    <span className={isSuperAdmin ? 'premium-badge-v1 bg-dark text-white' : (user?.subscriptionStatus === 'PAID' ? 'premium-badge-v1' : (user?.subscriptionStatus === 'TRIAL' ? 'trial-badge-v1' : 'free-badge-v1'))}>
+                                    <span className={
+                                        isSuperAdmin
+                                            ? 'premium-badge-v1 bg-dark text-white'
+                                            : (user?.subscriptionStatus === 'PAID'
+                                                ? 'premium-badge-v1'
+                                                : (user?.subscriptionStatus === 'TRIAL'
+                                                    ? 'trial-badge-v1'
+                                                    : 'free-badge-v1'))
+                                    }>
                                         {isSuperAdmin ? 'Super Admin' : (user?.subscriptionStatus === 'PAID' ? 'PRO' : (user?.subscriptionStatus === 'TRIAL' ? 'TRIAL' : 'FREE'))}
                                     </span>
                                     <small className="fw-bold text-dark text-truncate" style={{ maxWidth: '120px' }}>
@@ -147,36 +154,56 @@ const Sidebar = () => {
 
                         {isSuperAdmin ? (
                             <>
-                                <NavItem to="/admin/onboarding" icon={FaRocket} label="Registrar Tienda" description="Wizard paso a paso para registrar un nuevo cliente en el sistema." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/dashboard" icon={FaChartLine} label="Métricas Globales" description="Visualiza el estado de todo el ecosistema Tiendario." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/admin/companies" icon={FaStore} label="Gestión de Empresas" description="Administra los comercios y sus suscripciones." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/admin/catalog" icon={FaBox} label="Catálogo Global" description="Gestiona los registros maestros de productos unificados." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/admin/categories" icon={FaTags} label="Categorías" description="Aprueba o rechaza nuevas categorías sugeridas." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/admin/payments" icon={FaMoneyBillWave} label="Validación de Pagos" description="Aprueba o rechaza los reportes de pago de los usuarios." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/admin/users" icon={FaUsers} label="Gestión de Usuarios" description="Control total sobre los accesos de usuarios al sistema." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/admin/config" icon={FaCog} label="Configuración SaaS" description="Ajusta precios, planes y mantenimiento del sistema." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/admin/onboarding" icon={FaRocket}       label="Registrar Tienda"    description="Wizard paso a paso para registrar un nuevo cliente."       collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/dashboard"        icon={FaChartLine}    label="Métricas Globales"   description="Visualiza el estado de todo el ecosistema Tiendario."       collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/admin/companies"  icon={FaStore}        label="Gestión de Empresas" description="Administra los comercios y sus suscripciones."              collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/admin/catalog"    icon={FaBox}          label="Catálogo Global"     description="Gestiona los registros maestros de productos unificados."   collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/admin/categories" icon={FaTags}         label="Categorías"          description="Aprueba o rechaza nuevas categorías sugeridas."             collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/admin/payments"   icon={FaMoneyBillWave} label="Validación de Pagos" description="Aprueba o rechaza los reportes de pago de los usuarios."  collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/admin/users"      icon={FaUsers}        label="Gestión de Usuarios" description="Control total sobre los accesos de usuarios al sistema."    collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/admin/config"     icon={FaCog}          label="Configuración SaaS"  description="Ajusta precios, planes y mantenimiento del sistema."        collapsed={collapsed} setIsOpen={setIsOpen} />
                             </>
                         ) : (
                             <>
+                                {/* Dashboard — acceso rápido */}
                                 <NavItem to="/dashboard" icon={FaHome} label="Dashboard" description="Resumen rápido de tus ventas y actividad reciente." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/pos" icon={FaShoppingBag} label="Punto de Venta" description="Realiza ventas rápidas en mostrador y genera tickets." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/notifications" icon={FaBell} label="Notificaciones" badge={unreadCount} description="Novedades, pedidos nuevos y alertas de sistema." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/sales/history" icon={FaHistory} label="Historial de Ventas" description="Monitorea el estado de tus ventas y pedidos pendientes." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/daily-closing" icon={FaCashRegister} label="Control de Caja" description="Arqueo diario y balance de ingresos en efectivo/digital." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/purchases/new" icon={FaTruck} label="Comprar Mercancía" description="Registra compras a proveedores y suma al stock." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/purchases/history" icon={FaHistory} label="Historial de Compras" description="Revisa cuándo y a cuánto compraste tus productos." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/suppliers" icon={FaUsers} label="Proveedores" description="Guarda los datos de contacto de quienes te surten." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/inventory" icon={FaBox} label="Inventario" description="Controla stocks, precios, imágenes y exportación." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/categories" icon={FaTags} label="Categorías" description="Mira las categorías globales y sugiere nuevas para el catálogo." collapsed={collapsed} setIsOpen={setIsOpen} />
+
+                                {/* ── OPERACIÓN ───────────── */}
+                                <NavGroup label="🟢 Operación" collapsed={collapsed} />
+                                <NavItem to="/pos"           icon={FaShoppingBag}  label="Punto de Venta"    description="Realiza ventas rápidas en mostrador y genera tickets."      collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/daily-closing" icon={FaCashRegister}  label="Control de Caja"   description="Arqueo diario y balance de ingresos en efectivo/digital."  collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/inventory"     icon={FaBox}           label="Inventario"        description="Controla stocks, precios, imágenes y exportación."         collapsed={collapsed} setIsOpen={setIsOpen} />
+
+                                {/* ── COMERCIAL ───────────── */}
+                                <NavGroup label="📦 Comercial" collapsed={collapsed} />
+                                <NavItem to="/purchases/new" icon={FaTruck}  label="Comprar Mercancía" description="Registra compras a proveedores y suma al stock."     collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/suppliers"     icon={FaUsers}  label="Proveedores"       description="Guarda los datos de contacto de quienes te surten." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/customers"     icon={FaUsers}  label="Clientes"          description="Directorio y base de datos de tus clientes."        collapsed={collapsed} setIsOpen={setIsOpen} />
+
+                                {/* ── SEGUIMIENTO ─────────── */}
+                                <NavGroup label="📊 Seguimiento" collapsed={collapsed} />
+                                <NavItem to="/sales/history"     icon={FaHistory} label="Historial de Ventas"  description="Monitorea el estado de tus ventas y pedidos pendientes." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/purchases/history" icon={FaHistory} label="Historial de Compras" description="Revisa cuándo y a cuánto compraste tus productos."        collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/notifications"     icon={FaBell}    label="Notificaciones"       badge={unreadCount} description="Novedades, pedidos nuevos y alertas de sistema." collapsed={collapsed} setIsOpen={setIsOpen} />
+
+                                {/* ── ANÁLISIS ────────────── */}
+                                <NavGroup label="📈 Análisis" collapsed={collapsed} />
                                 <NavItem to="/reports" icon={FaChartLine} label="Reportes" description="Analítica avanzada, productos más vendidos y ganancias." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/customers" icon={FaUsers} label="Clientes" description="Directorio y base de datos de tus clientes" collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/company" icon={FaCog} label="Ajustes de Tienda" description="Configura los detalles de tu negocio." collapsed={collapsed} setIsOpen={setIsOpen} />
+
+                                {/* ── CONFIGURACIÓN ───────── */}
+                                <NavGroup label="⚙️ Configuración" collapsed={collapsed} />
+                                <NavItem to="/categories" icon={FaTags} label="Categorías"       description="Mira las categorías globales y sugiere nuevas para el catálogo." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/company"    icon={FaCog}  label="Ajustes de Tienda" description="Configura los detalles de tu negocio."                        collapsed={collapsed} setIsOpen={setIsOpen} />
                             </>
                         )}
                     </div>
 
                     <div className="sidebar-footer" style={{ padding: collapsed ? '20px 0' : '20px' }}>
-                        <button className={`btn-logout-sidebar ${collapsed ? 'justify-content-center' : ''}`} onClick={handleLogout} title={collapsed ? "Cerrar Sesión" : ""}>
+                        <button
+                            className={`btn-logout-sidebar ${collapsed ? 'justify-content-center' : ''}`}
+                            onClick={handleLogout}
+                            title={collapsed ? 'Cerrar Sesión' : ''}
+                        >
                             <FaSignOutAlt />
                             {!collapsed && <span>Cerrar Sesión</span>}
                         </button>
@@ -187,36 +214,108 @@ const Sidebar = () => {
     );
 };
 
-// eslint-disable-next-line no-unused-vars
-const NavItem = ({ to, icon: Icon, label, badge, description, collapsed, setIsOpen }) => {
-    const renderTooltip = (props) => (
-        <Tooltip id={`tooltip-${to}`} {...props}>
-            <div className="text-start">
-                <div className="fw-bold mb-1">{label}</div>
-                <div className="small opacity-75">{description}</div>
-            </div>
-        </Tooltip>
+// ─── NavGroup: section label ──────────────────────────────────────────────────
+const NavGroup = ({ label, collapsed }) => {
+    if (collapsed) {
+        return <div style={{ margin: '10px 0', borderTop: '1px solid #e2e8f0' }} />;
+    }
+    return (
+        <div style={{
+            padding: '14px 16px 4px',
+            fontSize: '0.65rem',
+            fontWeight: 800,
+            textTransform: 'uppercase',
+            letterSpacing: '0.12em',
+            color: '#94a3b8',
+        }}>
+            {label}
+        </div>
     );
+};
+
+// ─── NavItem: link with portal tooltip ───────────────────────────────────────
+const NavItem = ({ to, icon: Icon, label, badge, description, collapsed, setIsOpen }) => {
+    const [tooltipStyle, setTooltipStyle] = useState(null);
+    const ref = useRef(null);
+    const hoverTimeout = useRef(null);
+
+    const showTooltip = () => {
+        hoverTimeout.current = setTimeout(() => {
+            if (ref.current) {
+                const rect = ref.current.getBoundingClientRect();
+                setTooltipStyle({
+                    top: rect.top + rect.height / 2,
+                    left: rect.right + 10,
+                });
+            }
+        }, 400);
+    };
+
+    const hideTooltip = () => {
+        clearTimeout(hoverTimeout.current);
+        setTooltipStyle(null);
+    };
 
     return (
-        <OverlayTrigger
-            placement="right"
-            delay={{ show: 400, hide: 100 }}
-            overlay={renderTooltip}
-        >
+        <>
             <NavLink
+                ref={ref}
                 to={to}
-                className={({ isActive }) => `sidebar-nav-link ${isActive ? 'active' : ''} ${collapsed ? 'justify-content-center px-0' : ''}`}
-                onClick={() => {
-                    setIsOpen(false);
-                }}
+                className={({ isActive }) =>
+                    `sidebar-nav-link ${isActive ? 'active' : ''} ${collapsed ? 'justify-content-center px-0' : ''}`
+                }
+                onClick={() => { setIsOpen(false); hideTooltip(); }}
+                onMouseEnter={collapsed ? showTooltip : null}
+                onMouseLeave={collapsed ? hideTooltip : null}
             >
-                <Icon className="nav-icon" style={{ marginRight: collapsed ? 0 : '12px', fontSize: collapsed ? '1.2rem' : 'inherit' }} />
+                <Icon
+                    className="nav-icon"
+                    style={{ marginRight: collapsed ? 0 : '12px', fontSize: collapsed ? '1.2rem' : 'inherit' }}
+                />
                 {!collapsed && <span className="flex-grow-1">{label}</span>}
                 {!collapsed && badge > 0 && <span className="notification-count">{badge}</span>}
-                {collapsed && badge > 0 && <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ transform: 'translate(-10px, 10px)' }}>•</span>}
+                {collapsed && badge > 0 && (
+                    <span
+                        className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                        style={{ transform: 'translate(-10px, 10px)' }}
+                    >•</span>
+                )}
             </NavLink>
-        </OverlayTrigger>
+
+            {collapsed && tooltipStyle && ReactDOM.createPortal(
+                <div style={{
+                    position: 'fixed',
+                    top: tooltipStyle.top,
+                    left: tooltipStyle.left,
+                    transform: 'translateY(-50%)',
+                    zIndex: 99999,
+                    background: '#1e293b',
+                    color: '#fff',
+                    padding: '8px 14px',
+                    borderRadius: '10px',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+                    pointerEvents: 'none',
+                    maxWidth: '240px',
+                    fontSize: '0.83rem',
+                    lineHeight: 1.4,
+                }}>
+                    <div style={{ fontWeight: 700, marginBottom: '2px' }}>{label}</div>
+                    <div style={{ opacity: 0.7, fontSize: '0.75rem' }}>{description}</div>
+                    <div style={{
+                        position: 'absolute',
+                        left: '-6px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        width: 0,
+                        height: 0,
+                        borderTop: '6px solid transparent',
+                        borderBottom: '6px solid transparent',
+                        borderRight: '6px solid #1e293b',
+                    }} />
+                </div>,
+                document.body
+            )}
+        </>
     );
 };
 

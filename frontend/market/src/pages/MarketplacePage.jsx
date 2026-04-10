@@ -58,6 +58,7 @@ const MarketplacePage = () => {
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
     const [toastType, setToastType] = useState('success'); // 'success' or 'error'
+    const [minRating, setMinRating] = useState(0);
     const user = AuthService.getCurrentUser();
 
     useEffect(() => {
@@ -126,7 +127,7 @@ const MarketplacePage = () => {
     useEffect(() => {
         setPage(0);
         loadProducts(0, true);
-    }, [searchQuery, selectedCategory, sortBy, priceRange]);
+    }, [searchQuery, selectedCategory, sortBy, priceRange, minRating]);
 
     const loadProducts = (pageNum, reset = false) => {
         setLoading(true);
@@ -136,7 +137,8 @@ const MarketplacePage = () => {
             category: selectedCategory === 'all' ? null : selectedCategory,
             q: searchQuery || null,
             minPrice: priceRange.min || null,
-            maxPrice: priceRange.max || null
+            maxPrice: priceRange.max || null,
+            minRating: minRating > 0 ? minRating : null
         };
 
         SearchService.getAllProducts(params).then(
@@ -266,13 +268,13 @@ const MarketplacePage = () => {
             return;
         }
 
-        // Prefill customer data
+        // Prefill customer data from logged-in user
         setCustomerData({
-            name: user.username || '',
-            email: user.email || user.username || '', // Adjusted based on auth service
-            phone: '',
+            name: user.name || user.username || '',
+            email: user.email || user.username || '',
+            phone: user.phone || '',
             address: '',
-            quantity: 1, // Not used in bulk order but kept for structure
+            quantity: 1,
             paymentMethod: 'credit_card'
         });
         setShowBuyModal(true);
@@ -363,7 +365,7 @@ const MarketplacePage = () => {
     const featuredStores = [...new Set(products.map(p => p.companyName))];
 
     const [showRegisterModal, setShowRegisterModal] = useState(false);
-    const [registerData, setRegisterData] = useState({ name: '', email: '', password: '' });
+    const [registerData, setRegisterData] = useState({ name: '', email: '', password: '', phone: '' });
     const [registerMessage, setRegisterMessage] = useState('');
     const [registerSuccess, setRegisterSuccess] = useState(false);
 
@@ -404,12 +406,11 @@ const MarketplacePage = () => {
         setRegisterMessage("");
         setRegisterSuccess(false);
 
-        AuthService.register(registerData.name, registerData.email, registerData.password).then(
+        AuthService.register(registerData.name, registerData.email, registerData.password, 'client', null, registerData.phone).then(
             (response) => {
                 setRegisterSuccess(true);
                 setRegisterMessage("¡Registro exitoso! Ya puedes iniciar sesión.");
-                // clear form
-                setRegisterData({ name: '', email: '', password: '' });
+                setRegisterData({ name: '', email: '', password: '', phone: '' });
                 // Optional: switch to login modal after delay
                 // setShowRegisterModal(false);
                 // setShowLoginModal(true);
@@ -516,29 +517,106 @@ const MarketplacePage = () => {
 
             <Container className="mb-5 pb-5 mt-4 mt-lg-0">
                 <Row className="g-4">
-                    {/* Sidebar: Restored as requested (Desktop only) */}
+                    {/* Sidebar: Filters and Categories (Desktop only) */}
                     <Col lg={3} className="d-none d-lg-block">
-                        <div className="glass-panel p-4 sticky-top" style={{ top: '100px', zIndex: 10 }}>
-                            <h5 className="fw-bold mb-4 d-flex align-items-center gap-2">
-                                <FaStore className="text-primary" size={18} />
-                                Categorías
-                            </h5>
-                            <div className="d-flex flex-column gap-1">
-                                <div 
-                                    className={`sidebar-cat-item ${selectedCategory === 'all' ? 'active' : ''}`}
-                                    onClick={() => setSelectedCategory('all')}
-                                >
-                                    <span>📦 Todo el Mercado</span>
-                                </div>
-                                {categories.sort((a, b) => a.name.localeCompare(b.name)).map((cat, idx) => (
-                                    <div
-                                        key={idx}
-                                        className={`sidebar-cat-item ${selectedCategory === cat.name ? 'active' : ''}`}
-                                        onClick={() => setSelectedCategory(cat.name)}
-                                    >
-                                        <span>{getCategoryEmoji(cat.name)} {cat.name}</span>
+                        <div className="glass-panel p-4 sidebar-sticky">
+                            {/* Filtros Section */}
+                            <div className="mb-5">
+                                <h5 className="fw-bold mb-4 d-flex align-items-center gap-2">
+                                    <FaSearch className="text-primary" size={16} />
+                                    Filtros
+                                </h5>
+                                
+                                <Form.Group className="mb-4">
+                                    <Form.Label className="small fw-bold text-muted text-uppercase mb-2" style={{ letterSpacing: '0.5px', fontSize: '0.7rem' }}>Rango de Precio ($)</Form.Label>
+                                    <div className="d-flex gap-2">
+                                        <Form.Control 
+                                            size="sm" 
+                                            placeholder="Mín" 
+                                            className="rounded-3 px-3 py-2 bg-light border-0 shadow-none text-center"
+                                            value={priceRange.min}
+                                            onChange={(e) => setPriceRange(prev => ({ ...prev, min: e.target.value }))}
+                                        />
+                                        <Form.Control 
+                                            size="sm" 
+                                            placeholder="Máx" 
+                                            className="rounded-3 px-3 py-2 bg-light border-0 shadow-none text-center"
+                                            value={priceRange.max}
+                                            onChange={(e) => setPriceRange(prev => ({ ...prev, max: e.target.value }))}
+                                        />
                                     </div>
-                                ))}
+                                </Form.Group>
+
+                                    <Button 
+                                    variant="outline-secondary" 
+                                    size="sm" 
+                                    className="w-100 rounded-pill fw-bold"
+                                    onClick={() => {
+                                        setPriceRange({ min: '', max: '' });
+                                        setSearchQuery('');
+                                        setSelectedCategory('all');
+                                        setMinRating(0);
+                                    }}
+                                >
+                                    Limpiar Filtros
+                                </Button>
+                            </div>
+
+                            <hr className="my-4 opacity-10" />
+
+                            <div className="mb-5">
+                                <h5 className="fw-bold mb-4 d-flex align-items-center gap-2">
+                                    <FaStar className="text-warning" size={16} />
+                                    Calificación
+                                </h5>
+                                <div className="d-flex flex-column gap-2">
+                                    {[4, 3, 2].map((stars) => (
+                                        <div 
+                                            key={stars}
+                                            className={`sidebar-cat-item ${minRating === stars ? 'active' : ''}`}
+                                            onClick={() => setMinRating(minRating === stars ? 0 : stars)}
+                                            style={{ padding: '8px 12px' }}
+                                        >
+                                            <div className="d-flex align-items-center gap-1">
+                                                {Array.from({ length: 5 }).map((_, i) => (
+                                                    <FaStar 
+                                                        key={i} 
+                                                        size={12} 
+                                                        className={i < stars ? (minRating === stars ? 'text-white' : 'text-warning') : 'text-muted opacity-25'} 
+                                                    />
+                                                ))}
+                                                <span className="ms-2 small">o más</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <hr className="my-4 opacity-10" />
+
+                            {/* Categorías Section */}
+                            <div>
+                                <h5 className="fw-bold mb-4 d-flex align-items-center gap-2">
+                                    <FaStore className="text-primary" size={18} />
+                                    Categorías
+                                </h5>
+                                <div className="d-flex flex-column gap-1">
+                                    <div 
+                                        className={`sidebar-cat-item ${selectedCategory === 'all' ? 'active' : ''}`}
+                                        onClick={() => setSelectedCategory('all')}
+                                    >
+                                        <span>📦 Todo el Mercado</span>
+                                    </div>
+                                    {categories.sort((a, b) => a.name.localeCompare(b.name)).map((cat, idx) => (
+                                        <div
+                                            key={idx}
+                                            className={`sidebar-cat-item ${selectedCategory === cat.name ? 'active' : ''}`}
+                                            onClick={() => setSelectedCategory(cat.name)}
+                                        >
+                                            <span>{getCategoryEmoji(cat.name)} {cat.name}</span>
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
 
                             <div className="mt-5 pt-4 border-top">
@@ -548,7 +626,7 @@ const MarketplacePage = () => {
                                     <Button 
                                         variant="primary" 
                                         size="sm" 
-                                        className="w-100 rounded-pill fw-bold"
+                                        className="w-100 rounded-pill fw-bold shadow-sm"
                                         onClick={() => window.open(import.meta.env.VITE_ADMIN_URL || 'http://localhost:8081', '_blank')}
                                     >
                                         Empezar Ahora
@@ -625,7 +703,13 @@ const MarketplacePage = () => {
                                                             {product.category || 'General'}
                                                         </small>
                                                         <div className="d-flex align-items-center gap-1 text-warning small">
-                                                            <FaStar size={10} /> <span className="fw-bold" style={{ fontSize: '0.7rem' }}>4.9</span>
+                                                            <FaStar size={10} /> 
+                                                            <span className="fw-bold" style={{ fontSize: '0.7rem' }}>
+                                                                {product.rating ? product.rating.toFixed(1) : '4.5'}
+                                                            </span>
+                                                            <span className="text-muted" style={{ fontSize: '0.6rem' }}>
+                                                                ({product.ratingCount || 10})
+                                                            </span>
                                                         </div>
                                                     </div>
                                                     <h6 className="fw-bold text-dark mb-1 text-truncate" title={product.name}>{product.name}</h6>
@@ -898,6 +982,7 @@ const MarketplacePage = () => {
                 onOrderSubmit={handleOrderSubmit}
                 platformConfig={platformConfig}
                 formatSecondary={formatSecondary}
+                isLoggedIn={!!user}
             />
 
 

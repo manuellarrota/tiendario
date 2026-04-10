@@ -3,6 +3,7 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 
 import LandingPage from './pages/LandingPage';
+import DemoPage from './demo/DemoPage';
 import DashboardHome from './pages/DashboardHome';
 import InventoryPage from './pages/InventoryPage';
 import SupplierPage from './pages/SupplierPage';
@@ -39,6 +40,7 @@ function App() {
         <Routes>
           {/* ── PUBLIC ─────────────────────────────────────── */}
           <Route path="/"      element={<LandingPage />} />
+          <Route path="/demo" element={<DemoPage />} />
 
 
           {/* ── AUTHENTICATED (any logged-in manager/admin) ── */}

@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# No indexar el panel interno (solo el landing es público)
+Disallow: /dashboard
+Disallow: /dashboard/
+Disallow: /pos
+Disallow: /inventory
+Disallow: /reports
+Disallow: /settings
+
+Sitemap: https://tiendario.com/sitemap.xml

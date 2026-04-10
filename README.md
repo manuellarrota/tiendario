@@ -133,15 +133,45 @@ npm run dev
 
 ## Modelo de Suscripción
 
+Tiendario opera con **dos planes** y un período de prueba integrado. No existe un plan intermedio — el modelo es intencionalmente simple.
+
+### Planes
+
+| Plan (en el landing) | Estado interno | Precio | Descripción |
+|---|---|---|---|
+| **Gratis — 30 días** | `TRIAL` | $0 | Acceso completo durante 30 días. Se asigna automáticamente al registrarse. |
+| **Premium Mensual** | `PAID` | $20 / mes | Acceso ilimitado. El Super Admin activa manualmente al validar el pago. |
+| **Premium Anual** | `PAID` | $200 / año | Mismo acceso que mensual. El Admin asigna 365 días al aprobar. |
+
+> **Importante:** No existe un plan "Free" permanente ni un plan "Starter". El período TRIAL de 30 días **es** el plan gratuito. Una vez vencido sin pago, la cuenta pasa a `PAST_DUE`.
+
+### Ciclo de vida de una suscripción
+
+```
+Registro → TRIAL (30 días, acceso completo)
+               ↓ vence sin pago
+           PAST_DUE (solo lectura)
+               ↓ envía comprobante
+           PENDING (en revisión)
+               ↓ Super Admin aprueba
+           PAID (+30 días o +365 días según plan)
+               ↓ vence
+           PAST_DUE → repite ciclo de pago
+```
+
+### Estados internos (`SubscriptionStatus` enum)
+
 | Estado | Descripción |
 |---|---|
-| `FREE` | Hasta 10 productos. Sin ventas ni POS. Solo exhibición en marketplace. |
-| `TRIAL` | 30 días con funcionalidad completa. |
-| `PAID` | Acceso ilimitado. Marketplace activo para pedidos. |
-| `PAST_DUE` | Pago vencido. Solo lectura. Bloqueo de creación. |
-| `SUSPENDED` | Bloqueo total por el administrador. |
+| `TRIAL` | 30 días desde el registro. Funcionalidad completa. |
+| `PAID` | Pago aprobado. Acceso activo por `subscriptionEndDate`. |
+| `PAST_DUE` | TRIAL o PAID vencido. Solo lectura. Bloqueo de creación. |
+| `SUSPENDED` | Bloqueado manualmente por el Super Admin. |
+
+> **Nota de implementación:** `approvePayment()` en `SubscriptionService` extiende siempre en 30 días. Para el plan anual, el Super Admin debe ajustar manualmente a 365 días desde el panel — pendiente automatizar vía campo `billingCycle` en `SubscriptionPayment`.
 
 ---
+
 
 ## Seguridad
 

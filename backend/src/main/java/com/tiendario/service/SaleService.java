@@ -64,10 +64,6 @@ public class SaleService {
 
         // Block sales for accounts without active subscription
         SubscriptionStatus subStatus = company.getSubscriptionStatus();
-        if (SubscriptionStatus.FREE.equals(subStatus)) {
-            throw new RuntimeException(
-                    "El plan GRATUITO no permite registrar ventas. Mejora a PREMIUM para acceder al sistema de ventas.");
-        }
         if (SubscriptionStatus.PAST_DUE.equals(subStatus)) {
             throw new RuntimeException("Tu suscripción ha vencido. Renueva tu plan para poder registrar ventas.");
         }

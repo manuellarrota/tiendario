@@ -13,7 +13,6 @@ function App() {
           <Route path="/dashboard" element={<CustomerDashboard />} />
           <Route path="/terms" element={<LegalPage type="terms" />} />
           <Route path="/privacy" element={<LegalPage type="privacy" />} />
-          <Route path="/login" element={<Navigate to="/" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </div>

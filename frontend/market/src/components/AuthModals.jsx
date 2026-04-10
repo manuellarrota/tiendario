@@ -85,6 +85,17 @@ export const RegisterModal = ({
                         required
                     />
                 </Form.Group>
+                <Form.Group className="mb-3">
+                    <Form.Label className="small fw-bold">Teléfono / WhatsApp</Form.Label>
+                    <Form.Control
+                        type="tel"
+                        placeholder="+58 412 1234567"
+                        className="py-2 rounded-3"
+                        value={registerData.phone}
+                        onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
+                        required
+                    />
+                </Form.Group>
                 <Form.Group className="mb-4">
                     <Form.Label className="small fw-bold">Contraseña</Form.Label>
                     <Form.Control

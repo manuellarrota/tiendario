@@ -12,6 +12,18 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
+/**
+ * Servicio de gestion de suscripciones de Tiendario.
+ *
+ * MODELO DE PRECIOS:
+ *   Plan Gratis (TRIAL): 30 dias al registrarse, acceso completo.
+ *   Plan Premium Mensual: $20/mes  → aprobacion extiende 30 dias.
+ *   Plan Premium Anual:  $200/ano → aprobacion debe extender 365 dias
+ *                                    (TODO: automatizar via campo billingCycle).
+ *
+ * El Super Admin aprueba pagos manualmente desde el panel.
+ * No existe un plan FREE permanente ni un plan Starter.
+ */
 @Service
 public class SubscriptionService {
 

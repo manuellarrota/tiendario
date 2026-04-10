@@ -31,4 +31,8 @@ public class Company {
 
     private String phoneNumber;
     private String address;
+
+    // Reputation
+    private Double rating;
+    private Integer ratingCount;
 }

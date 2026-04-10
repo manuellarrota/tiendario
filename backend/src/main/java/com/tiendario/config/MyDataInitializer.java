@@ -38,8 +38,9 @@ public class MyDataInitializer implements CommandLineRunner {
             createSuperAdmin("admin", "Admin123!");
 
             // 2. Ensure Demo Managers & Customers
-            createManager("manager_pro", "Manager123!", "Tienda Pro", SubscriptionStatus.PAID);
-            createManager("manager_free", "Manager123!", "Tienda Gratuita", SubscriptionStatus.FREE);
+            // Coordenadas dispersas por San Cristóbal, Táchira (~7.789354, -72.219738)
+            createManager("manager_pro",  "Manager123!", "Ferretería Central",    SubscriptionStatus.PAID,  7.789354, -72.219738, "Av. 19 de Abril, San Cristóbal");
+            createManager("manager_free", "Manager123!", "Minimarket El Rincón",  SubscriptionStatus.TRIAL, 7.792100, -72.215400, "Calle 5, Barrio Obrero, San Cristóbal");
             createCustomer("cliente", "Cliente123!");
 
 
@@ -71,7 +72,7 @@ public class MyDataInitializer implements CommandLineRunner {
         }
     }
 
-    private void createManager(String username, String password, String companyName, SubscriptionStatus status) {
+    private void createManager(String username, String password, String companyName, SubscriptionStatus status, Double lat, Double lng, String address) {
         if (!userRepository.existsByUsername(username)) {
             Company company = companyRepository.findByName(companyName)
                     .orElseGet(() -> {
@@ -79,6 +80,12 @@ public class MyDataInitializer implements CommandLineRunner {
                         c.setName(companyName);
                         c.setSubscriptionStatus(status);
                         c.setDescription("Tienda de demostración para " + username);
+                        c.setLatitude(lat);
+                        c.setLongitude(lng);
+                        c.setAddress(address);
+                        // Default mock reputation
+                        c.setRating(3.5 + (Math.random() * 1.5)); // Random between 3.5 and 5.0
+                        c.setRatingCount(5 + (int)(Math.random() * 50));
                         return companyRepository.save(c);
                     });
 
@@ -135,8 +142,11 @@ public class MyDataInitializer implements CommandLineRunner {
                     c.setName("Tienda Demo");
                     c.setDescription("Tienda para demostración de productos");
                     c.setSubscriptionStatus(SubscriptionStatus.PAID);
-                    c.setLatitude(7.767);
+                    c.setLatitude(7.767); // Demo coordinates already in SC
                     c.setLongitude(-72.224);
+                    c.setAddress("Calle Principal, San Cristóbal");
+                    c.setRating(4.8);
+                    c.setRatingCount(120);
                     return companyRepository.save(c);
                 });
 

@@ -53,9 +53,9 @@ public class TrialExpirationService {
         for (Company company : trialCompanies) {
             LocalDateTime expirationDate = company.getTrialStartDate().plusDays(trialDays);
             if (LocalDateTime.now().isAfter(expirationDate)) {
-                company.setSubscriptionStatus(SubscriptionStatus.FREE);
+                company.setSubscriptionStatus(SubscriptionStatus.PAST_DUE);
                 companyRepository.save(company);
-                logger.warn("Trial expired for company '{}' (ID: {}). Downgraded to FREE.",
+                logger.warn("Trial expired for company '{}' (ID: {}). Status changed to PAST_DUE.",
                         company.getName(), company.getId());
                 expiredCount++;
             }

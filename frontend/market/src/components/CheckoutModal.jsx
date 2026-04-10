@@ -1,12 +1,16 @@
 import React from 'react';
-import { Modal, Form, Row, Col, Button, Alert, Spinner } from 'react-bootstrap';
+import { Modal, Form, Row, Col, Button, Alert, Spinner, Badge } from 'react-bootstrap';
+import { FaUser, FaPhone } from 'react-icons/fa';
 
 /**
  * Checkout Modal — customer data form and order submission.
+ * If isLoggedIn is true, name/email/phone are prefilled and locked.
+ * Delivery address is hidden (no deliveries yet).
  */
 const CheckoutModal = ({
     show, onHide, cart, customerData, setCustomerData,
-    orderStatus, onOrderSubmit, platformConfig, formatSecondary
+    orderStatus, onOrderSubmit, platformConfig, formatSecondary,
+    isLoggedIn
 }) => {
     const cartTotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
 
@@ -54,26 +58,59 @@ const CheckoutModal = ({
 
                         {orderStatus.error && <Alert variant="danger" className="rounded-4">{orderStatus.error}</Alert>}
 
-                        <h6 className="fw-bold mb-3 d-flex align-items-center">
-                            <span className="bg-primary bg-opacity-10 text-primary rounded-circle px-2 me-2">1</span> Datos del Cliente
-                        </h6>
+                        {/* Customer data section */}
+                        <div className="d-flex align-items-center justify-content-between mb-3">
+                            <h6 className="fw-bold mb-0 d-flex align-items-center">
+                                <span className="bg-primary bg-opacity-10 text-primary rounded-circle px-2 me-2">1</span> Datos del Cliente
+                            </h6>
+                            {isLoggedIn && (
+                                <Badge bg="success" pill className="px-3">
+                                    ✓ Datos cargados automáticamente
+                                </Badge>
+                            )}
+                        </div>
+
                         <Row className="mb-4">
                             <Col md={6}>
-                                <Form.Control className="mb-2 rounded-3 py-2 px-3" placeholder="Nombre"
-                                    value={customerData.name} onChange={(e) => setCustomerData({ ...customerData, name: e.target.value })} required />
+                                <Form.Control
+                                    className="mb-2 rounded-3 py-2 px-3"
+                                    placeholder="Nombre"
+                                    value={customerData.name}
+                                    onChange={(e) => setCustomerData({ ...customerData, name: e.target.value })}
+                                    disabled={isLoggedIn && !!customerData.name}
+                                    required
+                                />
                             </Col>
                             <Col md={6}>
-                                <Form.Control className="mb-2 rounded-3 py-2 px-3" placeholder="Email"
-                                    value={customerData.email} onChange={(e) => setCustomerData({ ...customerData, email: e.target.value })} required />
+                                <Form.Control
+                                    className="mb-2 rounded-3 py-2 px-3"
+                                    placeholder="Email"
+                                    type="email"
+                                    value={customerData.email}
+                                    onChange={(e) => setCustomerData({ ...customerData, email: e.target.value })}
+                                    disabled={isLoggedIn && !!customerData.email}
+                                    required
+                                />
                             </Col>
                             <Col md={12}>
-                                <Form.Control className="mb-2 rounded-3 py-2 px-3" placeholder="Teléfono / WhatsApp (Opcional)"
-                                    value={customerData.phone} onChange={(e) => setCustomerData({ ...customerData, phone: e.target.value })} />
+                                <Form.Control
+                                    className="mb-2 rounded-3 py-2 px-3"
+                                    placeholder="Teléfono / WhatsApp"
+                                    type="tel"
+                                    value={customerData.phone}
+                                    onChange={(e) => setCustomerData({ ...customerData, phone: e.target.value })}
+                                    disabled={isLoggedIn && !!customerData.phone}
+                                />
                             </Col>
-                            <Col md={12}>
-                                <Form.Control className="mb-2 rounded-3 py-2 px-3" placeholder="Dirección de Entrega"
-                                    value={customerData.address} onChange={(e) => setCustomerData({ ...customerData, address: e.target.value })} required />
-                            </Col>
+                            {/* Dirección oculta por ahora — no hay domicilios activos */}
+                            {/* <Col md={12}>
+                                <Form.Control
+                                    className="mb-2 rounded-3 py-2 px-3"
+                                    placeholder="Dirección de Entrega"
+                                    value={customerData.address}
+                                    onChange={(e) => setCustomerData({ ...customerData, address: e.target.value })}
+                                />
+                            </Col> */}
                         </Row>
 
                         <Alert variant="info" className="rounded-4 mb-4 border-0">

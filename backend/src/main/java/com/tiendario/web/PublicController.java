@@ -62,7 +62,8 @@ public class PublicController {
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) BigDecimal minPrice,
-            @RequestParam(required = false) BigDecimal maxPrice) {
+            @RequestParam(required = false) BigDecimal maxPrice,
+            @RequestParam(required = false) Double minRating) {
 
         // Note: For complex grouping (best price per SKU/Name), we still need to process.
         // But we can filter by category at the database level first.
@@ -90,6 +91,12 @@ public class PublicController {
         if (maxPrice != null) {
             allProducts = allProducts.stream()
                     .filter(p -> p.getPrice().compareTo(maxPrice) <= 0)
+                    .collect(Collectors.toList());
+        }
+
+        if (minRating != null) {
+            allProducts = allProducts.stream()
+                    .filter(p -> p.getCompany() != null && p.getCompany().getRating() != null && p.getCompany().getRating() >= minRating)
                     .collect(Collectors.toList());
         }
 
@@ -371,6 +378,8 @@ public class PublicController {
             } else {
                 dto.setSubscriptionStatus("FREE");
             }
+            dto.setRating(product.getCompany().getRating());
+            dto.setRatingCount(product.getCompany().getRatingCount());
         }
         if (product.getCategory() != null) {
             dto.setCategory(product.getCategory());

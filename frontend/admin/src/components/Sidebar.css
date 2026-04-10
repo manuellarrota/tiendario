@@ -216,3 +216,8 @@
         pointer-events: none;
     }
 }
+
+/* Ensure Bootstrap tooltips always render above the sidebar stacking context */
+.tooltip {
+    z-index: 9999 !important;
+}
