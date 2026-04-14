@@ -29,6 +29,9 @@ public class EmailService {
     @Value("${app.frontend.url:http://localhost:8081}")
     private String frontendUrl;
 
+    @Value("${app.backend.url:http://localhost:8080}")
+    private String backendUrl;
+
     /**
      * Send a simple plain-text email.
      */
@@ -140,7 +143,7 @@ public class EmailService {
      * Send account verification email after registration.
      */
     public void sendVerificationEmail(String email, String code) {
-        String verificationUrl = "http://localhost:8080/api/auth/verify?code=" + code;
+        String verificationUrl = backendUrl + "/api/auth/verify?code=" + code;
         String subject = "✉️ Verifica tu cuenta — Tiendario";
         String html = "<!DOCTYPE html><html><body style='font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;'>"
                 + "<div style='background:linear-gradient(135deg,#059669,#10b981);padding:40px;border-radius:16px;text-align:center;color:white;'>"

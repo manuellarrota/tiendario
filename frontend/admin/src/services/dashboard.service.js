@@ -10,8 +10,16 @@ const getSummary = () => {
     });
 };
 
+const getSalesChart = (period = "weekly") => {
+    const user = AuthService.getCurrentUser();
+    return axios.get(API_URL + "sales-chart?period=" + period, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
 const DashboardService = {
     getSummary,
+    getSalesChart
 };
 
 export default DashboardService;

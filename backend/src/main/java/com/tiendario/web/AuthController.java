@@ -145,13 +145,17 @@ public class AuthController {
                                 .collect(java.util.stream.Collectors.joining(","));
 
                 // Redirect with payload for frontend auto-login
+                String subscriptionStatus = (user.getCompany() != null)
+                                ? user.getCompany().getSubscriptionStatus().toString()
+                                : "FREE";
                 return ResponseEntity.status(org.springframework.http.HttpStatus.FOUND)
                                 .location(java.net.URI.create(frontendUrl + "/?verified=true&token=" + jwt +
                                                 "&username=" + user.getUsername() +
                                                 "&roles=" + roles +
                                                 "&id=" + user.getId() +
                                                 "&companyId="
-                                                + (user.getCompany() != null ? user.getCompany().getId() : "")))
+                                                + (user.getCompany() != null ? user.getCompany().getId() : "") +
+                                                "&subscriptionStatus=" + subscriptionStatus))
                                 .build();
         }
 

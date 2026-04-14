@@ -357,8 +357,7 @@ const MarketplacePage = () => {
             setCart([]);
         } catch (error) {
             console.error('Order submission error:', error);
-            const errorMessage = error.response?.data?.message || error.message || 'Error al procesar la orden';
-            setOrderStatus({ loading: false, success: false, error: errorMessage });
+            setOrderStatus({ loading: false, success: false, error: error.translatedMessage || 'Error al procesar la orden' });
         }
     };
 
@@ -395,7 +394,7 @@ const MarketplacePage = () => {
                 window.location.reload();
             },
             (error) => {
-                setLoginError("Credenciales inválidas. Por favor intente de nuevo.");
+                setLoginError(error.translatedMessage || "Credenciales inválidas. Por favor intente de nuevo.");
                 setLoginLoading(false);
             }
         );
@@ -416,8 +415,7 @@ const MarketplacePage = () => {
                 // setShowLoginModal(true);
             },
             (error) => {
-                const resMessage = (error.response && error.response.data && error.response.data.message) || error.message || error.toString();
-                setRegisterMessage(resMessage);
+                setRegisterMessage(error.translatedMessage || "Hubo un error al registrar tu cuenta.");
                 setRegisterSuccess(false);
             }
         );
@@ -457,12 +455,12 @@ const MarketplacePage = () => {
             <div className="market-hero-premium py-3 mb-3 position-relative overflow-hidden">
                 <Container className="py-1 text-center">
                     <div className="mx-auto animate-fade-in" style={{ maxWidth: '850px' }}>
-                        <h2 className="display-6 mb-2 fw-800" style={{ color: '#1e293b', letterSpacing: '-1.5px' }}>
+                        <h2 className="display-6 mb-2 fw-800 reveal-up" style={{ color: '#1e293b', letterSpacing: '-1.5px' }}>
                             Todo lo que necesitas, <span className="text-gradient">cerca de ti.</span>
                         </h2>
                         
                         {/* Ultra-Compact Glass Search */}
-                        <div className="glass-panel p-1 shadow-lg d-flex align-items-center mb-3 mx-auto" style={{ borderRadius: '100px', maxWidth: '600px' }}>
+                        <div className="glass-panel p-1 shadow-lg d-flex align-items-center mb-3 mx-auto reveal-up delay-1" style={{ borderRadius: '100px', maxWidth: '600px' }}>
                             <FaSearch className="text-muted ms-3 mr-2" size={16} />
                             <Form.Control
                                 className="border-0 bg-transparent py-2"
@@ -477,7 +475,7 @@ const MarketplacePage = () => {
                             </Button>
                         </div>
 
-                        <div className="d-flex justify-content-center gap-4 align-items-center opacity-75">
+                        <div className="d-flex justify-content-center gap-4 align-items-center opacity-75 reveal-up delay-2">
                             <div className="stat-item-compact">
                                 <span className="fw-bold text-dark small">{totalItems}+</span> <small className="text-muted" style={{ fontSize: '0.7rem' }}>Productos</small>
                             </div>
@@ -519,7 +517,7 @@ const MarketplacePage = () => {
                 <Row className="g-4">
                     {/* Sidebar: Filters and Categories (Desktop only) */}
                     <Col lg={3} className="d-none d-lg-block">
-                        <div className="glass-panel p-4 sidebar-sticky">
+                        <div className="glass-panel p-4 sidebar-sticky reveal-fade delay-3">
                             {/* Filtros Section */}
                             <div className="mb-5">
                                 <h5 className="fw-bold mb-4 d-flex align-items-center gap-2">
@@ -736,10 +734,28 @@ const MarketplacePage = () => {
                                         </Col>
                                     ))
                                  ) : (
-                                    <Col lg={12} className="text-center py-5">
-                                        <div className="display-1 mb-4" style={{ opacity: 0.1 }}>📦</div>
-                                        <h4 className="fw-bold text-muted">No encontramos productos</h4>
-                                        <p className="text-muted">Prueba buscando otros términos o ajustando los filtros.</p>
+                                    <Col lg={12} className="text-center py-5 reveal-up delay-1">
+                                        <div className="mx-auto bg-white p-5 rounded-4 shadow-sm border" style={{ maxWidth: '600px' }}>
+                                            <div className="display-1 mb-4 text-gradient" style={{ filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.1))' }}>🛍️</div>
+                                            {(searchQuery || selectedCategory !== 'all') ? (
+                                                <>
+                                                    <h3 className="fw-bold text-dark mb-3">No encontramos resultados</h3>
+                                                    <p className="text-muted mb-4">Prueba buscando con otras palabras o limpia los filtros actuales.</p>
+                                                    <Button variant="outline-primary" className="rounded-pill px-4" onClick={() => { setSearchQuery(''); setSelectedCategory('all'); setMinRating(0); handleSearch(); }}>Limpiar Filtros</Button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <h3 className="fw-bold text-dark mb-3">¡El mercado se está preparando!</h3>
+                                                    <p className="text-muted mb-4 px-md-4">
+                                                        Las tiendas locales apenas se están uniendo a Tiendario. Muy pronto encontrarás el mejor catálogo de productos aquí. 
+                                                    </p>
+                                                    <div className="p-3 bg-light rounded-3 d-inline-block">
+                                                        <span className="small text-muted fw-bold d-block mb-1">¿Eres comerciante?</span>
+                                                        <Button variant="primary" className="btn-premium rounded-pill px-4" onClick={() => window.open(import.meta.env.VITE_ADMIN_URL || 'http://localhost:8081', '_blank')}>Abre tu Tienda Hoy</Button>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
                                     </Col>
                                 )}
                             </Row>

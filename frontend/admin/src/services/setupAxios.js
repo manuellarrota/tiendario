@@ -7,16 +7,46 @@ export default function setupAxios() {
       return response;
     },
     (error) => {
-      // If the error is 401 Unauthorized, it means the JWT is likely expired or invalid
-      if (error.response && error.response.status === 401) {
-        // Don't intercept 401 on login attempts
-        const isLoginRequest = error.config.url.includes("/auth/signin");
+      // 1. Identify common technical errors and translate them
+      let niceMessage = "Ha ocurrido un error inesperado. Por favor, intente más tarde.";
+      
+      if (error.response) {
+        const status = error.response.status;
+        const serverMessage = error.response.data?.message;
+        const isLoginRequest = error.config?.url?.includes("/auth/signin");
         
-        if (!isLoginRequest) {
-          console.warn("JWT expired or invalid. Logging out...");
+        if (status === 401) {
+          // For login requests, preserve the backend's specific error message
+          // (e.g. "Cuenta inactiva" or "Credenciales incorrectas")
+          niceMessage = isLoginRequest && serverMessage
+            ? serverMessage
+            : "Tu sesión ha expirado. Por favor, ingresa de nuevo.";
+        } else if (status === 403) {
+          niceMessage = "No tienes permisos para ver esta información.";
+        } else if (status === 429) {
+          niceMessage = serverMessage || "Demasiados intentos de acceso. Por favor, espera unos minutos.";
+        } else if (status === 404) {
+          niceMessage = "El recurso solicitado no existe.";
+        } else if (status === 400) {
+          niceMessage = serverMessage || "Hay un error en los datos enviados.";
+        } else if (status >= 500) {
+          niceMessage = "Hubo un fallo en el servidor. Estamos trabajando en ello.";
+        }
+      } else if (error.message === "Network Error") {
+        niceMessage = "No pudimos conectar con el servidor. Revisa tu internet.";
+      } else if (error.message && error.message.includes("timeout")) {
+        niceMessage = "La conexión tardó demasiado. Intenta de nuevo.";
+      }
+
+      // Attach translated message
+      error.translatedMessage = niceMessage;
+
+      // 2. Original Logic for 401 - auto-logout for expired sessions
+      if (error.response && error.response.status === 401) {
+        const isLoginAttempt = error.config?.url?.includes("/auth/signin");
+        
+        if (!isLoginAttempt) {
           AuthService.logout();
-          
-          // Only redirect if we are not already at the root
           if (window.location.pathname !== "/") {
             window.location.href = "/";
           }

@@ -10,6 +10,7 @@ import org.springframework.security.authentication.DisabledException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -49,6 +50,19 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DisabledException.class)
     public ResponseEntity<Map<String, Object>> handleDisabled(DisabledException ex) {
         return buildResponse(HttpStatus.UNAUTHORIZED, "Cuenta inactiva. Active su cuenta usando el link generado.");
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
+        String msg = "Error de integridad de datos.";
+        String message = ex.getMostSpecificCause().getMessage();
+        if (message.contains("UK_6DOTKOTT2KJSP8VW4D0M25FB7") || message.toLowerCase().contains("users(email") || message.toLowerCase().contains("email nulls first")) {
+            msg = "El correo electrónico ya está registrado.";
+        } else if (message.toLowerCase().contains("users(username")) {
+            msg = "El nombre de usuario ya está registrado.";
+        }
+        logger.warn("Data integrity violation: {}", message);
+        return buildResponse(HttpStatus.BAD_REQUEST, msg);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

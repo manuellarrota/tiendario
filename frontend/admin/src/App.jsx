@@ -27,6 +27,7 @@ import AdminOnboardingPage from './pages/AdminOnboardingPage';
 import AdminCategorySuggestionsPage from './pages/AdminCategorySuggestionsPage';
 
 import RequireRole from './components/RequireRole';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Shorthand guards
 const Auth = ({ children }) => <RequireRole roles={['ROLE_MANAGER', 'ROLE_ADMIN']}>{children}</RequireRole>;
@@ -36,41 +37,43 @@ const ClientOnly = ({ children }) => <RequireRole roles={['ROLE_CLIENT']}>{child
 function App() {
   return (
     <Router>
-      <div className="app-container">
-        <Routes>
-          {/* ── PUBLIC ─────────────────────────────────────── */}
-          <Route path="/"      element={<LandingPage />} />
-          <Route path="/demo" element={<DemoPage />} />
+      <ErrorBoundary>
+        <div className="app-container">
+          <Routes>
+            {/* ── PUBLIC ─────────────────────────────────────── */}
+            <Route path="/"      element={<LandingPage />} />
+            <Route path="/demo" element={<DemoPage />} />
 
 
-          {/* ── AUTHENTICATED (any logged-in manager/admin) ── */}
-          <Route path="/dashboard"         element={<Auth><DashboardHome /></Auth>} />
-          <Route path="/inventory"         element={<Auth><InventoryPage /></Auth>} />
-          <Route path="/categories"        element={<Auth><CategoriesPage /></Auth>} />
-          <Route path="/suppliers"         element={<Auth><SupplierPage /></Auth>} />
-          <Route path="/customers"         element={<Auth><CustomersPage /></Auth>} />
-          <Route path="/purchases/new"     element={<Auth><NewPurchasePage /></Auth>} />
-          <Route path="/purchases/history" element={<Auth><PurchaseHistoryPage /></Auth>} />
-          <Route path="/pos"               element={<Auth><POSPage /></Auth>} />
-          <Route path="/reports"           element={<Auth><ReportsPage /></Auth>} />
-          <Route path="/company"           element={<Auth><CompanyPage /></Auth>} />
-          <Route path="/sales/history"     element={<Auth><SalesHistoryPage /></Auth>} />
-          <Route path="/daily-closing"     element={<Auth><DailyClosingPage /></Auth>} />
-          <Route path="/notifications"     element={<Auth><NotificationsPage /></Auth>} />
+            {/* ── AUTHENTICATED (any logged-in manager/admin) ── */}
+            <Route path="/dashboard"         element={<Auth><DashboardHome /></Auth>} />
+            <Route path="/inventory"         element={<Auth><InventoryPage /></Auth>} />
+            <Route path="/categories"        element={<Auth><CategoriesPage /></Auth>} />
+            <Route path="/suppliers"         element={<Auth><SupplierPage /></Auth>} />
+            <Route path="/customers"         element={<Auth><CustomersPage /></Auth>} />
+            <Route path="/purchases/new"     element={<Auth><NewPurchasePage /></Auth>} />
+            <Route path="/purchases/history" element={<Auth><PurchaseHistoryPage /></Auth>} />
+            <Route path="/pos"               element={<Auth><POSPage /></Auth>} />
+            <Route path="/reports"           element={<Auth><ReportsPage /></Auth>} />
+            <Route path="/company"           element={<Auth><CompanyPage /></Auth>} />
+            <Route path="/sales/history"     element={<Auth><SalesHistoryPage /></Auth>} />
+            <Route path="/daily-closing"     element={<Auth><DailyClosingPage /></Auth>} />
+            <Route path="/notifications"     element={<Auth><NotificationsPage /></Auth>} />
 
-          {/* ── SUPER ADMIN ONLY ───────────────────────────── */}
-          <Route path="/admin/companies"  element={<AdminOnly><AdminCompaniesPage /></AdminOnly>} />
-          <Route path="/admin/payments"   element={<AdminOnly><AdminPaymentsPage /></AdminOnly>} />
-          <Route path="/admin/users"      element={<AdminOnly><AdminUsersPage /></AdminOnly>} />
-          <Route path="/admin/config"     element={<AdminOnly><AdminConfigPage /></AdminOnly>} />
-          <Route path="/admin/catalog"    element={<AdminOnly><AdminCatalogPage /></AdminOnly>} />
-          <Route path="/admin/categories" element={<AdminOnly><AdminCategorySuggestionsPage /></AdminOnly>} />
-          <Route path="/admin/onboarding" element={<AdminOnly><AdminOnboardingPage /></AdminOnly>} />
+            {/* ── SUPER ADMIN ONLY ───────────────────────────── */}
+            <Route path="/admin/companies"  element={<AdminOnly><AdminCompaniesPage /></AdminOnly>} />
+            <Route path="/admin/payments"   element={<AdminOnly><AdminPaymentsPage /></AdminOnly>} />
+            <Route path="/admin/users"      element={<AdminOnly><AdminUsersPage /></AdminOnly>} />
+            <Route path="/admin/config"     element={<AdminOnly><AdminConfigPage /></AdminOnly>} />
+            <Route path="/admin/catalog"    element={<AdminOnly><AdminCatalogPage /></AdminOnly>} />
+            <Route path="/admin/categories" element={<AdminOnly><AdminCategorySuggestionsPage /></AdminOnly>} />
+            <Route path="/admin/onboarding" element={<AdminOnly><AdminOnboardingPage /></AdminOnly>} />
 
-          {/* ── CATCH-ALL ──────────────────────────────────── */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </div>
+            {/* ── CATCH-ALL ──────────────────────────────────── */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
+      </ErrorBoundary>
     </Router>
   );
 }

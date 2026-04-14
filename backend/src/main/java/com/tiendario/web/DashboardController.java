@@ -139,7 +139,22 @@ public class DashboardController {
                 }
                 summary.put("revenueGrowth", growth.setScale(1, RoundingMode.HALF_UP));
 
-                // 8. Payment Methods Breakdown
+                // 8. Recent Sales (Last 5)
+                List<Sale> recentSales = allSales.stream().limit(5).collect(java.util.stream.Collectors.toList());
+                // We map to a simpler format for the frontend to avoid serialization issues with lazy loading
+                List<Map<String, Object>> recentSalesList = recentSales.stream().map(s -> {
+                        Map<String, Object> saleMap = new HashMap<>();
+                        saleMap.put("id", s.getId());
+                        saleMap.put("date", s.getDate());
+                        saleMap.put("totalAmount", s.getTotalAmount());
+                        saleMap.put("paymentMethod", s.getPaymentMethod());
+                        saleMap.put("status", s.getStatus());
+                        saleMap.put("customerName", s.getCustomerName());
+                        return saleMap;
+                }).collect(java.util.stream.Collectors.toList());
+                summary.put("recentSales", recentSalesList);
+
+                // 9. Payment Methods Breakdown
                 Map<String, Long> payments = new HashMap<>();
                 for (Sale s : allSales) {
                         String method = s.getPaymentMethod() != null ? s.getPaymentMethod().toString() : "PENDING";
@@ -157,5 +172,61 @@ public class DashboardController {
                 }
 
                 return ResponseEntity.ok(summary);
+        }
+
+        @GetMapping("/sales-chart")
+        @PreAuthorize("hasRole('MANAGER')")
+        public ResponseEntity<?> getSalesChart(@org.springframework.web.bind.annotation.RequestParam(defaultValue = "weekly") String period) {
+                UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
+                                .getPrincipal();
+                Long companyId = userDetails.getCompanyId();
+
+                List<Map<String, Object>> chartData = new java.util.ArrayList<>();
+
+                if ("weekly".equals(period)) {
+                        // Last 7 days
+                        for (int i = 6; i >= 0; i--) {
+                                LocalDate date = LocalDate.now().minusDays(i);
+                                LocalDateTime start = date.atStartOfDay();
+                                LocalDateTime end = date.atTime(java.time.LocalTime.MAX);
+                                List<Sale> sales = saleRepository.findByCompanyIdAndDateBetween(companyId, start, end);
+                                BigDecimal total = sales.stream().map(Sale::getTotalAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+                                
+                                Map<String, Object> entry = new HashMap<>();
+                                entry.put("label", i == 0 ? "Hoy" : date.getDayOfWeek().getDisplayName(java.time.format.TextStyle.SHORT, new java.util.Locale("es", "ES")));
+                                entry.put("value", total);
+                                chartData.add(entry);
+                        }
+                } else if ("monthly".equals(period)) {
+                        // Last 30 days
+                        for (int i = 29; i >= 0; i--) {
+                                LocalDate date = LocalDate.now().minusDays(i);
+                                LocalDateTime start = date.atStartOfDay();
+                                LocalDateTime end = date.atTime(java.time.LocalTime.MAX);
+                                List<Sale> sales = saleRepository.findByCompanyIdAndDateBetween(companyId, start, end);
+                                BigDecimal total = sales.stream().map(Sale::getTotalAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+                                
+                                Map<String, Object> entry = new HashMap<>();
+                                entry.put("label", date.getDayOfMonth() + " " + date.getMonth().getDisplayName(java.time.format.TextStyle.SHORT, new java.util.Locale("es", "ES")));
+                                entry.put("value", total);
+                                chartData.add(entry);
+                        }
+                } else if ("annual".equals(period)) {
+                        // Last 12 months
+                        for (int i = 11; i >= 0; i--) {
+                                LocalDate date = LocalDate.now().minusMonths(i);
+                                LocalDateTime start = date.withDayOfMonth(1).atStartOfDay();
+                                LocalDateTime end = date.withDayOfMonth(date.lengthOfMonth()).atTime(java.time.LocalTime.MAX);
+                                List<Sale> sales = saleRepository.findByCompanyIdAndDateBetween(companyId, start, end);
+                                BigDecimal total = sales.stream().map(Sale::getTotalAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+                                
+                                Map<String, Object> entry = new HashMap<>();
+                                entry.put("label", date.getMonth().getDisplayName(java.time.format.TextStyle.SHORT, new java.util.Locale("es", "ES")));
+                                entry.put("value", total);
+                                chartData.add(entry);
+                        }
+                }
+
+                return ResponseEntity.ok(chartData);
         }
 }

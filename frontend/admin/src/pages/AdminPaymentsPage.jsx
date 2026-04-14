@@ -31,7 +31,7 @@ const AdminPaymentsPage = () => {
             },
             (error) => {
                 console.error("Error loading global payments", error);
-                setError("No se pudieron cargar los pagos globales.");
+                setError(error.translatedMessage || "No se pudieron cargar los pagos globales.");
                 setLoading(false);
             }
         );
@@ -52,7 +52,7 @@ const AdminPaymentsPage = () => {
             },
             (err) => {
                 console.error("Error approving payment", err);
-                alert("Error al aprobar pago");
+                alert(err.translatedMessage || "Error al aprobar pago");
                 setProcessing(null);
             }
         );

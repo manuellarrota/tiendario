@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Alert, Spinner, Button, Badge, Modal, Form, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Container, Row, Col, Card, Alert, Spinner, Button, Badge, Modal, Form, OverlayTrigger, Tooltip, Table } from 'react-bootstrap';
 import Sidebar from '../components/Sidebar';
 import Layout from '../components/Layout';
 import AuthService from '../services/auth.service';
@@ -23,6 +23,9 @@ const DashboardHome = () => {
         notes: ''
     });
     const [paymentStatus, setPaymentStatus] = useState({ loading: false, success: false, error: '' });
+    const [chartData, setChartData] = useState([]);
+    const [chartPeriod, setChartPeriod] = useState('weekly');
+    const [chartLoading, setChartLoading] = useState(false);
 
     const isSuperAdmin = user?.roles?.includes('ROLE_ADMIN');
     const isPremium = user?.subscriptionStatus === 'PAID' || user?.subscriptionStatus === 'TRIAL';
@@ -38,7 +41,8 @@ const DashboardHome = () => {
 
     const daysLeft = getDaysRemaining();
     const isTrial = user?.subscriptionStatus === 'TRIAL';
-    const isTrialExpired = isTrial && daysLeft <= 0;
+    // Only determine trial expiration if summary has been loaded
+    const isTrialExpired = isTrial && summary && daysLeft <= 0;
 
     const isBlocked = user?.subscriptionStatus === 'PAST_DUE' || user?.subscriptionStatus === 'SUSPENDED' || isTrialExpired;
 
@@ -70,12 +74,25 @@ const DashboardHome = () => {
                 (error) => {
                     console.error("Error loading dashboard", error);
                     setLoading(false);
-                    if (error.response && error.response.status !== 403) {
-                        setError("No se pudo cargar el resumen.");
-                    }
+                    setError(error.translatedMessage || "No se pudo cargar el resumen.");
                 }
             );
         }
+    };
+
+    const loadChart = (period) => {
+        if (isSuperAdmin || isBlocked) return;
+        setChartLoading(true);
+        DashboardService.getSalesChart(period).then(
+            (response) => {
+                setChartData(response.data);
+                setChartLoading(false);
+            },
+            (error) => {
+                console.error("Error loading chart", error);
+                setChartLoading(false);
+            }
+        );
     };
 
     useEffect(() => {
@@ -89,6 +106,12 @@ const DashboardHome = () => {
         return () => clearInterval(interval);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isSuperAdmin, isBlocked]);
+
+    useEffect(() => {
+        if (!isSuperAdmin && !isBlocked) {
+            loadChart(chartPeriod);
+        }
+    }, [chartPeriod, isSuperAdmin, isBlocked]);
 
     const handleSubscriptionChange = (type) => {
         if (type === 'upgrade' || type === 'trial') {
@@ -229,8 +252,8 @@ const DashboardHome = () => {
                         )}
                         <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 mb-md-5 gap-3">
                             <div>
-                                <h2 className="display-6 fw-bold mb-0 text-gradient">Panel de Control</h2>
-                                <p className="text-secondary mb-0">Gestiona tu negocio en tiempo real.</p>
+                                <h2 className="display-6 fw-bold mb-0 text-gradient reveal-up">Panel de Control</h2>
+                                <p className="text-secondary mb-0 reveal-up delay-1">Gestiona tu negocio en tiempo real.</p>
                             </div>
                             {!isPremium && !isSuperAdmin && (
                                 <div className="premium-badge-v1 py-2 px-3 fw-bold">Plan Gratuito</div>
@@ -348,7 +371,7 @@ const DashboardHome = () => {
                             </Row>
                         ) : (
                             <>
-                                <Row className="g-4">
+                                <Row className="g-4 reveal-up delay-2">
                                     <Col lg={3} md={6}>
                                         <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Cantidad total de productos únicos que tienes registrados en tu inventario.")}>
                                             <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-dark" style={{ cursor: 'help' }}>
@@ -408,7 +431,73 @@ const DashboardHome = () => {
                                         </OverlayTrigger>
                                     </Col>
 
-                                    <Col lg={4} md={12}>
+                                    {/* Sales Performance Chart Section */}
+                                    {!isSuperAdmin && (
+                                        <Col lg={12} className="reveal-up delay-3">
+                                            <Card className="glass-card-admin border-0 shadow-sm rounded-4 mb-4">
+                                                <Card.Body className="p-4">
+                                                    <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+                                                        <div>
+                                                            <h5 className="fw-bold mb-1 text-dark">Rendimiento de Ventas</h5>
+                                                            <p className="text-secondary small mb-0">Visualiza tus ingresos históricos por periodo.</p>
+                                                        </div>
+                                                        <div className="d-flex bg-light p-1 rounded-pill">
+                                                            {['weekly', 'monthly', 'annual'].map((p) => (
+                                                                <Button 
+                                                                    key={p}
+                                                                    size="sm"
+                                                                    variant={chartPeriod === p ? "white" : "link"}
+                                                                    className={`rounded-pill px-3 border-0 ${chartPeriod === p ? 'shadow-sm fw-bold text-primary' : 'text-secondary text-decoration-none'}`}
+                                                                    onClick={() => setChartPeriod(p)}
+                                                                >
+                                                                    {p === 'weekly' ? 'Semanal' : p === 'monthly' ? 'Mensual' : 'Anual'}
+                                                                </Button>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+
+                                                    {chartLoading ? (
+                                                        <div className="d-flex align-items-center justify-content-center py-5" style={{ height: '200px' }}>
+                                                            <Spinner animation="grow" variant="primary" size="sm" />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="d-flex align-items-end gap-2 mt-4" style={{ height: '220px', overflowX: 'auto', paddingBottom: '20px' }}>
+                                                            {chartData.map((d, i) => {
+                                                                const maxValue = Math.max(...chartData.map(item => item.value), 1);
+                                                                const heightPercent = (d.value / maxValue) * 100;
+                                                                return (
+                                                                    <div key={i} className="d-flex flex-column align-items-center flex-grow-1 h-100 min-width-50">
+                                                                        <div className="flex-grow-1 d-flex align-items-end w-100 px-1">
+                                                                            <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, `${d.label}: $${Number(d.value).toLocaleString()}`)}>
+                                                                                <div 
+                                                                                    className="w-100 rounded-top-3 transition-all chart-bar-gradient"
+                                                                                    style={{ 
+                                                                                        height: `${Math.max(heightPercent, 5)}%`,
+                                                                                        opacity: i === chartData.length - 1 ? 1 : 0.7,
+                                                                                        cursor: 'pointer'
+                                                                                    }}
+                                                                                />
+                                                                            </OverlayTrigger>
+                                                                        </div>
+                                                                        <span className="text-muted mt-2 fw-bold" style={{ fontSize: '0.65rem', whiteSpace: 'nowrap' }}>{d.label}</span>
+                                                                    </div>
+                                                                );
+                                                            })}
+
+                                                            {chartData.length === 0 && (
+                                                                <div className="w-100 text-center py-5 opacity-25">
+                                                                    <FaChartLine size={40} className="mb-2" />
+                                                                    <p className="small mb-0">No hay datos suficientes para este periodo</p>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </Card.Body>
+                                            </Card>
+                                        </Col>
+                                    )}
+
+                                    <Col lg={4} md={12} className="reveal-up delay-3">
                                         <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Resumen del flujo de tus pedidos actuales desde que se reciben hasta que se entregan.")}>
                                             <Card className="glass-card-admin border-0 shadow-sm rounded-4 h-100" style={{ cursor: 'help' }}>
                                                 <Card.Header className="bg-white border-0 py-3 px-4">
@@ -440,7 +529,7 @@ const DashboardHome = () => {
 
                                     <Col lg={4} md={6}>
                                         <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "El producto que más ha generado ventas en tu tienda recientemente.")}>
-                                            <Card className="glass-card-admin border-0 shadow-sm rounded-4 h-100 bg-primary bg-opacity-10" style={{ cursor: 'help' }}>
+                                            <Card className="glass-card-admin border-0 shadow-sm rounded-4 h-100 bg-primary bg-opacity-10 reveal-up delay-4" style={{ cursor: 'help' }}>
                                                 <Card.Body className="p-4 d-flex flex-column align-items-center justify-content-center text-center">
                                                     <div className="rounded-circle bg-primary p-3 mb-3 text-white shadow-sm">
                                                         <FaRocket style={{ fontSize: '1.5rem' }} />
@@ -487,6 +576,63 @@ const DashboardHome = () => {
                                         </OverlayTrigger>
                                     </Col>
                                 </Row>
+
+                                {/* Recent Sales Table Section */}
+                                {!isSuperAdmin && (
+                                    <div className="reveal-up delay-4 mt-4">
+                                        <Card className="glass-card-admin border-0 shadow-sm rounded-4">
+                                            <Card.Body className="p-4">
+                                                <div className="d-flex justify-content-between align-items-center mb-4">
+                                                    <h5 className="fw-bold mb-0 text-dark">Últimas Ventas</h5>
+                                                    <Button variant="link" size="sm" className="text-primary text-decoration-none fw-bold" onClick={() => window.location.href='/sales-history'}>Ver todas</Button>
+                                                </div>
+                                                <div className="table-responsive">
+                                                    <Table borderless hover className="align-middle mb-0">
+                                                        <thead className="bg-light bg-opacity-50 text-secondary small">
+                                                            <tr>
+                                                                <th className="rounded-start-3 px-3">ORDEN ID</th>
+                                                                <th>CLIENTE</th>
+                                                                <th>MÉTODO</th>
+                                                                <th>ESTADO</th>
+                                                                <th className="text-end rounded-end-3 px-3">MONTO</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody className="small">
+                                                            {summary?.recentSales && summary.recentSales.length > 0 ? (
+                                                                summary.recentSales.map((sale) => (
+                                                                    <tr key={sale.id} className="border-bottom border-light">
+                                                                        <td className="px-3"><span className="fw-bold text-dark">#{sale.id.toString().slice(-6)}</span></td>
+                                                                        <td>
+                                                                            <div className="fw-bold text-dark">{sale.customerName || 'Cliente General'}</div>
+                                                                            <small className="text-muted">{new Date(sale.date).toLocaleDateString()} {new Date(sale.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</small>
+                                                                        </td>
+                                                                        <td>
+                                                                            <Badge bg="light" text="dark" className="rounded-pill px-2 py-1">
+                                                                                {sale.paymentMethod === 'CASH' ? '💵 Efectivo' : sale.paymentMethod === 'CARD' ? '💳 Tarjeta' : '🏦 Transf'}
+                                                                            </Badge>
+                                                                        </td>
+                                                                        <td>
+                                                                            <Badge bg={sale.status === 'PAID' ? 'success' : 'warning'} className="rounded-pill px-2 py-1">
+                                                                                {sale.status === 'PAID' ? 'Completado' : 'Pendiente'}
+                                                                            </Badge>
+                                                                        </td>
+                                                                        <td className="text-end px-3">
+                                                                            <div className="fw-bold text-primary">${Number(sale.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                                                                        </td>
+                                                                    </tr>
+                                                                ))
+                                                            ) : (
+                                                                <tr>
+                                                                    <td colSpan="5" className="text-center py-4 text-muted">Aún no hay ventas registradas</td>
+                                                                </tr>
+                                                            )}
+                                                        </tbody>
+                                                    </Table>
+                                                </div>
+                                            </Card.Body>
+                                        </Card>
+                                    </div>
+                                )}
 
                                 {!isPremium && (
                                     <div className="mt-5" id="pricing-section">

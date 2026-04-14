@@ -165,7 +165,7 @@ const NewPurchasePage = () => {
                 }
             },
             (error) => {
-                setMessage("❌ Error creando producto: " + (error.response?.data?.message || error.message));
+                setMessage("❌ " + (error.translatedMessage || "Error creando producto."));
                 setTimeout(() => setMessage(""), 5000);
             }
         );
@@ -198,7 +198,7 @@ const NewPurchasePage = () => {
             },
             (error) => {
                 console.error("Error registrando compra", error);
-                setMessage("❌ Error registrando compra: " + (error.response?.data?.message || error.message));
+                setMessage("❌ " + (error.translatedMessage || "Error registrando compra."));
                 setTimeout(() => setMessage(""), 5000);
             }
         );

@@ -98,6 +98,7 @@ const LandingPage = () => {
             const rolesStr = searchParams.get('roles');
             const id = searchParams.get('id');
             const companyId = searchParams.get('companyId');
+            const subStatus = searchParams.get('subscriptionStatus');
 
             if (verifiedToken && verifiedUsername) {
                 const userData = {
@@ -106,7 +107,7 @@ const LandingPage = () => {
                     roles: rolesStr ? rolesStr.split(',') : [],
                     id: id,
                     companyId: companyId,
-                    subscriptionStatus: 'TRIAL'
+                    subscriptionStatus: subStatus || 'TRIAL'
                 };
                 localStorage.setItem("user", JSON.stringify(userData));
                 setVerificationSuccess(true);
@@ -147,19 +148,8 @@ const LandingPage = () => {
                 window.location.reload();
             },
             (error) => {
-                const msg = (error.response && error.response.data && error.response.data.message) || error.message || error.toString();
-                let userFriendlyMessage = msg;
-
-                if (error.response && error.response.status === 401) {
-                    userFriendlyMessage = msg.includes("Error:") ? msg : "Usuario o contraseña incorrectos.";
-                } else if (msg.includes("401")) {
-                    userFriendlyMessage = "Usuario o contraseña incorrectos.";
-                } else if (msg.includes("Network Error")) {
-                    userFriendlyMessage = "Error de conexión. Verifique que el servidor esté activo.";
-                }
-
                 setLoading(false);
-                setMessage(userFriendlyMessage);
+                setMessage(error.translatedMessage || "Error al iniciar sesión. Intenta de nuevo.");
             }
         );
     };
@@ -178,12 +168,13 @@ const LandingPage = () => {
                 setRegSuccessful(true);
             },
             (error) => {
-                const resMessage = (error.response && error.response.data && error.response.data.message) || error.message || error.toString();
-                let userFriendlyMessage = resMessage;
+                let userFriendlyMessage = error.translatedMessage;
 
-                if (resMessage.includes("Error: Company Name is required")) {
+                // Specific validations from server (business logic)
+                const serverMsg = error.response?.data?.message || "";
+                if (serverMsg.includes("Company Name is required")) {
                     userFriendlyMessage = "El nombre de la empresa es obligatorio.";
-                } else if (resMessage.includes("is already in use") || resMessage.includes("exists")) {
+                } else if (serverMsg.includes("is already in use") || serverMsg.includes("exists")) {
                     userFriendlyMessage = "El usuario o correo ya está registrado.";
                 }
 
@@ -210,7 +201,7 @@ const LandingPage = () => {
                 setForgotLoading(false);
             })
             .catch((err) => {
-                setForgotMessage(err.response?.data?.message || "Error al procesar la solicitud.");
+                setForgotMessage(err.translatedMessage || "Error al procesar la solicitud.");
                 setForgotSuccess(false);
                 setForgotLoading(false);
             });
@@ -237,7 +228,7 @@ const LandingPage = () => {
                 setResetLoading(false);
             })
             .catch((err) => {
-                setResetMessage(err.response?.data?.message || "Error al restablecer la contraseña.");
+                setResetMessage(err.translatedMessage || "Error al restablecer la contraseña.");
                 setResetSuccess(false);
                 setResetLoading(false);
             });
@@ -269,14 +260,14 @@ const LandingPage = () => {
             <Container className="mt-5 pt-2 mb-5">
                 <Row className="align-items-center">
                     <Col lg={7} className="text-start pe-lg-5">
-                        <h1 className="display-3 mb-4 fw-bolder" style={{ lineHeight: '1.1', background: 'none', WebkitTextFillColor: 'initial', color: '#1e293b' }}>
+                        <h1 className="display-3 mb-4 fw-bolder reveal-up" style={{ lineHeight: '1.1', background: 'none', WebkitTextFillColor: 'initial', color: '#1e293b' }}>
                             Administra tu tienda.<br />
                             <span className="text-gradient">Vende más. Pierde menos.</span>
                         </h1>
-                        <p className="lead text-secondary mb-5 fs-4" style={{ maxWidth: '550px' }}>
+                        <p className="lead text-secondary mb-5 fs-4 reveal-up delay-1" style={{ maxWidth: '550px' }}>
                             Punto de venta, control de inventario y presencia automática en el marketplace local — todo desde un solo panel.
                         </p>
-                        <div className="d-flex gap-3">
+                        <div className="d-flex gap-3 reveal-up delay-2">
                             <Button onClick={() => openRegister('free')} className="btn btn-primary btn-lg px-4 py-3 shadow-lg">
                                 Crear mi Tienda Gratis
                             </Button>
@@ -291,7 +282,7 @@ const LandingPage = () => {
                     </Col>
 
                     {/* Hero stats panel — replaces redundant login card */}
-                    <Col lg={5} className="mt-5 mt-lg-0">
+                    <Col lg={5} className="mt-5 mt-lg-0 reveal-up delay-3">
                         <div className="glass-panel p-5 border-0 shadow-xl bg-white" style={{ borderRadius: '32px' }}>
                             <p className="text-secondary small fw-bold text-uppercase mb-4" style={{ letterSpacing: '1px' }}>¿Qué incluye Tiendario?</p>
                             <div className="d-flex flex-column gap-3">

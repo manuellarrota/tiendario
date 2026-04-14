@@ -213,8 +213,7 @@ const InventoryPage = () => {
                     setTimeout(() => setMessage(""), 3000);
                 },
                 (error) => {
-                    const resMessage = (error.response && error.response.data && error.response.data.message) || error.message;
-                    setMessage(resMessage);
+                    setMessage("❌ " + (error.translatedMessage || "No se pudo actualizar el producto."));
                 }
             );
         } else {
@@ -227,8 +226,7 @@ const InventoryPage = () => {
                     setTimeout(() => setMessage(""), 3000);
                 },
                 (error) => {
-                    const resMessage = (error.response && error.response.data && error.response.data.message) || error.message;
-                    setMessage(resMessage);
+                    setMessage("❌ " + (error.translatedMessage || "No se pudo crear el producto."));
                 }
             );
         }
@@ -298,8 +296,8 @@ const InventoryPage = () => {
             setMessage(response.data.join("\n"));
             loadProducts();
             e.target.value = null;
-        }).catch(() => {
-            setMessage("Error importando productos");
+        }).catch((error) => {
+            setMessage("❌ " + (error.translatedMessage || "Error importando productos"));
             e.target.value = null;
         });
     };
@@ -781,8 +779,7 @@ const InventoryPage = () => {
                                 setMessage("¡Sugerencia de categoría añadida y lista para usar!");
                             }).catch((err) => {
                                 setIsSuggesting(false);
-                                const msg = (err.response && err.response.data && err.response.data.message) || "Hubo un error al guardar la sugerencia.";
-                                alert(msg);
+                                alert(err.translatedMessage || "Hubo un error al guardar la sugerencia.");
                             });
                         }}
                     >

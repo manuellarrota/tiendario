@@ -237,7 +237,7 @@ const POSPage = () => {
             }
         }).catch(err => {
             console.error("Error creating customer:", err);
-            triggerToast("Error al registrar cliente: " + (err.response?.data?.message || err.message), "error");
+            triggerToast("Error al registrar cliente: " + (err.translatedMessage || "Verifique los datos."), "error");
         });
     };
 

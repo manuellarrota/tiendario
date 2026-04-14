@@ -55,8 +55,8 @@ const CustomersPage = () => {
                     loadCustomers();
                     setTimeout(() => setMessage(''), 3000);
                 },
-                () => {
-                    setMessage('❌ Error actualizando cliente');
+                (error) => {
+                    setMessage('❌ ' + (error.translatedMessage || 'Error actualizando cliente'));
                     setTimeout(() => setMessage(''), 3000);
                 }
             );
@@ -69,8 +69,7 @@ const CustomersPage = () => {
                     setTimeout(() => setMessage(''), 3000);
                 },
                 (error) => {
-                    const errorMsg = error.response?.data?.message || 'Error creando cliente';
-                    setMessage('❌ ' + errorMsg);
+                    setMessage('❌ ' + (error.translatedMessage || 'Error creando cliente'));
                     setTimeout(() => setMessage(''), 3000);
                 }
             );
@@ -95,8 +94,8 @@ const CustomersPage = () => {
                     loadCustomers();
                     setTimeout(() => setMessage(''), 3000);
                 },
-                () => {
-                    setMessage('❌ Error eliminando cliente');
+                (error) => {
+                    setMessage('❌ ' + (error.translatedMessage || 'Error eliminando cliente'));
                     setTimeout(() => setMessage(''), 3000);
                 }
             );
