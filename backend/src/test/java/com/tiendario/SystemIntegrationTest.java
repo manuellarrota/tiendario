@@ -8,6 +8,8 @@ import com.tiendario.repository.CustomerRepository;
 import com.tiendario.repository.ProductRepository;
 import com.tiendario.repository.SaleRepository;
 import com.tiendario.service.ProductIndexService;
+import com.tiendario.repository.PurchaseRepository;
+import com.tiendario.repository.SupplierRepository;
 import com.tiendario.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
@@ -56,6 +58,12 @@ public class SystemIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
+    private PurchaseRepository purchaseRepository;
+
+    @Autowired
+    private SupplierRepository supplierRepository;
+
+    @Autowired
     private com.tiendario.repository.CategoryRepository categoryRepository;
 
     @MockBean
@@ -69,9 +77,11 @@ public class SystemIntegrationTest {
     void setUp() {
         // Clean up - order matters!
         saleRepository.deleteAll();
+        purchaseRepository.deleteAll();
         productRepository.deleteAll();
         categoryRepository.deleteAll();
         customerRepository.deleteAll();
+        supplierRepository.deleteAll();
         userRepository.deleteAll(); // Delete users first
         companyRepository.deleteAll();
 

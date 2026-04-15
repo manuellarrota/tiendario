@@ -3,7 +3,9 @@ package com.tiendario;
 import com.tiendario.domain.*;
 import com.tiendario.repository.CompanyRepository;
 import com.tiendario.repository.ProductRepository;
+import com.tiendario.repository.PurchaseRepository;
 import com.tiendario.repository.SaleRepository;
+import com.tiendario.repository.SupplierRepository;
 import com.tiendario.security.UserDetailsImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,15 +42,23 @@ public class DashboardControllerTest {
     private SaleRepository saleRepository;
 
     @Autowired
+    private PurchaseRepository purchaseRepository;
+
+    @Autowired
+    private SupplierRepository supplierRepository;
+
+    @Autowired
     private CompanyRepository companyRepository;
 
     private Company testCompany;
 
     @BeforeEach
     void setUp() {
-        // Clear data
+        // Clear data in correct order to avoid FK violations
         saleRepository.deleteAll();
+        purchaseRepository.deleteAll();
         productRepository.deleteAll();
+        supplierRepository.deleteAll();
 
         // Create test company
         testCompany = new Company();

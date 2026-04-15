@@ -6,6 +6,7 @@ import com.tiendario.payload.request.PurchaseRequest;
 import com.tiendario.repository.CompanyRepository;
 import com.tiendario.repository.ProductRepository;
 import com.tiendario.repository.PurchaseRepository;
+import com.tiendario.repository.SaleRepository;
 import com.tiendario.repository.SupplierRepository;
 import com.tiendario.security.UserDetailsImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,6 +42,9 @@ public class PurchaseControllerTest {
     private PurchaseRepository purchaseRepository;
 
     @Autowired
+    private SaleRepository saleRepository;
+
+    @Autowired
     private ProductRepository productRepository;
 
     @Autowired
@@ -59,6 +63,7 @@ public class PurchaseControllerTest {
     @BeforeEach
     void setUp() {
         // Clear data
+        saleRepository.deleteAll();
         purchaseRepository.deleteAll();
         productRepository.deleteAll();
 

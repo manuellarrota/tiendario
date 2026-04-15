@@ -76,8 +76,8 @@ public class SupplierControllerTest {
     void getSuppliers_ShouldReturnList() throws Exception {
         mockMvc.perform(get("/api/suppliers"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(1))))
-                .andExpect(jsonPath("$[0].name", is("Test Supplier Inc")));
+                .andExpect(jsonPath("$.suppliers", hasSize(greaterThanOrEqualTo(1))))
+                .andExpect(jsonPath("$.suppliers[0].name", is("Test Supplier Inc")));
     }
 
     @Test

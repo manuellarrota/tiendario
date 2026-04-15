@@ -82,10 +82,10 @@ public class CompanyControllerTest {
         // Then downgrade
         mockMvc.perform(post("/api/company/unsubscribe"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message", containsString("TRIAL")));
+                .andExpect(jsonPath("$.message", containsString("PAST_DUE")));
 
         Company updated = companyRepository.findById(testCompany.getId()).orElse(null);
         assert updated != null;
-        assert updated.getSubscriptionStatus() == SubscriptionStatus.TRIAL;
+        assert updated.getSubscriptionStatus() == SubscriptionStatus.PAST_DUE;
     }
 }

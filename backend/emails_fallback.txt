@@ -200,3 +200,8 @@
 [2026-03-12T08:53:04.306171900] TO: mock_1773319968332_100@example.com | SUBJECT: 🚀 ¡Bienvenido a Tiendario! — Credenciales de Store Mock 1773319968332 100 | HTML: (logged)
 [2026-03-12T09:29:03.085303100] TO: store_1773322129535@test.com | SUBJECT: ✉️ Verifica tu cuenta — Tiendario | HTML: (logged)
 [2026-03-12T09:30:54.537796400] TO: store_1773322241409@test.com | SUBJECT: ✉️ Verifica tu cuenta — Tiendario | HTML: (logged)
+[2026-04-15T17:28:50.100500100] TO: manager@tiendario.com | SUBJECT: ✉️ Verifica tu cuenta — Tiendario | HTML: (logged)
+[2026-04-15T17:30:52.352182400] TO: manager@tiendario.com | SUBJECT: ✉️ Verifica tu cuenta — Tiendario | HTML: (logged)
+[2026-04-15T17:31:59.088403] TO: manager@tiendario.com | SUBJECT: ✉️ Verifica tu cuenta — Tiendario | HTML: (logged)
+[2026-04-15T17:33:41.624324400] TO: manager@tiendario.com | SUBJECT: ✉️ Verifica tu cuenta — Tiendario | HTML: (logged)
+[2026-04-15T17:34:56.462265700] TO: manager@tiendario.com | SUBJECT: ✉️ Verifica tu cuenta — Tiendario | HTML: (logged)

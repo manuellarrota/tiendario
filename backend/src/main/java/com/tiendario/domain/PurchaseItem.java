@@ -1,5 +1,6 @@
 package com.tiendario.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -21,5 +22,6 @@ public class PurchaseItem {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "purchase_id")
+    @JsonIgnore
     private Purchase purchase;
 }

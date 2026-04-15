@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tiendario.domain.*;
 import com.tiendario.repository.CompanyRepository;
 import com.tiendario.repository.ProductRepository;
+import com.tiendario.repository.PurchaseRepository;
 import com.tiendario.repository.SaleRepository;
 import com.tiendario.security.UserDetailsImpl;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +44,9 @@ public class SaleControllerTest {
     private ProductRepository productRepository;
 
     @Autowired
+    private PurchaseRepository purchaseRepository;
+
+    @Autowired
     private CompanyRepository companyRepository;
 
     @Autowired
@@ -56,6 +60,7 @@ public class SaleControllerTest {
     void setUp() {
         // Clear existing data
         saleRepository.deleteAll();
+        purchaseRepository.deleteAll();
         productRepository.deleteAll();
 
         // Create test company

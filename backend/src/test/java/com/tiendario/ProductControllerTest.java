@@ -86,8 +86,8 @@ public class ProductControllerTest {
     void getCompanyProducts_ShouldReturnList() throws Exception {
         mockMvc.perform(get("/api/products"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(1))))
-                .andExpect(jsonPath("$[0].name", is("Test Laptop")));
+                .andExpect(jsonPath("$.products", hasSize(greaterThanOrEqualTo(1))))
+                .andExpect(jsonPath("$.products[0].name", is("Test Laptop")));
     }
 
     @Test
