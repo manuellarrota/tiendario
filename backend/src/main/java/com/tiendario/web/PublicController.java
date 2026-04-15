@@ -63,7 +63,10 @@ public class PublicController {
             @RequestParam(required = false) String q,
             @RequestParam(required = false) BigDecimal minPrice,
             @RequestParam(required = false) BigDecimal maxPrice,
-            @RequestParam(required = false) Double minRating) {
+            @RequestParam(required = false) Double minRating,
+            @RequestParam(defaultValue = "relevant") String sortBy,
+            @RequestParam(required = false) Double lat,
+            @RequestParam(required = false) Double lon) {
 
         // Note: For complex grouping (best price per SKU/Name), we still need to process.
         // But we can filter by category at the database level first.
@@ -112,12 +115,29 @@ public class PublicController {
                 }))
                 .values().stream()
                 .map(list -> {
-                    Product bestPriceProduct = list.stream()
-                            .min(Comparator.comparing(Product::getPrice))
-                            .orElse(list.get(0));
-                    return this.mapToDTO(bestPriceProduct);
+                    Product representative;
+                    if ("proximity".equals(sortBy) && lat != null && lon != null) {
+                        // Pick nearest seller
+                        representative = list.stream()
+                                .min(Comparator.comparing(p -> calculateDistance(lat, lon, 
+                                    p.getCompany().getLatitude(), p.getCompany().getLongitude())))
+                                .orElse(list.get(0));
+                    } else {
+                        // Default to best price
+                        representative = list.stream()
+                                .min(Comparator.comparing(Product::getPrice))
+                                .orElse(list.get(0));
+                    }
+                    return this.mapToDTO(representative, lat, lon);
                 })
-                .sorted(Comparator.comparing(PublicProductDTO::getName))
+                .sorted((a, b) -> {
+                    if ("proximity".equals(sortBy) && a.getDistance() != null && b.getDistance() != null) {
+                        return a.getDistance().compareTo(b.getDistance());
+                    }
+                    if ("price_low".equals(sortBy)) return a.getPrice().compareTo(b.getPrice());
+                    if ("price_high".equals(sortBy)) return b.getPrice().compareTo(a.getPrice());
+                    return a.getName().compareTo(b.getName());
+                })
                 .collect(Collectors.toList());
 
         int totalItems = groupedProducts.size();
@@ -136,22 +156,26 @@ public class PublicController {
     }
 
     @GetMapping("/products/{id}")
-    public PublicProductDTO getProductDetail(@PathVariable Long id) {
+    public PublicProductDTO getProductDetail(@PathVariable Long id, 
+            @RequestParam(required = false) Double lat, 
+            @RequestParam(required = false) Double lon) {
         return productRepository.findById(id)
-                .map(this::mapToDTO)
+                .map(p -> this.mapToDTO(p, lat, lon))
                 .orElse(null);
     }
 
     @GetMapping("/products/company/{companyId}")
     public List<PublicProductDTO> getCompanyProducts(@PathVariable Long companyId) {
         return productRepository.findByCompanyId(companyId).stream()
-                .map(this::mapToDTO)
+                .map(p -> this.mapToDTO(p, null, null))
                 .collect(Collectors.toList());
     }
 
     @GetMapping("/products/name/{name}/sellers")
     public List<SellerOfferDTO> getSellersByName(@PathVariable String name,
-            @RequestParam(required = false) String sku) {
+            @RequestParam(required = false) String sku,
+            @RequestParam(required = false) Double lat,
+            @RequestParam(required = false) Double lon) {
         String normalizedName = name.trim().toLowerCase();
         String normalizedSku = sku != null ? sku.trim().toUpperCase() : null;
 
@@ -174,14 +198,26 @@ public class PublicController {
                     offer.setLongitude(p.getCompany().getLongitude());
                     offer.setDescription(p.getCompany().getDescription());
                     offer.setImageUrl(p.getCompany().getImageUrl());
+
+                    if (lat != null && lon != null && p.getCompany().getLatitude() != 0.0) {
+                        offer.setDistance(calculateDistance(lat, lon, 
+                            p.getCompany().getLatitude(), p.getCompany().getLongitude()));
+                    }
                     return offer;
                 })
-                .sorted(Comparator.comparing(SellerOfferDTO::getPrice))
+                .sorted((a, b) -> {
+                    if (lat != null && lon != null && a.getDistance() != null && b.getDistance() != null) {
+                        return a.getDistance().compareTo(b.getDistance());
+                    }
+                    return a.getPrice().compareTo(b.getPrice());
+                })
                 .collect(Collectors.toList());
     }
 
     @GetMapping("/search")
-    public List<PublicProductDTO> searchProducts(@RequestParam String q) {
+    public List<PublicProductDTO> searchProducts(@RequestParam String q,
+            @RequestParam(required = false) Double lat,
+            @RequestParam(required = false) Double lon) {
         List<Product> results = productIndexService.searchProducts(q);
 
         if (results.isEmpty()) {
@@ -203,7 +239,7 @@ public class PublicController {
                     Product bestPriceProduct = list.stream()
                             .min(Comparator.comparing(Product::getPrice))
                             .orElse(list.get(0));
-                    return this.mapToDTO(bestPriceProduct);
+                    return this.mapToDTO(bestPriceProduct, lat, lon);
                 })
                 .collect(Collectors.toList());
     }
@@ -228,7 +264,7 @@ public class PublicController {
         if (company.getSubscriptionStatus() != SubscriptionStatus.PAID
                 && company.getSubscriptionStatus() != SubscriptionStatus.TRIAL) {
             return ResponseEntity.badRequest().body(
-                    new MessageResponse("Seller cannot accept orders (FREE Plan)"));
+                    new MessageResponse("Seller cannot accept orders (Restricted Plan)"));
         }
 
         Customer customer = customerRepository.findByEmailAndCompanyId(request.getCustomerEmail(), company.getId())
@@ -360,7 +396,7 @@ public class PublicController {
                 lat - offset, lat + offset, lon - offset, lon + offset);
     }
 
-    private PublicProductDTO mapToDTO(Product product) {
+    private PublicProductDTO mapToDTO(Product product, Double userLat, Double userLon) {
         PublicProductDTO dto = new PublicProductDTO();
         dto.setId(product.getId());
         dto.setName(product.getName());
@@ -369,6 +405,7 @@ public class PublicController {
         dto.setStock(product.getStock());
         dto.setImageUrl(product.getImageUrl());
         dto.setSku(product.getSku());
+        dto.setBrand(product.getBrand());
 
         if (product.getCompany() != null) {
             dto.setCompanyId(product.getCompany().getId());
@@ -376,10 +413,16 @@ public class PublicController {
             if (product.getCompany().getSubscriptionStatus() != null) {
                 dto.setSubscriptionStatus(product.getCompany().getSubscriptionStatus().name());
             } else {
-                dto.setSubscriptionStatus("FREE");
+                dto.setSubscriptionStatus("TRIAL");
             }
             dto.setRating(product.getCompany().getRating());
             dto.setRatingCount(product.getCompany().getRatingCount());
+
+            // Calculate distance if both company and user coordinates are available
+            if (userLat != null && userLon != null && product.getCompany().getLatitude() != 0.0) {
+                dto.setDistance(calculateDistance(userLat, userLon, 
+                    product.getCompany().getLatitude(), product.getCompany().getLongitude()));
+            }
         }
         if (product.getCategory() != null) {
             dto.setCategory(product.getCategory());
@@ -387,5 +430,16 @@ public class PublicController {
             dto.setCategory(product.getCatalogProduct().getCategory().getName());
         }
         return dto;
+    }
+
+    private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
+        double earthRadius = 6371; // km
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                   Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                   Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return earthRadius * c;
     }
 }

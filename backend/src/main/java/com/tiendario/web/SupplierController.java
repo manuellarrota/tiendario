@@ -23,10 +23,37 @@ public class SupplierController {
 
     @GetMapping
     @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
-    public List<Supplier> getSuppliers() {
+    public ResponseEntity<?> getSuppliers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id,desc") String[] sort,
+            @RequestParam(required = false) String q) {
+
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
-        return supplierRepository.findByCompanyId(userDetails.getCompanyId());
+
+        try {
+            org.springframework.data.domain.Sort.Order order = new org.springframework.data.domain.Sort.Order(
+                    org.springframework.data.domain.Sort.Direction.fromString(sort[1]), sort[0]);
+            org.springframework.data.domain.Pageable paging = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by(order));
+
+            org.springframework.data.domain.Page<Supplier> pageSuppliers;
+            if (q != null && !q.trim().isEmpty()) {
+                pageSuppliers = supplierRepository.findByCompanyIdAndSearch(userDetails.getCompanyId(), q.trim().toLowerCase(), paging);
+            } else {
+                pageSuppliers = supplierRepository.findByCompanyId(userDetails.getCompanyId(), paging);
+            }
+
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("suppliers", pageSuppliers.getContent());
+            response.put("currentPage", pageSuppliers.getNumber());
+            response.put("totalItems", pageSuppliers.getTotalElements());
+            response.put("totalPages", pageSuppliers.getTotalPages());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 
     @PostMapping

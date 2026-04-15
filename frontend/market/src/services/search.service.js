@@ -26,8 +26,8 @@ const getCategories = () => {
     return axios.get(API_URL + 'categories');
 };
 
-const getSellersByName = (name, sku) => {
-    const params = sku ? { sku } : {};
+const getSellersByName = (name, sku, lat, lon) => {
+    const params = { sku, lat, lon };
     return axios.get(API_URL + 'products/name/' + encodeURIComponent(name) + '/sellers', { params });
 };
 

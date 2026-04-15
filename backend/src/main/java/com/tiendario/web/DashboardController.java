@@ -190,7 +190,9 @@ public class DashboardController {
                                 LocalDateTime start = date.atStartOfDay();
                                 LocalDateTime end = date.atTime(java.time.LocalTime.MAX);
                                 List<Sale> sales = saleRepository.findByCompanyIdAndDateBetween(companyId, start, end);
-                                BigDecimal total = sales.stream().map(Sale::getTotalAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+                                BigDecimal total = sales.stream()
+                                                .filter(s -> !com.tiendario.domain.SaleStatus.CANCELLED.equals(s.getStatus()))
+                                                .map(Sale::getTotalAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
                                 
                                 Map<String, Object> entry = new HashMap<>();
                                 entry.put("label", i == 0 ? "Hoy" : date.getDayOfWeek().getDisplayName(java.time.format.TextStyle.SHORT, new java.util.Locale("es", "ES")));
@@ -204,7 +206,9 @@ public class DashboardController {
                                 LocalDateTime start = date.atStartOfDay();
                                 LocalDateTime end = date.atTime(java.time.LocalTime.MAX);
                                 List<Sale> sales = saleRepository.findByCompanyIdAndDateBetween(companyId, start, end);
-                                BigDecimal total = sales.stream().map(Sale::getTotalAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+                                BigDecimal total = sales.stream()
+                                                .filter(s -> !com.tiendario.domain.SaleStatus.CANCELLED.equals(s.getStatus()))
+                                                .map(Sale::getTotalAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
                                 
                                 Map<String, Object> entry = new HashMap<>();
                                 entry.put("label", date.getDayOfMonth() + " " + date.getMonth().getDisplayName(java.time.format.TextStyle.SHORT, new java.util.Locale("es", "ES")));
@@ -218,7 +222,9 @@ public class DashboardController {
                                 LocalDateTime start = date.withDayOfMonth(1).atStartOfDay();
                                 LocalDateTime end = date.withDayOfMonth(date.lengthOfMonth()).atTime(java.time.LocalTime.MAX);
                                 List<Sale> sales = saleRepository.findByCompanyIdAndDateBetween(companyId, start, end);
-                                BigDecimal total = sales.stream().map(Sale::getTotalAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
+                                BigDecimal total = sales.stream()
+                                                .filter(s -> !com.tiendario.domain.SaleStatus.CANCELLED.equals(s.getStatus()))
+                                                .map(Sale::getTotalAmount).reduce(BigDecimal.ZERO, BigDecimal::add);
                                 
                                 Map<String, Object> entry = new HashMap<>();
                                 entry.put("label", date.getMonth().getDisplayName(java.time.format.TextStyle.SHORT, new java.util.Locale("es", "ES")));

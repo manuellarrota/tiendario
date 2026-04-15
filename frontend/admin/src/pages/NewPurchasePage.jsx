@@ -40,6 +40,7 @@ const NewPurchasePage = () => {
     const [prodStock, setProdStock] = useState("");
     const [prodCategory, setProdCategory] = useState("");
     const [prodVariant, setProdVariant] = useState("");
+    const [prodBrand, setProdBrand] = useState("");
     const [prodCostPrice, setProdCostPrice] = useState("");
     const [prodImageUrl, setProdImageUrl] = useState("");
     const [isGeneratingSku, setIsGeneratingSku] = useState(false);
@@ -74,7 +75,7 @@ const NewPurchasePage = () => {
         if (prodName.length > 2 && !prodSku && showProductModal) {
             const delayDebounceFn = setTimeout(() => {
                 setIsGeneratingSku(true);
-                ProductService.getSuggestedSku(prodName, prodCategory, prodVariant).then(
+                ProductService.getSuggestedSku(prodName, prodCategory, prodVariant, prodBrand).then(
                     (response) => {
                         setProdSku(response.data.suggestedSku);
                         setIsGeneratingSku(false);
@@ -84,7 +85,7 @@ const NewPurchasePage = () => {
             }, 800);
             return () => clearTimeout(delayDebounceFn);
         }
-    }, [prodName, prodCategory, prodVariant, showProductModal, prodSku]);
+    }, [prodName, prodCategory, prodVariant, prodBrand, showProductModal, prodSku]);
 
 
 
@@ -142,6 +143,7 @@ const NewPurchasePage = () => {
             stock: prodStock,
             category: prodCategory,
             variant: prodVariant,
+            brand: prodBrand,
             costPrice: prodCostPrice,
             imageUrl: prodImageUrl,
             minStock: 5
@@ -159,7 +161,9 @@ const NewPurchasePage = () => {
                 if (response.data && response.data.id) {
                     const newProd = response.data;
                     setSelectedProduct(newProd.id);
-                    setSearchTerm(`${newProd.name} ${newProd.variant ? `- ${newProd.variant}` : ''} (${newProd.sku})`);
+                    const brandPart = newProd.brand ? ` [${newProd.brand}]` : '';
+                    const variantPart = newProd.variant ? ` - ${newProd.variant}` : '';
+                    setSearchTerm(`${newProd.name}${brandPart}${variantPart} (${newProd.sku})`);
                     // If created with cost price, use it as default
                     if (newProd.costPrice) setUnitCost(newProd.costPrice);
                 }
@@ -172,7 +176,7 @@ const NewPurchasePage = () => {
     };
 
     const resetProductForm = () => {
-        setProdName(""); setProdSku(""); setProdPrice(""); setProdStock(""); setProdCategory(""); setProdVariant(""); setProdCostPrice(""); setProdImageUrl("");
+        setProdName(""); setProdSku(""); setProdPrice(""); setProdStock(""); setProdCategory(""); setProdVariant(""); setProdBrand(""); setProdCostPrice(""); setProdImageUrl("");
     };
 
     const handleSavePurchase = () => {
@@ -209,13 +213,16 @@ const NewPurchasePage = () => {
         if (!searchTerm) return true;
         const search = searchTerm.toLowerCase();
         return p.name.toLowerCase().includes(search) ||
+            (p.brand && p.brand.toLowerCase().includes(search)) ||
             (p.variant && p.variant.toLowerCase().includes(search)) ||
             (p.sku && p.sku.toLowerCase().includes(search));
     });
 
     const selectProductFromList = (product) => {
         setSelectedProduct(product.id);
-        const label = `${product.name} ${product.variant ? `- ${product.variant}` : ''} (${product.sku || 'No SKU'})`;
+        const brandLabel = product.brand ? ` [${product.brand}]` : '';
+        const variantLabel = product.variant ? ` - ${product.variant}` : '';
+        const label = `${product.name}${brandLabel}${variantLabel} (${product.sku || 'No SKU'})`;
         setSearchTerm(label);
         setShowDropdown(false);
         // Pre-fill cost if available
@@ -339,9 +346,9 @@ const NewPurchasePage = () => {
                                 )}
                             </Form.Group>
 
-                            <Row>
+                            <Row className="align-items-end">
                                 <Col>
-                                    <Form.Group className="mb-2">
+                                    <Form.Group className="mb-3">
                                         <Form.Label>Cantidad</Form.Label>
                                         <Form.Control type="number" min="1" value={quantity} onChange={e => setQuantity(e.target.value)} />
                                     </Form.Group>
@@ -436,13 +443,31 @@ const NewPurchasePage = () => {
                             </div>
                             <div className="col-md-4">
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Variante <small className="text-muted">(Color, Talla)</small></Form.Label>
+                                    <Form.Label>Variante / Presentación <small className="text-muted">(Opcional)</small></Form.Label>
                                     <Form.Control
                                         type="text"
-                                        placeholder="Ej: Rojo, XL"
+                                        placeholder="Ej: Manzana, Naranja, XL, 500ml"
                                         value={prodVariant}
                                         onChange={(e) => setProdVariant(e.target.value)}
                                     />
+                                    <Form.Text className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                        Distingue versiones: <em>Jugo Del Valle → Manzana</em>
+                                    </Form.Text>
+                                </Form.Group>
+                            </div>
+
+                            <div className="col-md-4">
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Marca <small className="text-muted">(Opcional)</small></Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        placeholder="Ej: Del Valle, Stanley, Adidas"
+                                        value={prodBrand}
+                                        onChange={(e) => setProdBrand(e.target.value)}
+                                    />
+                                    <Form.Text className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                        Fabricante o marca del producto.
+                                    </Form.Text>
                                 </Form.Group>
                             </div>
 
@@ -492,16 +517,32 @@ const NewPurchasePage = () => {
                                 <h6 className="text-primary fw-bold mb-3">Precios y Costos</h6>
                             </div>
 
-                            <div className="col-md-6">
+                            <div className="col-md-4">
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Precio al Público ($) <span className="text-danger">*</span></Form.Label>
+                                    <Form.Label>Costo de Compra ($)</Form.Label>
+                                    <Form.Control type="number" step="0.01" value={prodCostPrice} onChange={(e) => setProdCostPrice(e.target.value)} min="0" placeholder="0.00" />
+                                </Form.Group>
+                            </div>
+                            <div className="col-md-4">
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Precio de Venta ($) <span className="text-danger">*</span></Form.Label>
                                     <Form.Control type="number" step="0.01" required value={prodPrice} onChange={(e) => setProdPrice(e.target.value)} min="0" />
                                 </Form.Group>
                             </div>
-                            <div className="col-md-6">
+                            <div className="col-md-4">
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Costo de Adquisición Unit. ($) <small className="text-muted">(Opcional)</small></Form.Label>
-                                    <Form.Control type="number" step="0.01" value={prodCostPrice} onChange={(e) => setProdCostPrice(e.target.value)} min="0" placeholder="Para reportes" />
+                                    <Form.Label>Ganancia Estimada</Form.Label>
+                                    <div className="d-flex align-items-center h-100 pb-1">
+                                        <Badge bg={(prodPrice - prodCostPrice) > 0 ? "success" : "danger"} className="p-2 w-100 fs-6 shadow-sm">
+                                            ${(prodPrice - prodCostPrice || 0).toFixed(2)}
+                                        </Badge>
+                                    </div>
+                                </Form.Group>
+                            </div>
+                            <div className="col-md-12">
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Stock Inicial</Form.Label>
+                                    <Form.Control type="number" required value={prodStock} onChange={(e) => setProdStock(e.target.value)} min="0" placeholder="0" />
                                 </Form.Group>
                             </div>
 

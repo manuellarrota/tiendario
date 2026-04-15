@@ -52,6 +52,9 @@ public class Product {
     private String variant;
 
     @Field(type = FieldType.Keyword)
+    private String brand; // Optional: manufacturer or brand name (e.g. "Del Valle", "Stanley")
+
+    @Field(type = FieldType.Keyword)
     private String category;
 
     @ManyToOne(fetch = FetchType.LAZY)

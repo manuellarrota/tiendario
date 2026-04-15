@@ -47,7 +47,7 @@ public class SubscriptionPaymentControllerTest {
     void setUp() {
         testCompany = new Company();
         testCompany.setName("Manager Test Co");
-        testCompany.setSubscriptionStatus(SubscriptionStatus.FREE);
+        testCompany.setSubscriptionStatus(SubscriptionStatus.TRIAL);
         testCompany = companyRepository.save(testCompany);
 
         // Mock security context for MANAGER role with companyId

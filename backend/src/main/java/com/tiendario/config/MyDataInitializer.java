@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -26,6 +27,15 @@ public class MyDataInitializer implements CommandLineRunner {
     private CompanyRepository companyRepository;
 
     @Autowired
+    private SaleRepository saleRepository;
+
+    @Autowired
+    private PurchaseRepository purchaseRepository;
+
+    @Autowired
+    private SupplierRepository supplierRepository;
+
+    @Autowired
     private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @Override
@@ -38,7 +48,6 @@ public class MyDataInitializer implements CommandLineRunner {
             createSuperAdmin("admin", "Admin123!");
 
             // 2. Ensure Demo Managers & Customers
-            // Coordenadas dispersas por San Cristóbal, Táchira (~7.789354, -72.219738)
             createManager("manager_pro",  "Manager123!", "Ferretería Central",    SubscriptionStatus.PAID,  7.789354, -72.219738, "Av. 19 de Abril, San Cristóbal");
             createManager("manager_free", "Manager123!", "Minimarket El Rincón",  SubscriptionStatus.TRIAL, 7.792100, -72.215400, "Calle 5, Barrio Obrero, San Cristóbal");
             createCustomer("cliente", "Cliente123!");
@@ -50,6 +59,8 @@ public class MyDataInitializer implements CommandLineRunner {
             // 4. Seed 100 products per category
             seedDemoProducts();
 
+            // 5. Seed detailed data for manager_pro
+            seedManagerProData();
 
             System.err.println("✓ Initialization complete. Base categories, Demo Products and Super Admin ready.");
 
@@ -57,6 +68,138 @@ public class MyDataInitializer implements CommandLineRunner {
             System.err.println("ERROR during DataInitializer execution:");
             e.printStackTrace();
         }
+    }
+
+    private void seedManagerProData() {
+        Optional<User> managerOpt = userRepository.findByUsername("manager_pro");
+        if (managerOpt.isPresent()) {
+            User manager = managerOpt.get();
+            Company company = manager.getCompany();
+
+            // Only seed if company has no products yet
+            if (productRepository.countByCompanyId(company.getId()) == 0) {
+                System.err.println("Seeding specialized data for " + manager.getUsername() + "...");
+
+                // 1. Create Suppliers
+                Supplier sup1 = new Supplier();
+                sup1.setName("Ferretería Industrial S.A.");
+                sup1.setCompany(company);
+                sup1.setEmail("ventas@indsa.com");
+                sup1.setPhone("+584147778899");
+                supplierRepository.save(sup1);
+
+                Supplier sup2 = new Supplier();
+                sup2.setName("Herramientas Premium Táchira");
+                sup2.setCompany(company);
+                sup2.setEmail("contacto@hpt.com");
+                supplierRepository.save(sup2);
+
+                // 2. Create Products
+                Product p1 = createProduct(company, "Taladro Percutor 750W", "Ferretería", "ST-001", 85.0, 45.0, 15, "1/2'' Professional", "Stanley");
+                Product p2 = createProduct(company, "Martillo Galponero 16oz", "Ferretería", "ST-002", 12.5, 6.0, 40, "Acero Forjado", "Tramontina");
+                Product p3 = createProduct(company, "Caja de Clavos 2'' (1kg)", "Ferretería", "ST-003", 5.0, 2.5, 100, "Acero Zincado", "Mezclum");
+                Product p4 = createProduct(company, "Pintura Exterior Blanca 4L", "Ferretería", "ST-004", 35.0, 18.0, 20, "Mate - Clima Extremo", "Sherwin Williams");
+                Product p5 = createProduct(company, "Set de Destornilladores (x6)", "Ferretería", "ST-005", 15.0, 8.0, 25, "Punta Imantada", "Truper");
+                Product p6 = createProduct(company, "Cerradura de Pomo Bronce", "Ferretería", "ST-006", 22.0, 12.0, 18, "Dormitorio/Baño", "Cisa");
+
+                // 3. Create Purchases (Stock entry)
+                createPurchase(company, sup1, List.of(p1, p2, p3), java.time.LocalDateTime.now().minusDays(10), "INV-1001");
+                createPurchase(company, sup2, List.of(p4, p5, p6), java.time.LocalDateTime.now().minusDays(5), "INV-5502");
+
+                // 4. Create Sales (Diverse states and history)
+                System.err.println("Generating historical sales for charting...");
+                java.util.Random rnd = new java.util.Random();
+                PaymentMethod[] methods = PaymentMethod.values();
+                SaleStatus[] statuses = SaleStatus.values();
+                String[] names = {"Juan Pérez", "María García", "Luis Rodríguez", "Ana Martínez", "Carlos Ruiz", "Elena Blanco", "Pedro Sánchez", "Santi Castro"};
+
+                for (int i = 1; i <= 45; i++) {
+                    java.time.LocalDateTime saleDate = java.time.LocalDateTime.now().minusDays(rnd.nextInt(30)).minusHours(rnd.nextInt(24));
+                    SaleStatus randomStatus = statuses[rnd.nextInt(statuses.length)];
+                    PaymentMethod randomMethod = methods[rnd.nextInt(methods.length)];
+                    String randomName = names[rnd.nextInt(names.length)];
+                    
+                    // Pick 1-2 random products
+                    Product randomP1 = p1;
+                    if (rnd.nextBoolean()) randomP1 = p2;
+                    List<Product> saleProducts = new java.util.ArrayList<>();
+                    saleProducts.add(randomP1);
+                    if (rnd.nextBoolean()) saleProducts.add(p3);
+
+                    createSale(company, manager, randomName, saleProducts, randomStatus, randomMethod, saleDate);
+                }
+                
+                System.err.println("✓ Manager Pro data seeded successfully with historical sales.");
+            }
+        }
+    }
+
+    private Product createProduct(Company company, String name, String category, String sku, double price, double cost, int stock, String variant, String brand) {
+        Product p = new Product();
+        p.setName(name);
+        p.setCompany(company);
+        p.setCategory(category);
+        p.setSku(sku);
+        p.setPrice(BigDecimal.valueOf(price));
+        p.setCostPrice(BigDecimal.valueOf(cost));
+        p.setStock(stock);
+        p.setMinStock(5);
+        p.setVariant(variant);
+        p.setBrand(brand);
+        return productRepository.save(p);
+    }
+
+    private void createPurchase(Company company, Supplier supplier, List<Product> products, java.time.LocalDateTime date, String invoice) {
+        Purchase purchase = new Purchase();
+        purchase.setCompany(company);
+        purchase.setSupplier(supplier);
+        purchase.setDate(date);
+        purchase.setInvoiceNumber(invoice);
+        
+        BigDecimal total = BigDecimal.ZERO;
+        List<PurchaseItem> items = new java.util.ArrayList<>();
+        for (Product p : products) {
+            PurchaseItem item = new PurchaseItem();
+            item.setPurchase(purchase);
+            item.setProduct(p);
+            item.setQuantity(10);
+            item.setUnitCost(p.getCostPrice());
+            BigDecimal subtotal = p.getCostPrice().multiply(BigDecimal.valueOf(10));
+            total = total.add(subtotal);
+            items.add(item);
+        }
+        purchase.setItems(items);
+        purchase.setTotal(total);
+        purchaseRepository.save(purchase);
+    }
+
+    private void createSale(Company company, User user, String customerName, List<Product> products, SaleStatus status, PaymentMethod method, java.time.LocalDateTime date) {
+        Sale sale = new Sale();
+        sale.setCompany(company);
+        sale.setUser(user);
+        sale.setCustomerName(customerName);
+        sale.setStatus(status);
+        sale.setPaymentMethod(method);
+        sale.setDate(date);
+        sale.setPaymentCurrency("USD");
+        sale.setExchangeRateUsed(BigDecimal.ONE);
+
+        BigDecimal total = BigDecimal.ZERO;
+        List<SaleItem> items = new java.util.ArrayList<>();
+        for (Product p : products) {
+            SaleItem item = new SaleItem();
+            item.setSale(sale);
+            item.setProduct(p);
+            item.setQuantity(1);
+            item.setUnitPrice(p.getPrice());
+            item.setSubtotal(p.getPrice());
+            total = total.add(p.getPrice());
+            items.add(item);
+        }
+        sale.setItems(items);
+        sale.setTotalAmount(total);
+        sale.setPaymentAmountInCurrency(total);
+        saleRepository.save(sale);
     }
 
     private void createSuperAdmin(String username, String password) {
@@ -176,6 +319,8 @@ public class MyDataInitializer implements CommandLineRunner {
                         p.setCategory(catName);
                         p.setCompany(demoStore);
                         p.setSku(skuPrefix + "-" + i);
+                        p.setBrand("Marca " + ((i % 5) + 1));
+                        p.setVariant("Presentación " + ((i % 3) + 1));
                         productRepository.save(p);
                     }
                 }

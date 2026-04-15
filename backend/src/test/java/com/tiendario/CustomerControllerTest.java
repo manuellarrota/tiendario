@@ -161,7 +161,7 @@ public class CustomerControllerTest {
         // Create another company and customer
         Company otherCompany = new Company();
         otherCompany.setName("Other Company");
-        otherCompany.setSubscriptionStatus(SubscriptionStatus.FREE);
+        otherCompany.setSubscriptionStatus(SubscriptionStatus.TRIAL);
         otherCompany = companyRepository.save(otherCompany);
 
         Customer otherCustomer = new Customer();

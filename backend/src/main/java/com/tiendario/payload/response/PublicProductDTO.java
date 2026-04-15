@@ -14,8 +14,10 @@ public class PublicProductDTO {
     private Long companyId;
     private String companyName;
     private String sku;
+    private String brand;
     private String category;
     private String subscriptionStatus;
     private Double rating;
     private Integer ratingCount;
+    private Double distance;
 }

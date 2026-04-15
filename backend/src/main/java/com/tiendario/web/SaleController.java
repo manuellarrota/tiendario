@@ -5,6 +5,8 @@ import com.tiendario.payload.response.DailySalesSummary;
 import com.tiendario.payload.response.MessageResponse;
 import com.tiendario.security.UserDetailsImpl;
 import com.tiendario.service.SaleService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,6 +19,7 @@ import java.util.List;
 @RequestMapping("/api/sales")
 public class SaleController {
 
+    private static final Logger logger = LoggerFactory.getLogger(SaleController.class);
     private final SaleService saleService;
 
     @Autowired
@@ -47,9 +50,12 @@ public class SaleController {
                 .getPrincipal();
 
         try {
+            logger.info("User {} is creating a new sale for amount: {}", userDetails.getUsername(), sale.getTotalAmount());
             saleService.createSale(sale, userDetails);
+            logger.info("Sale created successfully for user {}", userDetails.getUsername());
             return ResponseEntity.ok(new MessageResponse("Order created successfully!"));
         } catch (RuntimeException e) {
+            logger.error("Error creating sale for user {}: {}", userDetails.getUsername(), e.getMessage());
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
         }
     }
@@ -63,9 +69,12 @@ public class SaleController {
                 .getPrincipal();
 
         try {
+            logger.info("User {} updating sale {} to status: {}", userDetails.getUsername(), id, status);
             saleService.updateSaleStatus(id, status, paymentMethod, userDetails);
+            logger.info("Sale {} status updated successfully", id);
             return ResponseEntity.ok(new MessageResponse("Sale status updated to " + status));
         } catch (RuntimeException e) {
+            logger.error("Error updating sale status for user {}: {}", userDetails.getUsername(), e.getMessage());
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
         }
     }

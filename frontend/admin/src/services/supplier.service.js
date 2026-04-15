@@ -12,8 +12,8 @@ const getAuthHeader = () => {
     }
 }
 
-const getAll = () => {
-    return axios.get(API_URL, { headers: getAuthHeader() });
+const getAll = (params) => {
+    return axios.get(API_URL, { params, headers: getAuthHeader() });
 };
 
 const create = (data) => {

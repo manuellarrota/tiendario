@@ -38,7 +38,7 @@ public class CompanyControllerTest {
         // Create test company
         testCompany = new Company();
         testCompany.setName("Company Profile Test Co");
-        testCompany.setSubscriptionStatus(SubscriptionStatus.FREE);
+        testCompany.setSubscriptionStatus(SubscriptionStatus.TRIAL);
         testCompany = companyRepository.save(testCompany);
 
         // Setup security context
@@ -59,7 +59,7 @@ public class CompanyControllerTest {
         mockMvc.perform(get("/api/company/profile"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name", is("Company Profile Test Co")))
-                .andExpect(jsonPath("$.subscriptionStatus", is("FREE")));
+                .andExpect(jsonPath("$.subscriptionStatus", is("TRIAL")));
     }
 
     @Test
@@ -82,10 +82,10 @@ public class CompanyControllerTest {
         // Then downgrade
         mockMvc.perform(post("/api/company/unsubscribe"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message", containsString("FREE")));
+                .andExpect(jsonPath("$.message", containsString("TRIAL")));
 
         Company updated = companyRepository.findById(testCompany.getId()).orElse(null);
         assert updated != null;
-        assert updated.getSubscriptionStatus() == SubscriptionStatus.FREE;
+        assert updated.getSubscriptionStatus() == SubscriptionStatus.TRIAL;
     }
 }

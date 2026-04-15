@@ -39,9 +39,9 @@ const update = (id, data) => {
     return axios.put(API_URL + id, data, { headers: getAuthHeader() });
 };
 
-const getSuggestedSku = (name, category, variant) => {
+const getSuggestedSku = (name, category, variant, brand) => {
     return axios.get(API_URL + "suggest-sku", {
-        params: { name, category, variant },
+        params: { name, category, variant, brand },
         headers: getAuthHeader()
     });
 };

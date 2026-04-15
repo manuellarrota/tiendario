@@ -29,5 +29,15 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 
     List<Product> findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String name, String description);
 
+    @Query("SELECT p FROM Product p WHERE p.company.id = :companyId AND " +
+            "(:onlyLowStock = false OR p.stock <= p.minStock) AND (" +
+            "LOWER(p.name) LIKE LOWER(CONCAT('%', :q, '%')) OR " +
+            "LOWER(p.sku) LIKE LOWER(CONCAT('%', :q, '%')) OR " +
+            "LOWER(p.brand) LIKE LOWER(CONCAT('%', :q, '%')))")
+    Page<Product> findByCompanyIdAndSearch(@Param("companyId") Long companyId, 
+                                          @Param("q") String q, 
+                                          @Param("onlyLowStock") boolean onlyLowStock, 
+                                          Pageable pageable);
+
     long countByCategory(String category);
 }

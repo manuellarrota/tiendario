@@ -59,6 +59,8 @@ const MarketplacePage = () => {
     const [toastMessage, setToastMessage] = useState('');
     const [toastType, setToastType] = useState('success'); // 'success' or 'error'
     const [minRating, setMinRating] = useState(0);
+    const [userLocation, setUserLocation] = useState(null);
+    const [locationAllowed, setLocationAllowed] = useState(false);
     const user = AuthService.getCurrentUser();
 
     useEffect(() => {
@@ -81,6 +83,20 @@ const MarketplacePage = () => {
 
 
     useEffect(() => {
+        // Request user location for proximity sorting
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const coords = { lat: position.coords.latitude, lon: position.coords.longitude };
+                    setUserLocation(coords);
+                    setLocationAllowed(true);
+                },
+                (error) => {
+                    if (process.env.NODE_ENV === 'development') console.warn("Geolocation error:", error);
+                    setLocationAllowed(false);
+                }
+            );
+        }
         loadProducts(0, true);
         loadConfig();
         loadCategories();
@@ -127,18 +143,21 @@ const MarketplacePage = () => {
     useEffect(() => {
         setPage(0);
         loadProducts(0, true);
-    }, [searchQuery, selectedCategory, sortBy, priceRange, minRating]);
+    }, [searchQuery, selectedCategory, sortBy, priceRange, minRating, userLocation]);
 
     const loadProducts = (pageNum, reset = false) => {
         setLoading(true);
         const params = {
             page: pageNum,
-            size: 12,
+            size: 11, // Standardizing to grid
             category: selectedCategory === 'all' ? null : selectedCategory,
             q: searchQuery || null,
             minPrice: priceRange.min || null,
             maxPrice: priceRange.max || null,
-            minRating: minRating > 0 ? minRating : null
+            minRating: minRating > 0 ? minRating : null,
+            sortBy: sortBy,
+            lat: userLocation?.lat || null,
+            lon: userLocation?.lon || null
         };
 
         SearchService.getAllProducts(params).then(
@@ -180,7 +199,7 @@ const MarketplacePage = () => {
     const handleDetailClick = (product) => {
         setSelectedProduct(product);
         setShowDetailModal(true);
-        SearchService.getSellersByName(product.name, product.sku).then(
+        SearchService.getSellersByName(product.name, product.sku, userLocation?.lat, userLocation?.lon).then(
             (response) => {
                 const sortedSellers = [...response.data].sort((a, b) => a.price - b.price);
                 setSellers(sortedSellers);
@@ -655,6 +674,7 @@ const MarketplacePage = () => {
                                     onChange={(e) => setSortBy(e.target.value)}
                                 >
                                     <option value="relevant">Más Relevantes</option>
+                                    <option value="proximity">Más Cercanos (GPS)</option>
                                     <option value="price_low">Precio: Menor a Mayor</option>
                                     <option value="price_high">Precio: Mayor a Menor</option>
                                     <option value="newest">Lo más Nuevo</option>
@@ -710,10 +730,20 @@ const MarketplacePage = () => {
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    <h6 className="fw-bold text-dark mb-1 text-truncate" title={product.name}>{product.name}</h6>
-                                                    <div className="small text-muted mb-3 d-flex align-items-center gap-1">
-                                                        <FaStore className="text-primary opacity-75" size={10} /> 
-                                                        <span className="text-truncate fw-500" style={{ fontSize: '0.75rem' }}>{product.companyName}</span>
+                                                    <h6 className="fw-bold text-dark mb-1 text-truncate" title={product.name}>
+                                                        {product.brand && <span className="text-secondary fw-500 me-1">[{product.brand}]</span>}
+                                                        {product.name}
+                                                    </h6>
+                                                    <div className="small text-muted mb-3 d-flex align-items-center justify-content-between">
+                                                        <div className="d-flex align-items-center gap-1 text-truncate">
+                                                           <FaStore className="text-primary opacity-75" size={10} /> 
+                                                           <span className="text-truncate fw-500" style={{ fontSize: '0.75rem' }}>{product.companyName}</span>
+                                                        </div>
+                                                        {product.distance != null && (
+                                                            <Badge bg="light" className="text-primary border-0 x-small px-2 py-1 ms-2" style={{ fontSize: '0.65rem' }}>
+                                                                📍 {product.distance < 1 ? `${(product.distance * 1000).toFixed(0)}m` : `${product.distance.toFixed(1)}km`}
+                                                            </Badge>
+                                                        )}
                                                     </div>
                                                     
                                                     <div className="mt-auto d-grid">

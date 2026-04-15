@@ -54,7 +54,7 @@ public class AuthControllerTest {
         // Create a test company
         testCompany = new Company();
         testCompany.setName("Test Company");
-        testCompany.setSubscriptionStatus(SubscriptionStatus.FREE);
+        testCompany.setSubscriptionStatus(SubscriptionStatus.TRIAL);
         testCompany = companyRepository.save(testCompany);
 
         // Create a test user

@@ -15,4 +15,5 @@ public class SellerOfferDTO {
     private Double longitude;
     private String description;
     private String imageUrl;
+    private Double distance;
 }

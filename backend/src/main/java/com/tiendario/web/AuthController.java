@@ -12,6 +12,8 @@ import com.tiendario.security.LoginRateLimiter;
 import com.tiendario.security.UserDetailsImpl;
 import com.tiendario.service.AuthService;
 import com.tiendario.service.EmailService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -34,6 +36,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/auth")
 public class AuthController {
 
+        private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
         private final AuthenticationManager authenticationManager;
         private final UserRepository userRepository;
         private final CompanyRepository companyRepository;
@@ -73,6 +76,7 @@ public class AuthController {
                 // Rate limiting check
                 if (!rateLimiter.isAllowed(clientIp)) {
                         long remaining = rateLimiter.getBlockSecondsRemaining(clientIp);
+                        logger.warn("Rate limit exceeded for IP: {} (Username: {})", clientIp, loginRequest.getUsername());
                         return ResponseEntity.status(429)
                                         .body(new MessageResponse(
                                                         "Demasiados intentos de inicio de sesión. Intenta de nuevo en "
@@ -95,6 +99,9 @@ public class AuthController {
                         // Clear rate limit on successful login
                         rateLimiter.recordSuccess(clientIp);
 
+                        logger.info("User logged in successfully: {} (ID: {}, Roles: {})", 
+                                userDetails.getUsername(), userDetails.getId(), roles);
+
                         return ResponseEntity.ok(new JwtResponse(jwt,
                                         userDetails.getId(),
                                         userDetails.getUsername(),
@@ -104,13 +111,15 @@ public class AuthController {
                                                         ? companyRepository.findById(userDetails.getCompanyId()).get()
                                                                         .getSubscriptionStatus()
                                                                         .toString()
-                                                        : "FREE"));
+                                                        : "TRIAL"));
                 } catch (DisabledException e) {
+                        logger.warn("Login failed: User '{}' is disabled", loginRequest.getUsername());
                         rateLimiter.recordFailedAttempt(clientIp);
                         return ResponseEntity.status(401)
                                         .body(new MessageResponse(
                                                         "Error: Cuenta inactiva. Active su cuenta usando el link generado."));
                 } catch (BadCredentialsException e) {
+                        logger.warn("Login failed: Bad credentials for user '{}'", loginRequest.getUsername());
                         rateLimiter.recordFailedAttempt(clientIp);
                         return ResponseEntity.status(401)
                                         .body(new MessageResponse("Error: Usuario o contraseña incorrectos."));
@@ -147,7 +156,7 @@ public class AuthController {
                 // Redirect with payload for frontend auto-login
                 String subscriptionStatus = (user.getCompany() != null)
                                 ? user.getCompany().getSubscriptionStatus().toString()
-                                : "FREE";
+                                : "TRIAL";
                 return ResponseEntity.status(org.springframework.http.HttpStatus.FOUND)
                                 .location(java.net.URI.create(frontendUrl + "/?verified=true&token=" + jwt +
                                                 "&username=" + user.getUsername() +
@@ -162,15 +171,19 @@ public class AuthController {
         @PostMapping("/signup")
         public ResponseEntity<?> registerUser(@RequestBody SignupRequest signUpRequest) {
                 try {
+                        logger.info("Registering new user: {} (Email: {})", signUpRequest.getUsername(), signUpRequest.getEmail());
                         User user = authService.registerUser(signUpRequest);
                         if (!user.isEnabled()) {
+                                logger.info("User registered successfully but pending email verification: {}", user.getUsername());
                                 return ResponseEntity.ok(
                                                 new MessageResponse(
                                                                 "Registro exitoso. Revisa tu correo electrónico para activar tu cuenta antes de iniciar sesión."));
                         } else {
+                                logger.info("User registered and enabled immediately: {}", user.getUsername());
                                 return ResponseEntity.ok(new MessageResponse("Registro exitoso."));
                         }
                 } catch (RuntimeException e) {
+                        logger.error("Registration failed for {}: {}", signUpRequest.getUsername(), e.getMessage());
                         return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
                 }
         }

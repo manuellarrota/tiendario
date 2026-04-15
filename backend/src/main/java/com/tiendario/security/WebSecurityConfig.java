@@ -25,6 +25,9 @@ public class WebSecurityConfig {
     UserDetailsServiceImpl userDetailsService;
 
     @Autowired
+    RequestLoggingFilter requestLoggingFilter;
+
+    @Autowired
     AuthEntryPointJwt unauthorizedHandler;
 
     @Value("${cors.allowed-origins:http://localhost:8081,http://localhost:8082,http://localhost:5173}")
@@ -82,6 +85,7 @@ public class WebSecurityConfig {
 
         http.authenticationProvider(authenticationProvider());
         http.addFilterBefore(authenticationJwtTokenFilter(), UsernamePasswordAuthenticationFilter.class);
+        http.addFilterAfter(requestLoggingFilter, AuthTokenFilter.class);
 
         return http.build();
     }

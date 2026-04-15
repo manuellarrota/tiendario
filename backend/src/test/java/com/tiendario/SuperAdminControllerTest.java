@@ -46,7 +46,7 @@ public class SuperAdminControllerTest {
     void setUp() {
         testCompany = new Company();
         testCompany.setName("SuperAdmin Test Co");
-        testCompany.setSubscriptionStatus(SubscriptionStatus.FREE);
+        testCompany.setSubscriptionStatus(SubscriptionStatus.TRIAL);
         testCompany = companyRepository.save(testCompany);
 
         testPayment = new SubscriptionPayment();

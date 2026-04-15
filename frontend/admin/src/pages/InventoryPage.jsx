@@ -29,6 +29,7 @@ const InventoryPage = () => {
     const [stock, setStock] = useState("");
     const [category, setCategory] = useState("");
     const [variant, setVariant] = useState("");
+    const [brand, setBrand] = useState("");
     const [costPrice, setCostPrice] = useState("");
     const [imageUrl, setImageUrl] = useState("");
     const [barcode, setBarcode] = useState("");
@@ -62,6 +63,17 @@ const InventoryPage = () => {
     const [totalItems, setTotalItems] = useState(0);
     const [sortBy, setSortBy] = useState("id");
     const [sortDir, setSortDir] = useState("desc");
+    const [searchQuery, setSearchQuery] = useState("");
+    const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+    const [onlyLowStock, setOnlyLowStock] = useState(false);
+
+    // Debounce search query
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearchQuery(searchQuery);
+        }, 500);
+        return () => clearTimeout(handler);
+    }, [searchQuery]);
 
     const loadCategories = () => {
         CategoryService.getAll().then(
@@ -79,7 +91,9 @@ const InventoryPage = () => {
         const params = {
             page: currentPage,
             size: pageSize,
-            sort: `${sortBy},${sortDir}`
+            sort: `${sortBy},${sortDir}`,
+            q: debouncedSearchQuery || undefined,
+            lowStock: onlyLowStock
         };
 
         ProductService.getAll(params).then(
@@ -97,7 +111,7 @@ const InventoryPage = () => {
 
     useEffect(() => {
         loadProducts();
-    }, [currentPage, pageSize, sortBy, sortDir]);
+    }, [currentPage, pageSize, sortBy, sortDir, debouncedSearchQuery, onlyLowStock]);
 
     useEffect(() => {
         loadCategories();
@@ -108,7 +122,7 @@ const InventoryPage = () => {
         if (name.length > 2 && !sku && !editingProduct) {
             const delayDebounceFn = setTimeout(() => {
                 setIsGeneratingSku(true);
-                ProductService.getSuggestedSku(name, category, variant).then(
+                ProductService.getSuggestedSku(name, category, variant, brand).then(
                     (response) => {
                         setSku(response.data.suggestedSku);
                         setIsGeneratingSku(false);
@@ -118,7 +132,7 @@ const InventoryPage = () => {
             }, 800);
             return () => clearTimeout(delayDebounceFn);
         }
-    }, [name, category, variant, editingProduct, sku]);
+    }, [name, category, variant, brand, editingProduct, sku]);
 
     // Search Catalog when name changes
     useEffect(() => {
@@ -154,6 +168,7 @@ const InventoryPage = () => {
     const handleSelectCatalogProduct = (cp) => {
         setName(cp.name);
         setSku(cp.sku);
+        setBrand(cp.brand || "");
         setImageUrl(cp.imageUrl || "");
         if (cp.description) {
             // If we had a description field in the form, we'd set it here
@@ -169,6 +184,7 @@ const InventoryPage = () => {
         setStock(product.stock);
         setCategory(product.category || "");
         setVariant(product.variant || "");
+        setBrand(product.brand || "");
         setCostPrice(product.costPrice || "");
         setImageUrl(product.imageUrl || "");
         setBarcode(product.barcode || "");
@@ -196,6 +212,7 @@ const InventoryPage = () => {
             stock,
             category,
             variant,
+            brand,
             costPrice,
             imageUrl,
             barcode: barcode.trim() || null,
@@ -233,7 +250,7 @@ const InventoryPage = () => {
     };
 
     const resetForm = () => {
-        setName(""); setSku(""); setPrice(""); setStock(""); setCategory(""); setVariant(""); setCostPrice(""); setImageUrl(""); setBarcode("");
+        setName(""); setSku(""); setPrice(""); setStock(""); setCategory(""); setVariant(""); setBrand(""); setCostPrice(""); setImageUrl(""); setBarcode("");
         setEditingProduct(null);
     };
 
@@ -410,6 +427,35 @@ const InventoryPage = () => {
 
                 {message && <Alert variant="info" className="border-0 shadow-sm rounded-4 mb-4">{message}</Alert>}
 
+                <div className="mb-4 d-flex gap-3 align-items-center">
+                    <div className="glass-card-admin p-3 border-0 shadow-sm d-flex align-items-center flex-grow-1">
+                        <div className="position-relative flex-grow-1">
+                            <Form.Control
+                                type="text"
+                                placeholder="🔍 Buscar producto por nombre, SKU o marca..."
+                                className="border-0 bg-transparent shadow-none fs-5 py-2"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
+                        {searchQuery && (
+                            <Button variant="link" className="text-secondary p-0 me-2" onClick={() => setSearchQuery("")}>
+                                Limpiar
+                            </Button>
+                        )}
+                    </div>
+                    
+                    <Button 
+                        variant={onlyLowStock ? "danger" : "outline-secondary"}
+                        className={`px-4 shadow-sm fw-bold d-flex align-items-center gap-2 rounded-4 ${onlyLowStock ? 'animate-pulse' : ''}`}
+                        onClick={() => { setOnlyLowStock(!onlyLowStock); setCurrentPage(0); }}
+                        style={{ height: '70px', minWidth: '180px' }}
+                    >
+                        <FaExclamationTriangle className={onlyLowStock ? "text-white" : "text-danger"} />
+                        {onlyLowStock ? "Mostrando Stock Bajo" : "Filtrar Stock Bajo"}
+                    </Button>
+                </div>
+
                 <div className="glass-card-admin p-0 overflow-hidden border-0 shadow-sm">
                     {products.length === 0 ? (
                         <div className="text-center py-5 text-secondary">
@@ -455,6 +501,7 @@ const InventoryPage = () => {
                                                     </div>
                                                     <div>
                                                         <span className="fw-bold text-dark d-block" style={{ fontSize: '0.9rem' }}>{product.name}</span>
+                                                        {product.brand && <small className="text-primary d-block" style={{ fontSize: '0.75rem', fontWeight: '500' }}>{product.brand}</small>}
                                                     </div>
                                                 </div>
                                             </td>
@@ -566,7 +613,10 @@ const InventoryPage = () => {
                                                     {cp.imageUrl && <img src={cp.imageUrl} alt="" style={{ width: '30px', height: '30px', objectFit: 'cover' }} className="rounded" />}
                                                     <div>
                                                         <div className="fw-bold small">{cp.name}</div>
-                                                        <small className="text-muted">SKU: {cp.sku}</small>
+                                                        <div className="d-flex gap-2 align-items-center">
+                                                            <small className="text-primary fw-bold" style={{ fontSize: '0.7rem' }}>{cp.brand || 'Marca no reg.'}</small>
+                                                            <small className="text-muted">SKU: {cp.sku}</small>
+                                                        </div>
                                                     </div>
                                                     <Badge bg="info" className="ms-auto small">Sugerencia Global</Badge>
                                                 </button>
@@ -577,13 +627,31 @@ const InventoryPage = () => {
                             </div>
                             <div className="col-md-4">
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Variante <small className="text-muted">(Color, Talla)</small></Form.Label>
+                                    <Form.Label>Variante / Presentación <small className="text-muted">(Opcional)</small></Form.Label>
                                     <Form.Control
                                         type="text"
-                                        placeholder="Ej: Rojo, XL"
+                                        placeholder="Ej: Manzana, Naranja, XL, 500ml"
                                         value={variant}
                                         onChange={(e) => setVariant(e.target.value)}
                                     />
+                                    <Form.Text className="text-muted">
+                                        Para distinguir versiones del mismo producto. Ej: <em>Jugo Del Valle → Manzana / Naranja</em>
+                                    </Form.Text>
+                                </Form.Group>
+                            </div>
+
+                            <div className="col-md-4">
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Marca <small className="text-muted">(Opcional)</small></Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        placeholder="Ej: Del Valle, Stanley, Nike"
+                                        value={brand}
+                                        onChange={(e) => setBrand(e.target.value)}
+                                    />
+                                    <Form.Text className="text-muted">
+                                        Fabricante o marca del producto.
+                                    </Form.Text>
                                 </Form.Group>
                             </div>
 
@@ -671,20 +739,30 @@ const InventoryPage = () => {
 
                             <div className="col-md-4">
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Unidades en Existencia</Form.Label>
-                                    <Form.Control type="number" required value={stock} onChange={(e) => setStock(e.target.value)} min="0" placeholder="¿Cuántos tienes?" />
+                                    <Form.Label>Costo de Adquisición ($) <small className="text-muted">(Privado)</small></Form.Label>
+                                    <Form.Control type="number" step="0.01" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} min="0" placeholder="0.00" />
                                 </Form.Group>
                             </div>
                             <div className="col-md-4">
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Precio al Público ($) <span className="text-danger">*</span></Form.Label>
+                                    <Form.Label>Precio de Venta ($) <span className="text-danger">*</span></Form.Label>
                                     <Form.Control type="number" step="0.01" required value={price} onChange={(e) => setPrice(e.target.value)} min="0" placeholder="0.00" />
                                 </Form.Group>
                             </div>
                             <div className="col-md-4">
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Costo de Adquisición ($) <small className="text-muted">(Privado)</small></Form.Label>
-                                    <Form.Control type="number" step="0.01" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} min="0" placeholder="Solo para tus reportes" />
+                                    <Form.Label>Ganancia Estimada</Form.Label>
+                                    <div className="d-flex align-items-center h-100 pb-1">
+                                        <Badge bg={(price - costPrice) > 0 ? "success" : "danger"} className="p-2 w-100 fs-6 shadow-sm">
+                                            ${(price - costPrice || 0).toFixed(2)}
+                                        </Badge>
+                                    </div>
+                                </Form.Group>
+                            </div>
+                            <div className="col-md-4">
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Stock Inicial</Form.Label>
+                                    <Form.Control type="number" required value={stock} onChange={(e) => setStock(e.target.value)} min="0" placeholder="Cantidad actual" />
                                 </Form.Group>
                             </div>
 

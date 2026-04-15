@@ -78,7 +78,7 @@ public class SystemIntegrationTest {
         // Setup initial data
         Company c = new Company();
         c.setName("Test Supplier");
-        c.setSubscriptionStatus(SubscriptionStatus.FREE);
+        c.setSubscriptionStatus(SubscriptionStatus.TRIAL);
         supplierCompany = companyRepository.save(c);
 
         Product p = new Product();
@@ -106,7 +106,7 @@ public class SystemIntegrationTest {
     @Test
     void testMarketplaceRules_FreePlan() throws Exception {
         // Ensure company is FREE
-        supplierCompany.setSubscriptionStatus(SubscriptionStatus.FREE);
+        supplierCompany.setSubscriptionStatus(SubscriptionStatus.PAST_DUE);
         companyRepository.save(supplierCompany);
 
         // 1. Check Product Visibility (Should be visible)

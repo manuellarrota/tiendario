@@ -35,7 +35,7 @@ public class SubscriptionServiceTest {
     void setUp() {
         testCompany = new Company();
         testCompany.setName("Test Subscription Company");
-        testCompany.setSubscriptionStatus(SubscriptionStatus.FREE);
+        testCompany.setSubscriptionStatus(SubscriptionStatus.TRIAL);
         testCompany = companyRepository.save(testCompany);
 
         testPayment = new SubscriptionPayment();
@@ -80,7 +80,7 @@ public class SubscriptionServiceTest {
         assertEquals(reason, rejectedPayment.getNotes());
 
         Company updatedCompany = companyRepository.findById(testCompany.getId()).get();
-        assertEquals(SubscriptionStatus.FREE, updatedCompany.getSubscriptionStatus());
+        assertEquals(SubscriptionStatus.TRIAL, updatedCompany.getSubscriptionStatus());
     }
 
     @Test

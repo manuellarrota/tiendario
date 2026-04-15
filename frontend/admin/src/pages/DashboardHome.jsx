@@ -256,7 +256,7 @@ const DashboardHome = () => {
                                 <p className="text-secondary mb-0 reveal-up delay-1">Gestiona tu negocio en tiempo real.</p>
                             </div>
                             {!isPremium && !isSuperAdmin && (
-                                <div className="premium-badge-v1 py-2 px-3 fw-bold">Plan Gratuito</div>
+                                <div className="premium-badge-v1 py-2 px-3 fw-bold">Periodo de Prueba</div>
                             )}
                             {isSuperAdmin && (
                                 <div className="premium-badge-v1 bg-dark text-white py-2 px-3 fw-bold">Super Admin</div>
@@ -556,7 +556,13 @@ const DashboardHome = () => {
                                                         Object.entries(summary.paymentMethods).map(([method, count], idx) => (
                                                             <div key={idx} className="mb-3">
                                                                 <div className="d-flex justify-content-between small mb-1">
-                                                                    <span className="text-muted">{method === 'CASH' ? 'Efectivo' : method === 'CARD' ? 'Tarjeta' : method === 'TRANSFER' ? 'Transferencia' : method}</span>
+                                                                    <span className="text-muted">
+                                                                        {method === 'CASH' ? '💵 Efectivo' : 
+                                                                         method === 'CARD' ? '💳 Tarjeta' : 
+                                                                         method === 'TRANSFER' ? '🏦 Transferencia' : 
+                                                                         method === 'MOBILE_PAYMENT' ? '📱 Pago Móvil' : 
+                                                                         method === 'OTHER' ? '❓ Otro' : method}
+                                                                    </span>
                                                                     <span className="fw-bold">{count}</span>
                                                                 </div>
                                                                 <div className="progress" style={{ height: '5px' }}>

@@ -89,7 +89,8 @@ public class ProductController {
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<?> suggestSku(@RequestParam String name,
             @RequestParam(required = false) String category,
-            @RequestParam(required = false) String variant) {
+            @RequestParam(required = false) String variant,
+            @RequestParam(required = false) String brand) {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
@@ -107,10 +108,16 @@ public class ProductController {
             prefixBuilder.append(firstWord.length() > 4 ? firstWord.substring(0, 4) : firstWord).append("-");
         }
 
-        // 3. Variant Prefix (Cleaned, 4 chars)
+        // 3. Variant Prefix (Cleaned, 3 chars)
         if (variant != null && !variant.isEmpty()) {
             String cleanVar = variant.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
-            prefixBuilder.append(cleanVar.length() > 4 ? cleanVar.substring(0, 4) : cleanVar).append("-");
+            prefixBuilder.append(cleanVar.length() > 3 ? cleanVar.substring(0, 3) : cleanVar).append("-");
+        }
+
+        // 4. Brand Prefix (Cleaned, 3 chars)
+        if (brand != null && !brand.isEmpty()) {
+            String cleanBrand = brand.replaceAll("[^a-zA-Z0-9]", "").toUpperCase();
+            prefixBuilder.append(cleanBrand.length() > 3 ? cleanBrand.substring(0, 3) : cleanBrand).append("-");
         }
 
         String finalPrefix = prefixBuilder.toString();
@@ -160,7 +167,9 @@ public class ProductController {
     public ResponseEntity<?> getCompanyProducts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "id,desc") String[] sort) {
+            @RequestParam(defaultValue = "id,desc") String[] sort,
+            @RequestParam(required = false) String q,
+            @RequestParam(defaultValue = "false") boolean lowStock) {
 
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
@@ -169,15 +178,12 @@ public class ProductController {
             List<org.springframework.data.domain.Sort.Order> orders = new java.util.ArrayList<>();
 
             if (sort[0].contains(",")) {
-                // will sort more than 2 fields
-                // sort=[field, direction]
                 for (String sortOrder : sort) {
                     String[] _sort = sortOrder.split(",");
                     orders.add(new org.springframework.data.domain.Sort.Order(
                             org.springframework.data.domain.Sort.Direction.fromString(_sort[1]), _sort[0]));
                 }
             } else {
-                // sort=[field, direction]
                 orders.add(new org.springframework.data.domain.Sort.Order(
                         org.springframework.data.domain.Sort.Direction.fromString(sort[1]), sort[0]));
             }
@@ -185,8 +191,11 @@ public class ProductController {
             org.springframework.data.domain.Pageable paging = org.springframework.data.domain.PageRequest.of(page, size,
                     org.springframework.data.domain.Sort.by(orders));
 
-            org.springframework.data.domain.Page<Product> pageProds = productRepository
-                    .findByCompanyId(userDetails.getCompanyId(), paging);
+            org.springframework.data.domain.Page<Product> pageProds = productRepository.findByCompanyIdAndSearch(
+                    userDetails.getCompanyId(),
+                    (q != null ? q.trim().toLowerCase() : ""),
+                    lowStock,
+                    paging);
 
             Map<String, Object> response = new HashMap<>();
             response.put("products", pageProds.getContent());
@@ -208,6 +217,7 @@ public class ProductController {
 
         // Ensure SKU uniqueness within the company
         if (productRepository.existsBySkuAndCompanyId(product.getSku(), userDetails.getCompanyId())) {
+            log.warn("Attempt to create product with duplicate SKU: {} for company ID: {}", product.getSku(), userDetails.getCompanyId());
             return ResponseEntity.badRequest()
                     .body(new MessageResponse("Error: SKU already exists in your inventory."));
         }
@@ -219,11 +229,13 @@ public class ProductController {
             com.tiendario.domain.SubscriptionStatus status = product.getCompany().getSubscriptionStatus();
 
             if (com.tiendario.domain.SubscriptionStatus.PAST_DUE.equals(status)) {
+                log.warn("Creation blocked: Company {} is PAST_DUE", product.getCompany().getName());
                 return ResponseEntity.status(403)
                         .body(new MessageResponse(
                                 "Tu suscripción ha vencido. Renueva tu plan para poder agregar nuevos productos y seguir operando."));
             }
             if (com.tiendario.domain.SubscriptionStatus.SUSPENDED.equals(status)) {
+                log.warn("Creation blocked: Company {} is SUSPENDED", product.getCompany().getName());
                 return ResponseEntity.status(403)
                         .body(new MessageResponse(
                                 "Tu cuenta está suspendida. Contacta al administrador para reactivarla."));
@@ -238,6 +250,7 @@ public class ProductController {
             catalog.setSku(product.getSku());
             catalog.setName(product.getName());
             catalog.setDescription(product.getDescription());
+            catalog.setBrand(product.getBrand());
             catalog.setImageUrl(product.getImageUrl());
             
             // Map String category to Category entity
@@ -256,12 +269,14 @@ public class ProductController {
         product.setImageUrl(catalog.getImageUrl());
 
         Product savedProduct = productRepository.save(product);
+        log.info("Product created successfully: ID={}, SKU={}, Name='{}' for Company ID: {}", 
+                savedProduct.getId(), savedProduct.getSku(), savedProduct.getName(), userDetails.getCompanyId());
 
         // Index in search engine
         try {
             productIndexService.indexProduct(savedProduct);
         } catch (Exception e) {
-            log.warn("Could not index product: {}", e.getMessage());
+            log.warn("Could not index product {}: {}", savedProduct.getId(), e.getMessage());
         }
 
         return ResponseEntity.ok(savedProduct);
@@ -296,6 +311,7 @@ public class ProductController {
             catalog.setSku(product.getSku());
             catalog.setName(productDetails.getName());
             catalog.setDescription(productDetails.getDescription());
+            catalog.setBrand(productDetails.getBrand());
             catalog.setImageUrl(productDetails.getImageUrl());
             
             // Map String category to Category entity
@@ -332,6 +348,8 @@ public class ProductController {
         product.setMinStock(productDetails.getMinStock());
 
         Product updatedProduct = productRepository.save(product);
+        log.info("Product updated successfully: ID={}, SKU={}, Name='{}'", 
+                updatedProduct.getId(), updatedProduct.getSku(), updatedProduct.getName());
 
         // Update index
         productIndexService.indexProduct(updatedProduct);
@@ -347,9 +365,11 @@ public class ProductController {
 
         Product product = productRepository.findById(id).orElse(null);
         if (product == null || !product.getCompany().getId().equals(userDetails.getCompanyId())) {
+            log.error("Access denied or product not found: ID {} for company {}", id, userDetails.getCompanyId());
             return ResponseEntity.badRequest().body(new MessageResponse("Error: Product not found or access denied."));
         }
 
+        log.info("Deleting product ID: {} (SKU: {}) for Company ID: {}", id, product.getSku(), userDetails.getCompanyId());
         productRepository.delete(product);
 
         // Remove from search engine

@@ -19,6 +19,8 @@ public class CatalogProduct {
     @Column(unique = true)
     private String sku;
 
+    private String brand;
+
     private String imageUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)

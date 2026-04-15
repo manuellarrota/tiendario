@@ -90,7 +90,7 @@ const Sidebar = () => {
             {/* Sidebar Container Wrapper */}
             <div
                 className={`sidebar-container ${collapsed ? 'collapsed-mode' : ''}`}
-                style={{ flexShrink: 0, position: 'relative', transition: 'all 0.3s ease', zIndex: 2500 }}
+                style={{ flexShrink: 0, position: 'relative', transition: 'all 0.3s ease' }}
             >
                 {/* Desktop Toggle Button */}
                 <button
@@ -126,13 +126,9 @@ const Sidebar = () => {
                                     <span className={
                                         isSuperAdmin
                                             ? 'premium-badge-v1 bg-dark text-white'
-                                            : (user?.subscriptionStatus === 'PAID'
-                                                ? 'premium-badge-v1'
-                                                : (user?.subscriptionStatus === 'TRIAL'
-                                                    ? 'trial-badge-v1'
-                                                    : 'free-badge-v1'))
+                                            : (user?.subscriptionStatus === 'PAID' ? 'premium-badge-v1' : 'trial-badge-v1')
                                     }>
-                                        {isSuperAdmin ? 'Super Admin' : (user?.subscriptionStatus === 'PAID' ? 'PRO' : (user?.subscriptionStatus === 'TRIAL' ? 'TRIAL' : 'FREE'))}
+                                        {isSuperAdmin ? 'Super Admin' : (user?.subscriptionStatus === 'PAID' ? 'PRO' : 'TRIAL')}
                                     </span>
                                     <small className="fw-bold text-dark text-truncate" style={{ maxWidth: '120px' }}>
                                         {user?.username || 'Invitado'}
@@ -144,7 +140,7 @@ const Sidebar = () => {
                         {collapsed && (
                             <div className="mt-3 border-top pt-3 text-center">
                                 <small className="fw-bold text-uppercase" style={{ fontSize: '0.6rem' }}>
-                                    {isSuperAdmin ? 'SA' : (user?.subscriptionStatus === 'PAID' ? 'PRO' : (user?.subscriptionStatus === 'TRIAL' ? 'PRB' : 'GRT'))}
+                                    {isSuperAdmin ? 'SA' : (user?.subscriptionStatus === 'PAID' ? 'PRO' : 'TRL')}
                                 </small>
                             </div>
                         )}

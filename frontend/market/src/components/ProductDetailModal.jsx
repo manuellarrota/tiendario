@@ -140,6 +140,11 @@ const ProductDetailModal = ({
                                                 📍 Ver Ubicación
                                             </a>
                                         )}
+                                        {mainSeller?.distance != null && (
+                                            <Badge bg="white" className="text-primary border shadow-sm small">
+                                               🚀 {mainSeller.distance < 1 ? `${(mainSeller.distance * 1000).toFixed(0)}m` : `${mainSeller.distance.toFixed(1)}km`}
+                                            </Badge>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -198,6 +203,11 @@ const ProductDetailModal = ({
                                                     onClick={(e) => e.stopPropagation()}>
                                                     📍 Ver Ubicación en Mapa
                                                 </a>
+                                            )}
+                                            {seller.distance != null && (
+                                                <Badge bg="light" className="text-primary border-0 x-small px-2 py-1 ms-2" style={{ fontSize: '0.65rem' }}>
+                                                    📍 {seller.distance < 1 ? `${(seller.distance * 1000).toFixed(0)}m` : `${seller.distance.toFixed(1)}km`}
+                                                </Badge>
                                             )}
                                         </div>
                                         <Button
