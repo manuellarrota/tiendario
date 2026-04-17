@@ -370,7 +370,10 @@ public class PublicController {
                     Map<String, Object> map = new HashMap<>();
                     map.put("announcementMessage", "");
                     map.put("maintenanceMode", false);
-                    map.put("enableSecondaryCurrency", false);
+                    map.put("enableSecondaryCurrency", true);
+                    map.put("baseCurrencyCode", "USD");
+                    map.put("baseCurrencySymbol", "$");
+                    map.put("currencies", "[{\"code\":\"COP\",\"symbol\":\"$\",\"name\":\"Peso Colombiano\",\"rate\":4200.00,\"enabled\":true},{\"code\":\"VES\",\"symbol\":\"Bs.\",\"name\":\"Bolívar\",\"rate\":36.50,\"enabled\":true}]");
                     return map;
                 }));
     }

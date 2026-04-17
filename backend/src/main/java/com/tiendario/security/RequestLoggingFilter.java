@@ -48,24 +48,25 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         }
         
         try {
-            if (shouldLog) {
-                String method = request.getMethod();
-                String queryString = request.getQueryString();
-                String fullPath = uri + (queryString != null ? "?" + queryString : "");
-                logger.info("Incoming request [{}]: {} {}", requestId, method, fullPath);
-            }
-
             filterChain.doFilter(request, response);
-
+        } finally {
             if (shouldLog) {
                 long duration = System.currentTimeMillis() - startTime;
                 int status = response.getStatus();
                 String method = request.getMethod();
-                logger.info("Outgoing response [{}]: {} {} - Status: {} - Duration: {}ms", 
-                    requestId, method, uri, status, duration);
-            }
+                
+                // Only log if it was a mutation (POST/PUT/DELETE) OR if it was an error (status >= 400)
+                // This drastically reduces noise from GET requests while keeping audit visibility
+                boolean isMutation = !method.equalsIgnoreCase("GET");
+                boolean isError = status >= 400;
 
-        } finally {
+                if (isMutation || isError) {
+                    String queryString = request.getQueryString();
+                    String fullPath = uri + (queryString != null ? "?" + queryString : "");
+                    logger.info("[HTTP] {} {} | Status: {} | Duration: {}ms", 
+                        method, fullPath, status, duration);
+                }
+            }
             MDC.clear();
         }
     }

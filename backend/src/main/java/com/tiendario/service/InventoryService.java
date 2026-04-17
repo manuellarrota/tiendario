@@ -182,6 +182,7 @@ public class InventoryService {
                 }
             }
             logs.add("Importación completada: " + count + " productos procesados.");
+            org.slf4j.LoggerFactory.getLogger(InventoryService.class).info("[IMPORT_EXCEL] Empresa ID: {} | Productos procesados: {}", companyId, count);
         }
         return logs;
     }

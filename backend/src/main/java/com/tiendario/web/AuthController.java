@@ -98,9 +98,9 @@ public class AuthController {
 
                         // Clear rate limit on successful login
                         rateLimiter.recordSuccess(clientIp);
-
-                        logger.info("User logged in successfully: {} (ID: {}, Roles: {})", 
-                                userDetails.getUsername(), userDetails.getId(), roles);
+                        
+                        logger.info("[LOGIN] Usuario: {} | IP: {} | Roles: {}", 
+                                userDetails.getUsername(), clientIp, roles);
 
                         return ResponseEntity.ok(new JwtResponse(jwt,
                                         userDetails.getId(),

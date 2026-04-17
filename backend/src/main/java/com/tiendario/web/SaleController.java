@@ -56,17 +56,8 @@ public class SaleController {
     public ResponseEntity<?> createSale(@RequestBody Sale sale) {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
-
-        try {
-            String method = sale.getPaymentMethod() != null ? sale.getPaymentMethod().name() : "N/A";
-            logger.info("💰 [VENTA] Usuario {} procesando venta por ${} (Método: {})", 
-                userDetails.getUsername(), sale.getTotalAmount(), method);
-            saleService.createSale(sale, userDetails);
-            return ResponseEntity.ok(new MessageResponse("Order created successfully!"));
-        } catch (RuntimeException e) {
-            logger.error("❌ [ERROR VENTA] Usuario {}: {}", userDetails.getUsername(), e.getMessage());
-            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
-        }
+        saleService.createSale(sale, userDetails);
+        return ResponseEntity.ok(new MessageResponse("Order created successfully!"));
     }
 
     @PutMapping("/{id}/status")
@@ -76,16 +67,8 @@ public class SaleController {
             @RequestParam(required = false) com.tiendario.domain.PaymentMethod paymentMethod) {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
-
-        try {
-            logger.info("🔄 [ESTADO] Usuario {} actualizando venta #{} a estado: {} (Pago: {})", 
-                userDetails.getUsername(), id, status, paymentMethod);
-            saleService.updateSaleStatus(id, status, paymentMethod, userDetails);
-            return ResponseEntity.ok(new MessageResponse("Sale status updated to " + status));
-        } catch (RuntimeException e) {
-            logger.error("❌ [ERROR ESTADO] Usuario {}: {}", userDetails.getUsername(), e.getMessage());
-            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
-        }
+        saleService.updateSaleStatus(id, status, paymentMethod, userDetails);
+        return ResponseEntity.ok(new MessageResponse("Sale status updated to " + status));
     }
 
     @GetMapping("/daily-summary")

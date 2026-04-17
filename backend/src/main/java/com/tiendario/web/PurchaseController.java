@@ -103,6 +103,9 @@ public class PurchaseController {
         }
 
         purchaseRepository.save(purchase);
+        
+        org.slf4j.LoggerFactory.getLogger(PurchaseController.class).info("[COMPRA/STOCK] Usuario: {} | Empresa: {} | ID Compra: {} | Total: {}", 
+            userDetails.getUsername(), purchase.getCompany().getName(), purchase.getId(), purchase.getTotal());
 
         return ResponseEntity.ok(new MessageResponse("Purchase recorded and stock updated!"));
     }

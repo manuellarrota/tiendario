@@ -20,6 +20,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class SaleService {
 
@@ -152,6 +155,14 @@ public class SaleService {
 
         saleRepository.save(sale);
 
+        log.info("[VENTA] Usuario: {} | Empresa: {} | ID: {} | Monto: {} | Estado: {} | Cliente: {}", 
+            cashier != null ? cashier.getUsername() : "Desconocido",
+            company.getName(),
+            sale.getId(),
+            sale.getTotalAmount(),
+            sale.getStatus(),
+            sale.getCustomerName() != null ? sale.getCustomerName() : "General");
+
         // Notify store owner about new marketplace order (PENDING orders only)
         if (SaleStatus.PENDING.equals(sale.getStatus())) {
             try {
@@ -211,6 +222,12 @@ public class SaleService {
         }
 
         saleRepository.save(sale);
+
+        log.info("[VENTA_ESTADO] Usuario: {} | Empresa: {} | ID Venta: {} | Nuevo Estado: {}", 
+            userDetails.getUsername(),
+            sale.getCompany().getName(),
+            sale.getId(),
+            status);
 
         // Notify customer about status change (if email available)
         try {

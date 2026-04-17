@@ -38,14 +38,20 @@ public class MyDataInitializer implements CommandLineRunner {
     @Autowired
     private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private GlobalConfigRepository globalConfigRepository;
+
+    @Autowired
+    private com.tiendario.service.ExchangeRateService exchangeRateService;
+
     @Override
     @Transactional
     public void run(String... args) {
         try {
             System.err.println("DEBUG: DataInitializer running...");
             
-            // 1. Ensure Super Admin
-            createSuperAdmin("admin", "Admin123!");
+            // 0. Ensure Global Config
+            ensureGlobalConfig();
 
             // 2. Ensure Demo Managers & Customers
             createManager("manager_pro",  "Manager123!", "Ferretería Central",    SubscriptionStatus.PAID,  7.789354, -72.219738, "Av. 19 de Abril, San Cristóbal");
@@ -176,6 +182,21 @@ public class MyDataInitializer implements CommandLineRunner {
         purchase.setItems(items);
         purchase.setTotal(total);
         purchaseRepository.save(purchase);
+    }
+
+    private void ensureGlobalConfig() {
+        if (globalConfigRepository.count() == 0) {
+            GlobalConfig config = new GlobalConfig();
+            globalConfigRepository.save(config);
+            System.err.println("✓ Created default GlobalConfig.");
+            
+            // Trigger first rate update
+            try {
+                exchangeRateService.updateRates();
+            } catch (Exception e) {
+                System.err.println("Warning: Could not fetch initial rates during seeding: " + e.getMessage());
+            }
+        }
     }
 
     private void createSale(Company company, User user, String customerName, List<Product> products, SaleStatus status, PaymentMethod method, java.time.LocalDateTime date) {

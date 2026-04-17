@@ -29,16 +29,16 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex) {
         // Only log unexpected runtime exceptions at error level
         if (ex.getMessage() != null && ex.getMessage().startsWith("Error:")) {
-            logger.warn("Business error: {}", ex.getMessage());
+            logger.warn("[NEGOCIO_ERROR] {}", ex.getMessage());
         } else {
-            logger.error("Unexpected runtime exception", ex);
+            logger.error("[SISTEMA_ERROR] Excepción no manejada", ex);
         }
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> handleAccessDenied(org.springframework.security.access.AccessDeniedException ex, javax.servlet.http.HttpServletRequest request) {
-        logger.warn("Access denied on URI {}: {}", request.getRequestURI(), ex.getMessage());
+        logger.warn("[ACCESO_DENEGADO] URI: {} | Motivo: {}", request.getRequestURI(), ex.getMessage());
         return buildResponse(HttpStatus.FORBIDDEN, "Acceso denegado. No tienes permisos para esta acción.");
     }
 
@@ -61,13 +61,13 @@ public class GlobalExceptionHandler {
         } else if (message.toLowerCase().contains("users(username")) {
             msg = "El nombre de usuario ya está registrado.";
         }
-        logger.warn("Data integrity violation: {}", message);
+        logger.warn("[ERROR] Data integrity violation: {}", message);
         return buildResponse(HttpStatus.BAD_REQUEST, msg);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
-        logger.warn("Invalid argument: {}", ex.getMessage());
+        logger.warn("[ERROR] Invalid argument: {}", ex.getMessage());
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }
 

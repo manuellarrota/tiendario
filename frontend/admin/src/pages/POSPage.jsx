@@ -69,9 +69,10 @@ const POSPage = () => {
     }, []);
 
     const formatSecondary = (amount) => {
-        if (!platformConfig || !platformConfig.enableSecondaryCurrency) return null;
-        const converted = amount * platformConfig.exchangeRate;
-        return `${platformConfig.secondaryCurrencySymbol} ${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const ves = availableCurrencies.find(c => c.code === 'VES');
+        if (!ves) return null;
+        const converted = amount * ves.rate;
+        return `${ves.symbol} ${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     const getSelectedCurrency = useCallback(() => availableCurrencies.find(c => c.code === paymentCurrency), [availableCurrencies, paymentCurrency]);
@@ -84,11 +85,8 @@ const POSPage = () => {
 
     const formatPaymentCurrency = (amount) => {
         const converted = convertToPaymentCurrency(amount);
-        if (paymentCurrency === baseCurrencyCode) {
-            return `${baseCurrencySymbol}${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-        }
-        const curr = getSelectedCurrency();
-        return `${curr?.symbol || ''} ${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const curr = getSelectedCurrency() || { symbol: baseCurrencySymbol };
+        return `${curr.symbol}${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
     const total = useMemo(() => cart.reduce((acc, item) => acc + item.subtotal, 0), [cart]);
@@ -484,7 +482,10 @@ const POSPage = () => {
                             <div className="mt-4 pt-4 border-top">
                                 <div className="d-flex justify-content-between align-items-center">
                                     <span className="text-muted fw-bold">TOTAL</span>
-                                    <span className="fs-3 fw-black">{baseCurrencySymbol}{total.toFixed(2)}</span>
+                                    <div className="text-end">
+                                        <div className="fs-3 fw-black">{baseCurrencySymbol}{total.toFixed(2)}</div>
+                                        <div className="text-muted small">{formatSecondary(total)}</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -556,7 +557,7 @@ const POSPage = () => {
                                 </div>
 
                                 <h6 className="fw-bold mb-3">Registrar Pago</h6>
-                                <div className="currency-input-group mb-3">
+                                <div className="currency-input-group mb-1">
                                     <Row className="g-2">
                                         <Col xs={4}>
                                             <Form.Select 
@@ -564,9 +565,10 @@ const POSPage = () => {
                                                 value={tempPayment.currency}
                                                 onChange={e => setTempPayment({...tempPayment, currency: e.target.value})}
                                             >
-                                                <option value="USD">USD</option>
-                                                <option value="VES">VES</option>
-                                                <option value="COP">COP</option>
+                                                <option value={baseCurrencyCode}>{baseCurrencyCode}</option>
+                                                {availableCurrencies.filter(c => c.code !== baseCurrencyCode).map(c => (
+                                                    <option key={c.code} value={c.code}>{c.code}</option>
+                                                ))}
                                             </Form.Select>
                                         </Col>
                                         <Col xs={8}>
@@ -580,6 +582,14 @@ const POSPage = () => {
                                             />
                                         </Col>
                                     </Row>
+                                </div>
+                                <div className="text-end mb-3 px-2">
+                                    {tempPayment.amount && tempPayment.currency !== baseCurrencyCode && (
+                                        <small className="text-primary fw-bold">
+                                            ≈ {baseCurrencySymbol}{(parseFloat(tempPayment.amount) / (availableCurrencies.find(c => c.code === tempPayment.currency)?.rate || 1)).toFixed(2)} {baseCurrencyCode}
+                                            <span className="text-muted ms-2">(Tasa: {availableCurrencies.find(c => c.code === tempPayment.currency)?.rate || 1})</span>
+                                        </small>
+                                    )}
                                 </div>
 
                                 <div className="d-flex gap-2 flex-wrap mb-4">

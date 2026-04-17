@@ -55,6 +55,16 @@ public class SuperAdminController {
         @Autowired
         PasswordEncoder passwordEncoder;
 
+        @Autowired
+        com.tiendario.service.ExchangeRateService exchangeRateService;
+
+        @PostMapping("/config/refresh-rates")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<?> refreshExchangeRates() {
+                exchangeRateService.updateRates();
+                return ResponseEntity.ok(new MessageResponse("Tasas actualizadas exitosamente"));
+        }
+
         @GetMapping("/stats")
         @PreAuthorize("hasRole('ADMIN')")
         public ResponseEntity<?> getGlobalStats() {
