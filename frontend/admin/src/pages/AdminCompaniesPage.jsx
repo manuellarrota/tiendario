@@ -109,31 +109,33 @@ const AdminCompaniesPage = () => {
                                             <div className="fw-bold fs-5">{company.name}</div>
                                         </td>
                                         <td>
-                                            <Badge
-                                                bg={company.subscriptionStatus === 'PAID' ? 'success' : 'secondary'}
-                                                className="px-3 py-2 rounded-pill"
-                                            >
-                                                {company.subscriptionStatus}
-                                            </Badge>
-                                        </td>
-                                        <td>
-                                            <Dropdown>
-                                                <Dropdown.Toggle variant="outline-primary" size="sm" className="rounded-pill" id={`dropdown-${company.id}`} disabled={updating === company.id}>
-                                                    {updating === company.id ? <Spinner size="sm" animation="border" /> : <><FaEdit className="me-1" /> Cambiar Plan</>}
-                                                </Dropdown.Toggle>
+                                                <Badge
+                                                    bg={company.subscriptionStatus === 'PAID' ? 'success' : company.subscriptionStatus === 'TRIAL' ? 'warning' : 'secondary'}
+                                                    className="px-3 py-2 rounded-pill"
+                                                >
+                                                    {company.subscriptionStatus === 'PAID' ? '💎 PREMIUM' : 
+                                                     company.subscriptionStatus === 'TRIAL' ? '⏱️ PRUEBA' : 
+                                                     company.subscriptionStatus === 'PAST_DUE' ? '⚠️ VENCIDO' : company.subscriptionStatus}
+                                                </Badge>
+                                            </td>
+                                            <td>
+                                                <Dropdown>
+                                                    <Dropdown.Toggle variant="outline-primary" size="sm" className="rounded-pill" id={`dropdown-${company.id}`} disabled={updating === company.id}>
+                                                        {updating === company.id ? <Spinner size="sm" animation="border" /> : <><FaEdit className="me-1" /> Cambiar Plan</>}
+                                                    </Dropdown.Toggle>
 
-                                                <Dropdown.Menu>
-                                                    <Dropdown.Item onClick={() => handleStatusChange(company.id, 'FREE')}>
-                                                        <span className="text-secondary fw-bold">FREE</span> (Gratis)
-                                                    </Dropdown.Item>
-                                                    <Dropdown.Item onClick={() => handleStatusChange(company.id, 'PAID')}>
-                                                        <span className="text-success fw-bold">PAID</span> (Premium)
-                                                    </Dropdown.Item>
-                                                    <Dropdown.Item onClick={() => handleStatusChange(company.id, 'PAST_DUE')}>
-                                                        <span className="text-danger fw-bold">PAST_DUE</span> (Vencido)
-                                                    </Dropdown.Item>
-                                                </Dropdown.Menu>
-                                            </Dropdown>
+                                                    <Dropdown.Menu>
+                                                        <Dropdown.Item onClick={() => handleStatusChange(company.id, 'PAID')}>
+                                                            <span className="text-success fw-bold">PREMIUM</span> (Pago activo)
+                                                        </Dropdown.Item>
+                                                        <Dropdown.Item onClick={() => handleStatusChange(company.id, 'TRIAL')}>
+                                                            <span className="text-warning fw-bold">PRUEBA</span> (Onboarding)
+                                                        </Dropdown.Item>
+                                                        <Dropdown.Item onClick={() => handleStatusChange(company.id, 'PAST_DUE')}>
+                                                            <span className="text-danger fw-bold">VENCIDO</span> (Bloqueado)
+                                                        </Dropdown.Item>
+                                                    </Dropdown.Menu>
+                                                </Dropdown>
                                         </td>
                                     </tr>
                                 ))}

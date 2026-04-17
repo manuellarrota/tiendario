@@ -85,8 +85,9 @@ public class EmailService {
     /**
      * Send password reset email with a branded HTML template.
      */
-    public void sendPasswordResetEmail(String to, String username, String resetToken) {
-        String resetLink = frontendUrl + "/reset-password?token=" + resetToken;
+    public void sendPasswordResetEmail(String to, String username, String resetToken, String customFrontendUrl) {
+        String base = (customFrontendUrl != null && !customFrontendUrl.isBlank()) ? customFrontendUrl : frontendUrl;
+        String resetLink = base + "/reset-password?token=" + resetToken;
         String subject = "🔐 Restablecer tu contraseña — Tiendario";
         String html = buildPasswordResetHtml(username, resetLink);
 
@@ -142,8 +143,9 @@ public class EmailService {
     /**
      * Send account verification email after registration.
      */
-    public void sendVerificationEmail(String email, String code) {
-        String verificationUrl = backendUrl + "/api/auth/verify?code=" + code;
+    public void sendVerificationEmail(String email, String code, String customBackendUrl) {
+        String base = (customBackendUrl != null && !customBackendUrl.isBlank()) ? customBackendUrl : backendUrl;
+        String verificationUrl = base + "/api/auth/verify?code=" + code;
         String subject = "✉️ Verifica tu cuenta — Tiendario";
         String html = "<!DOCTYPE html><html><body style='font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;'>"
                 + "<div style='background:linear-gradient(135deg,#059669,#10b981);padding:40px;border-radius:16px;text-align:center;color:white;'>"

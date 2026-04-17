@@ -134,16 +134,6 @@ const DashboardHome = () => {
             );
         } else if (type === 'manual') {
             setShowPaymentModal(true);
-        } else {
-            // Downgrade logic remains creating a free plan
-            CompanyService.downgradeSubscription().then(
-                () => {
-                    const updatedUser = { ...user, subscriptionStatus: 'FREE' };
-                    localStorage.setItem("user", JSON.stringify(updatedUser));
-                    window.location.reload();
-                },
-                () => setError("Error al cambiar plan.")
-            );
         }
     };
 
@@ -358,11 +348,11 @@ const DashboardHome = () => {
                                                     <div className="progress-bar bg-success" style={{ width: `${(summary?.paidPlanCount / (summary?.totalCompanies || 1)) * 100}%` }}></div>
                                                 </div>
                                                 <div className="d-flex align-items-center justify-content-between mb-2">
-                                                    <span>Planes Gratuitos</span>
-                                                    <span className="fw-bold">{summary?.freePlanCount || 0}</span>
+                                                    <span>En Periodo de Prueba</span>
+                                                    <span className="fw-bold">{summary?.trialPlanCount || 0}</span>
                                                 </div>
                                                 <div className="progress" style={{ height: '8px' }}>
-                                                    <div className="progress-bar bg-secondary" style={{ width: `${(summary?.freePlanCount / (summary?.totalCompanies || 1)) * 100}%` }}></div>
+                                                    <div className="progress-bar bg-warning" style={{ width: `${(summary?.trialPlanCount / (summary?.totalCompanies || 1)) * 100}%` }}></div>
                                                 </div>
                                             </Card.Body>
                                         </Card>
@@ -560,8 +550,7 @@ const DashboardHome = () => {
                                                                         {method === 'CASH' ? '💵 Efectivo' : 
                                                                          method === 'CARD' ? '💳 Tarjeta' : 
                                                                          method === 'TRANSFER' ? '🏦 Transferencia' : 
-                                                                         method === 'MOBILE_PAYMENT' ? '📱 Pago Móvil' : 
-                                                                         method === 'OTHER' ? '❓ Otro' : method}
+                                                                         method === 'MOBILE_PAYMENT' ? '📱 Pago Móvil' : method}
                                                                     </span>
                                                                     <span className="fw-bold">{count}</span>
                                                                 </div>
@@ -614,7 +603,7 @@ const DashboardHome = () => {
                                                                         </td>
                                                                         <td>
                                                                             <Badge bg="light" text="dark" className="rounded-pill px-2 py-1">
-                                                                                {sale.paymentMethod === 'CASH' ? '💵 Efectivo' : sale.paymentMethod === 'CARD' ? '💳 Tarjeta' : '🏦 Transf'}
+                                                                                {sale.paymentMethod === 'CASH' ? '💵 Efectivo' : sale.paymentMethod === 'CARD' ? '💳 Tarjeta' : sale.paymentMethod === 'TRANSFER' ? '🏦 Transf' : '📱 P. Móvil'}
                                                                             </Badge>
                                                                         </td>
                                                                         <td>
@@ -723,15 +712,8 @@ const DashboardHome = () => {
                         )}
 
                         {!isSuperAdmin && isPremium && (
-                            <div className="mt-5 text-center">
-                                <Button
-                                    variant="outline-secondary"
-                                    size="sm"
-                                    className="rounded-pill px-4 opacity-50"
-                                    onClick={() => handleSubscriptionChange('downgrade')}
-                                >
-                                    Simular Regreso a Plan Gratis (Solo Pruebas)
-                                </Button>
+                            <div className="mt-5 text-center opacity-25">
+                                <small className="text-muted">Tiendario SaaS - Versión Enterprise</small>
                             </div>
                         )}
                     </>

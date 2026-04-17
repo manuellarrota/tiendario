@@ -29,6 +29,8 @@ public class InventoryController {
         public ResponseEntity<Resource> exportToExcel() throws IOException {
                 UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                                 .getPrincipal();
+                org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(InventoryController.class);
+                logger.info("📤 [EXPORTAR] Usuario {} está exportando inventario a Excel", userDetails.getUsername());
                 ByteArrayInputStream in = inventoryService.exportToExcel(userDetails.getCompanyId());
 
                 HttpHeaders headers = new HttpHeaders();
@@ -38,7 +40,7 @@ public class InventoryController {
                                 .headers(headers)
                                 .contentType(
                                                 MediaType.parseMediaType(
-                                                                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                                                                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                                 .body(new InputStreamResource(in));
         }
 
@@ -47,6 +49,8 @@ public class InventoryController {
         public ResponseEntity<Resource> exportToPdf() throws IOException {
                 UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                                 .getPrincipal();
+                org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(InventoryController.class);
+                logger.info("📤 [EXPORTAR] Usuario {} está exportando inventario a PDF", userDetails.getUsername());
                 ByteArrayInputStream in = inventoryService.exportToPdf(userDetails.getCompanyId());
 
                 HttpHeaders headers = new HttpHeaders();
@@ -63,6 +67,9 @@ public class InventoryController {
         public ResponseEntity<List<String>> importExcel(@RequestParam("file") MultipartFile file) throws IOException {
                 UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                                 .getPrincipal();
+                org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(InventoryController.class);
+                logger.info("📥 [IMPORTAR] Usuario {} inició importación de inventario desde {}", 
+                    userDetails.getUsername(), file.getOriginalFilename());
                 List<String> logs = inventoryService.importFromExcel(file, userDetails.getCompanyId());
                 return ResponseEntity.ok(logs);
         }

@@ -18,7 +18,7 @@ const InventoryPage = () => {
     const [editingProduct, setEditingProduct] = useState(null);
     const [message, setMessage] = useState("");
     const user = AuthService.getCurrentUser();
-    const subscriptionStatus = user?.subscriptionStatus || 'FREE';
+    const subscriptionStatus = user?.subscriptionStatus || 'TRIAL';
     const isPremium = subscriptionStatus === 'PAID' || subscriptionStatus === 'TRIAL';
     const isBlocked = subscriptionStatus === 'PAST_DUE' || subscriptionStatus === 'SUSPENDED';
 

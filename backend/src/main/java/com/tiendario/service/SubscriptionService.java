@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
  * Servicio de gestion de suscripciones de Tiendario.
  *
  * MODELO DE PRECIOS:
- *   Plan Gratis (TRIAL): 30 dias al registrarse, acceso completo.
+ *   Periodo de Prueba (TRIAL): 30 dias al registrarse, acceso completo.
  *   Plan Premium Mensual: $20/mes  → aprobacion extiende 30 dias.
  *   Plan Premium Anual:  $200/ano → aprobacion debe extender 365 dias
  *                                    (TODO: automatizar via campo billingCycle).

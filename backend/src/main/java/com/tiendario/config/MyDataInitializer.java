@@ -102,9 +102,13 @@ public class MyDataInitializer implements CommandLineRunner {
                 Product p5 = createProduct(company, "Set de Destornilladores (x6)", "Ferretería", "ST-005", 15.0, 8.0, 25, "Punta Imantada", "Truper");
                 Product p6 = createProduct(company, "Cerradura de Pomo Bronce", "Ferretería", "ST-006", 22.0, 12.0, 18, "Dormitorio/Baño", "Cisa");
 
-                // 3. Create Purchases (Stock entry)
-                createPurchase(company, sup1, List.of(p1, p2, p3), java.time.LocalDateTime.now().minusDays(10), "INV-1001");
-                createPurchase(company, sup2, List.of(p4, p5, p6), java.time.LocalDateTime.now().minusDays(5), "INV-5502");
+                // 3. Create Purchases (Stock entry - More variety for reports)
+                System.err.println("Generating historical purchases for " + manager.getUsername() + "...");
+                createPurchase(company, sup1, List.of(p1, p2, p3), java.time.LocalDateTime.now().minusDays(25), "INV-B001");
+                createPurchase(company, sup2, List.of(p4, p5), java.time.LocalDateTime.now().minusDays(20), "INV-B002");
+                createPurchase(company, sup1, List.of(p1, p6), java.time.LocalDateTime.now().minusDays(15), "INV-B003");
+                createPurchase(company, sup2, List.of(p2, p3, p4), java.time.LocalDateTime.now().minusDays(10), "INV-B004");
+                createPurchase(company, sup1, List.of(p5, p6), java.time.LocalDateTime.now().minusDays(5), "INV-B005");
 
                 // 4. Create Sales (Diverse states and history)
                 System.err.println("Generating historical sales for charting...");
@@ -119,12 +123,13 @@ public class MyDataInitializer implements CommandLineRunner {
                     PaymentMethod randomMethod = methods[rnd.nextInt(methods.length)];
                     String randomName = names[rnd.nextInt(names.length)];
                     
-                    // Pick 1-2 random products
-                    Product randomP1 = p1;
-                    if (rnd.nextBoolean()) randomP1 = p2;
+                    // Pick 1-3 random products from the specialized set
+                    List<Product> allSpecialized = List.of(p1, p2, p3, p4, p5, p6);
                     List<Product> saleProducts = new java.util.ArrayList<>();
-                    saleProducts.add(randomP1);
-                    if (rnd.nextBoolean()) saleProducts.add(p3);
+                    int itemsCount = 1 + rnd.nextInt(3);
+                    for (int j = 0; j < itemsCount; j++) {
+                        saleProducts.add(allSpecialized.get(rnd.nextInt(allSpecialized.size())));
+                    }
 
                     createSale(company, manager, randomName, saleProducts, randomStatus, randomMethod, saleDate);
                 }

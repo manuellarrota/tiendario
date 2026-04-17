@@ -17,7 +17,7 @@ import java.util.List;
 
 /**
  * Scheduled service that checks for expired trial subscriptions
- * and downgrades them to FREE automatically.
+ * and move them to PAST_DUE automatically.
  */
 @Service
 public class TrialExpirationService {

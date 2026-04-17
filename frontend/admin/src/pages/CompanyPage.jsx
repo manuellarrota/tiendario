@@ -117,11 +117,10 @@ const CompanyPage = () => {
 
     const getStatusBadge = (status) => {
         switch (status) {
-            case 'PAID': return <Badge bg="success"><FaCheckCircle className="me-1" /> Premium</Badge>;
-            case 'TRIAL': return <Badge bg="info">Prueba Gratuita</Badge>;
-            case 'FREE': return <Badge bg="secondary">Gratis (Solo Exhibición)</Badge>;
-            case 'PAST_DUE': return <Badge bg="warning">Pago Pendiente</Badge>;
-            case 'SUSPENDED': return <Badge bg="danger">Suspendida</Badge>;
+            case 'TRIAL': return <Badge bg="warning" text="dark">Prueba (Funcionalidad Completa)</Badge>;
+            case 'PAID': return <Badge bg="success">Membresía Premium Activa</Badge>;
+            case 'PAST_DUE': return <Badge bg="danger">Suscripción Vencida (Solo Lectura)</Badge>;
+            case 'SUSPENDED': return <Badge bg="dark">Cuenta Suspendida</Badge>;
             default: return <Badge bg="secondary">{status}</Badge>;
         }
     };

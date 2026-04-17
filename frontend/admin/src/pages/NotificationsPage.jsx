@@ -256,8 +256,8 @@ const NotificationsPage = () => {
                     >
                         <option value="CASH">Efectivo 💵</option>
                         <option value="CARD">Tarjeta de Débito/Crédito 💳</option>
-                        <option value="TRANSFER">Transferencia / Pago Móvil 📲</option>
-                        <option value="OTHER">Otro 📝</option>
+                        <option value="TRANSFER">Transferencia Bancaria 🏦</option>
+                        <option value="MOBILE_PAYMENT">Pago Móvil 📱</option>
                     </Form.Select>
                     <div className="d-grid gap-2">
                         <Button variant="primary" size="lg" className="rounded-pill fw-bold" onClick={confirmPayment}>

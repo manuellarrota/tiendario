@@ -54,7 +54,10 @@ const NewPurchasePage = () => {
             const data = res.data;
             setProducts(Array.isArray(data) ? data : (data.products || data.content || []));
         });
-        SupplierService.getAll().then(res => setSuppliers(Array.isArray(res.data) ? res.data : []));
+        SupplierService.getAll().then(res => {
+            const data = res.data;
+            setSuppliers(Array.isArray(data) ? data : (data.suppliers || data.content || []));
+        });
         CategoryService.getAll().then(res => setCategories(Array.isArray(res.data) ? res.data : []));
     };
 

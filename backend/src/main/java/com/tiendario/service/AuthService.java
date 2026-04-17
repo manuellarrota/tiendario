@@ -34,7 +34,7 @@ public class AuthService {
     }
 
     @Transactional
-    public User registerUser(SignupRequest signUpRequest) {
+    public User registerUser(SignupRequest signUpRequest, String customBackendUrl) {
         if (userRepository.existsByUsername(signUpRequest.getUsername())) {
             throw new RuntimeException("Error: ¡El nombre de usuario ya está en uso!");
         }
@@ -93,7 +93,7 @@ public class AuthService {
         userRepository.save(user);
 
         if (!user.isEnabled()) {
-            emailService.sendVerificationEmail(user.getEmail(), user.getVerificationCode());
+            emailService.sendVerificationEmail(user.getEmail(), user.getVerificationCode(), customBackendUrl);
         }
 
         return user;

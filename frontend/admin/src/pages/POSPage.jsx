@@ -14,11 +14,18 @@ const POSPage = () => {
     const [cart, setCart] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [message, setMessage] = useState("");
-    const [paymentMethod, setPaymentMethod] = useState("CASH");
-    const [paymentCurrency, setPaymentCurrency] = useState("USD");
-    const [customerName, setCustomerName] = useState("");
-    const [customerCedula, setCustomerCedula] = useState("");
-    const [customerPhone, setCustomerPhone] = useState("");
+    
+    // Payment State
+    const [payments, setPayments] = useState([]);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [paymentCurrency, setPaymentCurrency] = useState('USD');
+    const [tempPayment, setTempPayment] = useState({ 
+        amount: "", 
+        currency: "USD", 
+        method: "CASH",
+        exchangeRate: 1 
+    });
+
     const [platformConfig, setPlatformConfig] = useState(null);
     const [customers, setCustomers] = useState([]);
     const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -39,7 +46,7 @@ const POSPage = () => {
 
     // 2. AUTH & CONFIG
     const user = AuthService.getCurrentUser();
-    const subscriptionStatus = user?.subscriptionStatus || 'FREE';
+    const subscriptionStatus = user?.subscriptionStatus || 'TRIAL';
     const canOperate = subscriptionStatus === 'PAID' || subscriptionStatus === 'TRIAL';
 
     const availableCurrencies = useMemo(() => {
@@ -110,20 +117,31 @@ const POSPage = () => {
         });
     }, [triggerToast]);
 
+    const totalPaidInBase = useMemo(() => {
+        return payments.reduce((acc, p) => acc + (p.amountInBaseCurrency || 0), 0);
+    }, [payments]);
+
+    const remainingToPay = useMemo(() => {
+        return Math.max(0, total - totalPaidInBase);
+    }, [total, totalPaidInBase]);
+
     const handleCheckout = useCallback(() => {
-        if (cart.length === 0) return;
-        const selectedCurr = getSelectedCurrency();
+        if (cart.length === 0 || totalPaidInBase < total) return;
+        
         const saleData = {
             totalAmount: total,
-            paymentMethod: paymentMethod,
-            paymentCurrency: paymentCurrency,
-            paymentAmountInCurrency: paymentCurrency === baseCurrencyCode ? total : convertToPaymentCurrency(total),
-            exchangeRateUsed: paymentCurrency === baseCurrencyCode ? 1 : (selectedCurr?.rate || 1),
             items: cart.map(item => ({
                 product: { id: item.product.id },
                 quantity: item.quantity,
                 unitPrice: item.unitPrice,
                 subtotal: item.subtotal
+            })),
+            payments: payments.map(p => ({
+                amount: p.amount,
+                currencyCode: p.currency,
+                exchangeRate: p.exchangeRate,
+                amountInBaseCurrency: p.amountInBaseCurrency,
+                method: p.method
             })),
             customer: selectedCustomer ? { id: selectedCustomer.id } : null,
             customerName: selectedCustomer ? selectedCustomer.name : (customerSearch.trim() || 'Cliente General'),
@@ -133,13 +151,38 @@ const POSPage = () => {
         SaleService.createSale(saleData).then(() => {
             triggerToast("¡Venta realizada con éxito!");
             setCart([]);
-            setPaymentMethod("CASH");
-            setPaymentCurrency(baseCurrencyCode);
+            setPayments([]);
+            setShowPaymentModal(false);
             setSelectedCustomer(null);
             setCustomerSearch("");
             ProductService.getPOSProducts().then(r => setProducts(r.data.products || r.data));
         }).catch(() => triggerToast("Error al procesar la venta", "error"));
-    }, [cart, total, paymentMethod, paymentCurrency, selectedCustomer, customerSearch, baseCurrencyCode, triggerToast, getSelectedCurrency, convertToPaymentCurrency]);
+    }, [cart, total, totalPaidInBase, payments, selectedCustomer, customerSearch, triggerToast]);
+
+    const addPaymentPart = () => {
+        const amount = parseFloat(tempPayment.amount);
+        if (isNaN(amount) || amount <= 0) return;
+
+        const curr = availableCurrencies.find(c => c.code === tempPayment.currency) || { rate: 1, symbol: "$" };
+        const rate = tempPayment.currency === baseCurrencyCode ? 1 : curr.rate;
+        const amountInBase = tempPayment.currency === baseCurrencyCode ? amount : amount / rate;
+
+        const newP = {
+            ...tempPayment,
+            amount,
+            exchangeRate: rate,
+            amountInBaseCurrency: amountInBase,
+            symbol: curr.symbol,
+            id: Date.now()
+        };
+
+        setPayments([...payments, newP]);
+        setTempPayment({ ...tempPayment, amount: "" });
+    };
+
+    const removePaymentPart = (id) => {
+        setPayments(payments.filter(p => p.id !== id));
+    };
 
     const handleBarcodeSearch = useCallback((code) => {
         if (!code || code.trim() === '') return;
@@ -254,16 +297,16 @@ const POSPage = () => {
         const handleKeyPress = (e) => {
             if (e.key === 'F1') { e.preventDefault(); document.querySelector('.pos-search-input')?.focus(); }
             else if (e.key === 'F2') { e.preventDefault(); setCustomerSearch(" "); }
-            else if (e.key === 'F3') { e.preventDefault(); setPaymentMethod(p => p === "CASH" ? "CARD" : p === "CARD" ? "TRANSFER" : "CASH"); }
-            else if (e.key === 'F4') { e.preventDefault(); if (cart.length > 0) handleCheckout(); }
+            else if (e.key === 'F4') { e.preventDefault(); if (cart.length > 0) setShowPaymentModal(true); }
             else if (e.key === 'Escape') {
-                if (cart.length > 0 && window.confirm("¿Vaciar carrito?")) setCart([]);
+                if (showPaymentModal) setShowPaymentModal(false);
+                else if (cart.length > 0 && window.confirm("¿Vaciar carrito?")) setCart([]);
                 setCustomerSearch(""); setSearchTerm("");
             }
         };
         window.addEventListener('keydown', handleKeyPress);
         return () => window.removeEventListener('keydown', handleKeyPress);
-    }, [cart, handleCheckout]);
+    }, [cart, showPaymentModal]);
 
     // 7. RENDER
     return (
@@ -355,16 +398,11 @@ const POSPage = () => {
                                             </div>
                                             <div style={{ width: '15%' }} className="d-flex flex-column align-items-center">
                                                 <div className="d-flex gap-2 align-items-center">
-                                                    <OverlayTrigger overlay={<Tooltip>Disminuir cantidad</Tooltip>}>
-                                                        <Button variant="light" size="sm" className="pos-btn-qty shadow-sm border" onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)}>
-                                                            <FaMinus size={10} />
-                                                        </Button>
-                                                    </OverlayTrigger>
                                                     <Form.Control
                                                         type="number"
                                                         size="sm"
-                                                        className="text-center fw-bold border shadow-sm mx-1"
-                                                        style={{ width: '70px', borderRadius: '8px' }}
+                                                        className="text-center fw-bold border shadow-sm mx-1 no-spinner"
+                                                        style={{ width: '80px', borderRadius: '8px' }}
                                                         value={item.quantity}
                                                         onChange={(e) => {
                                                             const val = parseInt(e.target.value, 10);
@@ -372,11 +410,6 @@ const POSPage = () => {
                                                         }}
                                                         min="1"
                                                     />
-                                                    <OverlayTrigger overlay={<Tooltip>Aumentar cantidad</Tooltip>}>
-                                                        <Button variant="light" size="sm" className="pos-btn-qty shadow-sm border" onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)}>
-                                                            <FaPlus size={10} />
-                                                        </Button>
-                                                    </OverlayTrigger>
                                                 </div>
                                             </div>
                                             <div style={{ width: '20%' }} className="text-end fw-bold text-muted">
@@ -404,16 +437,20 @@ const POSPage = () => {
                         </div>
                     </Col>
 
-                    {/* Column 2: SEARCH & PAYMENT (Right) */}
+                    {/* Column 2: SEARCH (Right) */}
                     <Col lg={4} className="d-flex flex-column" style={{ height: 'calc(100vh - 40px)' }}>
-                        {/* Search and Quick Selection */}
-                        <div className="bg-white rounded-4 shadow-sm p-3 mb-3 d-flex flex-column" style={{ flex: '1 1 auto', minHeight: 0 }}>
-                            <div className="pos-search-wrapper mb-3">
+                        <div className="bg-white rounded-4 shadow-sm p-4 d-flex flex-column h-100">
+                             <div className="d-flex align-items-center justify-content-between mb-4">
+                                <h5 className="fw-bold mb-0">Catálogo</h5>
+                                <Badge bg="light" className="text-muted border">F1 Buscar</Badge>
+                             </div>
+
+                            <div className="pos-search-wrapper mb-4">
                                 <FaSearch className="search-icon" />
-                                <OverlayTrigger placement="left" overlay={<Tooltip>F1 para enfocar búsqueda. Escribe nombre o SKU y pulsa Enter.</Tooltip>}>
+                                <OverlayTrigger placement="left" overlay={<Tooltip>F1 buscar por nombre o SKU</Tooltip>}>
                                     <Form.Control
-                                        className="pos-search-input shadow-sm"
-                                        placeholder="Buscar producto... (F1)"
+                                        className="pos-search-input shadow-sm border-0 bg-light"
+                                        placeholder="Buscar producto..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
                                         onKeyDown={handleBarcodeKeyDown}
@@ -422,121 +459,49 @@ const POSPage = () => {
                             </div>
                             
                             <div className="flex-grow-1 overflow-auto pe-2">
-                                <Row className="g-2">
+                                <Row className="g-3">
                                     {filteredProducts.map(p => (
                                         <Col key={p.id} xs={6}>
-                                            <OverlayTrigger overlay={<Tooltip>Clic para añadir 1 unidad al carrito</Tooltip>}>
-                                                <div className="pos-card-compact border rounded-3 p-2 bg-light h-100" onClick={() => addProductToCartById(p)} style={{ cursor: 'pointer' }}>
-                                                    <div className="fw-bold small text-truncate mb-0">{p.name}</div>
-                                                    <div className="text-muted x-small text-truncate mb-1">{p.brand || 'Genérico'}</div>
-                                                    <div className="d-flex justify-content-between align-items-center">
-                                                        <span className="text-primary fw-bold small">{baseCurrencySymbol}{p.price}</span>
-                                                        <Badge bg={p.stock > 10 ? "success" : "warning"} style={{ fontSize: '0.6rem' }}>{p.stock}</Badge>
-                                                    </div>
+                                            <div className="pos-card-compact border rounded-4 p-3 bg-white hover-shadow transition-all" onClick={() => addProductToCartById(p)} style={{ cursor: 'pointer' }}>
+                                                <div className="fw-bold small text-truncate mb-1">{p.name}</div>
+                                                <div className="d-flex justify-content-between align-items-center">
+                                                    <span className="text-primary fw-bold">{baseCurrencySymbol}{p.price}</span>
+                                                    <Badge bg={p.stock > 5 ? "success-subtle" : "danger-subtle"} className={p.stock > 5 ? "text-success" : "text-danger"}>{p.stock}</Badge>
                                                 </div>
-                                            </OverlayTrigger>
+                                            </div>
                                         </Col>
                                     ))}
                                     {searchTerm && filteredProducts.length === 0 && (
-                                        <div className="text-center small py-3 text-muted">No hay resultados</div>
+                                        <div className="text-center py-5 text-muted">
+                                            <FaBox size={40} className="mb-2 opacity-25" />
+                                            <p className="small">No se encontraron productos</p>
+                                        </div>
                                     )}
                                 </Row>
-                        </div>
-                        
-                        {/* FINAL PAYMENT SECTION - Pin to bottom right */}
-                        <div className="pos-total-section bg-dark text-white rounded-4 shadow-lg p-4 mt-auto">
-                            <div className="d-flex justify-content-between align-items-start mb-2">
-                                <div className="huge-total-label text-info opacity-75">PENDIENTE POR COBRAR</div>
-                                <div className="currency-selector">
-                                    <Form.Select 
-                                        size="sm" 
-                                        className="bg-dark text-info border-info rounded-pill px-3"
-                                        value={paymentCurrency}
-                                        onChange={(e) => setPaymentCurrency(e.target.value)}
-                                    >
-                                        <option value="USD">USD ($)</option>
-                                        <option value="VES">VES (Bs.)</option>
-                                        <option value="COP">COP ($)</option>
-                                    </Form.Select>
+                            </div>
+
+                            {/* Discrete Total Summary */}
+                            <div className="mt-4 pt-4 border-top">
+                                <div className="d-flex justify-content-between align-items-center">
+                                    <span className="text-muted fw-bold">TOTAL</span>
+                                    <span className="fs-3 fw-black">{baseCurrencySymbol}{total.toFixed(2)}</span>
                                 </div>
                             </div>
-                            
-                            <div className="huge-total-value text-white my-2">
-                                {formatPaymentCurrency(total)}
-                            </div>
-                            
-                            {paymentCurrency !== baseCurrencyCode && (
-                                <div className="small text-info mb-4 opacity-75">
-                                    Equivalente a {baseCurrencySymbol}{total.toFixed(2)} {baseCurrencyCode}
-                                </div>
-                            )}
-                            
-                            <Form.Group className="mb-4">
-                                <Form.Label className="small text-white-50 d-block mb-2">Método de Pago</Form.Label>
-                                <div className="d-flex flex-wrap gap-2">
-                                    <OverlayTrigger overlay={<Tooltip>Efectivo</Tooltip>}>
-                                        <Button 
-                                            variant={paymentMethod === 'CASH' ? 'primary' : 'outline-light'} 
-                                            className="flex-grow-1 rounded-3 py-2 border-0"
-                                            onClick={() => setPaymentMethod('CASH')}
-                                        >
-                                            💵 <span className="d-none d-md-inline">Efectivo</span>
-                                        </Button>
-                                    </OverlayTrigger>
-                                    <OverlayTrigger overlay={<Tooltip>Débito/Tarjeta</Tooltip>}>
-                                        <Button 
-                                            variant={paymentMethod === 'CARD' ? 'primary' : 'outline-light'} 
-                                            className="flex-grow-1 rounded-3 py-2 border-0"
-                                            onClick={() => setPaymentMethod('CARD')}
-                                        >
-                                            💳 <span className="d-none d-md-inline">Débito</span>
-                                        </Button>
-                                    </OverlayTrigger>
-                                    <OverlayTrigger overlay={<Tooltip>Transferencia Bancaria</Tooltip>}>
-                                        <Button 
-                                            variant={paymentMethod === 'TRANSFER' ? 'primary' : 'outline-light'} 
-                                            className="flex-grow-1 rounded-3 py-2 border-0"
-                                            onClick={() => setPaymentMethod('TRANSFER')}
-                                        >
-                                            🏦 <span className="d-none d-md-inline">Transf.</span>
-                                        </Button>
-                                    </OverlayTrigger>
-                                    <OverlayTrigger overlay={<Tooltip>Pago Móvil</Tooltip>}>
-                                        <Button 
-                                            variant={paymentMethod === 'MOBILE_PAYMENT' ? 'primary' : 'outline-light'} 
-                                            className="flex-grow-1 rounded-3 py-2 border-0"
-                                            onClick={() => setPaymentMethod('MOBILE_PAYMENT')}
-                                        >
-                                            📱 <span className="d-none d-md-inline">P. Móvil</span>
-                                        </Button>
-                                    </OverlayTrigger>
-                                    <OverlayTrigger overlay={<Tooltip>Otro Método de Pago</Tooltip>}>
-                                        <Button 
-                                            variant={paymentMethod === 'OTHER' ? 'primary' : 'outline-light'} 
-                                            className="flex-grow-1 rounded-3 py-2 border-0"
-                                            onClick={() => setPaymentMethod('OTHER')}
-                                        >
-                                            ❓ <span className="d-none d-md-inline">Otro</span>
-                                        </Button>
-                                    </OverlayTrigger>
-                                </div>
-                            </Form.Group>
-                            
-                            <OverlayTrigger placement="top" overlay={<Tooltip>Finalizar venta y generar ticket (F4)</Tooltip>}>
-                                <Button 
-                                    variant="info" 
-                                    size="lg" 
-                                    className="w-100 rounded-pill py-3 fw-bold fs-4 shadow-blue animate-pulse" 
-                                    onClick={handleCheckout} 
-                                    disabled={cart.length === 0}
-                                >
-                                    <FaCashRegister className="me-2" /> COBRAR (F4)
-                                </Button>
-                            </OverlayTrigger>
                         </div>
-                    </div>
                     </Col>
                 </Row>
+
+                {/* Floating Checkout Button */}
+                {cart.length > 0 && (
+                     <div className="pos-floating-checkout shadow-lg animate-in">
+                        <Button 
+                            className="btn-premium-checkout" 
+                            onClick={() => setShowPaymentModal(true)}
+                        >
+                            <FaCashRegister /> COBRAR (F4)
+                        </Button>
+                     </div>
+                )}
 
                 <Modal show={showQuantityModal} onHide={() => setShowQuantityModal(false)} centered>
                     <Modal.Header closeButton><Modal.Title>Cantidad</Modal.Title></Modal.Header>
@@ -556,6 +521,140 @@ const POSPage = () => {
                         </Modal.Body>
                         <Modal.Footer><Button variant="primary" type="submit">Guardar</Button></Modal.Footer>
                     </Form>
+                </Modal>
+
+                {/* Payment Modal Refactored */}
+                <Modal 
+                    show={showPaymentModal} 
+                    onHide={() => setShowPaymentModal(false)} 
+                    centered 
+                    size="lg"
+                    contentClassName="payment-modal-content"
+                >
+                    <Modal.Header closeButton className="border-0 pb-0">
+                        <Modal.Title className="fw-black fs-2">Finalizar Venta</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body className="p-4">
+                        <Row className="g-4">
+                            <Col md={7}>
+                                <div className="payment-summary-card mb-4">
+                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                        <span className="text-muted small fw-bold">TOTAL A PAGAR</span>
+                                        <span className="fs-4 fw-black">{baseCurrencySymbol}{total.toFixed(2)}</span>
+                                    </div>
+                                    <div className="progress mb-2" style={{ height: '8px', borderRadius: '10px' }}>
+                                        <div 
+                                            className="progress-bar bg-success" 
+                                            role="progressbar" 
+                                            style={{ width: `${(totalPaidInBase / total) * 100}%` }} 
+                                        ></div>
+                                    </div>
+                                    <div className="d-flex justify-content-between small">
+                                        <span className="text-success fw-bold">Pagado: {baseCurrencySymbol}{totalPaidInBase.toFixed(2)}</span>
+                                        <span className="text-primary fw-bold">Pendiente: {baseCurrencySymbol}{remainingToPay.toFixed(2)}</span>
+                                    </div>
+                                </div>
+
+                                <h6 className="fw-bold mb-3">Registrar Pago</h6>
+                                <div className="currency-input-group mb-3">
+                                    <Row className="g-2">
+                                        <Col xs={4}>
+                                            <Form.Select 
+                                                className="border-0 bg-transparent fw-bold"
+                                                value={tempPayment.currency}
+                                                onChange={e => setTempPayment({...tempPayment, currency: e.target.value})}
+                                            >
+                                                <option value="USD">USD</option>
+                                                <option value="VES">VES</option>
+                                                <option value="COP">COP</option>
+                                            </Form.Select>
+                                        </Col>
+                                        <Col xs={8}>
+                                            <Form.Control 
+                                                type="number"
+                                                placeholder="Monto"
+                                                className="border-0 bg-transparent fw-bold fs-5 text-end"
+                                                value={tempPayment.amount}
+                                                onChange={e => setTempPayment({...tempPayment, amount: e.target.value})}
+                                                onKeyPress={e => e.key === 'Enter' && addPaymentPart()}
+                                            />
+                                        </Col>
+                                    </Row>
+                                </div>
+
+                                <div className="d-flex gap-2 flex-wrap mb-4">
+                                    {['CASH', 'CARD', 'TRANSFER', 'MOBILE_PAYMENT'].map(m => (
+                                        <Button 
+                                            key={m}
+                                            variant={tempPayment.method === m ? "primary" : "outline-light"}
+                                            className={`border-0 rounded-3 flex-grow-1 ${tempPayment.method === m ? "" : "text-muted bg-light"}`}
+                                            onClick={() => setTempPayment({...tempPayment, method: m})}
+                                        >
+                                            {m === 'CASH' ? '💵' : m === 'CARD' ? '💳' : m === 'TRANSFER' ? '🏦' : '📱'}
+                                            <span className="ms-2 small fw-bold">
+                                                {m === 'CASH' ? 'Efectivo' : m === 'CARD' ? 'Punto' : m === 'TRANSFER' ? 'Transf' : 'Móvil'}
+                                            </span>
+                                        </Button>
+                                    ))}
+                                </div>
+
+                                <Button 
+                                    variant="dark" 
+                                    className="w-100 py-3 rounded-4 fw-bold"
+                                    onClick={addPaymentPart}
+                                    disabled={!tempPayment.amount}
+                                >
+                                    <FaPlus className="me-2" /> Agregar Pago
+                                </Button>
+                            </Col>
+
+                            <Col md={5}>
+                                <div className="balance-card h-100 flex-column d-flex">
+                                    <h6 className="text-white-50 fw-bold mb-4">Resumen de Pagos</h6>
+                                    <div className="flex-grow-1 overflow-auto pe-2" style={{ maxHeight: '250px' }}>
+                                        {payments.length === 0 && <div className="text-center text-white-50 py-4 small">Sin pagos registrados</div>}
+                                        {payments.map(p => (
+                                            <div key={p.id} className="balance-item animate-in">
+                                                <div>
+                                                    <div className="fw-bold small">{p.method === 'CASH' ? '💵 Efectivo' : p.method === 'CARD' ? '💳 Punto' : '🏦 Transf'}</div>
+                                                    <div className="text-white-50 x-small">{p.amount} {p.currency}</div>
+                                                </div>
+                                                <div className="d-flex align-items-center gap-3">
+                                                    <span className="balance-value paid small">{baseCurrencySymbol}{p.amountInBaseCurrency.toFixed(2)}</span>
+                                                    <FaTrash 
+                                                        size={12} 
+                                                        className="text-danger cursor-pointer" 
+                                                        onClick={() => removePaymentPart(p.id)} 
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <div className="mt-4 pt-4 border-top border-secondary">
+                                        <div className="d-flex justify-content-between mb-3">
+                                            <span className="text-white-50 small">Total Pagado</span>
+                                            <span className="fw-bold">{baseCurrencySymbol}{totalPaidInBase.toFixed(2)}</span>
+                                        </div>
+                                        {totalPaidInBase > total && (
+                                            <div className="d-flex justify-content-between text-info mb-4">
+                                                <span className="small fw-bold">VUELTO / CAMBIO</span>
+                                                <span className="fs-4 fw-black text-info">{baseCurrencySymbol}{(totalPaidInBase - total).toFixed(2)}</span>
+                                            </div>
+                                        )}
+                                        <Button 
+                                            variant="success" 
+                                            size="lg" 
+                                            className="w-100 py-3 rounded-pill fw-bold shadow-sm"
+                                            disabled={totalPaidInBase < total}
+                                            onClick={handleCheckout}
+                                        >
+                                            COMPLETAR VENTA
+                                        </Button>
+                                    </div>
+                                </div>
+                            </Col>
+                        </Row>
+                    </Modal.Body>
                 </Modal>
 
                 <ToastContainer position="top-center" className="p-3">

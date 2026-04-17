@@ -8,9 +8,12 @@ import com.tiendario.repository.SaleRepository;
 import com.tiendario.repository.UserRepository;
 import com.tiendario.security.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -41,6 +44,13 @@ public class SaleService {
 
     public List<Sale> getCompanySales(UserDetailsImpl userDetails) {
         return saleRepository.findByCompanyIdOrderByDateDesc(userDetails.getCompanyId());
+    }
+
+    public Page<Sale> getCompanySalesPaginated(UserDetailsImpl userDetails, SaleStatus status, Pageable pageable) {
+        if (status != null) {
+            return saleRepository.findByCompanyIdAndStatus(userDetails.getCompanyId(), status, pageable);
+        }
+        return saleRepository.findByCompanyId(userDetails.getCompanyId(), pageable);
     }
 
     public Sale getSaleById(Long id, UserDetailsImpl userDetails) {
@@ -129,6 +139,17 @@ public class SaleService {
         // Ignore whatever the frontend said the total was
         sale.setTotalAmount(computedTotal);
 
+        // Handle payments
+        if (sale.getPayments() != null && !sale.getPayments().isEmpty()) {
+            for (SalePayment payment : sale.getPayments()) {
+                payment.setSale(sale);
+                // Ensure amountInBaseCurrency is calculated if not provided
+                if (payment.getAmountInBaseCurrency() == null && payment.getExchangeRate() != null && payment.getExchangeRate().compareTo(java.math.BigDecimal.ZERO) > 0) {
+                     payment.setAmountInBaseCurrency(payment.getAmount().divide(payment.getExchangeRate(), 2, java.math.RoundingMode.HALF_UP));
+                }
+            }
+        }
+
         saleRepository.save(sale);
 
         // Notify store owner about new marketplace order (PENDING orders only)
@@ -215,30 +236,49 @@ public class SaleService {
         List<Sale> sales = saleRepository.findByCompanyIdAndDateBetween(
                 userDetails.getCompanyId(), startOfDay, endOfDay);
 
-        // Only count completed (PAID) sales in the daily summary
+        // Only count completed (PAID) sales
         List<Sale> paidSales = sales.stream()
                 .filter(s -> SaleStatus.PAID.equals(s.getStatus()))
                 .collect(Collectors.toList());
 
-        // Group by User and PaymentMethod
-        Map<String, Map<PaymentMethod, List<Sale>>> grouped = paidSales.stream()
-                .collect(Collectors.groupingBy(
-                        s -> s.getUser() != null ? s.getUser().getUsername() : "Unknown",
-                        Collectors.groupingBy(sale -> sale.getPaymentMethod() != null ? sale.getPaymentMethod()
-                                : PaymentMethod.CASH)));
+        // We need to aggregate by User and payment method across ALL payments of ALL sales
+        Map<String, Map<PaymentMethod, java.math.BigDecimal>> aggregates = new java.util.HashMap<>();
+        Map<String, Map<PaymentMethod, Long>> counts = new java.util.HashMap<>();
+
+        for (Sale s : paidSales) {
+            String username = s.getUser() != null ? s.getUser().getUsername() : "Unknown";
+            
+            if (s.getPayments() == null || s.getPayments().isEmpty()) {
+                // Fallback for legacy sales or sales without explicit payment list
+                PaymentMethod method = s.getPaymentMethod() != null ? s.getPaymentMethod() : PaymentMethod.CASH;
+                updateAggregates(aggregates, counts, username, method, s.getTotalAmount());
+            } else {
+                for (SalePayment p : s.getPayments()) {
+                    PaymentMethod method = p.getMethod() != null ? p.getMethod() : PaymentMethod.CASH;
+                    // We use amountInBaseCurrency for the total report
+                    java.math.BigDecimal amount = p.getAmountInBaseCurrency() != null ? p.getAmountInBaseCurrency() : p.getAmount();
+                    updateAggregates(aggregates, counts, username, method, amount);
+                }
+            }
+        }
 
         List<DailySalesSummary> summary = new ArrayList<>();
-
-        grouped.forEach((username, methodMap) -> {
-            methodMap.forEach((method, userSales) -> {
-                long count = userSales.size();
-                java.math.BigDecimal total = userSales.stream()
-                        .map(Sale::getTotalAmount)
-                        .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+        aggregates.forEach((username, methodMap) -> {
+            methodMap.forEach((method, total) -> {
+                Long count = counts.get(username).get(method);
                 summary.add(new DailySalesSummary(username, method, count, total));
             });
         });
 
         return summary;
+    }
+
+    private void updateAggregates(Map<String, Map<PaymentMethod, java.math.BigDecimal>> aggregates, 
+                                Map<String, Map<PaymentMethod, Long>> counts,
+                                String username, PaymentMethod method, java.math.BigDecimal amount) {
+        aggregates.computeIfAbsent(username, k -> new java.util.HashMap<>())
+                  .merge(method, amount, java.math.BigDecimal::add);
+        counts.computeIfAbsent(username, k -> new java.util.HashMap<>())
+              .merge(method, 1L, Long::sum);
     }
 }

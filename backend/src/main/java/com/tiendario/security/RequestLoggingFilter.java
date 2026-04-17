@@ -14,45 +14,56 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.UUID;
+import java.util.Arrays;
+import java.util.List;
 
 @Component
 public class RequestLoggingFilter extends OncePerRequestFilter {
 
     private static final Logger logger = LoggerFactory.getLogger(RequestLoggingFilter.class);
 
+    private static final List<String> EXCLUDED_PATHS = Arrays.asList(
+            "/api/notifications/unread-count",
+            "/api/notifications/count",
+            "/favicon.ico"
+    );
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
+        String uri = request.getRequestURI();
+        boolean shouldLog = EXCLUDED_PATHS.stream().noneMatch(uri::startsWith);
+
         long startTime = System.currentTimeMillis();
         String requestId = UUID.randomUUID().toString().substring(0, 8);
         
-        // Add request ID to MDC for traceability
+        // Add request ID and User to MDC for traceability (even if not logging here, others will)
         MDC.put("requestId", requestId);
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            MDC.put("user", authentication.getName());
+        } else {
+            MDC.put("user", "anonymous");
+        }
         
         try {
-            // Check if user is authenticated (might be empty if this filter is before AuthTokenFilter)
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication != null && authentication.isAuthenticated()) {
-                MDC.put("user", authentication.getName());
-            } else {
-                MDC.put("user", "anonymous");
+            if (shouldLog) {
+                String method = request.getMethod();
+                String queryString = request.getQueryString();
+                String fullPath = uri + (queryString != null ? "?" + queryString : "");
+                logger.info("Incoming request [{}]: {} {}", requestId, method, fullPath);
             }
-
-            String method = request.getMethod();
-            String uri = request.getRequestURI();
-            String queryString = request.getQueryString();
-            String fullPath = uri + (queryString != null ? "?" + queryString : "");
-
-            logger.info("Incoming request [{}]: {} {}", requestId, method, fullPath);
 
             filterChain.doFilter(request, response);
 
-            long duration = System.currentTimeMillis() - startTime;
-            int status = response.getStatus();
-            
-            logger.info("Outgoing response [{}]: {} {} - Status: {} - Duration: {}ms", 
-                requestId, method, uri, status, duration);
+            if (shouldLog) {
+                long duration = System.currentTimeMillis() - startTime;
+                int status = response.getStatus();
+                String method = request.getMethod();
+                logger.info("Outgoing response [{}]: {} {} - Status: {} - Duration: {}ms", 
+                    requestId, method, uri, status, duration);
+            }
 
         } finally {
             MDC.clear();

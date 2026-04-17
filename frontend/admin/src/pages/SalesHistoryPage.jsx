@@ -12,6 +12,10 @@ const SalesHistoryPage = () => {
     const [selectedSale, setSelectedSale] = useState(null);
     const [filterStatus, setFilterStatus] = useState('ALL');
     const [platformConfig, setPlatformConfig] = useState(null);
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const [totalElements, setTotalElements] = useState(0);
+    const [pageSize] = useState(10);
 
     const formatSecondary = (amount) => {
         if (!platformConfig || !platformConfig.enableSecondaryCurrency) return null;
@@ -21,9 +25,11 @@ const SalesHistoryPage = () => {
 
     const loadSales = React.useCallback((silent = false) => {
         if (!silent) setLoading(true);
-        SaleService.getSales().then(
+        SaleService.getSales(page, pageSize, filterStatus).then(
             (response) => {
-                setSales(response.data);
+                setSales(response.data.content);
+                setTotalPages(response.data.totalPages);
+                setTotalElements(response.data.totalElements);
                 setLoading(false);
             },
             (error) => {
@@ -31,7 +37,7 @@ const SalesHistoryPage = () => {
                 setLoading(false);
             }
         );
-    }, []);
+    }, [page, pageSize, filterStatus]);
 
     useEffect(() => {
         loadSales();
@@ -107,9 +113,7 @@ const SalesHistoryPage = () => {
         }
     };
 
-    const filteredSales = filterStatus === 'ALL'
-        ? sales
-        : sales.filter(s => s.status === filterStatus);
+    const filteredSales = sales;
 
     return (
         <div className="d-flex" style={{ height: '100vh', overflow: 'hidden' }}>
@@ -204,6 +208,32 @@ const SalesHistoryPage = () => {
                                 )}
                             </tbody>
                         </Table>
+                        {totalPages > 1 && (
+                            <div className="d-flex justify-content-between align-items-center p-4 border-top">
+                                <small className="text-muted">Mostrando {sales.length} de {totalElements} ventas</small>
+                                <div className="d-flex gap-2">
+                                    <Button
+                                        variant="outline-primary"
+                                        size="sm"
+                                        disabled={page === 0}
+                                        onClick={() => setPage(prev => prev - 1)}
+                                    >
+                                        Anterior
+                                    </Button>
+                                    <div className="d-flex align-items-center px-3 fw-bold text-primary">
+                                        Página {page + 1} de {totalPages}
+                                    </div>
+                                    <Button
+                                        variant="outline-primary"
+                                        size="sm"
+                                        disabled={page >= totalPages - 1}
+                                        onClick={() => setPage(prev => prev + 1)}
+                                    >
+                                        Siguiente
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </Card.Body>
                 </Card>
 
@@ -283,8 +313,8 @@ const SalesHistoryPage = () => {
                         >
                             <option value="CASH">Efectivo 💵</option>
                             <option value="CARD">Tarjeta de Débito/Crédito 💳</option>
-                            <option value="TRANSFER">Transferencia / Pago Móvil 📲</option>
-                            <option value="OTHER">Otro 📝</option>
+                            <option value="TRANSFER">Transferencia Bancaria 🏦</option>
+                            <option value="MOBILE_PAYMENT">Pago Móvil 📱</option>
                         </Form.Select>
                         <div className="d-grid gap-2">
                             <Button variant="primary" size="lg" className="rounded-pill fw-bold" onClick={confirmPayment}>

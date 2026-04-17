@@ -10,6 +10,10 @@ import com.tiendario.repository.PurchaseRepository;
 import com.tiendario.repository.SupplierRepository;
 import com.tiendario.security.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,10 +41,13 @@ public class PurchaseController {
 
     @GetMapping
     @PreAuthorize("hasRole('MANAGER')")
-    public List<Purchase> getPurchases() {
+    public Page<Purchase> getPurchases(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
-        return purchaseRepository.findByCompanyIdOrderByDateDesc(userDetails.getCompanyId());
+        Pageable pageable = PageRequest.of(page, size, Sort.by("date").descending());
+        return purchaseRepository.findByCompanyId(userDetails.getCompanyId(), pageable);
     }
 
     @PostMapping

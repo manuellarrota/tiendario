@@ -127,20 +127,26 @@ public class AuthController {
         }
 
         @GetMapping("/verify")
+        @org.springframework.transaction.annotation.Transactional
         public ResponseEntity<?> verifyUser(@RequestParam("code") String code) {
+                logger.debug("Attempting to verify user with code: {}", code);
                 User user = userRepository.findByVerificationCode(code)
                                 .orElse(null);
-
+        
                 if (user == null) {
+                        logger.error("Verification failed: code '{}' not found in database", code);
                         return ResponseEntity.status(org.springframework.http.HttpStatus.FOUND)
                                         .location(java.net.URI.create(frontendUrl
                                                         + "/?verified=error&message=Invalid+verification+code"))
                                         .build();
                 }
-
+        
+                logger.info("Verifying and enabling user: {} (ID: {})", user.getUsername(), user.getId());
                 user.setEnabled(true);
                 user.setVerificationCode(null);
                 userRepository.save(user);
+                userRepository.flush(); // Force immediate persistence before redirect logic
+                logger.debug("User {} successfully enabled in database", user.getUsername());
 
                 // Auto-login logic
                 UserDetailsImpl userDetails = UserDetailsImpl.build(user);
@@ -169,10 +175,11 @@ public class AuthController {
         }
 
         @PostMapping("/signup")
-        public ResponseEntity<?> registerUser(@RequestBody SignupRequest signUpRequest) {
+        public ResponseEntity<?> registerUser(@RequestBody SignupRequest signUpRequest, HttpServletRequest request) {
                 try {
-                        logger.info("Registering new user: {} (Email: {})", signUpRequest.getUsername(), signUpRequest.getEmail());
-                        User user = authService.registerUser(signUpRequest);
+                        String baseUrl = getBaseUrl(request);
+                        logger.info("Registering new user: {} (Email: {}) from {}", signUpRequest.getUsername(), signUpRequest.getEmail(), baseUrl);
+                        User user = authService.registerUser(signUpRequest, baseUrl);
                         if (!user.isEnabled()) {
                                 logger.info("User registered successfully but pending email verification: {}", user.getUsername());
                                 return ResponseEntity.ok(
@@ -183,17 +190,29 @@ public class AuthController {
                                 return ResponseEntity.ok(new MessageResponse("Registro exitoso."));
                         }
                 } catch (RuntimeException e) {
-                        logger.error("Registration failed for {}: {}", signUpRequest.getUsername(), e.getMessage());
-                        return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
+                        String msg = e.getMessage();
+                        if (msg.contains("usuario ya está en uso")) {
+                                logger.warn("Signup conflict: Username '{}' already exists", signUpRequest.getUsername());
+                        } else if (msg.contains("correo electrónico ya está en uso")) {
+                                logger.warn("Signup conflict: Email '{}' already exists", signUpRequest.getEmail());
+                        } else {
+                                logger.error("Registration failed for {}: {}", signUpRequest.getUsername(), msg);
+                        }
+                        return ResponseEntity.badRequest().body(new MessageResponse(msg));
                 }
         }
 
         @PostMapping("/forgot-password")
-        public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request) {
+        public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request, HttpServletRequest httpRequest) {
                 String identifier = request.get("email"); // Can be email or username
                 if (identifier == null || identifier.isBlank()) {
                         return ResponseEntity.badRequest()
                                         .body(new MessageResponse("Debes proporcionar un email o nombre de usuario."));
+                }
+                
+                String origin = httpRequest.getHeader("Origin");
+                if (origin == null || origin.isBlank()) {
+                    origin = frontendUrl; // Fallback
                 }
 
                 // Try to find by email first, then by username
@@ -216,7 +235,8 @@ public class AuthController {
                 emailService.sendPasswordResetEmail(
                                 user.getEmail() != null ? user.getEmail() : identifier,
                                 user.getUsername(),
-                                token);
+                                token,
+                                origin);
 
                 return ResponseEntity.ok(new MessageResponse(
                                 "Si el email/usuario existe, recibirás instrucciones para restablecer tu contraseña."));
@@ -264,5 +284,17 @@ public class AuthController {
                         return xForwardedFor.split(",")[0].trim();
                 }
                 return request.getRemoteAddr();
+        }
+
+        private String getBaseUrl(HttpServletRequest request) {
+                String scheme = request.getScheme();
+                String serverName = request.getServerName();
+                int serverPort = request.getServerPort();
+                
+                // If it's a standard port, don't include it
+                if (("http".equals(scheme) && serverPort == 80) || ("https".equals(scheme) && serverPort == 443)) {
+                        return scheme + "://" + serverName;
+                }
+                return scheme + "://" + serverName + ":" + serverPort;
         }
 }

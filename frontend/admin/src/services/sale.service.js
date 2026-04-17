@@ -3,9 +3,14 @@ import AuthService from "./auth.service";
 
 const API_URL = import.meta.env.VITE_API_URL + "/sales/";
 
-const getSales = () => {
+const getSales = (page = 0, size = 10, status = null) => {
     const user = AuthService.getCurrentUser();
+    const params = { page, size };
+    if (status && status !== 'ALL') {
+        params.status = status;
+    }
     return axios.get(API_URL, {
+        params,
         headers: { Authorization: 'Bearer ' + user.token }
     });
 };

@@ -30,3 +30,7 @@ signup_test.json
 
 # OS
 Thumbs.db
+
+# User Uploads
+backend/uploads/
+backend/test_signup.json

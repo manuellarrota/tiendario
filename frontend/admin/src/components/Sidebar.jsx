@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Nav } from 'react-bootstrap';
+import { Nav, Badge } from 'react-bootstrap';
 import {
     FaBars, FaTimes, FaChevronLeft, FaChevronRight, FaStore, FaChartLine,
     FaMoneyBillWave, FaUsers, FaCog, FaHome, FaBell, FaShoppingBag,
@@ -123,13 +123,13 @@ const Sidebar = () => {
                         {!collapsed && (
                             <div className="user-profile-summary mt-3">
                                 <div className="d-flex align-items-center gap-2 mb-2">
-                                    <span className={
-                                        isSuperAdmin
-                                            ? 'premium-badge-v1 bg-dark text-white'
-                                            : (user?.subscriptionStatus === 'PAID' ? 'premium-badge-v1' : 'trial-badge-v1')
-                                    }>
-                                        {isSuperAdmin ? 'Super Admin' : (user?.subscriptionStatus === 'PAID' ? 'PRO' : 'TRIAL')}
-                                    </span>
+                                    {isSuperAdmin ? (
+                                        <span className="premium-badge-v1 bg-dark text-white">Super Admin</span>
+                                    ) : (
+                                        <Badge bg={user?.subscriptionStatus === 'PAID' ? 'success' : 'warning'} className="rounded-pill px-2 py-1" style={{ fontSize: '0.6rem', letterSpacing: '0.5px' }}>
+                                            {user?.subscriptionStatus === 'PAID' ? 'PRO' : 'PRUEBA'}
+                                        </Badge>
+                                    )}
                                     <small className="fw-bold text-dark text-truncate" style={{ maxWidth: '120px' }}>
                                         {user?.username || 'Invitado'}
                                     </small>

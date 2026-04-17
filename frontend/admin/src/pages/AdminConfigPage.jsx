@@ -153,7 +153,7 @@ const AdminConfigPage = () => {
                                         </Col>
                                         <Col md={6}>
                                             <Form.Group className="mb-3">
-                                                <Form.Label className="small fw-bold text-muted">DÍAS DE PRUEBA (TRIAL)</Form.Label>
+                                                <Form.Label className="small fw-bold text-muted">DÍAS DE PRUEBA</Form.Label>
                                                 <Form.Control
                                                     type="number"
                                                     name="trialDays"

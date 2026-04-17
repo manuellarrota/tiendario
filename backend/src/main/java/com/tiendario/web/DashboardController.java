@@ -7,6 +7,8 @@ import com.tiendario.repository.ProductRepository;
 import com.tiendario.repository.SaleRepository;
 import com.tiendario.security.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -163,10 +165,10 @@ public class DashboardController {
                 summary.put("paymentMethods", payments);
 
                 // 9. Top Selling Product (All time for now)
-                List<Object[]> topProducts = saleRepository.findTopSellingProductsByCompany(companyId,
+                Page<Object[]> topProductsPage = saleRepository.findTopSellingProductsByCompany(companyId,
                                 org.springframework.data.domain.PageRequest.of(0, 1));
-                if (!topProducts.isEmpty()) {
-                        Object[] top = topProducts.get(0);
+                if (topProductsPage.hasContent()) {
+                        Object[] top = topProductsPage.getContent().get(0);
                         summary.put("topProductName", top[0]);
                         summary.put("topProductQty", top[1]);
                 }

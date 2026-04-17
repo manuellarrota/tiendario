@@ -269,8 +269,8 @@ public class ProductController {
         product.setImageUrl(catalog.getImageUrl());
 
         Product savedProduct = productRepository.save(product);
-        log.info("Product created successfully: ID={}, SKU={}, Name='{}' for Company ID: {}", 
-                savedProduct.getId(), savedProduct.getSku(), savedProduct.getName(), userDetails.getCompanyId());
+        log.info("🛒 [PRODUCTO] Usuario {} creó nuevo producto: '{}' (SKU: {})", 
+                userDetails.getUsername(), savedProduct.getName(), savedProduct.getSku());
 
         // Index in search engine
         try {
@@ -348,8 +348,8 @@ public class ProductController {
         product.setMinStock(productDetails.getMinStock());
 
         Product updatedProduct = productRepository.save(product);
-        log.info("Product updated successfully: ID={}, SKU={}, Name='{}'", 
-                updatedProduct.getId(), updatedProduct.getSku(), updatedProduct.getName());
+        log.info("📝 [PRODUCTO] Usuario {} actualizó producto: '{}' (SKU: {})", 
+                userDetails.getUsername(), updatedProduct.getName(), updatedProduct.getSku());
 
         // Update index
         productIndexService.indexProduct(updatedProduct);

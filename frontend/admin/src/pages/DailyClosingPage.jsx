@@ -53,13 +53,15 @@ const DailyClosingPage = () => {
         const totalCash = getAmount('CASH');
         const totalCard = getAmount('CARD');
         const totalTransfer = getAmount('TRANSFER');
-        const grandTotal = totalCash + totalCard + totalTransfer;
+        const totalMobile = getAmount('MOBILE_PAYMENT');
+        const grandTotal = totalCash + totalCard + totalTransfer + totalMobile;
 
         return {
             user,
             totalCash,
             totalCard,
             totalTransfer,
+            totalMobile,
             grandTotal,
             totalTx: userSales.reduce((acc, s) => acc + s.saleCount, 0)
         };
@@ -98,7 +100,8 @@ const DailyClosingPage = () => {
                                         <th>Cajero / Usuario</th>
                                         <th><FaMoneyBillWave className="text-success" /> Efectivo</th>
                                         <th><FaCreditCard className="text-info" /> Tarjeta</th>
-                                        <th><FaUniversity className="text-warning" /> Transferencia</th>
+                                        <th><FaUniversity className="text-warning" /> Bancos (Transf)</th>
+                                        <th>📱 Pago Móvil</th>
                                         <th>Total Caja</th>
                                     </tr>
                                 </thead>
@@ -124,6 +127,12 @@ const DailyClosingPage = () => {
                                                     <div className="text-muted" style={{ fontSize: '0.7rem' }}>{formatSecondary(r.totalTransfer)}</div>
                                                 )}
                                             </td>
+                                            <td>
+                                                ${r.totalMobile.toFixed(2)}
+                                                {platformConfig?.enableSecondaryCurrency && r.totalMobile > 0 && (
+                                                    <div className="text-muted" style={{ fontSize: '0.7rem' }}>{formatSecondary(r.totalMobile)}</div>
+                                                )}
+                                            </td>
                                             <td className="fw-bold bg-light">
                                                 ${r.grandTotal.toFixed(2)}
                                                 {platformConfig?.enableSecondaryCurrency && r.grandTotal > 0 && (
@@ -134,7 +143,7 @@ const DailyClosingPage = () => {
                                     ))}
                                     {report.length === 0 && !loading && (
                                         <tr>
-                                            <td colSpan="5" className="text-center py-4 text-muted">No hay movimientos registrados hoy.</td>
+                                            <td colSpan="6" className="text-center py-4 text-muted">No hay movimientos registrados hoy.</td>
                                         </tr>
                                     )}
                                 </tbody>
@@ -145,6 +154,7 @@ const DailyClosingPage = () => {
                                             <td>${report.reduce((acc, r) => acc + r.totalCash, 0).toFixed(2)}</td>
                                             <td>${report.reduce((acc, r) => acc + r.totalCard, 0).toFixed(2)}</td>
                                             <td>${report.reduce((acc, r) => acc + r.totalTransfer, 0).toFixed(2)}</td>
+                                            <td>${report.reduce((acc, r) => acc + r.totalMobile, 0).toFixed(2)}</td>
                                             <td className="fw-bold fs-5">
                                                 ${grandTotalAll.toFixed(2)}
                                                 {platformConfig?.enableSecondaryCurrency && grandTotalAll > 0 && (

@@ -8,6 +8,10 @@ import com.tiendario.service.SaleService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -29,10 +33,14 @@ public class SaleController {
 
     @GetMapping
     @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
-    public List<Sale> getCompanySales() {
+    public Page<Sale> getCompanySales(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) com.tiendario.domain.SaleStatus status) {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
-        return saleService.getCompanySales(userDetails);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("date").descending());
+        return saleService.getCompanySalesPaginated(userDetails, status, pageable);
     }
 
     @GetMapping("/{id}")
@@ -50,12 +58,13 @@ public class SaleController {
                 .getPrincipal();
 
         try {
-            logger.info("User {} is creating a new sale for amount: {}", userDetails.getUsername(), sale.getTotalAmount());
+            String method = sale.getPaymentMethod() != null ? sale.getPaymentMethod().name() : "N/A";
+            logger.info("💰 [VENTA] Usuario {} procesando venta por ${} (Método: {})", 
+                userDetails.getUsername(), sale.getTotalAmount(), method);
             saleService.createSale(sale, userDetails);
-            logger.info("Sale created successfully for user {}", userDetails.getUsername());
             return ResponseEntity.ok(new MessageResponse("Order created successfully!"));
         } catch (RuntimeException e) {
-            logger.error("Error creating sale for user {}: {}", userDetails.getUsername(), e.getMessage());
+            logger.error("❌ [ERROR VENTA] Usuario {}: {}", userDetails.getUsername(), e.getMessage());
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
         }
     }
@@ -69,12 +78,12 @@ public class SaleController {
                 .getPrincipal();
 
         try {
-            logger.info("User {} updating sale {} to status: {}", userDetails.getUsername(), id, status);
+            logger.info("🔄 [ESTADO] Usuario {} actualizando venta #{} a estado: {} (Pago: {})", 
+                userDetails.getUsername(), id, status, paymentMethod);
             saleService.updateSaleStatus(id, status, paymentMethod, userDetails);
-            logger.info("Sale {} status updated successfully", id);
             return ResponseEntity.ok(new MessageResponse("Sale status updated to " + status));
         } catch (RuntimeException e) {
-            logger.error("Error updating sale status for user {}: {}", userDetails.getUsername(), e.getMessage());
+            logger.error("❌ [ERROR ESTADO] Usuario {}: {}", userDetails.getUsername(), e.getMessage());
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
         }
     }
