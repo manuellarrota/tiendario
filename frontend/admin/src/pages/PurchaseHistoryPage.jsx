@@ -188,7 +188,7 @@ const PurchaseHistoryPage = () => {
                                                         </td>
                                                         <td className="py-3 text-center">
                                                             <Badge bg="soft-primary" className="text-primary rounded-pill px-3 py-2 fw-normal" style={{ backgroundColor: '#e7f1ff' }}>
-                                                                {purchase.items?.length || 0} items
+                                                                {purchase.items?.length || 0} productos
                                                             </Badge>
                                                         </td>
                                                         <td className="py-3 text-end fw-bold text-dark">

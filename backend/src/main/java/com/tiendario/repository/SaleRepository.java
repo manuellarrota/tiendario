@@ -13,6 +13,7 @@ import java.util.List;
 @Repository
 public interface SaleRepository extends JpaRepository<Sale, Long> {
     List<Sale> findByCompanyIdOrderByDateDesc(Long companyId);
+    List<Sale> findByShiftId(Long shiftId);
 
     Page<Sale> findByCompanyId(Long companyId, Pageable pageable);
 

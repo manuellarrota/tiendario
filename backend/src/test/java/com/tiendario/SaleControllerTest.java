@@ -103,7 +103,7 @@ public class SaleControllerTest {
     void getCompanySales_ShouldReturnList() throws Exception {
         mockMvc.perform(get("/api/sales"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(1))));
+                .andExpect(jsonPath("$.content", hasSize(greaterThanOrEqualTo(1))));
     }
 
     @Test

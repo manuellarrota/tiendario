@@ -38,7 +38,7 @@ public class DashboardController {
         CompanyRepository companyRepository;
 
         @GetMapping("/summary")
-        @PreAuthorize("hasRole('MANAGER')")
+        @PreAuthorize("hasRole('MANAGER') or hasRole('CASHIER')")
         public ResponseEntity<?> getDashboardSummary() {
                 UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                                 .getPrincipal();
@@ -177,7 +177,7 @@ public class DashboardController {
         }
 
         @GetMapping("/sales-chart")
-        @PreAuthorize("hasRole('MANAGER')")
+        @PreAuthorize("hasRole('MANAGER') or hasRole('CASHIER')")
         public ResponseEntity<?> getSalesChart(@org.springframework.web.bind.annotation.RequestParam(defaultValue = "weekly") String period) {
                 UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                                 .getPrincipal();

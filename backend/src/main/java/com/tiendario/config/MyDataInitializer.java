@@ -56,6 +56,7 @@ public class MyDataInitializer implements CommandLineRunner {
             // 2. Ensure Demo Managers & Customers
             createManager("manager_pro",  "Manager123!", "Ferretería Central",    SubscriptionStatus.PAID,  7.789354, -72.219738, "Av. 19 de Abril, San Cristóbal");
             createManager("manager_free", "Manager123!", "Minimarket El Rincón",  SubscriptionStatus.TRIAL, 7.792100, -72.215400, "Calle 5, Barrio Obrero, San Cristóbal");
+            createCashier("cajero_pro",   "Cajero123!",  "Ferretería Central");
             createCustomer("cliente", "Cliente123!");
 
 
@@ -281,6 +282,23 @@ public class MyDataInitializer implements CommandLineRunner {
             user.setPoints(100); // Start with some demo points
             userRepository.save(user);
             System.err.println("✓ Created Customer user: " + username);
+        }
+    }
+
+    private void createCashier(String username, String password, String companyName) {
+        if (!userRepository.existsByUsername(username)) {
+            Company company = companyRepository.findByName(companyName)
+                    .orElseThrow(() -> new RuntimeException("Company not found: " + companyName));
+
+            User user = new User();
+            user.setUsername(username);
+            user.setPassword(passwordEncoder.encode(password));
+            user.setRole(Role.ROLE_CASHIER);
+            user.setEnabled(true);
+            user.setEmail(username + "@tiendario.com");
+            user.setCompany(company);
+            userRepository.save(user);
+            System.err.println("✓ Created Cashier user: " + username + " for company: " + companyName);
         }
     }
 

@@ -32,7 +32,7 @@ public class SaleController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN') or hasRole('CASHIER')")
     public Page<Sale> getCompanySales(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -44,7 +44,7 @@ public class SaleController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN') or hasRole('CASHIER')")
     public Sale getSaleById(@PathVariable Long id) {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
@@ -52,7 +52,7 @@ public class SaleController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('CASHIER')")
     public ResponseEntity<?> createSale(@RequestBody Sale sale) {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
@@ -61,7 +61,7 @@ public class SaleController {
     }
 
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('CASHIER')")
     public ResponseEntity<?> updateSaleStatus(@PathVariable Long id,
             @RequestParam com.tiendario.domain.SaleStatus status,
             @RequestParam(required = false) com.tiendario.domain.PaymentMethod paymentMethod) {
@@ -72,7 +72,7 @@ public class SaleController {
     }
 
     @GetMapping("/daily-summary")
-    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN') or hasRole('CASHIER')")
     public List<DailySalesSummary> getDailySalesSummary() {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();

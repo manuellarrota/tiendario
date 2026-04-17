@@ -364,41 +364,45 @@ const InventoryPage = () => {
                         )}
                     </div>
                     <div className="d-flex flex-wrap gap-2">
-                        <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Descarga toda tu lista de productos en formato Excel")}>
-                            <Button variant="outline-success" className="px-3 shadow-sm d-flex align-items-center gap-2" onClick={handleExportExcel}>
-                                <FaFileExcel /> Descargar en Excel
-                            </Button>
-                        </OverlayTrigger>
+                        {(user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
+                            <>
+                                <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Descarga toda tu lista de productos en formato Excel")}>
+                                    <Button variant="outline-success" className="px-3 shadow-sm d-flex align-items-center gap-2" onClick={handleExportExcel}>
+                                        <FaFileExcel /> Descargar en Excel
+                                    </Button>
+                                </OverlayTrigger>
 
-                        <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Descarga el formato Excel para llenarlo con tus productos e importarlos masivamente")}>
-                            <Button variant="outline-success" className="px-3 shadow-sm d-flex align-items-center gap-2" onClick={handleDownloadTemplate}>
-                                <FaFileExcel /> Descargar formato Excel
-                            </Button>
-                        </OverlayTrigger>
+                                <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Descarga el formato Excel para llenarlo con tus productos e importarlos masivamente")}>
+                                    <Button variant="outline-success" className="px-3 shadow-sm d-flex align-items-center gap-2" onClick={handleDownloadTemplate}>
+                                        <FaFileExcel /> Descargar formato Excel
+                                    </Button>
+                                </OverlayTrigger>
 
-                        <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Genera un reporte PDF de tu inventario actual")}>
-                            <Button variant="outline-danger" className="px-3 shadow-sm d-flex align-items-center gap-2" onClick={handleExportPdf}>
-                                <FaFilePdf /> Descargar en PDF
-                            </Button>
-                        </OverlayTrigger>
+                                <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Genera un reporte PDF de tu inventario actual")}>
+                                    <Button variant="outline-danger" className="px-3 shadow-sm d-flex align-items-center gap-2" onClick={handleExportPdf}>
+                                        <FaFilePdf /> Descargar en PDF
+                                    </Button>
+                                </OverlayTrigger>
 
-                        <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Sube un archivo Excel para cargar productos masivamente")}>
-                            <label className="btn btn-outline-primary px-3 shadow-sm mb-0 d-flex align-items-center gap-2">
-                                <FaUpload /> Importar
-                                <input type="file" hidden accept=".xlsx, .xls" onChange={handleImportExcel} />
-                            </label>
-                        </OverlayTrigger>
+                                <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Sube un archivo Excel para cargar productos masivamente")}>
+                                    <label className="btn btn-outline-primary px-3 shadow-sm mb-0 d-flex align-items-center gap-2">
+                                        <FaUpload /> Importar
+                                        <input type="file" hidden accept=".xlsx, .xls" onChange={handleImportExcel} />
+                                    </label>
+                                </OverlayTrigger>
 
-                        <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Añadir un nuevo producto a tu catálogo")}>
-                            <Button
-                                className="btn-primary px-4 py-2 shadow-lg w-auto"
-                                onClick={() => { resetForm(); setShowModal(true); }}
-                                disabled={isBlocked || (!isPremium && products.length >= 10)}
-                            >
-                                <FaPlus className="me-2" />
-                                {isBlocked ? 'Acceso Bloqueado' : (!isPremium && products.length >= 10 ? 'Límite Alcanzado' : 'Nuevo Producto')}
-                            </Button>
-                        </OverlayTrigger>
+                                <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Añadir un nuevo producto a tu catálogo")}>
+                                    <Button
+                                        className="btn-primary px-4 py-2 shadow-lg w-auto"
+                                        onClick={() => { resetForm(); setShowModal(true); }}
+                                        disabled={isBlocked || (!isPremium && products.length >= 10)}
+                                    >
+                                        <FaPlus className="me-2" />
+                                        {isBlocked ? 'Acceso Bloqueado' : (!isPremium && products.length >= 10 ? 'Límite Alcanzado' : 'Nuevo Producto')}
+                                    </Button>
+                                </OverlayTrigger>
+                            </>
+                        )}
                     </div>
                 </div>
 
@@ -484,7 +488,9 @@ const InventoryPage = () => {
                                             Stock {renderSortIcon('stock')}
                                         </th>
                                         <th className="border-0 text-secondary small text-uppercase text-center">Estado</th>
-                                        <th className="border-0 text-secondary small text-uppercase text-end pe-4">Acciones</th>
+                                        {(user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
+                                            <th className="border-0 text-secondary small text-uppercase text-end pe-4">Acciones</th>
+                                        )}
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -525,14 +531,16 @@ const InventoryPage = () => {
                                                     <Badge bg="success" className="bg-opacity-25 text-success text-uppercase" style={{ fontSize: '0.65rem' }}>Disponible</Badge>
                                                 )}
                                             </td>
-                                            <td className="text-end pe-4">
-                                                <Button variant="link" className="text-primary me-2 p-0 text-decoration-none fw-bold small" onClick={() => handleEditClick(product)}>
-                                                    Editar
-                                                </Button>
-                                                <Button variant="link" className="text-danger p-0 text-decoration-none fw-bold small" onClick={() => handleDelete(product.id)}>
-                                                    Borrar
-                                                </Button>
-                                            </td>
+                                            {(user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
+                                                <td className="text-end pe-4">
+                                                    <Button variant="link" className="text-primary me-2 p-0 text-decoration-none fw-bold small" onClick={() => handleEditClick(product)}>
+                                                        Editar
+                                                    </Button>
+                                                    <Button variant="link" className="text-danger p-0 text-decoration-none fw-bold small" onClick={() => handleDelete(product.id)}>
+                                                        Borrar
+                                                    </Button>
+                                                </td>
+                                            )}
                                         </tr>
                                     ))}
                                 </tbody>

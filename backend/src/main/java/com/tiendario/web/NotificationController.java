@@ -19,7 +19,7 @@ public class NotificationController {
     NotificationRepository notificationRepository;
 
     @GetMapping
-    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN') or hasRole('CASHIER')")
     public List<Notification> getNotifications() {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
@@ -28,7 +28,7 @@ public class NotificationController {
     }
 
     @GetMapping("/unread-count")
-    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN') or hasRole('CASHIER')")
     public long getUnreadCount() {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
@@ -37,7 +37,7 @@ public class NotificationController {
     }
 
     @PutMapping("/{id}/read")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('CASHIER')")
     public ResponseEntity<?> markAsRead(@PathVariable Long id) {
         Notification notification = notificationRepository.findById(id).orElse(null);
         if (notification != null) {

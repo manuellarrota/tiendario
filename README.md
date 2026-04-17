@@ -95,6 +95,7 @@ npm run dev
 |---|---|---|---|
 | **Super Admin** | `admin` | `Admin123!` | [Admin](http://localhost:8081) |
 | **Manager (PAID)** | `manager_pro` | `Manager123!` | [Admin](http://localhost:8081) |
+| **Cajero** | `cajero_pro` | `Cajero123!` | [Admin](http://localhost:8081) |
 | **Manager (FREE)** | `manager_free` | `Manager123!` | [Admin](http://localhost:8081) |
 | **Cliente** | `cliente` | `Cliente123!` | [Market](http://localhost:8082) |
 
@@ -111,8 +112,11 @@ npm run dev
 - **Historial de Ventas y Compras**: Trazabilidad completa de movimientos
 - **Clientes**: Gestión de clientes y acumulación de puntos de lealtad
 - **Reportes**: KPIs financieros y dashboard de métricas
-- **Control de Caja**: Cierre diario con cuadre de efectivo
-- **Notificaciones**: Centro de alertas internas (stock bajo, nuevos pedidos)
+- **Control de Caja (Turnos)**: Sistema profesional de flujo de caja que incluye:
+  - **Apertura (*Shift Gate*)**: Bloqueo automático del POS hasta que se registra una base inicial (soporta arranque en `$0`).
+  - **Cierre Ciego**: Al finalizar turno, obliga al cajero a reportar su conteo manual físico (billetes y vouchers) sin mostrarle las ventas esperadas para prevenir manipulación.
+  - **Auditoría**: Panel exclusivo directivo para revisión, cuadre y confirmación gerencial de faltantes o sobrantes.
+- **Notificaciones**: Centro de alertas internas (stock bajo, nuevos pedidos, ventas de marketplace) accesible de primera mano para operación.
 - **Ajustes de Tienda**: Configuración de empresa, ubicación y suscripción
 
 ### Marketplace (Clientes)
@@ -175,8 +179,8 @@ Registro → TRIAL (30 días, acceso completo)
 
 ## Seguridad
 
-- **Backend**: Todos los endpoints protegidos con JWT. Roles `ROLE_ADMIN`, `ROLE_MANAGER`, `ROLE_USER` aplicados con `@PreAuthorize`.
-- **Frontend**: Route guards (`RequireRole`) protegen todas las rutas autenticadas. Las rutas `/admin/*` requieren `ROLE_ADMIN`.
+- **Backend**: Todos los endpoints protegidos con JWT. Roles `ROLE_ADMIN`, `ROLE_MANAGER`, `ROLE_CASHIER` y `ROLE_USER` aplicados con `@PreAuthorize`.
+- **Frontend**: Route guards (`RequireRole`) protegen todas las rutas autenticadas. El rol `CASHIER` tiene acceso limitado a POS y operaciones, mientras que `MANAGER` tiene acceso total a la tienda. Las rutas `/admin/*` requieren `ROLE_ADMIN`.
 - **Validaciones**: Cantidades, precios y tipos de archivo validados server-side.
 
 ---

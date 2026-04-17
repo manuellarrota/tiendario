@@ -86,7 +86,7 @@ public class ProductController {
     }
 
     @GetMapping("/suggest-sku")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('CASHIER')")
     public ResponseEntity<?> suggestSku(@RequestParam String name,
             @RequestParam(required = false) String category,
             @RequestParam(required = false) String variant,
@@ -141,13 +141,13 @@ public class ProductController {
     }
 
     @GetMapping("/catalog-search")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('CASHIER')")
     public List<com.tiendario.domain.CatalogProduct> searchCatalog(@RequestParam String q) {
         return catalogProductRepository.findByNameContainingIgnoreCase(q);
     }
 
     @GetMapping("/by-barcode/{barcode}")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('CASHIER')")
     public ResponseEntity<?> findByBarcode(@PathVariable String barcode) {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
@@ -163,7 +163,7 @@ public class ProductController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN') or hasRole('CASHIER')")
     public ResponseEntity<?> getCompanyProducts(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -210,7 +210,7 @@ public class ProductController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('CASHIER')")
     public ResponseEntity<?> createProduct(@RequestBody Product product) {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();

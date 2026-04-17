@@ -113,6 +113,16 @@ const SalesHistoryPage = () => {
         }
     };
 
+    const formatPaymentMethod = (method) => {
+        switch (method) {
+            case 'CASH': return 'Efectivo 💵';
+            case 'CARD': return 'Tarjeta 💳';
+            case 'TRANSFER': return 'Transferencia 🏦';
+            case 'MOBILE_PAYMENT': return 'Pago Móvil 📱';
+            default: return method || 'Pendiente';
+        }
+    };
+
     const filteredSales = sales;
 
     return (
@@ -153,6 +163,7 @@ const SalesHistoryPage = () => {
                                     <th className="px-4 py-3">ID / Fecha</th>
                                     <th className="py-3">Cliente</th>
                                     <th className="py-3 text-center">Estado</th>
+                                    <th className="py-3 text-center">Método</th>
                                     <th className="py-3 text-end">Total</th>
                                     <th className="py-3 text-center px-4">Acciones</th>
                                 </tr>
@@ -169,6 +180,9 @@ const SalesHistoryPage = () => {
                                             <small className="text-muted">{sale.customer?.email || 'Presencial'}</small>
                                         </td>
                                         <td className="text-center">{getStatusBadge(sale.status)}</td>
+                                        <td className="text-center small">
+                                            {formatPaymentMethod(sale.paymentMethod)}
+                                        </td>
                                         <td className="text-end fw-bold text-success">
                                             ${sale.totalAmount ? sale.totalAmount.toLocaleString() : '0'}
                                             {platformConfig?.enableSecondaryCurrency && sale.totalAmount > 0 && (
@@ -258,7 +272,7 @@ const SalesHistoryPage = () => {
                                     <div className="bg-light p-3 rounded-4 mb-4">
                                         <p className="mb-2"><strong>Estado:</strong> {getStatusBadge(selectedSale.status)}</p>
                                         <p className="mb-2"><strong>Fecha:</strong> {selectedSale.date ? new Date(selectedSale.date).toLocaleString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}</p>
-                                        <p className="mb-2"><strong>Método:</strong> {selectedSale.paymentMethod || 'Pendiente'}</p>
+                                        <p className="mb-2"><strong>Método:</strong> {formatPaymentMethod(selectedSale.paymentMethod)}</p>
                                         <h4 className="fw-bold text-success mb-0 mt-3">Total: ${selectedSale.totalAmount ? selectedSale.totalAmount.toLocaleString() : '0'}</h4>
                                         {platformConfig?.enableSecondaryCurrency && selectedSale.totalAmount > 0 && (
                                             <h5 className="text-muted mt-1 mb-0">{formatSecondary(selectedSale.totalAmount)}</h5>

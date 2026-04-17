@@ -6,6 +6,7 @@ import com.tiendario.repository.CompanyRepository;
 import com.tiendario.repository.ProductRepository;
 import com.tiendario.repository.SaleRepository;
 import com.tiendario.repository.UserRepository;
+import com.tiendario.repository.ShiftRepository;
 import com.tiendario.security.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -32,17 +33,21 @@ public class SaleService {
     private final UserRepository userRepository;
     private final EmailService emailService;
 
+    private final ShiftRepository shiftRepository;
+
     @Autowired
     public SaleService(SaleRepository saleRepository,
             ProductRepository productRepository,
             CompanyRepository companyRepository,
             UserRepository userRepository,
-            EmailService emailService) {
+            EmailService emailService,
+            ShiftRepository shiftRepository) {
         this.saleRepository = saleRepository;
         this.productRepository = productRepository;
         this.companyRepository = companyRepository;
         this.userRepository = userRepository;
         this.emailService = emailService;
+        this.shiftRepository = shiftRepository;
     }
 
     public List<Sale> getCompanySales(UserDetailsImpl userDetails) {
@@ -95,6 +100,10 @@ public class SaleService {
         // Set User (Cashier)
         com.tiendario.domain.User cashier = userRepository.findById(userDetails.getId()).orElse(null);
         sale.setUser(cashier);
+
+        // Link to active shift
+        shiftRepository.findByUserIdAndStatus(userDetails.getId(), ShiftStatus.OPEN)
+                .ifPresent(sale::setShift);
 
         // Payment Method can be null for PENDING orders
         if (com.tiendario.domain.SaleStatus.PAID.equals(sale.getStatus()) && sale.getPaymentMethod() == null) {
@@ -217,8 +226,15 @@ public class SaleService {
         sale.setStatus(status);
 
         // If updating to PAID, set the payment method if provided
-        if (com.tiendario.domain.SaleStatus.PAID.equals(status) && paymentMethod != null) {
-            sale.setPaymentMethod(paymentMethod);
+        if (com.tiendario.domain.SaleStatus.PAID.equals(status)) {
+            if (paymentMethod != null) {
+                sale.setPaymentMethod(paymentMethod);
+            }
+            // Also link to current shift if it was a pending order from before
+            if (sale.getShift() == null) {
+                shiftRepository.findByUserIdAndStatus(userDetails.getId(), ShiftStatus.OPEN)
+                        .ifPresent(sale::setShift);
+            }
         }
 
         saleRepository.save(sale);

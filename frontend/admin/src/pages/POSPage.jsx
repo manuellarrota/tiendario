@@ -7,6 +7,7 @@ import SaleService from '../services/sale.service';
 import AuthService from '../services/auth.service';
 import PublicService from '../services/public.service';
 import CustomerService from '../services/customer.service';
+import ShiftService from '../services/shift.service';
 
 const POSPage = () => {
     // 1. STATE
@@ -40,6 +41,19 @@ const POSPage = () => {
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState("");
     const [toastType, setToastType] = useState("success");
+
+    // Shift Control State
+    const [currentShift, setCurrentShift] = useState(null);
+    const [showShiftOpeningModal, setShowShiftOpeningModal] = useState(false);
+    const [showShiftClosingModal, setShowShiftClosingModal] = useState(false);
+    const [initialCash, setInitialCash] = useState("");
+    const [closingData, setClosingData] = useState({
+        reportedCash: "",
+        reportedCard: "",
+        reportedTransfer: "",
+        reportedMobile: "",
+        observation: ""
+    });
 
     const barcodeInputRef = useRef(null);
     const barcodeTimerRef = useRef(null);
@@ -288,8 +302,39 @@ const POSPage = () => {
         ProductService.getPOSProducts().then(r => setProducts(r.data.products || r.data));
         PublicService.getPlatformConfig().then(r => setPlatformConfig(r.data));
         CustomerService.getAll().then(r => setCustomers(r.data));
+        
+        // Verifica el turno de caja
+        ShiftService.getCurrentShift().then(
+            (res) => {
+                if (res.status === 200 && res.data) {
+                    setCurrentShift(res.data);
+                } else {
+                    setShowShiftOpeningModal(true);
+                }
+            },
+            () => setShowShiftOpeningModal(true)
+        );
+
         setTimeout(() => document.querySelector('.pos-search-input')?.focus(), 500);
     }, []);
+
+    const handleOpenShift = () => {
+        const cash = parseFloat(initialCash) || 0;
+        ShiftService.openShift(cash).then(res => {
+            setCurrentShift(res.data);
+            setShowShiftOpeningModal(false);
+            triggerToast("¡Caja abierta exitosamente!");
+        }).catch(err => triggerToast("Error al abrir caja", "error"));
+    };
+
+    const handleCloseShift = () => {
+        ShiftService.closeShift(currentShift.id, closingData).then(() => {
+            triggerToast("Caja cerrada. Gracias por tu jornada.");
+            setCurrentShift(null);
+            setShowShiftClosingModal(false);
+            setShowShiftOpeningModal(true); // Requiere abrir una nueva si quiere seguir
+        }).catch(err => triggerToast("Error al cerrar caja", "error"));
+    };
 
     useEffect(() => {
         const handleKeyPress = (e) => {
@@ -313,13 +358,24 @@ const POSPage = () => {
             <div className="flex-grow-1 p-4 bg-light bg-opacity-50" style={{ overflowY: 'auto' }}>
                 {/* Removed TPV header and Active status to save vertical space */}
 
-                {!canOperate && (
-                    <Alert variant={subscriptionStatus === 'PAST_DUE' ? 'warning' : 'danger'} className="shadow-sm mb-4">
-                        <FaExclamationTriangle className="me-2" /> Acceso restringido. Por favor, revisa tu suscripción.
+                {subscriptionStatus === 'PAST_DUE' ? (
+                    <Alert variant="warning" className="shadow-sm mb-4">
+                        <FaExclamationTriangle className="me-2" /> Tu suscripción ha vencido. Por favor, realiza el pago para reactivar las ventas.
+                    </Alert>
+                ) : subscriptionStatus === 'SUSPENDED' ? (
+                    <Alert variant="danger" className="shadow-sm mb-4">
+                        <FaExclamationTriangle className="me-2" /> Cuenta suspendida. Contacta a soporte.
+                    </Alert>
+                ) : null}
+
+                {currentShift && (
+                    <Alert variant="info" className="d-flex justify-content-between align-items-center shadow-sm mb-4 py-2 border-0 bg-primary bg-opacity-10 text-primary">
+                        <span><FaCashRegister className="me-2" /> Caja Abierta por: <strong>{user?.username}</strong> - Iniciada a las {new Date(currentShift.startTime).toLocaleTimeString()}</span>
+                        <Button variant="outline-primary" size="sm" onClick={() => setShowShiftClosingModal(true)}>Finalizar Turno / Cerrar Caja</Button>
                     </Alert>
                 )}
 
-                <Row className="g-4" style={{ opacity: canOperate ? 1 : 0.5, pointerEvents: canOperate ? 'auto' : 'none' }}>
+                <Row className="g-4" style={{ opacity: (canOperate && currentShift) ? 1 : 0.5, pointerEvents: (canOperate && currentShift) ? 'auto' : 'none' }}>
                     {/* Column 1: LARGE CART DETAIL (Left) */}
                     <Col lg={8}>
                         <div className="pos-receipt-container bg-white shadow-sm rounded-4 d-flex flex-column" style={{ height: 'calc(100vh - 40px)' }}>
@@ -664,6 +720,79 @@ const POSPage = () => {
                                 </div>
                             </Col>
                         </Row>
+                    </Modal.Body>
+                </Modal>
+
+                {/* MODALES DE TURNO */}
+                <Modal show={showShiftOpeningModal} backdrop="static" keyboard={false} centered>
+                    <Modal.Header className="border-0 pb-0">
+                        <Modal.Title className="fw-black fs-3">Apertura de Caja</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body className="p-4">
+                        <p className="text-muted">Ingresa el monto de efectivo inicial (base) que tienes en la gaveta.</p>
+                        <Form.Group className="mb-3">
+                            <Form.Label className="fw-bold small">DINERO BASE ({baseCurrencySymbol})</Form.Label>
+                            <Form.Control 
+                                type="number" 
+                                size="lg" 
+                                placeholder="0.00" 
+                                className="fw-bold fs-4"
+                                value={initialCash}
+                                onChange={e => setInitialCash(e.target.value)}
+                                autoFocus
+                            />
+                        </Form.Group>
+                        <Button variant="primary" size="lg" className="w-100 py-3 rounded-4 fw-bold shadow" onClick={handleOpenShift}>
+                            ABRIR CAJA Y EMPEZAR
+                        </Button>
+                    </Modal.Body>
+                </Modal>
+
+                <Modal show={showShiftClosingModal} onHide={() => setShowShiftClosingModal(false)} centered size="lg">
+                    <Modal.Header closeButton>
+                        <Modal.Title className="fw-bold">Cierre de Caja (Arqueo)</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body className="p-4">
+                        <div className="alert alert-warning small">
+                            <strong>Atención:</strong> Ingresa el conteo físico de lo que tienes en este momento. El sistema comparará estos datos con lo registrado automáticamente.
+                        </div>
+                        <Row className="g-3">
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label className="small fw-bold">Efectivo Total ({baseCurrencySymbol})</Form.Label>
+                                    <Form.Control type="number" value={closingData.reportedCash} onChange={e => setClosingData({...closingData, reportedCash: e.target.value})} placeholder="Cuenta los billetes..." />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label className="small fw-bold">Total Tarjeta/Punto ({baseCurrencySymbol})</Form.Label>
+                                    <Form.Control type="number" value={closingData.reportedCard} onChange={e => setClosingData({...closingData, reportedCard: e.target.value})} placeholder="Suma los vouchers..." />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label className="small fw-bold">Total Transferencias ({baseCurrencySymbol})</Form.Label>
+                                    <Form.Control type="number" value={closingData.reportedTransfer} onChange={e => setClosingData({...closingData, reportedTransfer: e.target.value})} placeholder="Revisa el banco..." />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group>
+                                    <Form.Label className="small fw-bold">Total Pago Móvil ({baseCurrencySymbol})</Form.Label>
+                                    <Form.Control type="number" value={closingData.reportedMobile} onChange={e => setClosingData({...closingData, reportedMobile: e.target.value})} placeholder="Revisa el cel..." />
+                                </Form.Group>
+                            </Col>
+                            <Col md={12}>
+                                <Form.Group>
+                                    <Form.Label className="small fw-bold">Observaciones / Novedades</Form.Label>
+                                    <Form.Control as="textarea" rows={2} value={closingData.observation} onChange={e => setClosingData({...closingData, observation: e.target.value})} placeholder="¿Alguna novedad en el turno?" />
+                                </Form.Group>
+                            </Col>
+                        </Row>
+                        <div className="mt-4">
+                            <Button variant="danger" size="lg" className="w-100 py-3 fw-bold rounded-4 shadow" onClick={handleCloseShift}>
+                                FINALIZAR TURNO Y ENVIAR REPORTE
+                            </Button>
+                        </div>
                     </Modal.Body>
                 </Modal>
 
