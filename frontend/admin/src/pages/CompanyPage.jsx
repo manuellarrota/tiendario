@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Card, Row, Col, Badge, Button, Form, Modal, Table, Alert, Spinner } from 'react-bootstrap';
-import { FaBuilding, FaCrown, FaCheckCircle, FaExclamationTriangle, FaHistory, FaFileUpload, FaInfoCircle, FaEdit, FaSave, FaTimes, FaPhone, FaMapMarkerAlt, FaImage } from 'react-icons/fa';
+import { FaBuilding, FaCrown, FaCheckCircle, FaExclamationTriangle, FaHistory, FaFileUpload, FaInfoCircle, FaEdit, FaSave, FaTimes, FaPhone, FaMapMarkerAlt, FaImage, FaMoneyBillWave, FaClock } from 'react-icons/fa';
 import CompanyService from '../services/company.service';
 import PaymentService from '../services/payment.service';
 
@@ -53,7 +53,9 @@ const CompanyPage = () => {
             phoneNumber: company?.phoneNumber || '',
             imageUrl: company?.imageUrl || '',
             latitude: company?.latitude || '',
-            longitude: company?.longitude || ''
+            longitude: company?.longitude || '',
+            baseCurrency: company?.baseCurrency || 'USD',
+            timezone: company?.timezone || 'America/Caracas'
         });
         setEditing(true);
         setSaveSuccess('');
@@ -231,6 +233,50 @@ const CompanyPage = () => {
                                                 <Col>
                                                     <Form.Group className="mb-3">
                                                         <Form.Label className="text-muted small d-block">
+                                                            <FaMoneyBillWave className="me-1" /> MONEDA BASE
+                                                        </Form.Label>
+                                                        <Form.Select
+                                                            name="baseCurrency"
+                                                            value={editForm.baseCurrency}
+                                                            onChange={handleEditChange}
+                                                            className="py-2 rounded-3"
+                                                        >
+                                                            <option value="USD">Dólares (USD)</option>
+                                                            <option value="EUR">Euros (EUR)</option>
+                                                            <option value="VES">Bolívares (VES)</option>
+                                                            <option value="COP">Pesos Colombianos (COP)</option>
+                                                            <option value="CLP">Pesos Chilenos (CLP)</option>
+                                                            <option value="MXN">Pesos Mexicanos (MXN)</option>
+                                                            <option value="ARS">Pesos Argentinos (ARS)</option>
+                                                        </Form.Select>
+                                                    </Form.Group>
+                                                </Col>
+                                                <Col>
+                                                    <Form.Group className="mb-3">
+                                                        <Form.Label className="text-muted small d-block">
+                                                            <FaClock className="me-1" /> ZONA HORARIA
+                                                        </Form.Label>
+                                                        <Form.Select
+                                                            name="timezone"
+                                                            value={editForm.timezone}
+                                                            onChange={handleEditChange}
+                                                            className="py-2 rounded-3"
+                                                        >
+                                                            <option value="America/Caracas">Caracas (UTC-4)</option>
+                                                            <option value="America/Bogota">Bogotá (UTC-5)</option>
+                                                            <option value="America/Santiago">Santiago (UTC-4/UTC-3)</option>
+                                                            <option value="America/Mexico_City">Ciudad de México (UTC-6)</option>
+                                                            <option value="America/Argentina/Buenos_Aires">Buenos Aires (UTC-3)</option>
+                                                            <option value="America/New_York">New York (EST/EDT)</option>
+                                                            <option value="Europe/Madrid">Madrid (CET/CEST)</option>
+                                                        </Form.Select>
+                                                    </Form.Group>
+                                                </Col>
+                                            </Row>
+                                            <Row>
+                                                <Col>
+                                                    <Form.Group className="mb-3">
+                                                        <Form.Label className="text-muted small d-block">
                                                             <FaMapMarkerAlt className="me-1" /> LATITUD
                                                         </Form.Label>
                                                         <Form.Control
@@ -286,6 +332,16 @@ const CompanyPage = () => {
                                                     <span className="text-muted">{company.description}</span>
                                                 </div>
                                             )}
+                                            <Row className="mb-3">
+                                                <Col>
+                                                    <label className="text-muted small d-block"><FaMoneyBillWave className="me-1"/> MONEDA</label>
+                                                    <Badge bg="light" text="dark" className="border">{company?.baseCurrency || 'USD'}</Badge>
+                                                </Col>
+                                                <Col>
+                                                    <label className="text-muted small d-block"><FaClock className="me-1"/> ZONA HORARIA</label>
+                                                    <Badge bg="light" text="dark" className="border">{company?.timezone || 'America/Caracas'}</Badge>
+                                                </Col>
+                                            </Row>
                                             <div className="mb-3">
                                                 <label className="text-muted small d-block">ID DE TIENDA</label>
                                                 <span className="text-muted">#{company?.id}</span>

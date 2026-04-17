@@ -58,6 +58,12 @@ public class CompanyController {
                 if (profileUpdate.getLongitude() != null) {
                         company.setLongitude(profileUpdate.getLongitude());
                 }
+                if (profileUpdate.getBaseCurrency() != null && !profileUpdate.getBaseCurrency().isBlank()) {
+                        company.setBaseCurrency(profileUpdate.getBaseCurrency());
+                }
+                if (profileUpdate.getTimezone() != null && !profileUpdate.getTimezone().isBlank()) {
+                        company.setTimezone(profileUpdate.getTimezone());
+                }
 
                 companyRepository.save(company);
                 return ResponseEntity.ok(company);

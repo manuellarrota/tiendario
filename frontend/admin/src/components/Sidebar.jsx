@@ -9,6 +9,7 @@ import {
 } from 'react-icons/fa';
 import AuthService from '../services/auth.service';
 import NotificationService from '../services/notification.service';
+import ShiftService from '../services/shift.service';
 
 const Sidebar = () => {
     const user = AuthService.getCurrentUser();
@@ -58,7 +59,18 @@ const Sidebar = () => {
         return () => clearTimeout(timer);
     }, [location.pathname]);
 
-    const handleLogout = () => {
+    const handleLogout = async () => {
+        if (user?.roles?.includes('ROLE_CASHIER') || user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) {
+            try {
+                const shiftRes = await ShiftService.getCurrentShift();
+                if (shiftRes.status === 200 && shiftRes.data && shiftRes.data.status === 'OPEN') {
+                    const confirmLeave = window.confirm("⚠️ Tienes un turno de caja en curso bajo tu responsabilidad.\n\nSi cierras sesión ahora, tu caja quedará ABIERTA de forma segura para cuando regreses (ideal para el almuerzo).\n\n¿Deseas salir del sistema temporalmente?");
+                    if (!confirmLeave) return; // Abort logout if they say no
+                }
+            } catch (e) {
+                // Continúa si no hay turno o hay error
+            }
+        }
         AuthService.logout();
         window.location.href = '/';
     };

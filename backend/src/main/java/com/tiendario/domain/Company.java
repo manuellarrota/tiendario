@@ -35,4 +35,8 @@ public class Company {
     // Reputation
     private Double rating;
     private Integer ratingCount;
+
+    // Financial & Operational Configuration
+    private String baseCurrency = "USD";
+    private String timezone = "America/Caracas";
 }
