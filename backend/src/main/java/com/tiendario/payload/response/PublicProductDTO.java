@@ -13,6 +13,7 @@ public class PublicProductDTO {
     private String imageUrl;
     private Long companyId;
     private String companyName;
+    private String address;
     private String sku;
     private String brand;
     private String category;
@@ -20,4 +21,6 @@ public class PublicProductDTO {
     private Double rating;
     private Integer ratingCount;
     private Double distance;
+    private Double latitude;
+    private Double longitude;
 }

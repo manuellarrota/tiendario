@@ -39,7 +39,7 @@ public class SupplierController {
 
             org.springframework.data.domain.Page<Supplier> pageSuppliers;
             if (q != null && !q.trim().isEmpty()) {
-                pageSuppliers = supplierRepository.findByCompanyIdAndSearch(userDetails.getCompanyId(), q.trim().toLowerCase(), paging);
+                pageSuppliers = supplierRepository.findByCompanyIdAndSearch(userDetails.getCompanyId(), com.tiendario.util.SearchUtils.normalize(q), paging);
             } else {
                 pageSuppliers = supplierRepository.findByCompanyId(userDetails.getCompanyId(), paging);
             }

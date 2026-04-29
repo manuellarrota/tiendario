@@ -387,6 +387,14 @@ const MarketplacePage = () => {
     const [registerMessage, setRegisterMessage] = useState('');
     const [registerSuccess, setRegisterSuccess] = useState(false);
 
+    const getAdminUrl = () => {
+        const configured = import.meta.env.VITE_ADMIN_URL;
+        if (window.location.hostname.match(/^[0-9.]+$/) || window.location.hostname === 'localhost') {
+            return `${window.location.protocol}//${window.location.hostname}:8081`;
+        }
+        return configured || `${window.location.protocol}//${window.location.hostname}:8081`;
+    };
+
     if (platformConfig?.maintenanceMode) {
         return (
             <div className="bg-dark vh-100 d-flex flex-column align-items-center justify-content-center text-white px-4 text-center">
@@ -644,7 +652,7 @@ const MarketplacePage = () => {
                                         variant="primary" 
                                         size="sm" 
                                         className="w-100 rounded-pill fw-bold shadow-sm"
-                                        onClick={() => window.open(import.meta.env.VITE_ADMIN_URL || 'http://localhost:8081', '_blank')}
+                                        onClick={() => window.open(`${getAdminUrl()}?action=register`, '_blank')}
                                     >
                                         Empezar Ahora
                                     </Button>
@@ -781,7 +789,7 @@ const MarketplacePage = () => {
                                                     </p>
                                                     <div className="p-3 bg-light rounded-3 d-inline-block">
                                                         <span className="small text-muted fw-bold d-block mb-1">¿Eres comerciante?</span>
-                                                        <Button variant="primary" className="btn-premium rounded-pill px-4" onClick={() => window.open(import.meta.env.VITE_ADMIN_URL || 'http://localhost:8081', '_blank')}>Abre tu Tienda Hoy</Button>
+                                                        <Button variant="primary" className="btn-premium rounded-pill px-4" onClick={() => window.open(`${getAdminUrl()}?action=register`, '_blank')}>Abre tu Tienda Hoy</Button>
                                                     </div>
                                                 </>
                                             )}
@@ -903,7 +911,7 @@ const MarketplacePage = () => {
                                         </Badge>
                                         <h2 className="fw-bold mb-3">{selectedStore?.companyName}</h2>
                                         <p className="text-muted mb-4" style={{ fontSize: '0.9rem' }}>
-                                            {selectedStore?.description || 'Nuestra tienda ofrece la mejor selección de productos en San Cristóbal con garantía de calidad.'}
+                                            {selectedStore?.address || 'San Cristóbal, Táchira'}
                                         </p>
 
                                         <h6 className="fw-bold mb-3 small text-uppercase text-muted" style={{ letterSpacing: '1px' }}>Galería del Local</h6>
@@ -964,7 +972,9 @@ const MarketplacePage = () => {
                                 </div>
                                 <Badge bg="secondary" className="mb-3 px-3 py-2 rounded-pill fw-bold">Catálogo Digital</Badge>
                                 <h2 className="fw-bold mb-2">{selectedStore?.companyName}</h2>
-                                <p className="text-muted mb-5 mx-auto" style={{ maxWidth: '400px' }}>Esta tienda utiliza el catálogo digital para mostrar sus productos. Visítalos en su ubicación física en San Cristóbal.</p>
+                                <p className="text-muted mb-5 mx-auto" style={{ maxWidth: '400px' }}>
+                                    {selectedStore?.address || 'Visítalos en su ubicación física en San Cristóbal.'}
+                                </p>
 
                                 <div className="rounded-4 overflow-hidden border shadow-sm mb-5" style={{ height: '350px' }}>
                                     {selectedStore?.latitude && selectedStore?.longitude && selectedStore.latitude !== 0.0 ? (

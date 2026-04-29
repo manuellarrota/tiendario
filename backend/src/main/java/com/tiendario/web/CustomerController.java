@@ -39,8 +39,8 @@ public class CustomerController {
 
         // Check if email already exists for this company
         if (customer.getEmail() != null && !customer.getEmail().isEmpty()) {
-            if (customerRepository.findByEmailAndCompanyId(customer.getEmail(), userDetails.getCompanyId())
-                    .isPresent()) {
+            if (!customerRepository.findByEmailAndCompanyId(customer.getEmail(), userDetails.getCompanyId())
+                    .isEmpty()) {
                 return ResponseEntity.badRequest()
                         .body(new MessageResponse("Error: Email already registered for this company!"));
             }

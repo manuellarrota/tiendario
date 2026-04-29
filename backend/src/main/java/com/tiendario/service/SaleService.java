@@ -182,9 +182,9 @@ public class SaleService {
                     String orderSummary = sale.getItems().stream()
                             .map(i -> i.getQuantity() + "x " + i.getProduct().getName())
                             .collect(Collectors.joining("\n"));
-                    double total = sale.getItems().stream()
-                            .mapToDouble(i -> i.getQuantity() * i.getProduct().getPrice().doubleValue())
-                            .sum();
+                    java.math.BigDecimal total = sale.getItems().stream()
+                            .map(i -> i.getProduct().getPrice().multiply(new java.math.BigDecimal(i.getQuantity())))
+                            .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
                     String customerName = sale.getCustomerName() != null ? sale.getCustomerName() : "Cliente";
                     for (User mgr : managers) {
                         if (mgr.getEmail() != null) {

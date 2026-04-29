@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Decimal from 'decimal.js';
 import { Container, Card, Table, Alert, Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import Sidebar from '../components/Sidebar';
 import SaleService from '../services/sale.service';
@@ -13,7 +14,7 @@ const DailyClosingPage = () => {
 
     const formatSecondary = (amount) => {
         if (!platformConfig || !platformConfig.enableSecondaryCurrency) return null;
-        const converted = amount * platformConfig.exchangeRate;
+        const converted = new Decimal(amount).times(platformConfig.exchangeRate).toNumber();
         return `${platformConfig.secondaryCurrencySymbol} ${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
@@ -54,7 +55,7 @@ const DailyClosingPage = () => {
         const totalCard = getAmount('CARD');
         const totalTransfer = getAmount('TRANSFER');
         const totalMobile = getAmount('MOBILE_PAYMENT');
-        const grandTotal = totalCash + totalCard + totalTransfer + totalMobile;
+        const grandTotal = new Decimal(totalCash).plus(totalCard).plus(totalTransfer).plus(totalMobile).toNumber();
 
         return {
             user,
@@ -67,7 +68,7 @@ const DailyClosingPage = () => {
         };
     });
 
-    const grandTotalAll = report.reduce((acc, r) => acc + r.grandTotal, 0);
+    const grandTotalAll = report.reduce((acc, r) => acc.plus(new Decimal(r.grandTotal)), new Decimal(0)).toNumber();
 
     return (
         <div className="d-flex" style={{ height: '100vh', overflow: 'hidden' }}>
@@ -151,12 +152,12 @@ const DailyClosingPage = () => {
                                     <tfoot className="bg-dark text-white text-center">
                                         <tr>
                                             <td className="text-end pe-3 fw-bold">TOTAL GENERAL</td>
-                                            <td>${report.reduce((acc, r) => acc + r.totalCash, 0).toFixed(2)}</td>
-                                            <td>${report.reduce((acc, r) => acc + r.totalCard, 0).toFixed(2)}</td>
-                                            <td>${report.reduce((acc, r) => acc + r.totalTransfer, 0).toFixed(2)}</td>
-                                            <td>${report.reduce((acc, r) => acc + r.totalMobile, 0).toFixed(2)}</td>
+                                            <td>${report.reduce((acc, r) => acc.plus(new Decimal(r.totalCash)), new Decimal(0)).toFixed(2)}</td>
+                                            <td>${report.reduce((acc, r) => acc.plus(new Decimal(r.totalCard)), new Decimal(0)).toFixed(2)}</td>
+                                            <td>${report.reduce((acc, r) => acc.plus(new Decimal(r.totalTransfer)), new Decimal(0)).toFixed(2)}</td>
+                                            <td>${report.reduce((acc, r) => acc.plus(new Decimal(r.totalMobile)), new Decimal(0)).toFixed(2)}</td>
                                             <td className="fw-bold fs-5">
-                                                ${grandTotalAll.toFixed(2)}
+                                                ${new Decimal(grandTotalAll).toFixed(2)}
                                                 {platformConfig?.enableSecondaryCurrency && grandTotalAll > 0 && (
                                                     <div style={{ fontSize: '0.8rem' }}>{formatSecondary(grandTotalAll)}</div>
                                                 )}

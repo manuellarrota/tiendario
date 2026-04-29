@@ -1,5 +1,7 @@
 package com.tiendario.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import lombok.Data;
 import javax.persistence.*;
 
@@ -24,6 +26,7 @@ public class User {
 
     @ManyToOne
     @JoinColumn(name = "company_id")
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private Company company; // Null for ADMIN or CLIENT
 
     private boolean enabled = true;

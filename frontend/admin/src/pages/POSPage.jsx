@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import Decimal from 'decimal.js';
 import { Container, Row, Col, Card, Form, Button, ListGroup, InputGroup, Table, Modal, Alert, OverlayTrigger, Tooltip, Spinner, Badge, Toast, ToastContainer } from 'react-bootstrap';
 import { FaSearch, FaPlus, FaMinus, FaTrash, FaShoppingCart, FaEdit, FaLock, FaExclamationTriangle, FaExchangeAlt, FaUserPlus, FaUserAlt, FaUserCheck, FaBarcode, FaHome, FaSignOutAlt, FaBell, FaHistory, FaCashRegister, FaTruck, FaBox, FaTags } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
@@ -85,7 +86,7 @@ const POSPage = () => {
     const formatSecondary = (amount) => {
         const ves = availableCurrencies.find(c => c.code === 'VES');
         if (!ves) return null;
-        const converted = amount * ves.rate;
+        const converted = new Decimal(amount).times(ves.rate).toNumber();
         return `${ves.symbol} ${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
@@ -94,7 +95,7 @@ const POSPage = () => {
     const convertToPaymentCurrency = useCallback((amount) => {
         if (paymentCurrency === baseCurrencyCode) return amount;
         const curr = getSelectedCurrency();
-        return curr ? amount * curr.rate : amount;
+        return curr ? new Decimal(amount).times(curr.rate).toNumber() : amount;
     }, [paymentCurrency, baseCurrencyCode, getSelectedCurrency]);
 
     const formatPaymentCurrency = (amount) => {
@@ -103,7 +104,9 @@ const POSPage = () => {
         return `${curr.symbol}${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
-    const total = useMemo(() => cart.reduce((acc, item) => acc + item.subtotal, 0), [cart]);
+    const total = useMemo(() => {
+        return cart.reduce((acc, item) => acc.plus(new Decimal(item.subtotal || 0)), new Decimal(0));
+    }, [cart]);
 
     // 4. BUSINESS LOGIC
     const addProductToCartById = useCallback((foundProduct, qty = 1) => {
@@ -121,27 +124,28 @@ const POSPage = () => {
                 }
                 return prev.map(item =>
                     item.product.id === foundProduct.id
-                        ? { ...item, quantity: item.quantity + qty, subtotal: (item.quantity + qty) * foundProduct.price }
+                        ? { ...item, quantity: item.quantity + qty, subtotal: new Decimal(item.quantity + qty).times(foundProduct.price).toString() }
                         : item
                 );
             }
-            return [...prev, { product: foundProduct, quantity: qty, unitPrice: foundProduct.price, subtotal: qty * foundProduct.price }];
+            const subtotal = new Decimal(qty).times(foundProduct.price).toString();
+            return [...prev, { product: foundProduct, quantity: qty, unitPrice: foundProduct.price, subtotal }];
         });
     }, [triggerToast]);
 
     const totalPaidInBase = useMemo(() => {
-        return payments.reduce((acc, p) => acc + (p.amountInBaseCurrency || 0), 0);
+        return payments.reduce((acc, p) => acc.plus(new Decimal(p.amountInBaseCurrency || 0)), new Decimal(0));
     }, [payments]);
 
     const remainingToPay = useMemo(() => {
-        return Math.max(0, total - totalPaidInBase);
+        const res = total.minus(totalPaidInBase);
+        return res.gt(0) ? res : new Decimal(0);
     }, [total, totalPaidInBase]);
 
     const handleCheckout = useCallback(() => {
-        if (cart.length === 0 || totalPaidInBase < total) return;
+        if (cart.length === 0 || totalPaidInBase.lt(total)) return;
         
         const saleData = {
-            totalAmount: total,
             items: cart.map(item => ({
                 product: { id: item.product.id },
                 quantity: item.quantity,
@@ -157,7 +161,8 @@ const POSPage = () => {
             })),
             customer: selectedCustomer ? { id: selectedCustomer.id } : null,
             customerName: selectedCustomer ? selectedCustomer.name : (customerSearch.trim() || 'Cliente General'),
-            status: 'PAID'
+            status: 'PAID',
+            totalAmount: total.toNumber()
         };
 
         SaleService.createSale(saleData).then(() => {
@@ -172,18 +177,18 @@ const POSPage = () => {
     }, [cart, total, totalPaidInBase, payments, selectedCustomer, customerSearch, triggerToast]);
 
     const addPaymentPart = () => {
-        const amount = parseFloat(tempPayment.amount);
-        if (isNaN(amount) || amount <= 0) return;
+        const amount = new Decimal(tempPayment.amount || 0);
+        if (amount.isNaN() || amount.lte(0)) return;
 
         const curr = availableCurrencies.find(c => c.code === tempPayment.currency) || { rate: 1, symbol: "$" };
-        const rate = tempPayment.currency === baseCurrencyCode ? 1 : curr.rate;
-        const amountInBase = tempPayment.currency === baseCurrencyCode ? amount : amount / rate;
+        const rate = new Decimal(tempPayment.currency === baseCurrencyCode ? 1 : curr.rate);
+        const amountInBase = tempPayment.currency === baseCurrencyCode ? amount : amount.div(rate);
 
         const newP = {
             ...tempPayment,
-            amount,
-            exchangeRate: rate,
-            amountInBaseCurrency: amountInBase,
+            amount: amount.toNumber(),
+            exchangeRate: rate.toNumber(),
+            amountInBaseCurrency: amountInBase.toString(),
             symbol: curr.symbol,
             id: Date.now()
         };
@@ -257,7 +262,7 @@ const POSPage = () => {
         }
         setCart(cart.map(item =>
             item.product.id === productId
-                ? { ...item, quantity: newQuantity, subtotal: newQuantity * item.unitPrice }
+                ? { ...item, quantity: newQuantity, subtotal: new Decimal(newQuantity).times(item.unitPrice).toString() }
                 : item
         ));
     };
@@ -467,10 +472,10 @@ const POSPage = () => {
                                                 </div>
                                             </div>
                                             <div style={{ width: '20%' }} className="text-end fw-bold text-muted">
-                                                {baseCurrencySymbol}{item.unitPrice.toFixed(2)}
+                                                {baseCurrencySymbol}{new Decimal(item.unitPrice || 0).toFixed(2)}
                                             </div>
                                             <div style={{ width: '20%' }} className="text-end">
-                                                <span className="fw-bold text-primary fs-5">{baseCurrencySymbol}{item.subtotal.toFixed(2)}</span>
+                                                <span className="fw-bold text-primary fs-5">{baseCurrencySymbol}{new Decimal(item.subtotal || 0).toFixed(2)}</span>
                                                 <br/>
                                                 <OverlayTrigger overlay={<Tooltip>Eliminar producto del carrito</Tooltip>}>
                                                     <Button variant="link" className="text-danger p-0 x-small text-decoration-none" onClick={() => removeFromCart(item.product.id)}>
@@ -512,18 +517,23 @@ const POSPage = () => {
                                 </OverlayTrigger>
                             </div>
                             
-                            <div className="flex-grow-1 overflow-auto pe-2">
-                                <Row className="g-3">
+                                <div className="flex-grow-1 overflow-auto pe-1">
                                     {filteredProducts.map(p => (
-                                        <Col key={p.id} xs={6}>
-                                            <div className="pos-card-compact border rounded-4 p-3 bg-white hover-shadow transition-all" onClick={() => addProductToCartById(p)} style={{ cursor: 'pointer' }}>
-                                                <div className="fw-bold small text-truncate mb-1">{p.name}</div>
-                                                <div className="d-flex justify-content-between align-items-center">
-                                                    <span className="text-primary fw-bold">{baseCurrencySymbol}{p.price}</span>
-                                                    <Badge bg={p.stock > 5 ? "success-subtle" : "danger-subtle"} className={p.stock > 5 ? "text-success" : "text-danger"}>{p.stock}</Badge>
-                                                </div>
+                                        <div
+                                            key={p.id}
+                                            className="d-flex align-items-center justify-content-between border rounded-3 px-3 py-2 mb-2 bg-white hover-shadow"
+                                            style={{ cursor: 'pointer', transition: 'all 0.15s' }}
+                                            onClick={() => addProductToCartById(p)}
+                                        >
+                                            <div className="flex-grow-1 pe-3" style={{ minWidth: 0 }}>
+                                                <div className="fw-bold small text-truncate">{p.name}</div>
+                                                <div className="text-muted" style={{ fontSize: '0.7rem' }}>SKU: {p.sku}</div>
                                             </div>
-                                        </Col>
+                                            <div className="d-flex align-items-center gap-2 flex-shrink-0">
+                                                <span className="fw-bold text-primary small">{baseCurrencySymbol}{p.price}</span>
+                                                <Badge bg={p.stock > 5 ? 'success' : 'danger'} style={{ fontSize: '0.65rem' }}>{p.stock}</Badge>
+                                            </div>
+                                        </div>
                                     ))}
                                     {searchTerm && filteredProducts.length === 0 && (
                                         <div className="text-center py-5 text-muted">
@@ -531,8 +541,7 @@ const POSPage = () => {
                                             <p className="small">No se encontraron productos</p>
                                         </div>
                                     )}
-                                </Row>
-                            </div>
+                                </div>
 
                             {/* Discrete Total Summary */}
                             <div className="mt-4 pt-4 border-top">
@@ -603,7 +612,7 @@ const POSPage = () => {
                                         <div 
                                             className="progress-bar bg-success" 
                                             role="progressbar" 
-                                            style={{ width: `${(totalPaidInBase / total) * 100}%` }} 
+                                            style={{ width: `${(totalPaidInBase.div(total.gt(0) ? total : 1).times(100)).toNumber()}%` }} 
                                         ></div>
                                     </div>
                                     <div className="d-flex justify-content-between small">
@@ -686,7 +695,7 @@ const POSPage = () => {
                                                     <div className="text-white-50 x-small">{p.amount} {p.currency}</div>
                                                 </div>
                                                 <div className="d-flex align-items-center gap-3">
-                                                    <span className="balance-value paid small">{baseCurrencySymbol}{p.amountInBaseCurrency.toFixed(2)}</span>
+                                                    <span className="balance-value paid small">{baseCurrencySymbol}{new Decimal(p.amountInBaseCurrency || 0).toFixed(2)}</span>
                                                     <FaTrash 
                                                         size={12} 
                                                         className="text-danger cursor-pointer" 
@@ -701,17 +710,17 @@ const POSPage = () => {
                                             <span className="text-white-50 small">Total Pagado</span>
                                             <span className="fw-bold">{baseCurrencySymbol}{totalPaidInBase.toFixed(2)}</span>
                                         </div>
-                                        {totalPaidInBase > total && (
+                                        {totalPaidInBase.gt(total) && (
                                             <div className="d-flex justify-content-between text-info mb-4">
                                                 <span className="small fw-bold">VUELTO / CAMBIO</span>
-                                                <span className="fs-4 fw-black text-info">{baseCurrencySymbol}{(totalPaidInBase - total).toFixed(2)}</span>
+                                                <span className="fs-4 fw-black text-info">{baseCurrencySymbol}{totalPaidInBase.minus(total).toFixed(2)}</span>
                                             </div>
                                         )}
                                         <Button 
                                             variant="success" 
                                             size="lg" 
                                             className="w-100 py-3 rounded-pill fw-bold shadow-sm"
-                                            disabled={totalPaidInBase < total}
+                                            disabled={totalPaidInBase.lt(total)}
                                             onClick={handleCheckout}
                                         >
                                             COMPLETAR VENTA
@@ -796,9 +805,23 @@ const POSPage = () => {
                     </Modal.Body>
                 </Modal>
 
-                <ToastContainer position="top-center" className="p-3">
-                    <Toast show={showToast} onClose={() => setShowToast(false)} delay={2000} autohide className={`bg-${toastType} text-white rounded-pill border-0 shadow-lg px-3`}>
-                        <Toast.Body className="py-2 small fw-bold">{toastMessage}</Toast.Body>
+                <ToastContainer position="top-center" className="p-3" style={{ zIndex: 9999 }}>
+                    <Toast
+                        show={showToast}
+                        onClose={() => setShowToast(false)}
+                        delay={toastType === 'error' ? 4000 : 2500}
+                        autohide
+                        style={{
+                            background: toastType === 'error' ? '#f97316' : '#22c55e',
+                            border: 'none',
+                            borderRadius: '50px',
+                            boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
+                            minWidth: '280px'
+                        }}
+                    >
+                        <Toast.Body className="py-2 px-4 text-white fw-bold text-center" style={{ fontSize: '0.9rem', letterSpacing: '0.3px' }}>
+                            {toastMessage}
+                        </Toast.Body>
                     </Toast>
                 </ToastContainer>
             </div>

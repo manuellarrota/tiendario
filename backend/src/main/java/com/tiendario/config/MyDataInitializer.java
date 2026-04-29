@@ -54,6 +54,7 @@ public class MyDataInitializer implements CommandLineRunner {
             ensureGlobalConfig();
 
             // 2. Ensure Demo Managers & Customers
+            createSuperAdmin("admin", "Admin123!");
             createManager("manager_pro",  "Manager123!", "Ferretería Central",    SubscriptionStatus.PAID,  7.789354, -72.219738, "Av. 19 de Abril, San Cristóbal");
             createManager("manager_free", "Manager123!", "Minimarket El Rincón",  SubscriptionStatus.TRIAL, 7.792100, -72.215400, "Calle 5, Barrio Obrero, San Cristóbal");
             createCashier("cajero_pro",   "Cajero123!",  "Ferretería Central");

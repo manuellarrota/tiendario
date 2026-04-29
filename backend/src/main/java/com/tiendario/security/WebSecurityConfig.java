@@ -78,6 +78,7 @@ public class WebSecurityConfig {
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
                 .authorizeRequests().antMatchers("/api/auth/**").permitAll()
                 .antMatchers("/api/public/**").permitAll()
+                .antMatchers("/api/products/images/**").permitAll()
                 .anyRequest().authenticated();
 
         // Allow H2 console in dev (frames)

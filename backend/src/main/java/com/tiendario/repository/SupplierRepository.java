@@ -16,8 +16,8 @@ public interface SupplierRepository extends JpaRepository<Supplier, Long> {
     Page<Supplier> findByCompanyId(Long companyId, Pageable pageable);
 
     @Query("SELECT s FROM Supplier s WHERE s.company.id = :companyId AND (" +
-            "LOWER(s.name) LIKE LOWER(CONCAT('%', :q, '%')) OR " +
-            "LOWER(s.email) LIKE LOWER(CONCAT('%', :q, '%')) OR " +
-            "LOWER(s.phone) LIKE LOWER(CONCAT('%', :q, '%')))")
+            "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(LOWER(s.name), 'á', 'a'), 'é', 'e'), 'í', 'i'), 'ó', 'o'), 'ú', 'u') LIKE CONCAT('%', :q, '%') OR " +
+            "LOWER(s.email) LIKE CONCAT('%', :q, '%') OR " +
+            "LOWER(s.phone) LIKE CONCAT('%', :q, '%'))")
     Page<Supplier> findByCompanyIdAndSearch(@Param("companyId") Long companyId, @Param("q") String q, Pageable pageable);
 }

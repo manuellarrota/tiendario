@@ -42,6 +42,8 @@ public class AuthTokenFilter extends OncePerRequestFilter {
             } else if (jwt != null) {
                 logger.debug("JWT is invalid. Path: {}", request.getRequestURI());
             }
+        } catch (org.springframework.security.core.userdetails.UsernameNotFoundException e) {
+            logger.warn("Usuario no encontrado: {}", e.getMessage());
         } catch (Exception e) {
             logger.error("Cannot set user authentication: {}", e.getMessage(), e);
         }

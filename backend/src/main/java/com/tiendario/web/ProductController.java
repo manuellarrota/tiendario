@@ -48,6 +48,9 @@ public class ProductController {
     CatalogProductRepository catalogProductRepository;
 
     @Autowired
+    com.tiendario.repository.CatalogSuggestionRepository catalogSuggestionRepository;
+
+    @Autowired
     FileStorageService fileStorageService;
 
     @Autowired
@@ -143,7 +146,7 @@ public class ProductController {
     @GetMapping("/catalog-search")
     @PreAuthorize("hasRole('MANAGER') or hasRole('CASHIER')")
     public List<com.tiendario.domain.CatalogProduct> searchCatalog(@RequestParam String q) {
-        return catalogProductRepository.findByNameContainingIgnoreCase(q);
+        return catalogProductRepository.searchCatalog(com.tiendario.util.SearchUtils.normalize(q));
     }
 
     @GetMapping("/by-barcode/{barcode}")
@@ -193,7 +196,7 @@ public class ProductController {
 
             org.springframework.data.domain.Page<Product> pageProds = productRepository.findByCompanyIdAndSearch(
                     userDetails.getCompanyId(),
-                    (q != null ? q.trim().toLowerCase() : ""),
+                    (q != null ? com.tiendario.util.SearchUtils.normalize(q) : ""),
                     lowStock,
                     paging);
 
@@ -243,7 +246,6 @@ public class ProductController {
 
         }
 
-        // --- CATALOG UNIFICATION LOGIC ---
         com.tiendario.domain.CatalogProduct catalog = catalogProductRepository.findBySku(product.getSku()).orElse(null);
         if (catalog == null) {
             catalog = new com.tiendario.domain.CatalogProduct();
@@ -261,12 +263,30 @@ public class ProductController {
             }
             
             catalog = catalogProductRepository.save(catalog);
+        } else {
+            // Check if local differs from global catalog, if so suggest
+            boolean suggestsChange = false;
+            if (product.getName() != null && !product.getName().equals(catalog.getName())) suggestsChange = true;
+            if (product.getDescription() != null && !product.getDescription().equals(catalog.getDescription())) suggestsChange = true;
+            if (product.getImageUrl() != null && !product.getImageUrl().equals(catalog.getImageUrl())) suggestsChange = true;
+            
+            if (suggestsChange && product.getCompany() != null) {
+                com.tiendario.domain.CatalogSuggestion suggestion = new com.tiendario.domain.CatalogSuggestion();
+                suggestion.setCompanyId(product.getCompany().getId());
+                suggestion.setCompanyName(product.getCompany().getName());
+                suggestion.setCatalogProduct(catalog);
+                suggestion.setSuggestedName(product.getName());
+                suggestion.setSuggestedDescription(product.getDescription());
+                suggestion.setSuggestedImageUrl(product.getImageUrl());
+                suggestion.setStatus(com.tiendario.domain.SuggestionStatus.PENDING);
+                catalogSuggestionRepository.save(suggestion);
+            }
         }
         product.setCatalogProduct(catalog);
-        // Ensure local fields match catalog source of truth
-        product.setName(catalog.getName());
-        product.setDescription(catalog.getDescription());
-        product.setImageUrl(catalog.getImageUrl());
+        // Do NOT overwrite local fields with catalog anymore
+        // product.setName(catalog.getName());
+        // product.setDescription(catalog.getDescription());
+        // product.setImageUrl(catalog.getImageUrl());
 
         Product savedProduct = productRepository.save(product);
         log.info("🛒 [PRODUCTO] Usuario {} creó nuevo producto: '{}' (SKU: {})", 
@@ -322,25 +342,29 @@ public class ProductController {
             }
             catalog = catalogProductRepository.save(catalog);
         } else {
-            // If updating common info, we update the catalog (making it the source of truth for everyone)
-            catalog.setName(productDetails.getName());
-            catalog.setDescription(productDetails.getDescription());
-            catalog.setImageUrl(productDetails.getImageUrl());
+            boolean suggestsChange = false;
+            if (productDetails.getName() != null && !productDetails.getName().equals(catalog.getName())) suggestsChange = true;
+            if (productDetails.getDescription() != null && !productDetails.getDescription().equals(catalog.getDescription())) suggestsChange = true;
+            if (productDetails.getImageUrl() != null && !productDetails.getImageUrl().equals(catalog.getImageUrl())) suggestsChange = true;
             
-            // Map String category to Category entity
-            if (productDetails.getCategory() != null && !productDetails.getCategory().isEmpty()) {
-                com.tiendario.domain.Category cat = categoryRepository.findFirstByNameIgnoreCase(productDetails.getCategory().trim())
-                        .orElse(null);
-                catalog.setCategory(cat);
+            if (suggestsChange) {
+                com.tiendario.domain.CatalogSuggestion suggestion = new com.tiendario.domain.CatalogSuggestion();
+                suggestion.setCompanyId(product.getCompany().getId());
+                suggestion.setCompanyName(product.getCompany().getName());
+                suggestion.setCatalogProduct(catalog);
+                suggestion.setSuggestedName(productDetails.getName());
+                suggestion.setSuggestedDescription(productDetails.getDescription());
+                suggestion.setSuggestedImageUrl(productDetails.getImageUrl());
+                suggestion.setStatus(com.tiendario.domain.SuggestionStatus.PENDING);
+                catalogSuggestionRepository.save(suggestion);
             }
-            catalog = catalogProductRepository.save(catalog);
-
-            // Sync local fields too for compatibility
-            product.setName(catalog.getName());
-            product.setDescription(catalog.getDescription());
-            product.setImageUrl(catalog.getImageUrl());
         }
         product.setCatalogProduct(catalog);
+
+        // Update local fields with whatever the store manager requested
+        product.setName(productDetails.getName());
+        product.setDescription(productDetails.getDescription());
+        product.setImageUrl(productDetails.getImageUrl());
 
         product.setPrice(productDetails.getPrice());
         product.setCostPrice(productDetails.getCostPrice());

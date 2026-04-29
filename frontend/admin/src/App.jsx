@@ -26,6 +26,7 @@ import AdminConfigPage from './pages/AdminConfigPage';
 import AdminCatalogPage from './pages/AdminCatalogPage';
 import AdminOnboardingPage from './pages/AdminOnboardingPage';
 import AdminCategorySuggestionsPage from './pages/AdminCategorySuggestionsPage';
+import AdminCatalogSuggestionsPage from './pages/AdminCatalogSuggestionsPage';
 
 import RequireRole from './components/RequireRole';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -69,6 +70,7 @@ function App() {
             <Route path="/admin/users"      element={<AdminOnly><AdminUsersPage /></AdminOnly>} />
             <Route path="/admin/config"     element={<AdminOnly><AdminConfigPage /></AdminOnly>} />
             <Route path="/admin/catalog"    element={<AdminOnly><AdminCatalogPage /></AdminOnly>} />
+            <Route path="/admin/catalog-suggestions" element={<AdminOnly><AdminCatalogSuggestionsPage /></AdminOnly>} />
             <Route path="/admin/categories" element={<AdminOnly><AdminCategorySuggestionsPage /></AdminOnly>} />
             <Route path="/admin/onboarding" element={<AdminOnly><AdminOnboardingPage /></AdminOnly>} />
 

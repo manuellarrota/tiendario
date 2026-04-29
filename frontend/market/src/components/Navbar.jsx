@@ -13,6 +13,14 @@ const MarketplaceNavbar = ({ onLoginClick, onRegisterClick }) => {
     // Use email part as fallback for display name
     const displayName = user?.username || user?.email?.split('@')[0] || 'Mi Cuenta';
 
+    const getAdminUrl = () => {
+        const configured = import.meta.env.VITE_ADMIN_URL;
+        if (window.location.hostname.match(/^[0-9.]+$/) || window.location.hostname === 'localhost') {
+            return `${window.location.protocol}//${window.location.hostname}:8081`;
+        }
+        return configured || `${window.location.protocol}//${window.location.hostname}:8081`;
+    };
+
     const handleLogout = () => {
         AuthService.logout();
         navigate('/');
@@ -69,11 +77,11 @@ const MarketplaceNavbar = ({ onLoginClick, onRegisterClick }) => {
                                         </Dropdown.Item>
                                         
                                         {user.roles?.some(r => r === 'ROLE_MANAGER' || r === 'ROLE_ADMIN') ? (
-                                            <Dropdown.Item onClick={() => window.open(import.meta.env.VITE_ADMIN_URL || 'http://localhost:8081', '_blank')} className="rounded-3 py-2 fw-500">
+                                            <Dropdown.Item onClick={() => window.open(getAdminUrl(), '_blank')} className="rounded-3 py-2 fw-500">
                                                 🏢 Ir a Panel Administrativo
                                             </Dropdown.Item>
                                         ) : (
-                                            <Dropdown.Item onClick={() => window.open(`${import.meta.env.VITE_ADMIN_URL || 'http://localhost:8081'}/register`, '_blank')} className="rounded-3 py-2 fw-500 text-primary fw-bold">
+                                            <Dropdown.Item onClick={() => window.open(`${getAdminUrl()}?action=register`, '_blank')} className="rounded-3 py-2 fw-500 text-primary fw-bold">
                                                 🚀 ¡Quiero mi Tienda!
                                             </Dropdown.Item>
                                         )}
@@ -97,7 +105,7 @@ const MarketplaceNavbar = ({ onLoginClick, onRegisterClick }) => {
                             size="sm" 
                             className="rounded-pill px-4 py-2 border-0 shadow-sm fw-bold text-primary" 
                             style={{ backgroundColor: 'rgba(79, 70, 229, 0.05)' }}
-                            onClick={() => window.open(`${import.meta.env.VITE_ADMIN_URL || 'http://localhost:8081'}/register`, '_blank')}
+                            onClick={() => window.open(`${getAdminUrl()}?action=login`, '_blank')}
                         >
                             Soy Vendedor
                         </Button>

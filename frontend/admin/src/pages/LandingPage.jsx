@@ -2,32 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Container, Row, Col, Badge, Form, Button, Alert, Modal, Spinner } from 'react-bootstrap';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaCheck, FaTimes, FaRocket, FaStore, FaLock, FaUser, FaEnvelope, FaBolt, FaChartBar, FaMapMarkerAlt } from 'react-icons/fa';
-
 import AuthService from '../services/auth.service';
 import axios from 'axios';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-
-// Fix for Leaflet default icons in React
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
-
-const LocationMarker = ({ position, setPosition }) => {
-    useMapEvents({
-        click(e) {
-            setPosition(e.latlng);
-        },
-    });
-
-    return position === null ? null : (
-        <Marker position={position}></Marker>
-    );
-};
 
 const LandingPage = () => {
     const [username, setUsername] = useState("");
@@ -51,7 +27,9 @@ const LandingPage = () => {
     const [regPlan, setRegPlan] = useState("free");
     const [regPosition, setRegPosition] = useState(null);
     const [regAddress, setRegAddress] = useState("");
-    const mapRef = useRef();
+    const [isSearchingMap, setIsSearchingMap] = useState(false);
+    const [mapError, setMapError] = useState("");
+    const [debouncedAddressForMap, setDebouncedAddressForMap] = useState("");
 
     // Forgot Password State
     const [showForgotModal, setShowForgotModal] = useState(false);
@@ -127,14 +105,60 @@ const LandingPage = () => {
             setMessage(`❌ ${errorMsg}`);
             window.history.replaceState({}, '', '/');
         }
+
+        const action = searchParams.get('action');
+        if (action === 'register') {
+            setShowRegisterModal(true);
+            window.history.replaceState({}, '', '/');
+        } else if (action === 'login') {
+            setShowLoginModal(true);
+            window.history.replaceState({}, '', '/');
+        }
     }, [searchParams, navigate]);
 
-    // Relocate map effect when position changes
+
+    // Geocode address while typing (Debounced)
     useEffect(() => {
-        if (regPosition && mapRef.current) {
-            mapRef.current.setView([regPosition.lat, regPosition.lng], 16);
+        if (!regAddress || regAddress.length < 5) {
+            setMapError("");
+            setIsSearchingMap(false);
+            setDebouncedAddressForMap("");
+            return;
         }
-    }, [regPosition]);
+        
+        setIsSearchingMap(true);
+        setMapError("");
+
+        const timeoutId = setTimeout(() => {
+            // Update the map source only after user stops typing
+            setDebouncedAddressForMap(regAddress);
+
+            // Contextualize the search for better local results
+            const query = encodeURIComponent(`${regAddress}, Venezuela`);
+            axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`, {
+                headers: { 'Accept-Language': 'es' }
+            })
+                .then(response => {
+                    if (response.data && response.data.length > 0) {
+                        const { lat, lon } = response.data[0];
+                        const newPos = { lat: parseFloat(lat), lng: parseFloat(lon) };
+                        setRegPosition(newPos);
+                        setMapError("");
+                    } else {
+                        // Nominatim didn't find coords - iframe still shows the address fine
+                        setRegPosition(null);
+                    }
+                    setIsSearchingMap(false);
+                })
+                .catch(err => {
+                    console.warn('Geocoding silenced:', err);
+                    // Silently fail - user can still register with address text only
+                    setIsSearchingMap(false);
+                });
+        }, 1000);
+
+        return () => clearTimeout(timeoutId);
+    }, [regAddress]);
 
     const handleLogin = (e) => {
         e.preventDefault();
@@ -187,6 +211,8 @@ const LandingPage = () => {
     const openRegister = (planType = "free") => {
         setRegPlan(planType);
         setShowRegisterModal(true);
+        // Give the modal time to fully render before Leaflet calculates map dimensions
+        setTimeout(() => window.dispatchEvent(new Event('resize')), 300);
     };
 
     const handleForgotPassword = (e) => {
@@ -506,22 +532,33 @@ const LandingPage = () => {
 
                                 <Form.Group className="mb-4">
                                     <Form.Label>Punto en el Mapa (Ubicación GPS)</Form.Label>
-                                    <div style={{ height: '250px', width: '100%', borderRadius: '12px', overflow: 'hidden', border: '1px solid #dee2e6' }}>
-                                        <MapContainer
-                                            center={[10.4806, -66.9036]}
-                                            zoom={11}
-                                            style={{ height: '100%', width: '100%' }}
-                                            ref={mapRef}
-                                        >
-                                            <TileLayer
-                                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                                            />
-                                            <LocationMarker position={regPosition} setPosition={setRegPosition} />
-                                        </MapContainer>
+                                    <div style={{ position: 'relative', height: '280px', width: '100%', borderRadius: '12px', overflow: 'hidden', border: '1px solid #dee2e6', backgroundColor: '#f8f9fa' }}>
+                                        {debouncedAddressForMap.length >= 5 ? (
+                                            <>
+                                                <iframe
+                                                    width="100%"
+                                                    height="100%"
+                                                    style={{ border: 0, display: 'block' }}
+                                                    src={`https://maps.google.com/maps?q=${encodeURIComponent(debouncedAddressForMap + ', Venezuela')}&z=16&output=embed`}
+                                                    allowFullScreen
+                                                    loading="lazy"
+                                                    title="Ubicación de la tienda"
+                                                />
+                                                {isSearchingMap && (
+                                                    <div style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(255,255,255,0.9)', borderRadius: 8, padding: '4px 10px', fontSize: '0.75rem', color: '#6366f1', fontWeight: 600 }}>
+                                                        Buscando coordenadas...
+                                                    </div>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <div className="d-flex flex-column align-items-center justify-content-center h-100 text-center p-3 text-muted">
+                                                <FaMapMarkerAlt size={40} className="mb-2 opacity-50" />
+                                                <small>Escribe tu dirección arriba para verla en el mapa</small>
+                                            </div>
+                                        )}
                                     </div>
-                                    <small className="text-secondary mt-1 d-block">
-                                        Haz clic en el mapa para marcar tu ubicación exacta. {regPosition && <span className="text-success fw-bold">(Ubicación marcada ✓)</span>}
+                                    <small className="mt-1 d-block text-secondary">
+                                        {regPosition ? '📍 Ubicación GPS guardada ✓' : 'El mapa se actualizará mientras escribes tu dirección.'}
                                     </small>
                                 </Form.Group>
 

@@ -103,7 +103,7 @@ public class EmailService {
      */
     @Async
     public void sendNewOrderNotification(String storeEmail, String storeName,
-            String customerName, String orderSummary, double total) {
+            String customerName, String orderSummary, java.math.BigDecimal total) {
         String subject = "🛒 ¡Nueva orden recibida! — " + storeName;
         String html = buildNewOrderHtml(storeName, customerName, orderSummary, total);
         sendHtmlMessage(storeEmail, subject, html);
@@ -229,7 +229,7 @@ public class EmailService {
     }
 
     private String buildNewOrderHtml(String storeName, String customerName,
-            String orderSummary, double total) {
+            String orderSummary, java.math.BigDecimal total) {
         return "<!DOCTYPE html><html><body style='font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;'>"
                 + "<div style='background:linear-gradient(135deg,#059669,#10b981);padding:40px;border-radius:16px;text-align:center;color:white;'>"
                 + "<h1 style='margin:0 0 10px;font-size:28px;'>🛒 ¡Nueva Orden!</h1>"
@@ -241,7 +241,7 @@ public class EmailService {
                 + "<h3 style='margin:0 0 10px;'>📋 Detalle del Pedido</h3>"
                 + "<p style='white-space:pre-line;color:#374151;'>" + orderSummary + "</p>"
                 + "<hr style='border:none;border-top:1px solid #e5e7eb;'/>"
-                + "<p style='font-size:18px;font-weight:bold;color:#059669;'>Total: $" + String.format("%.2f", total)
+                + "<p style='font-size:18px;font-weight:bold;color:#059669;'>Total: $" + (total != null ? total.setScale(2, java.math.RoundingMode.HALF_UP).toString() : "0.00")
                 + "</p>"
                 + "</div>"
                 + "<p style='color:#6b7280;font-size:14px;'>Ingresa al <strong>Panel de Administración</strong> para gestionar esta orden.</p>"

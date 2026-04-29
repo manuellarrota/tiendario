@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import Decimal from 'decimal.js';
 import { Container, Row, Col, Table, Button, Form, Card, Alert, Modal, Image, Badge } from "react-bootstrap";
 import Sidebar from "../components/Sidebar";
 import Layout from "../components/Layout";
@@ -100,7 +101,7 @@ const NewPurchasePage = () => {
             product: product,
             quantity: parseInt(quantity),
             unitCost: parseFloat(unitCost),
-            total: parseInt(quantity) * parseFloat(unitCost)
+            total: new Decimal(quantity).times(unitCost).toNumber()
         };
 
         setCart([...cart, newItem]);
@@ -193,7 +194,7 @@ const NewPurchasePage = () => {
                 quantity: item.quantity,
                 unitCost: item.unitCost
             })),
-            total: cart.reduce((acc, item) => acc + item.total, 0)
+            total: cart.reduce((acc, item) => acc.plus(new Decimal(item.total)), new Decimal(0)).toNumber()
         };
 
         PurchaseService.create(purchaseData).then(
@@ -274,7 +275,7 @@ const NewPurchasePage = () => {
                             {cart.length === 0 && <p className="text-center text-muted my-3">Agrega productos a la orden</p>}
 
                             <div className="text-end mt-3">
-                                <h4>Total: ${cart.reduce((acc, item) => acc + item.total, 0)}</h4>
+                                <h4>Total: ${cart.reduce((acc, item) => acc.plus(new Decimal(item.total)), new Decimal(0)).toFixed(2)}</h4>
                             </div>
                         </Card>
                     </Col>

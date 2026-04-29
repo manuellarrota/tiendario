@@ -267,8 +267,8 @@ public class PublicController {
                     new MessageResponse("Seller cannot accept orders (Restricted Plan)"));
         }
 
-        Customer customer = customerRepository.findByEmailAndCompanyId(request.getCustomerEmail(), company.getId())
-                .orElse(new Customer());
+        List<Customer> existingCustomers = customerRepository.findByEmailAndCompanyId(request.getCustomerEmail(), company.getId());
+        Customer customer = existingCustomers.isEmpty() ? new Customer() : existingCustomers.get(0);
 
         if (customer.getId() == null) {
             customer.setCompany(company);
@@ -326,7 +326,7 @@ public class PublicController {
                     emailService.sendNewOrderNotification(
                             mgr.getEmail(), company.getName(),
                             request.getCustomerName(),
-                            orderSummary, sale.getTotalAmount().doubleValue());
+                            orderSummary, sale.getTotalAmount());
                 }
             }
         } catch (Exception e) {
@@ -402,17 +402,25 @@ public class PublicController {
     private PublicProductDTO mapToDTO(Product product, Double userLat, Double userLon) {
         PublicProductDTO dto = new PublicProductDTO();
         dto.setId(product.getId());
-        dto.setName(product.getName());
-        dto.setDescription(product.getDescription());
         dto.setPrice(product.getPrice());
         dto.setStock(product.getStock());
-        dto.setImageUrl(product.getImageUrl());
         dto.setSku(product.getSku());
         dto.setBrand(product.getBrand());
+
+        if (product.getCatalogProduct() != null) {
+            dto.setName(product.getCatalogProduct().getName() != null ? product.getCatalogProduct().getName() : product.getName());
+            dto.setDescription(product.getCatalogProduct().getDescription() != null ? product.getCatalogProduct().getDescription() : product.getDescription());
+            dto.setImageUrl(product.getCatalogProduct().getImageUrl() != null ? product.getCatalogProduct().getImageUrl() : product.getImageUrl());
+        } else {
+            dto.setName(product.getName());
+            dto.setDescription(product.getDescription());
+            dto.setImageUrl(product.getImageUrl());
+        }
 
         if (product.getCompany() != null) {
             dto.setCompanyId(product.getCompany().getId());
             dto.setCompanyName(product.getCompany().getName());
+            dto.setAddress(product.getCompany().getAddress());
             if (product.getCompany().getSubscriptionStatus() != null) {
                 dto.setSubscriptionStatus(product.getCompany().getSubscriptionStatus().name());
             } else {
@@ -420,6 +428,8 @@ public class PublicController {
             }
             dto.setRating(product.getCompany().getRating());
             dto.setRatingCount(product.getCompany().getRatingCount());
+            dto.setLatitude(product.getCompany().getLatitude());
+            dto.setLongitude(product.getCompany().getLongitude());
 
             // Calculate distance if both company and user coordinates are available
             if (userLat != null && userLon != null && product.getCompany().getLatitude() != 0.0) {

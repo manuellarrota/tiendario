@@ -38,13 +38,18 @@ public class ProductIndexService {
     }
 
     public List<Product> searchProducts(String query) {
+        String normalizedQuery = com.tiendario.util.SearchUtils.normalize(query);
         if (productSearchRepository != null) {
             try {
-                return productSearchRepository.findByNameContainingOrDescriptionContaining(query, query);
+                return productSearchRepository.findByNameContainingOrDescriptionContaining(normalizedQuery, normalizedQuery);
             } catch (Exception e) {
                 log.warn("Elasticsearch search failed: {}", e.getMessage());
-                return List.of();
             }
+        }
+        
+        // Fallback to database
+        if (productRepository != null) {
+            return productRepository.searchAllProducts(normalizedQuery);
         }
         return List.of();
     }

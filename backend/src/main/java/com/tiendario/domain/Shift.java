@@ -1,5 +1,7 @@
 package com.tiendario.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import lombok.Data;
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -15,10 +17,12 @@ public class Shift {
 
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private User user;
 
     @ManyToOne
     @JoinColumn(name = "company_id", nullable = false)
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private Company company;
 
     private LocalDateTime startTime;
