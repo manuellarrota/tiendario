@@ -13,6 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.ArrayList;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -37,7 +39,7 @@ public class ShiftService {
     }
 
     @Transactional
-    public Shift openShift(BigDecimal initialCash, UserDetailsImpl userDetails) {
+    public Shift openShift(BigDecimal initialCash, List<Map<String, Object>> rawOpeningDeclarations, UserDetailsImpl userDetails) {
         if (shiftRepository.findByUserIdAndStatus(userDetails.getId(), ShiftStatus.OPEN).isPresent()) {
             throw new RuntimeException("Ya tienes un turno de caja abierto.");
         }
@@ -51,18 +53,61 @@ public class ShiftService {
         shift.setStartTime(LocalDateTime.now());
         shift.setStatus(ShiftStatus.OPEN);
         shift.setInitialCash(initialCash != null ? initialCash : BigDecimal.ZERO);
+        shift.setDeclarations(new ArrayList<>());
+
+        if (rawOpeningDeclarations != null && !rawOpeningDeclarations.isEmpty()) {
+            BigDecimal totalInitialInBase = BigDecimal.ZERO;
+            for (Map<String, Object> decMap : rawOpeningDeclarations) {
+                ShiftDeclaration dec = new ShiftDeclaration();
+                dec.setShift(shift);
+                dec.setDeclarationType("OPENING");
+                
+                if (decMap.get("method") != null) {
+                    dec.setMethod(PaymentMethod.valueOf(decMap.get("method").toString()));
+                } else {
+                    dec.setMethod(PaymentMethod.CASH);
+                }
+                dec.setCurrencyCode(decMap.get("currencyCode") != null ? decMap.get("currencyCode").toString() : "USD");
+                dec.setDeclaredAmount(decMap.get("declaredAmount") != null ? new BigDecimal(decMap.get("declaredAmount").toString()) : BigDecimal.ZERO);
+                
+                if (decMap.get("exchangeRate") != null) {
+                    dec.setExchangeRate(new BigDecimal(decMap.get("exchangeRate").toString()));
+                }
+                if (decMap.get("amountInBaseCurrency") != null) {
+                    dec.setAmountInBaseCurrency(new BigDecimal(decMap.get("amountInBaseCurrency").toString()));
+                } else if (dec.getExchangeRate() != null && dec.getExchangeRate().compareTo(BigDecimal.ZERO) > 0) {
+                     dec.setAmountInBaseCurrency(dec.getDeclaredAmount().divide(dec.getExchangeRate(), 2, java.math.RoundingMode.HALF_UP));
+                } else {
+                     dec.setAmountInBaseCurrency(dec.getDeclaredAmount());
+                }
+                
+                shift.getDeclarations().add(dec);
+                totalInitialInBase = totalInitialInBase.add(dec.getAmountInBaseCurrency());
+            }
+            shift.setInitialCash(totalInitialInBase);
+        }
 
         shift = shiftRepository.save(shift);
         
-        log.info("[CAJA ABIERTA] Cajero: {} | Base Fija Inicial: ${} | Empresa: {}", 
-            user.getUsername(), shift.getInitialCash(), company.getName());
+        StringBuilder details = new StringBuilder();
+        if (shift.getDeclarations() != null && !shift.getDeclarations().isEmpty()) {
+            shift.getDeclarations().stream()
+                .filter(d -> "OPENING".equals(d.getDeclarationType()))
+                .forEach(d -> details.append(String.format("[%s: %s] ", d.getCurrencyCode(), d.getDeclaredAmount())));
+        } else {
+            details.append("[Solo Base]");
+        }
+        
+        log.info("[CAJA ABIERTA] Cajero: {} | Total Base Fija: ${} | Detalle: {} | Empresa: {}", 
+            user.getUsername(), shift.getInitialCash(), details.toString().trim(), company.getName());
 
         return shift;
     }
 
     @Transactional
     public Shift closeShift(Long shiftId, BigDecimal reportedCash, BigDecimal reportedCard, 
-                           BigDecimal reportedTransfer, BigDecimal reportedMobile, String observation,
+                           BigDecimal reportedTransfer, BigDecimal reportedMobile, 
+                           List<Map<String, Object>> rawDeclarations, String observation,
                            UserDetailsImpl userDetails) {
         
         Shift shift = shiftRepository.findById(shiftId)
@@ -132,13 +177,65 @@ public class ShiftService {
         shift.setStatus(ShiftStatus.CLOSED);
         shift.setObservation(observation);
 
+        if (shift.getDeclarations() == null) {
+            shift.setDeclarations(new ArrayList<>());
+        }
+        shift.getDeclarations().removeIf(d -> "CLOSING".equals(d.getDeclarationType()));
+
+        StringBuilder closeDetails = new StringBuilder();
+        BigDecimal calcReportedCash = BigDecimal.ZERO;
+        BigDecimal calcReportedCard = BigDecimal.ZERO;
+        BigDecimal calcReportedTransfer = BigDecimal.ZERO;
+        BigDecimal calcReportedMobile = BigDecimal.ZERO;
+
+        if (rawDeclarations != null) {
+            for (Map<String, Object> decMap : rawDeclarations) {
+                ShiftDeclaration dec = new ShiftDeclaration();
+                dec.setShift(shift);
+                if (decMap.get("method") != null) {
+                    dec.setMethod(PaymentMethod.valueOf(decMap.get("method").toString()));
+                } else {
+                    dec.setMethod(PaymentMethod.CASH);
+                }
+                dec.setCurrencyCode(decMap.get("currencyCode") != null ? decMap.get("currencyCode").toString() : "USD");
+                dec.setDeclaredAmount(decMap.get("declaredAmount") != null ? new BigDecimal(decMap.get("declaredAmount").toString()) : BigDecimal.ZERO);
+                
+                if (decMap.get("exchangeRate") != null) {
+                    dec.setExchangeRate(new BigDecimal(decMap.get("exchangeRate").toString()));
+                }
+                if (decMap.get("amountInBaseCurrency") != null) {
+                    dec.setAmountInBaseCurrency(new BigDecimal(decMap.get("amountInBaseCurrency").toString()));
+                } else if (dec.getExchangeRate() != null && dec.getExchangeRate().compareTo(BigDecimal.ZERO) > 0) {
+                     dec.setAmountInBaseCurrency(dec.getDeclaredAmount().divide(dec.getExchangeRate(), 2, java.math.RoundingMode.HALF_UP));
+                } else {
+                     dec.setAmountInBaseCurrency(dec.getDeclaredAmount()); // Fallback
+                }
+                
+                dec.setDeclarationType("CLOSING");
+                shift.getDeclarations().add(dec);
+                closeDetails.append(String.format("[%s-%s: %s] ", dec.getMethod(), dec.getCurrencyCode(), dec.getDeclaredAmount()));
+
+                switch (dec.getMethod()) {
+                    case CASH: calcReportedCash = calcReportedCash.add(dec.getAmountInBaseCurrency()); break;
+                    case CARD: calcReportedCard = calcReportedCard.add(dec.getAmountInBaseCurrency()); break;
+                    case TRANSFER: calcReportedTransfer = calcReportedTransfer.add(dec.getAmountInBaseCurrency()); break;
+                    case MOBILE_PAYMENT: calcReportedMobile = calcReportedMobile.add(dec.getAmountInBaseCurrency()); break;
+                }
+            }
+        }
+
+        shift.setReportedCash(reportedCash != null && reportedCash.compareTo(BigDecimal.ZERO) > 0 ? reportedCash : calcReportedCash);
+        shift.setReportedCard(reportedCard != null && reportedCard.compareTo(BigDecimal.ZERO) > 0 ? reportedCard : calcReportedCard);
+        shift.setReportedTransfer(reportedTransfer != null && reportedTransfer.compareTo(BigDecimal.ZERO) > 0 ? reportedTransfer : calcReportedTransfer);
+        shift.setReportedMobile(reportedMobile != null && reportedMobile.compareTo(BigDecimal.ZERO) > 0 ? reportedMobile : calcReportedMobile);
+
         shift = shiftRepository.save(shift);
 
         BigDecimal diffCash = shift.getReportedCash().subtract(shift.getExpectedCash());
         String diffType = diffCash.compareTo(BigDecimal.ZERO) < 0 ? "FALTANTE" : (diffCash.compareTo(BigDecimal.ZERO) > 0 ? "SOBRANTE" : "CUADRE EXACTO");
 
-        log.info("[CIERRE CAJA] Cajero: {} | Esperado EFECTIVO: ${} | Reportado: ${} | Diferencia: ${} ({}) | Vueltos dados: ${}", 
-            shift.getUser().getUsername(), shift.getExpectedCash(), shift.getReportedCash(), diffCash, diffType, shift.getTotalChangeGiven());
+        log.info("[CIERRE CAJA] Cajero: {} | Esperado EFECTIVO: ${} | Reportado: ${} | Diferencia: ${} ({}) | Detalle: {}", 
+            shift.getUser().getUsername(), shift.getExpectedCash(), shift.getReportedCash(), diffCash, diffType, closeDetails.length() > 0 ? closeDetails.toString().trim() : "Sin declaraciones");
 
         return shift;
     }

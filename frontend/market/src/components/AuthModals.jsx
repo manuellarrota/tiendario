@@ -96,6 +96,17 @@ export const RegisterModal = ({
                         required
                     />
                 </Form.Group>
+                <Form.Group className="mb-3">
+                    <Form.Label className="small fw-bold">Cédula / RIF</Form.Label>
+                    <Form.Control
+                        type="text"
+                        placeholder="V-12345678"
+                        className="py-2 rounded-3"
+                        value={registerData.cedula}
+                        onChange={(e) => setRegisterData({ ...registerData, cedula: e.target.value })}
+                        required
+                    />
+                </Form.Group>
                 <Form.Group className="mb-4">
                     <Form.Label className="small fw-bold">Contraseña</Form.Label>
                     <Form.Control

@@ -37,4 +37,9 @@ public class User {
 
     private String resetToken;
     private java.time.LocalDateTime resetTokenExpiry;
+
+    private String fullName;
+    private String cedula;
+    private String phone;
+    private String address;
 }

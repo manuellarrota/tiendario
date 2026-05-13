@@ -402,7 +402,8 @@ public class ProductController {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: Product not found or access denied."));
         }
 
-        log.info("Deleting product ID: {} (SKU: {}) for Company ID: {}", id, product.getSku(), userDetails.getCompanyId());
+        log.warn("[PRODUCTO ELIMINADO] Eliminado por: {} | Producto ID: {} | Nombre: '{}' | SKU: {} | Empresa ID: {}", 
+            userDetails.getUsername(), id, product.getName(), product.getSku(), userDetails.getCompanyId());
         productRepository.delete(product);
 
         // Remove from search engine

@@ -13,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
+import com.tiendario.security.UserDetailsImpl;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -247,6 +249,14 @@ public class PublicController {
     @PostMapping("/order")
     @Transactional
     public ResponseEntity<?> createOrder(@RequestBody PublicOrderRequest request) {
+        // Validate mandatory customer fields
+        if (request.getCustomerName() == null || request.getCustomerName().trim().isEmpty() ||
+            request.getCustomerCedula() == null || request.getCustomerCedula().trim().isEmpty() ||
+            request.getCustomerPhone() == null || request.getCustomerPhone().trim().isEmpty()) {
+            return ResponseEntity.badRequest()
+                    .body(new MessageResponse("Error: Nombre, cédula y teléfono son obligatorios para procesar el pedido."));
+        }
+
         if (request.getQuantity() == null || request.getQuantity() <= 0) {
             return ResponseEntity.badRequest()
                     .body(new MessageResponse("Error: Cantidad de productos inválida. Debe ser mayor a cero."));
@@ -267,16 +277,40 @@ public class PublicController {
                     new MessageResponse("Seller cannot accept orders (Restricted Plan)"));
         }
 
-        List<Customer> existingCustomers = customerRepository.findByEmailAndCompanyId(request.getCustomerEmail(), company.getId());
-        Customer customer = existingCustomers.isEmpty() ? new Customer() : existingCustomers.get(0);
-
-        if (customer.getId() == null) {
-            customer.setCompany(company);
-            customer.setEmail(request.getCustomerEmail());
+        Customer customer = null;
+        if (request.getCustomerEmail() != null && !request.getCustomerEmail().isEmpty()) {
+            List<Customer> existing = customerRepository.findByEmailAndCompanyId(request.getCustomerEmail(), company.getId());
+            if (!existing.isEmpty()) customer = existing.get(0);
         }
+
+        if (customer == null && request.getCustomerCedula() != null && !request.getCustomerCedula().isEmpty()) {
+            // Find by cedula if email search failed
+            customer = customerRepository.findAll().stream()
+                    .filter(c -> c.getCompany().getId().equals(company.getId()) &&
+                            request.getCustomerCedula().equalsIgnoreCase(c.getCedula()))
+                    .findFirst().orElse(null);
+        }
+
+        if (customer == null) {
+            customer = new Customer();
+            customer.setCompany(company);
+        }
+
+        // Link to global user if logged in
+        try {
+            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (principal instanceof UserDetailsImpl) {
+                customer.setUserId(((UserDetailsImpl) principal).getId());
+            }
+        } catch (Exception e) {
+            // Not logged in or anonymous
+        }
+
         // Always update contact info from latest order
         customer.setName(request.getCustomerName());
+        customer.setEmail(request.getCustomerEmail());
         customer.setPhone(request.getCustomerPhone());
+        customer.setCedula(request.getCustomerCedula());
         customer.setAddress(request.getCustomerAddress());
 
         customer = customerRepository.save(customer);
@@ -287,6 +321,7 @@ public class PublicController {
         sale.setCustomerName(request.getCustomerName());
         sale.setCustomerEmail(request.getCustomerEmail());
         sale.setCustomerPhone(request.getCustomerPhone());
+        sale.setCustomerCedula(request.getCustomerCedula());
         sale.setDate(LocalDateTime.now());
         sale.setStatus(SaleStatus.PENDING);
 
@@ -304,6 +339,10 @@ public class PublicController {
         productRepository.save(product);
 
         saleRepository.save(sale);
+
+        log.info("[PEDIDO MARKETPLACE] Nuevo pedido ID: {} | Cliente: {} | Cédula: {} | Email: {} | Empresa: {} | Total: ${}", 
+                sale.getId(), request.getCustomerName(), request.getCustomerCedula(), 
+                request.getCustomerEmail(), company.getName(), sale.getTotalAmount());
 
         // Create Notification for the seller
         Notification notification = new Notification();

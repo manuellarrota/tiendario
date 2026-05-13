@@ -33,7 +33,7 @@ const POSPage = () => {
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [customerSearch, setCustomerSearch] = useState("");
     const [showNewCustomerModal, setShowNewCustomerModal] = useState(false);
-    const [newCustomer, setNewCustomer] = useState({ name: "", cedula: "", phone: "", email: "" });
+    const [newCustomer, setNewCustomer] = useState({ name: "", cedula: "", phone: "", email: "", address: "" });
     const [showQuantityModal, setShowQuantityModal] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [inputQuantity, setInputQuantity] = useState('1');
@@ -47,13 +47,16 @@ const POSPage = () => {
     const [currentShift, setCurrentShift] = useState(null);
     const [showShiftOpeningModal, setShowShiftOpeningModal] = useState(false);
     const [showShiftClosingModal, setShowShiftClosingModal] = useState(false);
-    const [initialCash, setInitialCash] = useState("");
+    const [openingDeclarations, setOpeningDeclarations] = useState([]);
+    const [tempOpeningDeclaration, setTempOpeningDeclaration] = useState({ amount: "", currencyCode: "USD" });
     const [closingData, setClosingData] = useState({
-        reportedCash: "",
-        reportedCard: "",
-        reportedTransfer: "",
-        reportedMobile: "",
+        declarations: [],
         observation: ""
+    });
+    const [tempDeclaration, setTempDeclaration] = useState({
+        amount: "",
+        currencyCode: "USD",
+        method: "CASH"
     });
 
     const barcodeInputRef = useRef(null);
@@ -105,7 +108,7 @@ const POSPage = () => {
     };
 
     const total = useMemo(() => {
-        return cart.reduce((acc, item) => acc.plus(new Decimal(item.subtotal || 0)), new Decimal(0));
+        return cart.reduce((acc, item) => acc.plus(new Decimal(item.subtotal || 0)), new Decimal(0)).toDecimalPlaces(2);
     }, [cart]);
 
     // 4. BUSINESS LOGIC
@@ -124,21 +127,21 @@ const POSPage = () => {
                 }
                 return prev.map(item =>
                     item.product.id === foundProduct.id
-                        ? { ...item, quantity: item.quantity + qty, subtotal: new Decimal(item.quantity + qty).times(foundProduct.price).toString() }
+                        ? { ...item, quantity: item.quantity + qty, subtotal: new Decimal(item.quantity + qty).times(foundProduct.price).toDecimalPlaces(2).toString() }
                         : item
                 );
             }
-            const subtotal = new Decimal(qty).times(foundProduct.price).toString();
+            const subtotal = new Decimal(qty).times(foundProduct.price).toDecimalPlaces(2).toString();
             return [...prev, { product: foundProduct, quantity: qty, unitPrice: foundProduct.price, subtotal }];
         });
     }, [triggerToast]);
 
     const totalPaidInBase = useMemo(() => {
-        return payments.reduce((acc, p) => acc.plus(new Decimal(p.amountInBaseCurrency || 0)), new Decimal(0));
+        return payments.reduce((acc, p) => acc.plus(new Decimal(p.amountInBaseCurrency || 0)), new Decimal(0)).toDecimalPlaces(2);
     }, [payments]);
 
     const remainingToPay = useMemo(() => {
-        const res = total.minus(totalPaidInBase);
+        const res = total.minus(totalPaidInBase).toDecimalPlaces(2);
         return res.gt(0) ? res : new Decimal(0);
     }, [total, totalPaidInBase]);
 
@@ -161,6 +164,9 @@ const POSPage = () => {
             })),
             customer: selectedCustomer ? { id: selectedCustomer.id } : null,
             customerName: selectedCustomer ? selectedCustomer.name : (customerSearch.trim() || 'Cliente General'),
+            customerEmail: selectedCustomer ? selectedCustomer.email : null,
+            customerPhone: selectedCustomer ? selectedCustomer.phone : null,
+            customerCedula: selectedCustomer ? selectedCustomer.cedula : null,
             status: 'PAID',
             totalAmount: total.toNumber()
         };
@@ -186,9 +192,9 @@ const POSPage = () => {
 
         const newP = {
             ...tempPayment,
-            amount: amount.toNumber(),
+            amount: amount.toDecimalPlaces(2).toNumber(),
             exchangeRate: rate.toNumber(),
-            amountInBaseCurrency: amountInBase.toString(),
+            amountInBaseCurrency: amountInBase.toDecimalPlaces(2).toString(),
             symbol: curr.symbol,
             id: Date.now()
         };
@@ -262,7 +268,7 @@ const POSPage = () => {
         }
         setCart(cart.map(item =>
             item.product.id === productId
-                ? { ...item, quantity: newQuantity, subtotal: new Decimal(newQuantity).times(item.unitPrice).toString() }
+                ? { ...item, quantity: newQuantity, subtotal: new Decimal(newQuantity).times(item.unitPrice).toDecimalPlaces(2).toString() }
                 : item
         ));
     };
@@ -290,7 +296,7 @@ const POSPage = () => {
                 setCustomers(prev => [...prev, created]);
                 setSelectedCustomer(created);
                 setShowNewCustomerModal(false);
-                setNewCustomer({ name: "", cedula: "", phone: "", email: "" });
+                setNewCustomer({ name: "", cedula: "", phone: "", email: "", address: "" });
                 setCustomerSearch("");
                 triggerToast("✅ Cliente registrado.");
             } else {
@@ -324,33 +330,91 @@ const POSPage = () => {
     }, []);
 
     const handleOpenShift = () => {
-        const cash = parseFloat(initialCash) || 0;
-        ShiftService.openShift(cash).then(res => {
+        let finalDeclarations = [...openingDeclarations];
+        // Autocompletar si el usuario escribió un monto pero olvidó darle al botón '+'
+        if (tempOpeningDeclaration.amount && parseFloat(tempOpeningDeclaration.amount) > 0) {
+            finalDeclarations.push({ ...tempOpeningDeclaration, id: Date.now() });
+        }
+
+        if (finalDeclarations.length === 0) {
+            triggerToast("Por favor, ingresa al menos un monto para el fondo de caja.", "error");
+            return;
+        }
+
+        const payload = {
+            openingDeclarations: finalDeclarations.map(d => ({
+                method: "CASH",
+                currencyCode: d.currencyCode,
+                declaredAmount: parseFloat(d.amount),
+                exchangeRate: availableCurrencies.find(c => c.code === d.currencyCode)?.rate || 1
+            }))
+        };
+
+        ShiftService.openShift(0, payload).then(res => {
             setCurrentShift(res.data);
             setShowShiftOpeningModal(false);
             triggerToast("¡Caja abierta exitosamente!");
+            setOpeningDeclarations([]);
+            setTempOpeningDeclaration({ amount: "", currencyCode: "USD" });
         }).catch(err => triggerToast("Error al abrir caja", "error"));
     };
 
+    const addOpeningDeclaration = () => {
+        const amt = parseFloat(tempOpeningDeclaration.amount);
+        if (isNaN(amt) || amt <= 0) {
+            triggerToast("Monto inválido", "error");
+            return;
+        }
+        setOpeningDeclarations([...openingDeclarations, { ...tempOpeningDeclaration, id: Date.now() }]);
+        setTempOpeningDeclaration({ ...tempOpeningDeclaration, amount: "" });
+    };
+
+    const removeOpeningDeclaration = (id) => {
+        setOpeningDeclarations(openingDeclarations.filter(d => d.id !== id));
+    };
+
+    const addDeclaration = () => {
+        const amt = parseFloat(tempDeclaration.amount);
+        if (isNaN(amt) || amt <= 0) {
+            triggerToast("Monto inválido", "error");
+            return;
+        }
+        setClosingData({
+            ...closingData,
+            declarations: [...closingData.declarations, { ...tempDeclaration, id: Date.now() }]
+        });
+        setTempDeclaration({ ...tempDeclaration, amount: "" });
+    };
+
+    const removeDeclaration = (id) => {
+        setClosingData({
+            ...closingData,
+            declarations: closingData.declarations.filter(d => d.id !== id)
+        });
+    };
+
     const handleCloseShift = () => {
-        const { reportedCash, reportedCard, reportedTransfer, reportedMobile, observation } = closingData;
-        if (reportedCash === "" || reportedCard === "" || reportedTransfer === "" || reportedMobile === "" || observation.trim() === "") {
-            triggerToast("Todos los campos numéricos y la observación son obligatorios para cerrar la caja.", "error");
+        if (closingData.declarations.length === 0 && !window.confirm("¿Seguro que deseas cerrar la caja en CERO? No has declarado ningún monto.")) {
             return;
         }
 
-        if (parseFloat(reportedCash) < 0 || parseFloat(reportedCard) < 0 || parseFloat(reportedTransfer) < 0 || parseFloat(reportedMobile) < 0) {
-            triggerToast("Los montos no pueden ser negativos.", "error");
-            return;
-        }
+        const payload = {
+            declarations: closingData.declarations.map(d => ({
+                method: d.method,
+                currencyCode: d.currencyCode,
+                declaredAmount: parseFloat(d.amount),
+                exchangeRate: availableCurrencies.find(c => c.code === d.currencyCode)?.rate || 1
+            })),
+            observation: closingData.observation
+        };
 
-        ShiftService.closeShift(currentShift.id, closingData).then(() => {
+        ShiftService.closeShift(currentShift.id, payload).then(() => {
             triggerToast("Caja cerrada. Gracias por tu jornada.");
             setCurrentShift(null);
             setShowShiftClosingModal(false);
             setShowShiftOpeningModal(true); // Requiere abrir una nueva si quiere seguir
             // Reset form
-            setClosingData({ reportedCash: "", reportedCard: "", reportedTransfer: "", reportedMobile: "", observation: "" });
+            setClosingData({ declarations: [], observation: "" });
         }).catch(err => {
             const errorMsg = err.response && err.response.data && err.response.data.message ? err.response.data.message : "Error al cerrar caja";
             triggerToast(errorMsg, "error");
@@ -593,13 +657,15 @@ const POSPage = () => {
                     <Modal.Footer><Button variant="primary" onClick={confirmAddToCart}>Agregar</Button></Modal.Footer>
                 </Modal>
 
-                <Modal show={showNewCustomerModal} onHide={() => setShowNewCustomerModal(false)} centered>
+                    <Modal show={showNewCustomerModal} onHide={() => setShowNewCustomerModal(false)} centered>
                     <Modal.Header closeButton><Modal.Title>Nuevo Cliente</Modal.Title></Modal.Header>
                     <Form onSubmit={handleNewCustomerSubmit}>
                         <Modal.Body>
-                            <Form.Control className="mb-2" required placeholder="Nombre" value={newCustomer.name} onChange={e => setNewCustomer({ ...newCustomer, name: e.target.value })} />
-                            <Form.Control className="mb-2" placeholder="Cédula" value={newCustomer.cedula} onChange={e => setNewCustomer({ ...newCustomer, cedula: e.target.value })} />
-                            <Form.Control className="mb-2" placeholder="Teléfono" value={newCustomer.phone} onChange={e => setNewCustomer({ ...newCustomer, phone: e.target.value })} />
+                            <Form.Control className="mb-2" required placeholder="Nombre *" value={newCustomer.name} onChange={e => setNewCustomer({ ...newCustomer, name: e.target.value })} />
+                            <Form.Control className="mb-2" required placeholder="Cédula *" value={newCustomer.cedula} onChange={e => setNewCustomer({ ...newCustomer, cedula: e.target.value })} />
+                            <Form.Control className="mb-2" required placeholder="Teléfono *" value={newCustomer.phone} onChange={e => setNewCustomer({ ...newCustomer, phone: e.target.value })} />
+                            <Form.Control className="mb-2" type="email" placeholder="Email" value={newCustomer.email} onChange={e => setNewCustomer({ ...newCustomer, email: e.target.value })} />
+                            <Form.Control className="mb-2" as="textarea" rows={2} placeholder="Dirección" value={newCustomer.address} onChange={e => setNewCustomer({ ...newCustomer, address: e.target.value })} />
                         </Modal.Body>
                         <Modal.Footer><Button variant="primary" type="submit">Guardar</Button></Modal.Footer>
                     </Form>
@@ -754,20 +820,40 @@ const POSPage = () => {
                         <Modal.Title className="fw-black fs-3">Apertura de Caja</Modal.Title>
                     </Modal.Header>
                     <Modal.Body className="p-4">
-                        <p className="text-muted">Ingresa el monto de efectivo inicial (base) que tienes en la gaveta.</p>
-                        <Form.Group className="mb-3">
-                            <Form.Label className="fw-bold small">DINERO BASE ({baseCurrencySymbol})</Form.Label>
-                            <Form.Control 
-                                type="number" 
-                                size="lg" 
-                                placeholder="0.00" 
-                                className="fw-bold fs-4"
-                                value={initialCash}
-                                onChange={e => setInitialCash(e.target.value)}
-                                autoFocus
-                            />
-                        </Form.Group>
-                        <Button variant="primary" size="lg" className="w-100 py-3 rounded-4 fw-bold shadow" onClick={handleOpenShift}>
+                        <p className="text-muted">Ingresa el monto de efectivo inicial (base o sencillo) que tienes en la gaveta.</p>
+                        
+                        <Row className="g-2 mb-3 align-items-end">
+                            <Col md={5}>
+                                <Form.Label className="small fw-bold">Moneda</Form.Label>
+                                <Form.Select value={tempOpeningDeclaration.currencyCode} onChange={e => setTempOpeningDeclaration({...tempOpeningDeclaration, currencyCode: e.target.value})}>
+                                    <option value={baseCurrencyCode}>{baseCurrencyCode} ({baseCurrencySymbol})</option>
+                                    {availableCurrencies.filter(c => c.code !== baseCurrencyCode).map(c => <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>)}
+                                </Form.Select>
+                            </Col>
+                            <Col md={5}>
+                                <Form.Label className="small fw-bold">Monto Efectivo</Form.Label>
+                                <Form.Control type="number" min="0" step="0.01" value={tempOpeningDeclaration.amount} onChange={e => setTempOpeningDeclaration({...tempOpeningDeclaration, amount: e.target.value})} placeholder="Ej: 50.00" />
+                            </Col>
+                            <Col md={2}>
+                                <Button variant="primary" className="w-100" onClick={addOpeningDeclaration}><FaPlus /></Button>
+                            </Col>
+                        </Row>
+
+                        {openingDeclarations.length > 0 && (
+                            <ListGroup className="mb-3">
+                                {openingDeclarations.map(dec => (
+                                    <ListGroup.Item key={dec.id} className="d-flex justify-content-between align-items-center bg-light border-0 mb-1 rounded-3">
+                                        <div>
+                                            <Badge bg="info" className="me-2">{dec.currencyCode}</Badge>
+                                            <span className="fw-bold">{parseFloat(dec.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                        </div>
+                                        <Button variant="outline-danger" size="sm" className="border-0" onClick={() => removeOpeningDeclaration(dec.id)}><FaTrash /></Button>
+                                    </ListGroup.Item>
+                                ))}
+                            </ListGroup>
+                        )}
+
+                        <Button variant="primary" size="lg" className="w-100 py-3 rounded-4 fw-bold shadow mt-2" onClick={handleOpenShift}>
                             ABRIR CAJA Y EMPEZAR
                         </Button>
                     </Modal.Body>
@@ -779,40 +865,69 @@ const POSPage = () => {
                     </Modal.Header>
                     <Modal.Body className="p-4">
                         <div className="alert alert-warning small">
-                            <strong>Atención:</strong> Ingresa el conteo físico de lo que tienes en este momento. El sistema comparará estos datos con lo registrado automáticamente.
+                            <strong>Atención:</strong> Ingresa el conteo físico de lo que tienes en este momento. Agrega cada monto según su moneda y método.
                         </div>
-                        <Row className="g-3">
-                            <Col md={6}>
-                                <Form.Group>
-                                    <Form.Label className="small fw-bold">Efectivo Total ({baseCurrencySymbol})</Form.Label>
-                                    <Form.Control type="number" min="0" step="0.01" value={closingData.reportedCash} onChange={e => setClosingData({...closingData, reportedCash: e.target.value})} placeholder="Cuenta los billetes..." />
-                                </Form.Group>
+                        <div className="mb-3 bg-light p-2 rounded border">
+                            <span className="fw-bold small text-muted d-block mb-2">Fondo de Caja (Saldo Inicial):</span>
+                            {currentShift?.declarations?.filter(d => d.declarationType === 'OPENING').length > 0 ? (
+                                currentShift.declarations.filter(d => d.declarationType === 'OPENING').map(d => (
+                                    <div key={d.id} className="d-flex justify-content-between align-items-center border-bottom pb-1 mb-1">
+                                        <Badge bg="info">{d.currencyCode}</Badge>
+                                        <span className="fw-black text-primary">{parseFloat(d.declaredAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="d-flex justify-content-between align-items-center">
+                                    <span className="small text-muted">Total (Base):</span>
+                                    <span className="fw-black text-primary fs-5">{baseCurrencySymbol}{currentShift?.initialCash?.toFixed(2) || '0.00'}</span>
+                                </div>
+                            )}
+                        </div>
+                        <Row className="g-2 mb-3 align-items-end">
+                            <Col md={3}>
+                                <Form.Label className="small fw-bold">Método</Form.Label>
+                                <Form.Select value={tempDeclaration.method} onChange={e => setTempDeclaration({...tempDeclaration, method: e.target.value})}>
+                                    <option value="CASH">Efectivo</option>
+                                    <option value="CARD">Tarjeta / Punto</option>
+                                    <option value="TRANSFER">Transferencia</option>
+                                    <option value="MOBILE_PAYMENT">Pago Móvil</option>
+                                </Form.Select>
                             </Col>
-                            <Col md={6}>
-                                <Form.Group>
-                                    <Form.Label className="small fw-bold">Total Tarjeta/Punto ({baseCurrencySymbol})</Form.Label>
-                                    <Form.Control type="number" min="0" step="0.01" value={closingData.reportedCard} onChange={e => setClosingData({...closingData, reportedCard: e.target.value})} placeholder="Suma los vouchers..." />
-                                </Form.Group>
+                            <Col md={3}>
+                                <Form.Label className="small fw-bold">Moneda</Form.Label>
+                                <Form.Select value={tempDeclaration.currencyCode} onChange={e => setTempDeclaration({...tempDeclaration, currencyCode: e.target.value})}>
+                                    <option value={baseCurrencyCode}>{baseCurrencyCode} ({baseCurrencySymbol})</option>
+                                    {availableCurrencies.filter(c => c.code !== baseCurrencyCode).map(c => <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>)}
+                                </Form.Select>
                             </Col>
-                            <Col md={6}>
-                                <Form.Group>
-                                    <Form.Label className="small fw-bold">Total Transferencias ({baseCurrencySymbol})</Form.Label>
-                                    <Form.Control type="number" min="0" step="0.01" value={closingData.reportedTransfer} onChange={e => setClosingData({...closingData, reportedTransfer: e.target.value})} placeholder="Revisa el banco..." />
-                                </Form.Group>
+                            <Col md={4}>
+                                <Form.Label className="small fw-bold">Monto</Form.Label>
+                                <Form.Control type="number" min="0" step="0.01" value={tempDeclaration.amount} onChange={e => setTempDeclaration({...tempDeclaration, amount: e.target.value})} placeholder="Ej: 150.00" />
                             </Col>
-                            <Col md={6}>
-                                <Form.Group>
-                                    <Form.Label className="small fw-bold">Total Pago Móvil ({baseCurrencySymbol})</Form.Label>
-                                    <Form.Control type="number" min="0" step="0.01" value={closingData.reportedMobile} onChange={e => setClosingData({...closingData, reportedMobile: e.target.value})} placeholder="Revisa el cel..." />
-                                </Form.Group>
-                            </Col>
-                            <Col md={12}>
-                                <Form.Group>
-                                    <Form.Label className="small fw-bold">Observaciones / Novedades</Form.Label>
-                                    <Form.Control as="textarea" rows={2} value={closingData.observation} onChange={e => setClosingData({...closingData, observation: e.target.value})} placeholder="¿Alguna novedad en el turno?" />
-                                </Form.Group>
+                            <Col md={2}>
+                                <Button variant="primary" className="w-100" onClick={addDeclaration}><FaPlus /></Button>
                             </Col>
                         </Row>
+                        {closingData.declarations.length > 0 && (
+                            <ListGroup className="mb-3">
+                                {closingData.declarations.map(dec => (
+                                    <ListGroup.Item key={dec.id} className="d-flex justify-content-between align-items-center bg-light border-0 mb-1 rounded-3">
+                                        <div>
+                                            <Badge bg="secondary" className="me-2">{dec.method}</Badge>
+                                            <Badge bg="info" className="me-2">{dec.currencyCode}</Badge>
+                                            <span className="fw-bold">{parseFloat(dec.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                        </div>
+                                        <Button variant="outline-danger" size="sm" className="border-0" onClick={() => removeDeclaration(dec.id)}><FaTrash /></Button>
+                                    </ListGroup.Item>
+                                ))}
+                            </ListGroup>
+                        )}
+                        <Col md={12}>
+                            <Form.Group>
+                                <Form.Label className="small fw-bold">Observaciones / Novedades</Form.Label>
+                                <Form.Control as="textarea" rows={2} value={closingData.observation} onChange={e => setClosingData({...closingData, observation: e.target.value})} placeholder="¿Alguna novedad en el turno?" />
+                            </Form.Group>
+                        </Col>
                         <div className="mt-4">
                             <Button variant="danger" size="lg" className="w-100 py-3 fw-bold rounded-4 shadow" onClick={handleCloseShift}>
                                 FINALIZAR TURNO Y ENVIAR REPORTE

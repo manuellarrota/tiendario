@@ -19,6 +19,7 @@ public class Customer {
     private String phone;
     private String cedula;
     private String address;
+    private Long userId; // Linked global user
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")

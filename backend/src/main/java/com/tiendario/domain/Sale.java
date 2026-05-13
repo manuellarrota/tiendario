@@ -48,6 +48,7 @@ public class Sale {
     private String customerName; // For POS quick sales
     private String customerEmail; // For marketplace order notifications
     private String customerPhone; // Optional contact number
+    private String customerCedula; // For legal registration
 
     // Multi-currency payment tracking
     private String paymentCurrency; // e.g., "USD", "COP", "VES"

@@ -12,6 +12,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.tiendario.repository.CustomerRepository;
+import com.tiendario.domain.Customer;
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -19,16 +22,19 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final CompanyRepository companyRepository;
+    private final CustomerRepository customerRepository;
     private final PasswordEncoder encoder;
     private final EmailService emailService;
 
     @Autowired
     public AuthService(UserRepository userRepository,
             CompanyRepository companyRepository,
+            CustomerRepository customerRepository,
             PasswordEncoder encoder,
             EmailService emailService) {
         this.userRepository = userRepository;
         this.companyRepository = companyRepository;
+        this.customerRepository = customerRepository;
         this.encoder = encoder;
         this.emailService = emailService;
     }
@@ -50,6 +56,12 @@ public class AuthService {
         user.setEmail(signUpRequest.getEmail());
         user.setEnabled(false); // Creating inactive user
         user.setVerificationCode(java.util.UUID.randomUUID().toString());
+
+        // Profile fields
+        user.setFullName(signUpRequest.getFullName());
+        user.setCedula(signUpRequest.getCedula());
+        user.setPhone(signUpRequest.getPhoneNumber());
+        user.setAddress(signUpRequest.getAddress());
 
         Set<String> strRoles = signUpRequest.getRole();
         String roleStr = (strRoles != null && !strRoles.isEmpty()) ? strRoles.iterator().next() : "client";
@@ -92,10 +104,37 @@ public class AuthService {
 
         userRepository.save(user);
 
+        // Link to existing customer records in any store
+        linkUserToExistingCustomers(user);
+
         if (!user.isEnabled()) {
             emailService.sendVerificationEmail(user.getEmail(), user.getVerificationCode(), customBackendUrl);
         }
 
         return user;
+    }
+
+    private void linkUserToExistingCustomers(User user) {
+        // Link by Email
+        if (user.getEmail() != null && !user.getEmail().isBlank()) {
+            List<Customer> byEmail = customerRepository.findByEmail(user.getEmail());
+            for (Customer c : byEmail) {
+                if (c.getUserId() == null) {
+                    c.setUserId(user.getId());
+                    customerRepository.save(c);
+                }
+            }
+        }
+
+        // Link by Cedula
+        if (user.getCedula() != null && !user.getCedula().isBlank()) {
+            List<Customer> byCedula = customerRepository.findByCedula(user.getCedula());
+            for (Customer c : byCedula) {
+                if (c.getUserId() == null) {
+                    c.setUserId(user.getId());
+                    customerRepository.save(c);
+                }
+            }
+        }
     }
 }

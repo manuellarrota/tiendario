@@ -111,7 +111,12 @@ public class AuthController {
                                                         ? companyRepository.findById(userDetails.getCompanyId()).get()
                                                                         .getSubscriptionStatus()
                                                                         .toString()
-                                                        : "TRIAL"));
+                                                        : "TRIAL",
+                                        userDetails.getEmail(),
+                                        userDetails.getFullName(),
+                                        userDetails.getPhone(),
+                                        userDetails.getCedula(),
+                                        userDetails.getAddress()));
                 } catch (DisabledException e) {
                         logger.warn("Login failed: User '{}' is disabled", loginRequest.getUsername());
                         rateLimiter.recordFailedAttempt(clientIp);
@@ -163,14 +168,22 @@ public class AuthController {
                 String subscriptionStatus = (user.getCompany() != null)
                                 ? user.getCompany().getSubscriptionStatus().toString()
                                 : "TRIAL";
+                java.util.function.Function<String, String> enc = v -> {
+                    try { return java.net.URLEncoder.encode(v != null ? v : "", "UTF-8"); }
+                    catch (Exception e) { return ""; }
+                };
                 return ResponseEntity.status(org.springframework.http.HttpStatus.FOUND)
-                                .location(java.net.URI.create(frontendUrl + "/?verified=true&token=" + jwt +
-                                                "&username=" + user.getUsername() +
-                                                "&roles=" + roles +
+                                .location(java.net.URI.create(frontendUrl + "/?verified=true&token=" + enc.apply(jwt) +
+                                                "&username=" + enc.apply(user.getUsername()) +
+                                                "&roles=" + enc.apply(roles) +
                                                 "&id=" + user.getId() +
+                                                "&name=" + enc.apply(user.getFullName()) +
+                                                "&phone=" + enc.apply(user.getPhone()) +
+                                                "&cedula=" + enc.apply(user.getCedula()) +
+                                                "&address=" + enc.apply(user.getAddress()) +
                                                 "&companyId="
                                                 + (user.getCompany() != null ? user.getCompany().getId() : "") +
-                                                "&subscriptionStatus=" + subscriptionStatus))
+                                                "&subscriptionStatus=" + enc.apply(subscriptionStatus)))
                                 .build();
         }
 
@@ -258,7 +271,7 @@ public class AuthController {
         }
 
         @PostMapping("/reset-password")
-        public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request) {
+        public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request, javax.servlet.http.HttpServletRequest httpRequest) {
                 String token = request.get("token");
                 String newPassword = request.get("newPassword");
 
@@ -288,6 +301,9 @@ public class AuthController {
                 user.setResetToken(null);
                 user.setResetTokenExpiry(null);
                 userRepository.save(user);
+
+                logger.info("[PASSWORD RESET] Contraseña restablecida para el usuario: {} | IP: {}", 
+                        user.getUsername(), getClientIp(httpRequest));
 
                 return ResponseEntity.ok(
                                 new MessageResponse("Contraseña restablecida exitosamente. Ya puedes iniciar sesión."));

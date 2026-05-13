@@ -4,6 +4,8 @@ import com.tiendario.domain.Shift;
 import com.tiendario.payload.response.MessageResponse;
 import com.tiendario.security.UserDetailsImpl;
 import com.tiendario.service.ShiftService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,6 +19,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/shifts")
 public class ShiftController {
+
+    private static final Logger log = LoggerFactory.getLogger(ShiftController.class);
 
     @Autowired
     private ShiftService shiftService;
@@ -41,7 +45,15 @@ public class ShiftController {
             initialCash = new BigDecimal(initialCashObj.toString());
         }
         
-        return ResponseEntity.ok(shiftService.openShift(initialCash, userDetails));
+        List<Map<String, Object>> openingDeclarations = null;
+        if (payload.get("openingDeclarations") != null) {
+            openingDeclarations = (List<Map<String, Object>>) payload.get("openingDeclarations");
+        }
+        
+        Shift openedShift = shiftService.openShift(initialCash, openingDeclarations, userDetails);
+        log.info("[TURNO ABIERTO] Usuario: {} | Caja Inicial: ${} | Empresa ID: {} | Turno ID: {}",
+            userDetails.getUsername(), initialCash, userDetails.getCompanyId(), openedShift.getId());
+        return ResponseEntity.ok(openedShift);
     }
 
     @PostMapping("/{id}/close")
@@ -54,8 +66,12 @@ public class ShiftController {
         BigDecimal reportedTransfer = payload.get("reportedTransfer") != null ? new BigDecimal(payload.get("reportedTransfer").toString()) : BigDecimal.ZERO;
         BigDecimal reportedMobile = payload.get("reportedMobile") != null ? new BigDecimal(payload.get("reportedMobile").toString()) : BigDecimal.ZERO;
         String observation = (String) payload.get("observation");
+        List<Map<String, Object>> declarations = (List<Map<String, Object>>) payload.get("declarations");
 
-        return ResponseEntity.ok(shiftService.closeShift(id, reportedCash, reportedCard, reportedTransfer, reportedMobile, observation, userDetails));
+        Shift closedShift = shiftService.closeShift(id, reportedCash, reportedCard, reportedTransfer, reportedMobile, declarations, observation, userDetails);
+        log.info("[TURNO CERRADO] Usuario: {} | Turno ID: {} | Empresa ID: {} | Efectivo Base: ${} | Dec: {}",
+            userDetails.getUsername(), id, userDetails.getCompanyId(), reportedCash, (declarations != null ? declarations.size() : 0));
+        return ResponseEntity.ok(closedShift);
     }
 
     @PostMapping("/{id}/verify")

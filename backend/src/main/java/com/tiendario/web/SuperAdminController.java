@@ -5,6 +5,8 @@ import com.tiendario.payload.response.MessageResponse;
 import com.tiendario.repository.*;
 import com.tiendario.service.EmailService;
 import com.tiendario.service.SubscriptionService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,6 +23,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/superadmin")
 public class SuperAdminController {
+
+        private static final Logger log = LoggerFactory.getLogger(SuperAdminController.class);
 
         @Autowired
         CompanyRepository companyRepository;
@@ -168,6 +172,8 @@ public class SuperAdminController {
                         try {
                                 company.setSubscriptionStatus(SubscriptionStatus.valueOf(newStatus));
                                 companyRepository.save(company);
+                                log.info("[SUSCRIPCIÓN ACTUALIZADA] Estado: {} | Empresa: {} (ID: {})", 
+                                        newStatus, company.getName(), company.getId());
                                 return ResponseEntity
                                                 .ok(new MessageResponse(
                                                                 "Subscription updated successfully!"));
@@ -197,6 +203,7 @@ public class SuperAdminController {
         @PreAuthorize("hasRole('ADMIN')")
         public ResponseEntity<?> approvePayment(@PathVariable Long id) {
                 subscriptionService.approvePayment(id);
+                log.info("[PAGO APROBADO] Pago ID: {} aprobado por SuperAdmin", id);
                 return ResponseEntity.ok(
                                 new MessageResponse("Payment approved successfully"));
         }
@@ -206,6 +213,7 @@ public class SuperAdminController {
         public ResponseEntity<?> rejectPayment(@PathVariable Long id, @RequestBody Map<String, String> request) {
                 String reason = request.get("reason");
                 subscriptionService.rejectPayment(id, reason);
+                log.warn("[PAGO RECHAZADO] Pago ID: {} rechazado por SuperAdmin | Razón: {}", id, reason);
                 return ResponseEntity.ok(new MessageResponse("Payment rejected"));
         }
 
@@ -216,6 +224,8 @@ public class SuperAdminController {
                                 .orElseThrow(() -> new RuntimeException("User not found"));
                 user.setEnabled(!user.isEnabled());
                 userRepository.save(user);
+                log.warn("[USUARIO TOGGLE] Usuario: {} | Nuevo estado: {} | Acción por SuperAdmin", 
+                        user.getUsername(), user.isEnabled() ? "HABILITADO" : "DESHABILITADO");
                 return ResponseEntity.ok(new MessageResponse(
                                 "User " + (user.isEnabled() ? "enabled" : "disabled") + " successfully"));
         }
@@ -356,6 +366,9 @@ public class SuperAdminController {
                         user.setCompany(company);
                         userRepository.save(user);
 
+                        log.info("[TIENDA ONBOARDING] Nueva tienda: {} | Gestor: {} | Plan: {} | Empresa ID: {}", 
+                                company.getName(), user.getUsername(), plan, company.getId());
+
                         // Enviar credenciales
                         try {
                                 emailService.sendStoreCredentials(email, company.getName(), username, password);
@@ -369,7 +382,6 @@ public class SuperAdminController {
                         result.put("companyName", company.getName());
                         result.put("message", "Tienda creada exitosamente.");
                         return ResponseEntity.ok(result);
-
                 } catch (org.springframework.dao.DataIntegrityViolationException e) {
                         String cause = e.getMostSpecificCause().getMessage().toLowerCase();
                         String friendlyMsg;
@@ -380,7 +392,7 @@ public class SuperAdminController {
                         } else {
                                 friendlyMsg = "Error: Ya existe una tienda o usuario con esos datos. Verifica el correo y usuario.";
                         }
-                        logger.error("createStore constraint violation for user '{}': {}", username, cause);
+                        log.error("createStore constraint violation for user '{}': {}", username, cause);
                         return ResponseEntity.badRequest().body(new MessageResponse(friendlyMsg));
                 }
         }

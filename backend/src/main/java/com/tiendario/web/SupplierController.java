@@ -4,6 +4,8 @@ import com.tiendario.domain.Supplier;
 import com.tiendario.repository.CompanyRepository;
 import com.tiendario.repository.SupplierRepository;
 import com.tiendario.security.UserDetailsImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,6 +17,8 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/suppliers")
 public class SupplierController {
+
+    private static final Logger log = LoggerFactory.getLogger(SupplierController.class);
     @Autowired
     SupplierRepository supplierRepository;
 
@@ -58,12 +62,22 @@ public class SupplierController {
 
     @PostMapping
     @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<Supplier> createSupplier(@RequestBody Supplier supplier) {
+    public ResponseEntity<?> createSupplier(@RequestBody Supplier supplier) {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
+        if (supplier.getTaxId() != null && !supplier.getTaxId().trim().isEmpty()) {
+            if (supplierRepository.existsByCompanyIdAndTaxId(userDetails.getCompanyId(), supplier.getTaxId())) {
+                return ResponseEntity.badRequest().body(new com.tiendario.payload.response.MessageResponse("Error: Ya existe un proveedor registrado con este RIF/Identificación Fiscal."));
+            }
+        }
+
         supplier.setCompany(companyRepository.findById(userDetails.getCompanyId()).orElse(null));
         Supplier savedSupplier = supplierRepository.save(supplier);
+
+        log.info("[NUEVO PROVEEDOR] Registrado por: {} | Nombre: {} | RIF/TaxId: {} | Teléfono: {} | Email: {} | Empresa ID: {}",
+            userDetails.getUsername(), savedSupplier.getName(), savedSupplier.getTaxId(),
+            savedSupplier.getPhone(), savedSupplier.getEmail(), userDetails.getCompanyId());
 
         return ResponseEntity.ok(savedSupplier);
     }

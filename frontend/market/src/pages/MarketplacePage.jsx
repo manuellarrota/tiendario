@@ -28,7 +28,7 @@ const MarketplacePage = () => {
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [activeTab, setActiveTab] = useState('all');
     const [customerData, setCustomerData] = useState({
-        name: '', email: '', phone: '', address: '', quantity: 1, paymentMethod: 'credit_card'
+        name: '', email: '', phone: '', address: '', cedula: '', quantity: 1, paymentMethod: 'credit_card'
     });
     const [orderStatus, setOrderStatus] = useState({ loading: false, success: false, error: '' });
     const [userPoints, setUserPoints] = useState(0);
@@ -62,6 +62,29 @@ const MarketplacePage = () => {
     const [userLocation, setUserLocation] = useState(null);
     const [locationAllowed, setLocationAllowed] = useState(false);
     const user = AuthService.getCurrentUser();
+
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const verified = params.get('verified');
+        const token = params.get('token');
+        
+        if (verified === 'true' && token) {
+            const userData = {
+                token,
+                id: params.get('id'),
+                username: params.get('username'),
+                roles: params.get('roles')?.split(',') || [],
+                name: params.get('name'),
+                phone: params.get('phone'),
+                cedula: params.get('cedula'),
+                address: params.get('address')
+            };
+            localStorage.setItem("customer", JSON.stringify(userData));
+            // Remove params from URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+            window.location.reload();
+        }
+    }, []);
 
     useEffect(() => {
         if (user && user.email) {
@@ -292,7 +315,8 @@ const MarketplacePage = () => {
             name: user.name || user.username || '',
             email: user.email || '',
             phone: user.phone || '',
-            address: '',
+            cedula: user.cedula || '',
+            address: user.address || '',
             quantity: 1,
             paymentMethod: 'credit_card'
         });
@@ -331,6 +355,7 @@ const MarketplacePage = () => {
                     customerName: customerData.name,
                     customerEmail: customerData.email,
                     customerPhone: customerData.phone || '',
+                    customerCedula: customerData.cedula || '',
                     customerAddress: customerData.address
                 })
             );
@@ -384,7 +409,7 @@ const MarketplacePage = () => {
     const featuredStores = [...new Set(products.map(p => p.companyName))];
 
     const [showRegisterModal, setShowRegisterModal] = useState(false);
-    const [registerData, setRegisterData] = useState({ name: '', email: '', password: '', phone: '' });
+    const [registerData, setRegisterData] = useState({ name: '', email: '', password: '', phone: '', cedula: '' });
     const [registerMessage, setRegisterMessage] = useState('');
     const [registerSuccess, setRegisterSuccess] = useState(false);
 
@@ -433,11 +458,11 @@ const MarketplacePage = () => {
         setRegisterMessage("");
         setRegisterSuccess(false);
 
-        AuthService.register(registerData.name, registerData.email, registerData.password, 'client', null, registerData.phone).then(
+        AuthService.register(registerData.name, registerData.email, registerData.password, 'client', null, registerData.phone, registerData.cedula).then(
             (response) => {
                 setRegisterSuccess(true);
                 setRegisterMessage("¡Registro exitoso! Ya puedes iniciar sesión.");
-                setRegisterData({ name: '', email: '', password: '', phone: '' });
+                setRegisterData({ name: '', email: '', password: '', phone: '', cedula: '' });
                 // Optional: switch to login modal after delay
                 // setShowRegisterModal(false);
                 // setShowLoginModal(true);

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Container, Table, Card, Badge, Button, Row, Col, Form, Modal, ListGroup } from 'react-bootstrap';
 import { FaHistory, FaCalendarAlt, FaTruck, FaEye, FaSearch, FaTimes, FaInbox } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import PurchaseService from '../services/purchase.service';
 
 const PurchaseHistoryPage = () => {
+    const navigate = useNavigate();
     const [purchases, setPurchases] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedPurchase, setSelectedPurchase] = useState(null);
@@ -76,7 +78,7 @@ const PurchaseHistoryPage = () => {
                             <h2 className="fw-bold mb-0">Historial de Compras</h2>
                             <p className="text-muted">Gestiona el reabastecimiento de tu inventario</p>
                         </div>
-                        <Button variant="primary" className="rounded-pill px-4 shadow-sm" href="/admin/purchases/new">
+                        <Button variant="primary" className="rounded-pill px-4 shadow-sm" onClick={() => navigate('/purchases/new')}>
                             + Nueva Compra
                         </Button>
                     </div>

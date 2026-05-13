@@ -14,9 +14,11 @@ import java.util.List;
 public interface SupplierRepository extends JpaRepository<Supplier, Long> {
     List<Supplier> findByCompanyId(Long companyId);
     Page<Supplier> findByCompanyId(Long companyId, Pageable pageable);
+    boolean existsByCompanyIdAndTaxId(Long companyId, String taxId);
 
     @Query("SELECT s FROM Supplier s WHERE s.company.id = :companyId AND (" +
             "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(LOWER(s.name), 'á', 'a'), 'é', 'e'), 'í', 'i'), 'ó', 'o'), 'ú', 'u') LIKE CONCAT('%', :q, '%') OR " +
+            "LOWER(s.taxId) LIKE CONCAT('%', :q, '%') OR " +
             "LOWER(s.email) LIKE CONCAT('%', :q, '%') OR " +
             "LOWER(s.phone) LIKE CONCAT('%', :q, '%'))")
     Page<Supplier> findByCompanyIdAndSearch(@Param("companyId") Long companyId, @Param("q") String q, Pageable pageable);

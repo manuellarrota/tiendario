@@ -12,8 +12,10 @@ const SupplierPage = () => {
 
     // Form State
     const [name, setName] = useState("");
+    const [taxId, setTaxId] = useState("");
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
+    const [address, setAddress] = useState("");
 
     // Pagination & Search State
     const [currentPage, setCurrentPage] = useState(0);
@@ -70,12 +72,12 @@ const SupplierPage = () => {
     const handleCreate = (e) => {
         e.preventDefault();
         setModalError("");
-        SupplierService.create({ name, email, phone }).then(
+        SupplierService.create({ name, taxId, email, phone, address }).then(
             () => {
                 setMessage("✅ Proveedor creado correctamente");
                 setShowModal(false);
                 loadSuppliers();
-                setName(""); setEmail(""); setPhone("");
+                setName(""); setTaxId(""); setEmail(""); setPhone(""); setAddress("");
                 setTimeout(() => setMessage(""), 3000);
             },
             (error) => {
@@ -123,7 +125,7 @@ const SupplierPage = () => {
                         <div className="position-relative flex-grow-1">
                             <Form.Control
                                 type="text"
-                                placeholder="🔍 Buscar proveedor por nombre, email o teléfono..."
+                                placeholder="🔍 Buscar proveedor por nombre, RIF, email o teléfono..."
                                 className="border-0 bg-transparent shadow-none fs-5 py-2"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -152,11 +154,17 @@ const SupplierPage = () => {
                                         <th className="border-0 text-secondary small text-uppercase ps-4 pointer-cursor" style={{ cursor: 'pointer' }} onClick={() => handleSort('name')}>
                                             Proveedor {renderSortIcon('name')}
                                         </th>
+                                        <th className="border-0 text-secondary small text-uppercase pointer-cursor" style={{ cursor: 'pointer' }} onClick={() => handleSort('taxId')}>
+                                            RIF / ID Fiscal {renderSortIcon('taxId')}
+                                        </th>
                                         <th className="border-0 text-secondary small text-uppercase pointer-cursor" style={{ cursor: 'pointer' }} onClick={() => handleSort('email')}>
                                             Email {renderSortIcon('email')}
                                         </th>
-                                        <th className="border-0 text-secondary small text-uppercase text-end pe-4 pointer-cursor" style={{ cursor: 'pointer' }} onClick={() => handleSort('phone')}>
+                                        <th className="border-0 text-secondary small text-uppercase pointer-cursor" style={{ cursor: 'pointer' }} onClick={() => handleSort('phone')}>
                                             Teléfono {renderSortIcon('phone')}
+                                        </th>
+                                        <th className="border-0 text-secondary small text-uppercase text-end pe-4">
+                                            Dirección
                                         </th>
                                     </tr>
                                 </thead>
@@ -170,6 +178,9 @@ const SupplierPage = () => {
                                                     </div>
                                                     <span className="fw-bold text-dark">{s.name}</span>
                                                 </div>
+                                            </td>
+                                            <td>
+                                                {s.taxId ? <Badge bg="secondary" className="bg-opacity-10 text-secondary fw-normal">{s.taxId}</Badge> : <span className="text-muted small">N/A</span>}
                                             </td>
                                             <td>
                                                 {s.email ? (
@@ -186,6 +197,9 @@ const SupplierPage = () => {
                                                         {s.phone}
                                                     </Badge>
                                                 ) : <span className="text-muted small">No registrado</span>}
+                                            </td>
+                                            <td className="text-end pe-4">
+                                                {s.address ? <span className="small">{s.address}</span> : <span className="text-muted small">No registrada</span>}
                                             </td>
                                         </tr>
                                     ))}
@@ -234,6 +248,16 @@ const SupplierPage = () => {
                             />
                         </Form.Group>
                         <Form.Group className="mb-3">
+                            <Form.Label className="fw-bold small">RIF / Identificación Fiscal *</Form.Label>
+                            <Form.Control 
+                                type="text" 
+                                required 
+                                placeholder="Ej: J-12345678-9"
+                                value={taxId} 
+                                onChange={(e) => setTaxId(e.target.value)} 
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
                             <Form.Label className="fw-bold small">Email de Contacto</Form.Label>
                             <Form.Control 
                                 type="email" 
@@ -249,6 +273,15 @@ const SupplierPage = () => {
                                 placeholder="+58 412 0000000"
                                 value={phone} 
                                 onChange={(e) => setPhone(e.target.value)} 
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-4">
+                            <Form.Label className="fw-bold small">Dirección</Form.Label>
+                            <Form.Control 
+                                type="text" 
+                                placeholder="Av. Principal, Local 5, Ciudad"
+                                value={address} 
+                                onChange={(e) => setAddress(e.target.value)} 
                             />
                         </Form.Group>
                         <Button variant="primary" type="submit" className="w-100 py-2 fw-bold shadow-sm">

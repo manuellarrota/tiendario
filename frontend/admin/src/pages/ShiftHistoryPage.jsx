@@ -118,7 +118,17 @@ const ShiftHistoryPage = () => {
                                     </Col>
                                     <Col>
                                         <div className="text-muted small">Base Inicial</div>
-                                        <div className="fw-bold text-primary">${selectedShift.initialCash?.toFixed(2)}</div>
+                                        <div className="fw-bold text-primary mb-1">${selectedShift.initialCash?.toFixed(2)}</div>
+                                        {selectedShift.declarations?.filter(d => d.declarationType === 'OPENING').length > 0 && (
+                                            <div className="small border-top pt-1 mt-1">
+                                                {selectedShift.declarations.filter(d => d.declarationType === 'OPENING').map(d => (
+                                                    <div key={d.id} className="text-muted d-flex justify-content-between px-2" style={{fontSize: '0.75rem'}}>
+                                                        <span className="fw-bold">{d.currencyCode}</span>
+                                                        <span>{parseFloat(d.declaredAmount).toLocaleString(undefined, {minimumFractionDigits:2})}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
                                     </Col>
                                 </Row>
 
@@ -142,26 +152,74 @@ const ShiftHistoryPage = () => {
                                                     </div>
                                                 )}
                                             </td>
-                                            <td>${selectedShift.reportedCash?.toFixed(2)}</td>
-                                            <td>{calculateDifference(selectedShift.expectedCash, selectedShift.reportedCash)}</td>
+                                            <td>
+                                                <div className="fw-bold">${selectedShift.reportedCash?.toFixed(2)}</div>
+                                                {selectedShift.declarations?.filter(d => d.declarationType === 'CLOSING' && d.method === 'CASH').length > 0 && (
+                                                    <div className="mt-1">
+                                                        {selectedShift.declarations.filter(d => d.declarationType === 'CLOSING' && d.method === 'CASH').map(d => (
+                                                            <div key={d.id} className="text-muted text-center" style={{fontSize: '0.75rem'}}>
+                                                                <Badge bg="light" text="dark" className="me-1 border">{d.currencyCode}</Badge>
+                                                                {parseFloat(d.declaredAmount).toLocaleString(undefined, {minimumFractionDigits:2})}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="align-middle">{calculateDifference(selectedShift.expectedCash, selectedShift.reportedCash)}</td>
                                         </tr>
                                         <tr>
                                             <td className="text-start ps-3 fw-bold"><FaCreditCard className="text-info me-2"/> Tarjeta</td>
                                             <td>${selectedShift.expectedCard?.toFixed(2)}</td>
-                                            <td>${selectedShift.reportedCard?.toFixed(2)}</td>
-                                            <td>{calculateDifference(selectedShift.expectedCard, selectedShift.reportedCard)}</td>
+                                            <td>
+                                                <div className="fw-bold">${selectedShift.reportedCard?.toFixed(2)}</div>
+                                                {selectedShift.declarations?.filter(d => d.declarationType === 'CLOSING' && d.method === 'CARD').length > 0 && (
+                                                    <div className="mt-1">
+                                                        {selectedShift.declarations.filter(d => d.declarationType === 'CLOSING' && d.method === 'CARD').map(d => (
+                                                            <div key={d.id} className="text-muted text-center" style={{fontSize: '0.75rem'}}>
+                                                                <Badge bg="light" text="dark" className="me-1 border">{d.currencyCode}</Badge>
+                                                                {parseFloat(d.declaredAmount).toLocaleString(undefined, {minimumFractionDigits:2})}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="align-middle">{calculateDifference(selectedShift.expectedCard, selectedShift.reportedCard)}</td>
                                         </tr>
                                         <tr>
                                             <td className="text-start ps-3 fw-bold"><FaUniversity className="text-warning me-2"/> Transf.</td>
                                             <td>${selectedShift.expectedTransfer?.toFixed(2)}</td>
-                                            <td>${selectedShift.reportedTransfer?.toFixed(2)}</td>
-                                            <td>{calculateDifference(selectedShift.expectedTransfer, selectedShift.reportedTransfer)}</td>
+                                            <td>
+                                                <div className="fw-bold">${selectedShift.reportedTransfer?.toFixed(2)}</div>
+                                                {selectedShift.declarations?.filter(d => d.declarationType === 'CLOSING' && d.method === 'TRANSFER').length > 0 && (
+                                                    <div className="mt-1">
+                                                        {selectedShift.declarations.filter(d => d.declarationType === 'CLOSING' && d.method === 'TRANSFER').map(d => (
+                                                            <div key={d.id} className="text-muted text-center" style={{fontSize: '0.75rem'}}>
+                                                                <Badge bg="light" text="dark" className="me-1 border">{d.currencyCode}</Badge>
+                                                                {parseFloat(d.declaredAmount).toLocaleString(undefined, {minimumFractionDigits:2})}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="align-middle">{calculateDifference(selectedShift.expectedTransfer, selectedShift.reportedTransfer)}</td>
                                         </tr>
                                         <tr className="bg-light fw-bold">
                                             <td className="text-start ps-3">📱 Pago Móvil</td>
                                             <td>${selectedShift.expectedMobile?.toFixed(2)}</td>
-                                            <td>${selectedShift.reportedMobile?.toFixed(2)}</td>
-                                            <td>{calculateDifference(selectedShift.expectedMobile, selectedShift.reportedMobile)}</td>
+                                            <td>
+                                                <div className="fw-bold">${selectedShift.reportedMobile?.toFixed(2)}</div>
+                                                {selectedShift.declarations?.filter(d => d.declarationType === 'CLOSING' && d.method === 'MOBILE_PAYMENT').length > 0 && (
+                                                    <div className="mt-1">
+                                                        {selectedShift.declarations.filter(d => d.declarationType === 'CLOSING' && d.method === 'MOBILE_PAYMENT').map(d => (
+                                                            <div key={d.id} className="text-muted text-center" style={{fontSize: '0.75rem'}}>
+                                                                <Badge bg="light" text="dark" className="me-1 border">{d.currencyCode}</Badge>
+                                                                {parseFloat(d.declaredAmount).toLocaleString(undefined, {minimumFractionDigits:2})}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="align-middle">{calculateDifference(selectedShift.expectedMobile, selectedShift.reportedMobile)}</td>
                                         </tr>
                                     </tbody>
                                 </Table>

@@ -22,6 +22,27 @@ public class UserDetailsImpl implements UserDetails {
     private Collection<? extends GrantedAuthority> authorities;
     private Long companyId;
     private boolean enabled;
+    private String email;
+    private String fullName;
+    private String cedula;
+    private String phone;
+    private String address;
+
+    public UserDetailsImpl(Long id, String username, String email, String password,
+            Collection<? extends GrantedAuthority> authorities, Long companyId, boolean enabled,
+            String fullName, String cedula, String phone, String address) {
+        this.id = id;
+        this.username = username;
+        this.email = email;
+        this.password = password;
+        this.authorities = authorities;
+        this.companyId = companyId;
+        this.enabled = enabled;
+        this.fullName = fullName;
+        this.cedula = cedula;
+        this.phone = phone;
+        this.address = address;
+    }
 
     public UserDetailsImpl(Long id, String username, String password,
             Collection<? extends GrantedAuthority> authorities, Long companyId, boolean enabled) {
@@ -39,10 +60,15 @@ public class UserDetailsImpl implements UserDetails {
         return new UserDetailsImpl(
                 user.getId(),
                 user.getUsername(),
+                user.getEmail(),
                 user.getPassword(),
                 Collections.singletonList(authority),
                 user.getCompany() != null ? user.getCompany().getId() : null,
-                user.isEnabled());
+                user.isEnabled(),
+                user.getFullName(),
+                user.getCedula(),
+                user.getPhone(),
+                user.getAddress());
     }
 
     @Override
@@ -87,6 +113,12 @@ public class UserDetailsImpl implements UserDetails {
     public boolean isEnabled() {
         return enabled;
     }
+
+    public String getEmail() { return email; }
+    public String getFullName() { return fullName; }
+    public String getCedula() { return cedula; }
+    public String getPhone() { return phone; }
+    public String getAddress() { return address; }
 
     @Override
     public boolean equals(Object o) {

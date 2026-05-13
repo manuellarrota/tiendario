@@ -5,13 +5,16 @@ import javax.persistence.*;
 
 @Data
 @Entity
-@Table(name = "suppliers")
+@Table(name = "suppliers", uniqueConstraints = {
+    @UniqueConstraint(columnNames = {"company_id", "taxId"})
+})
 public class Supplier {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String name;
+    private String taxId;
     private String email;
     private String phone;
     private String address;

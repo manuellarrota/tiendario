@@ -35,8 +35,10 @@ const NewPurchasePage = () => {
     // New Supplier Modal
     const [showSupplierModal, setShowSupplierModal] = useState(false);
     const [newSupplierName, setNewSupplierName] = useState("");
+    const [newSupplierTaxId, setNewSupplierTaxId] = useState("");
     const [newSupplierEmail, setNewSupplierEmail] = useState("");
     const [newSupplierPhone, setNewSupplierPhone] = useState("");
+    const [newSupplierAddress, setNewSupplierAddress] = useState("");
 
     // New Product Modal State
     const [showProductModal, setShowProductModal] = useState(false);
@@ -73,8 +75,8 @@ const NewPurchasePage = () => {
     const exchangeRate = purchaseCurrency === baseCurrencyCode ? 1 : (selectedCurrencyData?.rate || 1);
 
     const convertToBase = (amount) => {
-        if (purchaseCurrency === baseCurrencyCode) return new Decimal(amount);
-        return new Decimal(amount).div(exchangeRate);
+        if (purchaseCurrency === baseCurrencyCode) return new Decimal(amount).toDecimalPlaces(2);
+        return new Decimal(amount).div(exchangeRate).toDecimalPlaces(2);
     };
 
     // Returns symbol for a stored item's currency code
@@ -132,7 +134,7 @@ const NewPurchasePage = () => {
         const product = products.find(p => p.id === parseInt(selectedProduct));
         const unitCostDec = new Decimal(unitCost);
         const unitCostInBase = convertToBase(unitCostDec);
-        const subtotalInBase = unitCostInBase.times(quantity);
+        const subtotalInBase = unitCostInBase.times(quantity).toDecimalPlaces(2);
 
         const newItem = {
             product: product,
@@ -140,7 +142,7 @@ const NewPurchasePage = () => {
             unitCost: unitCostDec.toNumber(),
             unitCostInBaseCurrency: unitCostInBase.toNumber(),
             subtotalInBaseCurrency: subtotalInBase.toNumber(),
-            total: unitCostDec.times(quantity).toNumber(),
+            total: unitCostDec.times(quantity).toDecimalPlaces(2).toNumber(),
             currencyCode: purchaseCurrency,
             exchangeRate: exchangeRate
         };
@@ -157,15 +159,19 @@ const NewPurchasePage = () => {
         e.preventDefault();
         SupplierService.create({
             name: newSupplierName,
+            taxId: newSupplierTaxId,
             email: newSupplierEmail,
-            phone: newSupplierPhone
+            phone: newSupplierPhone,
+            address: newSupplierAddress
         }).then(
             (response) => {
                 setMessage("✅ Proveedor creado exitosamente");
                 setShowSupplierModal(false);
                 setNewSupplierName("");
+                setNewSupplierTaxId("");
                 setNewSupplierEmail("");
                 setNewSupplierPhone("");
+                setNewSupplierAddress("");
                 loadData();
                 setTimeout(() => setMessage(""), 3000);
                 if (response.data && response.data.id) {
@@ -228,8 +234,8 @@ const NewPurchasePage = () => {
         if (!selectedSupplier) { alert("❌ Por favor, selecciona un proveedor antes de continuar."); return; }
         if (cart.length === 0) { alert("❌ El carrito de compra está vacío. Agrega al menos un producto."); return; }
 
-        const totalInCurrency = cart.reduce((acc, item) => acc.plus(new Decimal(item.total)), new Decimal(0));
-        const totalInBase = cart.reduce((acc, item) => acc.plus(new Decimal(item.subtotalInBaseCurrency || item.total)), new Decimal(0));
+        const totalInCurrency = cart.reduce((acc, item) => acc.plus(new Decimal(item.total)), new Decimal(0)).toDecimalPlaces(2);
+        const totalInBase = cart.reduce((acc, item) => acc.plus(new Decimal(item.subtotalInBaseCurrency || item.total)), new Decimal(0)).toDecimalPlaces(2);
 
         const purchaseData = {
             supplierId: parseInt(selectedSupplier),
@@ -492,13 +498,23 @@ const NewPurchasePage = () => {
                 <Modal.Body>
                     <Form onSubmit={handleCreateSupplier}>
                         <Form.Group className="mb-3">
-                            <Form.Label>Nombre Empresa *</Form.Label>
+                            <Form.Label>Nombre Empresa / Razón Social *</Form.Label>
                             <Form.Control
                                 type="text"
                                 required
                                 value={newSupplierName}
                                 onChange={(e) => setNewSupplierName(e.target.value)}
-                                placeholder="Ej: Distribuidora XYZ"
+                                placeholder="Ej: Distribuidora XYZ S.A."
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>RIF / ID Fiscal *</Form.Label>
+                            <Form.Control
+                                type="text"
+                                required
+                                value={newSupplierTaxId}
+                                onChange={(e) => setNewSupplierTaxId(e.target.value)}
+                                placeholder="Ej: J-12345678-9"
                             />
                         </Form.Group>
                         <Form.Group className="mb-3">
@@ -511,12 +527,21 @@ const NewPurchasePage = () => {
                             />
                         </Form.Group>
                         <Form.Group className="mb-3">
-                            <Form.Label>Teléfono</Form.Label>
+                            <Form.Label>Teléfono / WhatsApp</Form.Label>
                             <Form.Control
                                 type="text"
                                 value={newSupplierPhone}
                                 onChange={(e) => setNewSupplierPhone(e.target.value)}
-                                placeholder="+1 234 567 8900"
+                                placeholder="+58 412 0000000"
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Dirección</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={newSupplierAddress}
+                                onChange={(e) => setNewSupplierAddress(e.target.value)}
+                                placeholder="Av. Principal, Local 5, Ciudad"
                             />
                         </Form.Group>
                         <Button variant="success" type="submit" className="w-100 py-2">

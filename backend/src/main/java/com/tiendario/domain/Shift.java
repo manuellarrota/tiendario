@@ -57,4 +57,7 @@ public class Shift {
 
     @Column(columnDefinition = "TEXT")
     private String observation;
+
+    @OneToMany(mappedBy = "shift", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<ShiftDeclaration> declarations = new java.util.ArrayList<>();
 }

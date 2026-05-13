@@ -15,6 +15,7 @@ const CustomersPage = () => {
 
     // Form fields
     const [name, setName] = useState('');
+    const [cedula, setCedula] = useState('');
     const [email, setEmail] = useState('');
     const [phone, setPhone] = useState('');
     const [address, setAddress] = useState('');
@@ -36,6 +37,7 @@ const CustomersPage = () => {
         } else {
             const filtered = customers.filter(c =>
                 c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                c.cedula?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 c.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 c.phone?.includes(searchTerm)
             );
@@ -45,7 +47,7 @@ const CustomersPage = () => {
 
     const handleCreate = (e) => {
         e.preventDefault();
-        const customerData = { name, email, phone, address };
+        const customerData = { name, cedula, email, phone, address };
 
         if (editMode) {
             CustomerService.update(currentCustomer.id, customerData).then(
@@ -80,6 +82,7 @@ const CustomersPage = () => {
         setEditMode(true);
         setCurrentCustomer(customer);
         setName(customer.name);
+        setCedula(customer.cedula || '');
         setEmail(customer.email || '');
         setPhone(customer.phone || '');
         setAddress(customer.address || '');
@@ -107,6 +110,7 @@ const CustomersPage = () => {
         setEditMode(false);
         setCurrentCustomer(null);
         setName('');
+        setCedula('');
         setEmail('');
         setPhone('');
         setAddress('');
@@ -155,6 +159,7 @@ const CustomersPage = () => {
                                     <thead className="bg-light">
                                         <tr>
                                             <th className="border-0">Nombre</th>
+                                            <th className="border-0">Cédula / ID</th>
                                             <th className="border-0">Email</th>
                                             <th className="border-0">Teléfono</th>
                                             <th className="border-0">Dirección</th>
@@ -167,6 +172,9 @@ const CustomersPage = () => {
                                                 <td className="fw-bold">
                                                     <FaUsers className="me-2 text-primary" />
                                                     {customer.name}
+                                                </td>
+                                                <td>
+                                                    {customer.cedula || '-'}
                                                 </td>
                                                 <td>
                                                     {customer.email ? (
@@ -249,6 +257,16 @@ const CustomersPage = () => {
                                 />
                             </Form.Group>
                             <Form.Group className="mb-3">
+                                <Form.Label>Cédula / ID Fiscal *</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    required
+                                    value={cedula}
+                                    onChange={(e) => setCedula(e.target.value)}
+                                    placeholder="V-12345678 o J-12345678-9"
+                                />
+                            </Form.Group>
+                            <Form.Group className="mb-3">
                                 <Form.Label>Email</Form.Label>
                                 <Form.Control
                                     type="email"
@@ -258,9 +276,10 @@ const CustomersPage = () => {
                                 />
                             </Form.Group>
                             <Form.Group className="mb-3">
-                                <Form.Label>Teléfono</Form.Label>
+                                <Form.Label>Teléfono *</Form.Label>
                                 <Form.Control
                                     type="text"
+                                    required
                                     value={phone}
                                     onChange={(e) => setPhone(e.target.value)}
                                     placeholder="+1 234 567 8900"

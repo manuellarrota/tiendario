@@ -16,4 +16,6 @@ public class SignupRequest {
     private Double longitude;
     private String phoneNumber;
     private String address;
+    private String fullName;
+    private String cedula;
 }

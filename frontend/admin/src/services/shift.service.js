@@ -7,8 +7,8 @@ const getCurrentShift = () => {
   return axios.get(API_URL + "current", { headers: authHeader() });
 };
 
-const openShift = (initialCash) => {
-  return axios.post(API_URL + "open", { initialCash }, { headers: authHeader() });
+const openShift = (initialCash, extraData = {}) => {
+  return axios.post(API_URL + "open", { initialCash, ...extraData }, { headers: authHeader() });
 };
 
 const closeShift = (shiftId, data) => {

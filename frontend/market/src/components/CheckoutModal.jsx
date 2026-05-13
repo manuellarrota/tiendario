@@ -95,22 +95,34 @@ const CheckoutModal = ({
                             <Col md={12}>
                                 <Form.Control
                                     className="mb-2 rounded-3 py-2 px-3"
-                                    placeholder="Teléfono / WhatsApp"
+                                    placeholder="Teléfono / WhatsApp *"
                                     type="tel"
                                     value={customerData.phone}
                                     onChange={(e) => setCustomerData({ ...customerData, phone: e.target.value })}
                                     disabled={isLoggedIn && !!customerData.phone}
+                                    required
                                 />
                             </Col>
-                            {/* Dirección oculta por ahora — no hay domicilios activos */}
-                            {/* <Col md={12}>
+                            <Col md={12}>
                                 <Form.Control
                                     className="mb-2 rounded-3 py-2 px-3"
-                                    placeholder="Dirección de Entrega"
+                                    placeholder="Cédula / ID Fiscal *"
+                                    value={customerData.cedula}
+                                    onChange={(e) => setCustomerData({ ...customerData, cedula: e.target.value })}
+                                    disabled={isLoggedIn && !!customerData.cedula}
+                                    required
+                                />
+                            </Col>
+                            <Col md={12}>
+                                <Form.Control
+                                    className="mb-2 rounded-3 py-2 px-3"
+                                    placeholder="Dirección de Entrega (Opcional)"
+                                    as="textarea"
+                                    rows={2}
                                     value={customerData.address}
                                     onChange={(e) => setCustomerData({ ...customerData, address: e.target.value })}
                                 />
-                            </Col> */}
+                            </Col>
                         </Row>
 
                         <Alert variant="info" className="rounded-4 mb-4 border-0">
