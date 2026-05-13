@@ -2,13 +2,14 @@ import React, { useState, useEffect } from "react";
 import { Container, Table, Button, Modal, Form, Alert, Badge, Pagination } from "react-bootstrap";
 import Layout from "../components/Layout";
 import SupplierService from "../services/supplier.service";
-import { FaPlus, FaTruck, FaSort, FaSortUp, FaSortDown, FaEnvelope, FaPhone, FaSearch } from "react-icons/fa";
+import { FaPlus, FaTruck, FaSort, FaSortUp, FaSortDown, FaEnvelope, FaPhone, FaSearch, FaEdit } from "react-icons/fa";
 
 const SupplierPage = () => {
     const [suppliers, setSuppliers] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [message, setMessage] = useState("");
     const [modalError, setModalError] = useState("");
+    const [editingSupplier, setEditingSupplier] = useState(null);
 
     // Form State
     const [name, setName] = useState("");
@@ -69,22 +70,33 @@ const SupplierPage = () => {
         loadSuppliers();
     }, [currentPage, pageSize, sortBy, sortDir, debouncedSearchQuery]);
 
-    const handleCreate = (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
         setModalError("");
-        SupplierService.create({ name, taxId, email, phone, address }).then(
+        const supplierData = { name, taxId, email, phone, address };
+
+        const request = editingSupplier 
+            ? SupplierService.update(editingSupplier.id, supplierData)
+            : SupplierService.create(supplierData);
+
+        request.then(
             () => {
-                setMessage("✅ Proveedor creado correctamente");
+                setMessage(editingSupplier ? "✅ Proveedor actualizado" : "✅ Proveedor creado correctamente");
                 setShowModal(false);
                 loadSuppliers();
-                setName(""); setTaxId(""); setEmail(""); setPhone(""); setAddress("");
+                resetForm();
                 setTimeout(() => setMessage(""), 3000);
             },
             (error) => {
-                setModalError(error.response?.data?.message || "❌ Error creando proveedor");
+                setModalError(error.response?.data?.message || "❌ Error procesando solicitud");
                 setTimeout(() => setModalError(""), 5000);
             }
         );
+    };
+
+    const resetForm = () => {
+        setName(""); setTaxId(""); setEmail(""); setPhone(""); setAddress("");
+        setEditingSupplier(null);
     };
 
     const handleSort = (field) => {
@@ -99,8 +111,18 @@ const SupplierPage = () => {
         return sortDir === "asc" ? <FaSortUp className="ms-1 text-primary" size={12} /> : <FaSortDown className="ms-1 text-primary" size={12} />;
     };
 
-    const openModal = () => {
+    const openModal = (supplier = null) => {
         setModalError("");
+        if (supplier) {
+            setEditingSupplier(supplier);
+            setName(supplier.name);
+            setTaxId(supplier.taxId);
+            setEmail(supplier.email || "");
+            setPhone(supplier.phone || "");
+            setAddress(supplier.address || "");
+        } else {
+            resetForm();
+        }
         setShowModal(true);
     };
 
@@ -112,7 +134,7 @@ const SupplierPage = () => {
                         <h2 className="display-6 fw-bold mb-0 text-gradient">Proveedores</h2>
                         <p className="text-secondary mb-0">Gestiona tus contactos comerciales y de abastecimiento.</p>
                     </div>
-                    <Button variant="primary" className="px-4 py-2 shadow-sm rounded-pill" onClick={openModal}>
+                    <Button variant="primary" className="px-4 py-2 shadow-sm rounded-pill" onClick={() => openModal()}>
                         <FaPlus className="me-2" /> Nuevo Proveedor
                     </Button>
                 </div>
@@ -166,6 +188,9 @@ const SupplierPage = () => {
                                         <th className="border-0 text-secondary small text-uppercase text-end pe-4">
                                             Dirección
                                         </th>
+                                        <th className="border-0 text-secondary small text-uppercase text-end pe-4">
+                                            Acciones
+                                        </th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -201,6 +226,11 @@ const SupplierPage = () => {
                                             <td className="text-end pe-4">
                                                 {s.address ? <span className="small">{s.address}</span> : <span className="text-muted small">No registrada</span>}
                                             </td>
+                                            <td className="text-end pe-4">
+                                                <Button variant="link" className="text-primary p-0" onClick={() => openModal(s)} title="Editar Proveedor">
+                                                    <FaEdit size={16} />
+                                                </Button>
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -230,13 +260,13 @@ const SupplierPage = () => {
                 </div>
             </Container>
 
-            <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+            <Modal show={showModal} onHide={() => { setShowModal(false); resetForm(); }} centered>
                 <Modal.Header closeButton className="border-0">
-                    <Modal.Title className="fw-bold text-dark">Nuevo Proveedor</Modal.Title>
+                    <Modal.Title className="fw-bold text-dark">{editingSupplier ? 'Editar Proveedor' : 'Nuevo Proveedor'}</Modal.Title>
                 </Modal.Header>
                 <Modal.Body className="p-4">
                     {modalError && <Alert variant="danger" className="border-0 shadow-sm rounded-3 mb-3">{modalError}</Alert>}
-                    <Form onSubmit={handleCreate}>
+                    <Form onSubmit={handleSubmit}>
                         <Form.Group className="mb-3">
                             <Form.Label className="fw-bold small">Nombre Empresa / Razón Social *</Form.Label>
                             <Form.Control 
@@ -267,9 +297,10 @@ const SupplierPage = () => {
                             />
                         </Form.Group>
                         <Form.Group className="mb-4">
-                            <Form.Label className="fw-bold small">Teléfono / WhatsApp</Form.Label>
+                            <Form.Label className="fw-bold small">Teléfono / WhatsApp *</Form.Label>
                             <Form.Control 
                                 type="text" 
+                                required
                                 placeholder="+58 412 0000000"
                                 value={phone} 
                                 onChange={(e) => setPhone(e.target.value)} 
@@ -285,7 +316,7 @@ const SupplierPage = () => {
                             />
                         </Form.Group>
                         <Button variant="primary" type="submit" className="w-100 py-2 fw-bold shadow-sm">
-                            Guardar Proveedor
+                            {editingSupplier ? 'Guardar Cambios' : 'Guardar Proveedor'}
                         </Button>
                     </Form>
                 </Modal.Body>

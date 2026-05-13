@@ -8,7 +8,7 @@ export const LoginModal = ({
     show, onHide, loginData, setLoginData, loginError,
     loginLoading, onLogin, onSwitchToRegister
 }) => (
-    <Modal show={show} onHide={onHide} centered className="rounded-4 overflow-hidden">
+    <Modal show={show} onHide={onHide} centered scrollable className="rounded-4 overflow-hidden">
         <Modal.Header closeButton className="border-0 pb-0">
             <Modal.Title className="fw-bold">Ingresar al Marketplace</Modal.Title>
         </Modal.Header>
@@ -55,7 +55,7 @@ export const RegisterModal = ({
     show, onHide, registerData, setRegisterData,
     registerMessage, registerSuccess, onRegister, onSwitchToLogin
 }) => (
-    <Modal show={show} onHide={onHide} centered className="rounded-4 overflow-hidden">
+    <Modal show={show} onHide={onHide} centered scrollable className="rounded-4 overflow-hidden">
         <Modal.Header closeButton className="border-0 pb-0">
             <Modal.Title className="fw-bold">Crear Cuenta</Modal.Title>
         </Modal.Header>

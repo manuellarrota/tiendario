@@ -280,6 +280,8 @@ public class ProductController {
                 suggestion.setSuggestedImageUrl(product.getImageUrl());
                 suggestion.setStatus(com.tiendario.domain.SuggestionStatus.PENDING);
                 catalogSuggestionRepository.save(suggestion);
+                log.info("💡 [SUGERENCIA CATALOGO] Usuario '{}' sugirio cambios para el producto '{}' (SKU: {}) desde la empresa '{}'",
+                    userDetails.getUsername(), suggestion.getSuggestedName(), catalog.getSku(), product.getCompany().getName());
             }
         }
         product.setCatalogProduct(catalog);
@@ -289,7 +291,7 @@ public class ProductController {
         // product.setImageUrl(catalog.getImageUrl());
 
         Product savedProduct = productRepository.save(product);
-        log.info("🛒 [PRODUCTO] Usuario {} creó nuevo producto: '{}' (SKU: {})", 
+        log.info("🛒 [PRODUCTO] Usuario {} creo nuevo producto: '{}' (SKU: {})", 
                 userDetails.getUsername(), savedProduct.getName(), savedProduct.getSku());
 
         // Index in search engine
@@ -357,6 +359,8 @@ public class ProductController {
                 suggestion.setSuggestedImageUrl(productDetails.getImageUrl());
                 suggestion.setStatus(com.tiendario.domain.SuggestionStatus.PENDING);
                 catalogSuggestionRepository.save(suggestion);
+                log.info("💡 [SUGERENCIA CATALOGO] Usuario '{}' sugirio actualizacion para el producto '{}' (SKU: {}) desde la empresa '{}'",
+                    userDetails.getUsername(), suggestion.getSuggestedName(), catalog.getSku(), product.getCompany().getName());
             }
         }
         product.setCatalogProduct(catalog);

@@ -15,7 +15,7 @@ const CheckoutModal = ({
     const cartTotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
 
     return (
-        <Modal show={show} onHide={onHide} centered size="md">
+        <Modal show={show} onHide={onHide} centered scrollable size="md">
             <Modal.Header closeButton className="border-0">
                 <Modal.Title className="fw-bold">Finalizar Compra</Modal.Title>
             </Modal.Header>

@@ -31,7 +31,7 @@ public class GlobalExceptionHandler {
         if (ex.getMessage() != null && ex.getMessage().startsWith("Error:")) {
             logger.warn("[NEGOCIO_ERROR] {}", ex.getMessage());
         } else {
-            logger.error("[SISTEMA_ERROR] Excepción no manejada", ex);
+            logger.error("[SISTEMA_ERROR] Excepcion no manejada", ex);
         }
         return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
     }

@@ -527,9 +527,10 @@ const NewPurchasePage = () => {
                             />
                         </Form.Group>
                         <Form.Group className="mb-3">
-                            <Form.Label>Teléfono / WhatsApp</Form.Label>
+                            <Form.Label>Teléfono / WhatsApp *</Form.Label>
                             <Form.Control
                                 type="text"
+                                required
                                 value={newSupplierPhone}
                                 onChange={(e) => setNewSupplierPhone(e.target.value)}
                                 placeholder="+58 412 0000000"

@@ -14,12 +14,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import com.tiendario.security.UserDetailsImpl;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/superadmin/catalog-suggestions")
 public class CatalogSuggestionController {
+    private static final Logger log = LoggerFactory.getLogger(CatalogSuggestionController.class);
 
     @Autowired
     private CatalogSuggestionRepository suggestionRepository;
@@ -69,6 +74,10 @@ public class CatalogSuggestionController {
         suggestion.setStatus(SuggestionStatus.APPROVED);
         suggestionRepository.save(suggestion);
 
+        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        log.info("✅ [CATALOGO APROBADO] SuperAdmin '{}' aprobo sugerencia ID: {} de la empresa '{}' para el producto '{}'",
+            userDetails.getUsername(), id, suggestion.getCompanyName(), suggestion.getSuggestedName());
+
         return ResponseEntity.ok(new MessageResponse("Sugerencia de catálogo aprobada exitosamente."));
     }
 
@@ -82,6 +91,10 @@ public class CatalogSuggestionController {
 
         suggestion.setStatus(SuggestionStatus.REJECTED);
         suggestionRepository.save(suggestion);
+
+        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        log.info("❌ [CATALOGO RECHAZADO] SuperAdmin '{}' rechazo sugerencia ID: {} de la empresa '{}' para el producto '{}'",
+            userDetails.getUsername(), id, suggestion.getCompanyName(), suggestion.getSuggestedName());
 
         return ResponseEntity.ok(new MessageResponse("Sugerencia rechazada."));
     }

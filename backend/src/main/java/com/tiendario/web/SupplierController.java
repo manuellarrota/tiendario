@@ -66,6 +66,14 @@ public class SupplierController {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
+        if (supplier.getName() == null || supplier.getName().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(new com.tiendario.payload.response.MessageResponse("Error: El nombre del proveedor es obligatorio."));
+        }
+
+        if (supplier.getPhone() == null || supplier.getPhone().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(new com.tiendario.payload.response.MessageResponse("Error: El teléfono de contacto es obligatorio."));
+        }
+
         if (supplier.getTaxId() != null && !supplier.getTaxId().trim().isEmpty()) {
             if (supplierRepository.existsByCompanyIdAndTaxId(userDetails.getCompanyId(), supplier.getTaxId())) {
                 return ResponseEntity.badRequest().body(new com.tiendario.payload.response.MessageResponse("Error: Ya existe un proveedor registrado con este RIF/Identificación Fiscal."));
@@ -75,10 +83,49 @@ public class SupplierController {
         supplier.setCompany(companyRepository.findById(userDetails.getCompanyId()).orElse(null));
         Supplier savedSupplier = supplierRepository.save(supplier);
 
-        log.info("[NUEVO PROVEEDOR] Registrado por: {} | Nombre: {} | RIF/TaxId: {} | Teléfono: {} | Email: {} | Empresa ID: {}",
+        log.info("[NUEVO PROVEEDOR] Registrado por: {} | Nombre: {} | RIF/TaxId: {} | Telefono: {} | Email: {} | Empresa ID: {}",
             userDetails.getUsername(), savedSupplier.getName(), savedSupplier.getTaxId(),
             savedSupplier.getPhone(), savedSupplier.getEmail(), userDetails.getCompanyId());
 
         return ResponseEntity.ok(savedSupplier);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<?> updateSupplier(@PathVariable Long id, @RequestBody Supplier supplierDetails) {
+        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
+                .getPrincipal();
+
+        Supplier supplier = supplierRepository.findById(id).orElse(null);
+        if (supplier == null || !supplier.getCompany().getId().equals(userDetails.getCompanyId())) {
+            return ResponseEntity.notFound().build();
+        }
+
+        if (supplierDetails.getName() == null || supplierDetails.getName().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(new com.tiendario.payload.response.MessageResponse("Error: El nombre del proveedor es obligatorio."));
+        }
+
+        if (supplierDetails.getPhone() == null || supplierDetails.getPhone().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body(new com.tiendario.payload.response.MessageResponse("Error: El teléfono de contacto es obligatorio."));
+        }
+
+        // Check taxId uniqueness if changed
+        if (supplierDetails.getTaxId() != null && !supplierDetails.getTaxId().equals(supplier.getTaxId())) {
+            if (supplierRepository.existsByCompanyIdAndTaxId(userDetails.getCompanyId(), supplierDetails.getTaxId())) {
+                return ResponseEntity.badRequest().body(new com.tiendario.payload.response.MessageResponse("Error: Ya existe otro proveedor registrado con este RIF/Identificación Fiscal."));
+            }
+        }
+
+        supplier.setName(supplierDetails.getName());
+        supplier.setTaxId(supplierDetails.getTaxId());
+        supplier.setEmail(supplierDetails.getEmail());
+        supplier.setPhone(supplierDetails.getPhone());
+        supplier.setAddress(supplierDetails.getAddress());
+
+        Supplier updatedSupplier = supplierRepository.save(supplier);
+        log.info("[PROVEEDOR ACTUALIZADO] ID: {} | Por: {} | Nombre: {} | Empresa ID: {}", 
+            id, userDetails.getUsername(), updatedSupplier.getName(), userDetails.getCompanyId());
+
+        return ResponseEntity.ok(updatedSupplier);
     }
 }

@@ -12,7 +12,7 @@ const CartModal = ({
     const cartTotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
 
     return (
-        <Modal show={show} onHide={onHide} centered>
+        <Modal show={show} onHide={onHide} centered scrollable>
             <Modal.Header closeButton>
                 <Modal.Title className="fw-bold">Tu Carrito de Compras</Modal.Title>
             </Modal.Header>

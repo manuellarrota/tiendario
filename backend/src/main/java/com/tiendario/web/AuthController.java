@@ -99,8 +99,12 @@ public class AuthController {
                         // Clear rate limit on successful login
                         rateLimiter.recordSuccess(clientIp);
                         
-                        logger.info("[LOGIN] Usuario: {} | IP: {} | Roles: {}", 
-                                userDetails.getUsername(), clientIp, roles);
+                        String companyName = userDetails.getCompanyId() != null 
+                            ? companyRepository.findById(userDetails.getCompanyId()).map(c -> c.getName()).orElse("N/A")
+                            : "ADMIN/NO_COMPANY";
+
+                        logger.info("🔑 [LOGIN] Persona: '{}' | Usuario: '{}' | Empresa: '{}' | IP: {} | Roles: {}", 
+                                userDetails.getFullName(), userDetails.getUsername(), companyName, clientIp, roles);
 
                         return ResponseEntity.ok(new JwtResponse(jwt,
                                         userDetails.getId(),

@@ -20,9 +20,14 @@ const create = (data) => {
     return axios.post(API_URL, data, { headers: getAuthHeader() });
 };
 
+const update = (id, data) => {
+    return axios.put(API_URL + id, data, { headers: getAuthHeader() });
+};
+
 const SupplierService = {
     getAll,
     create,
+    update,
 };
 
 export default SupplierService;
