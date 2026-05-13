@@ -245,6 +245,9 @@ public class SuperAdminController {
                 current.setEnableSecondaryCurrency(newConfig.isEnableSecondaryCurrency());
                 current.setSecondaryCurrencyLabel(newConfig.getSecondaryCurrencyLabel());
                 current.setSecondaryCurrencySymbol(newConfig.getSecondaryCurrencySymbol());
+                current.setBaseCurrencyCode(newConfig.getBaseCurrencyCode());
+                current.setBaseCurrencySymbol(newConfig.getBaseCurrencySymbol());
+                current.setCurrencies(newConfig.getCurrencies());
 
                 configRepository.save(current);
                 return ResponseEntity.ok(new MessageResponse("Configuration updated successfully"));
@@ -321,50 +324,65 @@ public class SuperAdminController {
                                         .body(new MessageResponse("Error: El correo electrónico ya está registrado."));
                 }
 
-                // Crear empresa
-                Company company = new Company();
-                company.setName(companyName);
-                company.setPhoneNumber(phone);
-                company.setDescription(description);
-                company.setLatitude(lat);
-                company.setLongitude(lng);
-
-                SubscriptionStatus plan;
                 try {
-                        plan = SubscriptionStatus.valueOf(planStr);
-                } catch (Exception e) {
-                        plan = SubscriptionStatus.TRIAL;
-                }
-                company.setSubscriptionStatus(plan);
-                if (plan == SubscriptionStatus.TRIAL) {
-                        company.setTrialStartDate(LocalDateTime.now());
-                        company.setSubscriptionEndDate(LocalDateTime.now().plusDays(30));
-                }
-                companyRepository.save(company);
+                        // Crear empresa
+                        Company company = new Company();
+                        company.setName(companyName);
+                        company.setPhoneNumber(phone);
+                        company.setDescription(description);
+                        company.setLatitude(lat);
+                        company.setLongitude(lng);
 
-                // Crear usuario gestor (activado directamente — el CEO lo registra en persona)
-                User user = new User();
-                user.setUsername(username);
-                user.setEmail(email);
-                user.setPassword(passwordEncoder.encode(password));
-                user.setRole(Role.ROLE_MANAGER);
-                user.setEnabled(true); // Activado inmediatamente
-                user.setCompany(company);
-                userRepository.save(user);
+                        SubscriptionStatus plan;
+                        try {
+                                plan = SubscriptionStatus.valueOf(planStr);
+                        } catch (Exception e) {
+                                plan = SubscriptionStatus.TRIAL;
+                        }
+                        company.setSubscriptionStatus(plan);
+                        if (plan == SubscriptionStatus.TRIAL) {
+                                company.setTrialStartDate(LocalDateTime.now());
+                                company.setSubscriptionEndDate(LocalDateTime.now().plusDays(30));
+                        }
+                        companyRepository.save(company);
 
-                // Enviar credenciales
-                try {
-                        emailService.sendStoreCredentials(email, company.getName(), username, password);
-                } catch (Exception e) {
-                        e.printStackTrace();
+                        // Crear usuario gestor (activado directamente — el CEO lo registra en persona)
+                        User user = new User();
+                        user.setUsername(username);
+                        user.setEmail(email);
+                        user.setPassword(passwordEncoder.encode(password));
+                        user.setRole(Role.ROLE_MANAGER);
+                        user.setEnabled(true); // Activado inmediatamente
+                        user.setCompany(company);
+                        userRepository.save(user);
+
+                        // Enviar credenciales
+                        try {
+                                emailService.sendStoreCredentials(email, company.getName(), username, password);
+                        } catch (Exception e) {
+                                e.printStackTrace();
+                        }
+
+                        Map<String, Object> result = new HashMap<>();
+                        result.put("companyId", company.getId());
+                        result.put("userId", user.getId());
+                        result.put("companyName", company.getName());
+                        result.put("message", "Tienda creada exitosamente.");
+                        return ResponseEntity.ok(result);
+
+                } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        String cause = e.getMostSpecificCause().getMessage().toLowerCase();
+                        String friendlyMsg;
+                        if (cause.contains("email")) {
+                                friendlyMsg = "Error: El correo electrónico ya está en uso por otra cuenta.";
+                        } else if (cause.contains("username")) {
+                                friendlyMsg = "Error: El nombre de usuario ya está en uso. Por favor elige otro.";
+                        } else {
+                                friendlyMsg = "Error: Ya existe una tienda o usuario con esos datos. Verifica el correo y usuario.";
+                        }
+                        logger.error("createStore constraint violation for user '{}': {}", username, cause);
+                        return ResponseEntity.badRequest().body(new MessageResponse(friendlyMsg));
                 }
-
-                Map<String, Object> result = new HashMap<>();
-                result.put("companyId", company.getId());
-                result.put("userId", user.getId());
-                result.put("companyName", company.getName());
-                result.put("message", "Tienda creada exitosamente.");
-                return ResponseEntity.ok(result);
         }
 
         /**

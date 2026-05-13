@@ -19,14 +19,22 @@ public class Purchase {
     private BigDecimal total;
     private String invoiceNumber; // Optional invoice ID from supplier
 
+    // Multi-currency fields
+    private String currencyCode = "USD";
+    private BigDecimal exchangeRate = BigDecimal.ONE;
+    private BigDecimal totalInBaseCurrency;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "supplier_id")
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private Supplier supplier;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({ "hibernateLazyInitializer", "handler", "purchases" })
     private Company company;
 
     @OneToMany(mappedBy = "purchase", cascade = CascadeType.ALL, orphanRemoval = true)
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({ "purchase" })
     private List<PurchaseItem> items = new ArrayList<>();
 }

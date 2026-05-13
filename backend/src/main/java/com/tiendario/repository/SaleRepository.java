@@ -16,8 +16,10 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
     List<Sale> findByShiftId(Long shiftId);
 
     Page<Sale> findByCompanyId(Long companyId, Pageable pageable);
+    Page<Sale> findByCompanyIdAndUserId(Long companyId, Long userId, Pageable pageable);
 
     Page<Sale> findByCompanyIdAndStatus(Long companyId, com.tiendario.domain.SaleStatus status, Pageable pageable);
+    Page<Sale> findByCompanyIdAndUserIdAndStatus(Long companyId, Long userId, com.tiendario.domain.SaleStatus status, Pageable pageable);
 
     @Query("SELECT s FROM Sale s WHERE s.company.id = :companyId AND s.date >= :startOfDay")
     List<Sale> findByCompanyIdAndDateAfter(Long companyId, LocalDateTime startOfDay);

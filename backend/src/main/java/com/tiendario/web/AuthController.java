@@ -189,6 +189,21 @@ public class AuthController {
                                 logger.info("User registered and enabled immediately: {}", user.getUsername());
                                 return ResponseEntity.ok(new MessageResponse("Registro exitoso."));
                         }
+                } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        // Catch DB-level constraint violations (e.g. duplicate email/username at INSERT time)
+                        String cause = e.getMostSpecificCause().getMessage().toLowerCase();
+                        String friendlyMsg;
+                        if (cause.contains("email")) {
+                                logger.warn("Signup DB constraint: Email '{}' already exists", signUpRequest.getEmail());
+                                friendlyMsg = "Error: ¡El correo electrónico ya está en uso! Por favor usa otro correo.";
+                        } else if (cause.contains("username") || cause.contains("users(username)")) {
+                                logger.warn("Signup DB constraint: Username '{}' already exists", signUpRequest.getUsername());
+                                friendlyMsg = "Error: ¡El nombre de usuario ya está en uso! Por favor elige otro.";
+                        } else {
+                                logger.error("Signup DB constraint violation for {}: {}", signUpRequest.getUsername(), cause);
+                                friendlyMsg = "Error: Ya existe una cuenta con esos datos. Por favor verifica el correo y usuario.";
+                        }
+                        return ResponseEntity.badRequest().body(new MessageResponse(friendlyMsg));
                 } catch (RuntimeException e) {
                         String msg = e.getMessage();
                         if (msg.contains("usuario ya está en uso")) {

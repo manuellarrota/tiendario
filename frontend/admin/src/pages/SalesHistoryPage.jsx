@@ -123,6 +123,16 @@ const SalesHistoryPage = () => {
         }
     };
 
+    const renderPaymentMethods = (sale) => {
+        if (sale.payments && sale.payments.length > 0) {
+            if (sale.payments.length === 1) {
+                return formatPaymentMethod(sale.payments[0].method);
+            }
+            return 'Pago Mixto';
+        }
+        return formatPaymentMethod(sale.paymentMethod);
+    };
+
     const filteredSales = sales;
 
     return (
@@ -181,7 +191,7 @@ const SalesHistoryPage = () => {
                                         </td>
                                         <td className="text-center">{getStatusBadge(sale.status)}</td>
                                         <td className="text-center small">
-                                            {formatPaymentMethod(sale.paymentMethod)}
+                                            {renderPaymentMethods(sale)}
                                         </td>
                                         <td className="text-end fw-bold text-success">
                                             ${sale.totalAmount ? sale.totalAmount.toLocaleString() : '0'}
@@ -252,7 +262,7 @@ const SalesHistoryPage = () => {
                 </Card>
 
                 {/* Modal de Detalle */}
-                <Modal show={showDetail} onHide={() => setShowDetail(false)} size="lg" centered className="rounded-4 overflow-hidden">
+                <Modal show={showDetail} onHide={() => setShowDetail(false)} size="lg" centered scrollable className="rounded-4 overflow-hidden">
                     <Modal.Header closeButton>
                         <Modal.Title className="fw-bold">Detalle de la Venta #{selectedSale?.id}</Modal.Title>
                     </Modal.Header>
@@ -272,7 +282,20 @@ const SalesHistoryPage = () => {
                                     <div className="bg-light p-3 rounded-4 mb-4">
                                         <p className="mb-2"><strong>Estado:</strong> {getStatusBadge(selectedSale.status)}</p>
                                         <p className="mb-2"><strong>Fecha:</strong> {selectedSale.date ? new Date(selectedSale.date).toLocaleString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}</p>
-                                        <p className="mb-2"><strong>Método:</strong> {formatPaymentMethod(selectedSale.paymentMethod)}</p>
+                                        {selectedSale.payments && selectedSale.payments.length > 0 ? (
+                                            <>
+                                                <p className="mb-1"><strong>Métodos de Pago:</strong></p>
+                                                <ul className="mb-2 ps-3 small text-muted">
+                                                    {selectedSale.payments.map((p, idx) => (
+                                                        <li key={idx}>
+                                                            {formatPaymentMethod(p.method)} {p.amount < 0 ? '(Vuelto)' : ''}: {p.currencyCode ? `${p.amount} ${p.currencyCode}` : `$${p.amount}`}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </>
+                                        ) : (
+                                            <p className="mb-2"><strong>Método:</strong> {formatPaymentMethod(selectedSale.paymentMethod)}</p>
+                                        )}
                                         <h4 className="fw-bold text-success mb-0 mt-3">Total: ${selectedSale.totalAmount ? selectedSale.totalAmount.toLocaleString() : '0'}</h4>
                                         {platformConfig?.enableSecondaryCurrency && selectedSale.totalAmount > 0 && (
                                             <h5 className="text-muted mt-1 mb-0">{formatSecondary(selectedSale.totalAmount)}</h5>

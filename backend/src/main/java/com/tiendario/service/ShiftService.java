@@ -14,6 +14,9 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Service
 public class ShiftService {
 
@@ -49,7 +52,12 @@ public class ShiftService {
         shift.setStatus(ShiftStatus.OPEN);
         shift.setInitialCash(initialCash != null ? initialCash : BigDecimal.ZERO);
 
-        return shiftRepository.save(shift);
+        shift = shiftRepository.save(shift);
+        
+        log.info("[CAJA ABIERTA] Cajero: {} | Base Fija Inicial: ${} | Empresa: {}", 
+            user.getUsername(), shift.getInitialCash(), company.getName());
+
+        return shift;
     }
 
     @Transactional
@@ -76,22 +84,44 @@ public class ShiftService {
         BigDecimal expCard = BigDecimal.ZERO;
         BigDecimal expTransfer = BigDecimal.ZERO;
         BigDecimal expMobile = BigDecimal.ZERO;
+        BigDecimal totalChange = BigDecimal.ZERO;
 
         for (Sale s : sales) {
             if (s.getStatus() == SaleStatus.PAID) {
-                switch (s.getPaymentMethod()) {
-                    case CASH: expCash = expCash.add(s.getTotalAmount()); break;
-                    case CARD: expCard = expCard.add(s.getTotalAmount()); break;
-                    case TRANSFER: expTransfer = expTransfer.add(s.getTotalAmount()); break;
-                    case MOBILE_PAYMENT: expMobile = expMobile.add(s.getTotalAmount()); break;
+                if (s.getPayments() == null || s.getPayments().isEmpty()) {
+                    PaymentMethod method = s.getPaymentMethod() != null ? s.getPaymentMethod() : PaymentMethod.CASH;
+                    BigDecimal amount = s.getTotalAmount() != null ? s.getTotalAmount() : BigDecimal.ZERO;
+                    switch (method) {
+                        case CASH: expCash = expCash.add(amount); break;
+                        case CARD: expCard = expCard.add(amount); break;
+                        case TRANSFER: expTransfer = expTransfer.add(amount); break;
+                        case MOBILE_PAYMENT: expMobile = expMobile.add(amount); break;
+                    }
+                } else {
+                    for (SalePayment p : s.getPayments()) {
+                        PaymentMethod method = p.getMethod() != null ? p.getMethod() : PaymentMethod.CASH;
+                        BigDecimal amount = p.getAmountInBaseCurrency() != null ? p.getAmountInBaseCurrency() : (p.getAmount() != null ? p.getAmount() : BigDecimal.ZERO);
+                        
+                        if (amount.compareTo(BigDecimal.ZERO) < 0 && method == PaymentMethod.CASH) {
+                            totalChange = totalChange.add(amount.negate());
+                        }
+
+                        switch (method) {
+                            case CASH: expCash = expCash.add(amount); break;
+                            case CARD: expCard = expCard.add(amount); break;
+                            case TRANSFER: expTransfer = expTransfer.add(amount); break;
+                            case MOBILE_PAYMENT: expMobile = expMobile.add(amount); break;
+                        }
+                    }
                 }
             }
         }
 
-        shift.setExpectedCash(expCash.add(shift.getInitialCash()));
-        shift.setExpectedCard(expCard);
-        shift.setExpectedTransfer(expTransfer);
-        shift.setExpectedMobile(expMobile);
+        shift.setExpectedCash(expCash.add(shift.getInitialCash()).subtract(shift.getRefundedCash() != null ? shift.getRefundedCash() : BigDecimal.ZERO));
+        shift.setExpectedCard(expCard.subtract(shift.getRefundedCard() != null ? shift.getRefundedCard() : BigDecimal.ZERO));
+        shift.setExpectedTransfer(expTransfer.subtract(shift.getRefundedTransfer() != null ? shift.getRefundedTransfer() : BigDecimal.ZERO));
+        shift.setExpectedMobile(expMobile.subtract(shift.getRefundedMobile() != null ? shift.getRefundedMobile() : BigDecimal.ZERO));
+        shift.setTotalChangeGiven(totalChange);
 
         shift.setReportedCash(reportedCash != null ? reportedCash : BigDecimal.ZERO);
         shift.setReportedCard(reportedCard != null ? reportedCard : BigDecimal.ZERO);
@@ -102,7 +132,15 @@ public class ShiftService {
         shift.setStatus(ShiftStatus.CLOSED);
         shift.setObservation(observation);
 
-        return shiftRepository.save(shift);
+        shift = shiftRepository.save(shift);
+
+        BigDecimal diffCash = shift.getReportedCash().subtract(shift.getExpectedCash());
+        String diffType = diffCash.compareTo(BigDecimal.ZERO) < 0 ? "FALTANTE" : (diffCash.compareTo(BigDecimal.ZERO) > 0 ? "SOBRANTE" : "CUADRE EXACTO");
+
+        log.info("[CIERRE CAJA] Cajero: {} | Esperado EFECTIVO: ${} | Reportado: ${} | Diferencia: ${} ({}) | Vueltos dados: ${}", 
+            shift.getUser().getUsername(), shift.getExpectedCash(), shift.getReportedCash(), diffCash, diffType, shift.getTotalChangeGiven());
+
+        return shift;
     }
 
     @Transactional

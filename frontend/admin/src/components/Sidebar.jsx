@@ -5,7 +5,7 @@ import { Nav, Badge } from 'react-bootstrap';
 import {
     FaBars, FaTimes, FaChevronLeft, FaChevronRight, FaStore, FaChartLine,
     FaMoneyBillWave, FaUsers, FaCog, FaHome, FaBell, FaShoppingBag,
-    FaCashRegister, FaBox, FaTags, FaHistory, FaTruck, FaSignOutAlt, FaRocket
+    FaCashRegister, FaBox, FaTags, FaHistory, FaTruck, FaSignOutAlt, FaRocket, FaUserTie
 } from 'react-icons/fa';
 import AuthService from '../services/auth.service';
 import NotificationService from '../services/notification.service';
@@ -215,10 +215,17 @@ const Sidebar = () => {
                                 )}
 
                                 {/* ── CONFIGURACIÓN ───────── */}
-                                <NavGroup label="⚙️ Configuración" collapsed={collapsed} />
-                                <NavItem to="/categories" icon={FaTags} label="Categorías"       description="Mira las categorías globales y sugiere nuevas para el catálogo." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 {(user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
-                                    <NavItem to="/company"    icon={FaCog}  label="Ajustes de Tienda" description="Configura los detalles de tu negocio."                        collapsed={collapsed} setIsOpen={setIsOpen} />
+                                    <>
+                                        <NavGroup label="⚙️ Configuración" collapsed={collapsed} />
+                                        <NavItem to="/categories" icon={FaTags} label="Categorías"       description="Mira las categorías globales y sugiere nuevas para el catálogo." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                    </>
+                                )}
+                                {(user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
+                                    <>
+                                        <NavItem to="/staff"      icon={FaUserTie} label="Mis Empleados" description="Administra cajeros y accesos de personal." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                        <NavItem to="/company"    icon={FaCog}  label="Ajustes de Tienda" description="Configura los detalles de tu negocio."                        collapsed={collapsed} setIsOpen={setIsOpen} />
+                                    </>
                                 )}
                             </>
                         )}

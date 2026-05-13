@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Card, Table, Badge, Button, Modal, Row, Col, Alert } from 'react-bootstrap';
+import { Container, Card, Table, Badge, Button, Modal, Row, Col, Alert, Form } from 'react-bootstrap';
 import { FaHistory, FaCheckCircle, FaExclamationTriangle, FaEye, FaCalculator, FaMoneyBillWave, FaCreditCard, FaUniversity } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import ShiftService from '../services/shift.service';
@@ -100,7 +100,7 @@ const ShiftHistoryPage = () => {
                     </Card.Body>
                 </Card>
 
-                <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered>
+                <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered scrollable>
                     {selectedShift && (
                         <>
                             <Modal.Header closeButton className="border-0 bg-light">
@@ -134,7 +134,14 @@ const ShiftHistoryPage = () => {
                                     <tbody>
                                         <tr>
                                             <td className="text-start ps-3 fw-bold"><FaMoneyBillWave className="text-success me-2"/> Efectivo</td>
-                                            <td>${selectedShift.expectedCash?.toFixed(2)}</td>
+                                            <td>
+                                                ${selectedShift.expectedCash?.toFixed(2)}
+                                                {selectedShift.totalChangeGiven > 0 && (
+                                                    <div className="text-danger small fw-normal mt-1">
+                                                        (Incluye -${selectedShift.totalChangeGiven.toFixed(2)} en Vueltos)
+                                                    </div>
+                                                )}
+                                            </td>
                                             <td>${selectedShift.reportedCash?.toFixed(2)}</td>
                                             <td>{calculateDifference(selectedShift.expectedCash, selectedShift.reportedCash)}</td>
                                         </tr>

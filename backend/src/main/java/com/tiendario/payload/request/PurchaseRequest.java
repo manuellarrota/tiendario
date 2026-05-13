@@ -8,6 +8,9 @@ import java.util.List;
 public class PurchaseRequest {
     private Long supplierId;
     private BigDecimal total;
+    private String currencyCode = "USD";
+    private BigDecimal exchangeRate = BigDecimal.ONE;
+    private BigDecimal totalInBaseCurrency;
     private List<PurchaseItemRequest> items;
 
     @Data
@@ -15,5 +18,7 @@ public class PurchaseRequest {
         private Long productId;
         private Integer quantity;
         private BigDecimal unitCost;
+        private BigDecimal unitCostInBaseCurrency;
+        private BigDecimal subtotalInBaseCurrency;
     }
 }

@@ -43,10 +43,35 @@ public class PurchaseController {
     @PreAuthorize("hasRole('MANAGER')")
     public Page<Purchase> getPurchases(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size) {
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String supplier,
+            @RequestParam(required = false) String dateFrom,
+            @RequestParam(required = false) String dateTo) {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
         Pageable pageable = PageRequest.of(page, size, Sort.by("date").descending());
+
+        // Parse optional date params
+        java.time.LocalDateTime from = null;
+        java.time.LocalDateTime to = null;
+        try {
+            if (dateFrom != null && !dateFrom.isBlank())
+                from = java.time.LocalDate.parse(dateFrom).atStartOfDay();
+            if (dateTo != null && !dateTo.isBlank())
+                to = java.time.LocalDate.parse(dateTo).atTime(23, 59, 59);
+        } catch (Exception ignored) {}
+
+        // Use filtered query if any filter is active
+        boolean hasFilters = (supplier != null && !supplier.isBlank()) || from != null || to != null;
+        if (hasFilters) {
+            return purchaseRepository.findByFilters(
+                userDetails.getCompanyId(),
+                (supplier != null && !supplier.isBlank()) ? supplier : null,
+                from,
+                to,
+                pageable
+            );
+        }
         return purchaseRepository.findByCompanyId(userDetails.getCompanyId(), pageable);
     }
 
@@ -63,6 +88,9 @@ public class PurchaseController {
                 .orElseThrow(() -> new RuntimeException("Company not found")));
         purchase.setDate(LocalDateTime.now());
         purchase.setTotal(request.getTotal());
+        purchase.setCurrencyCode(request.getCurrencyCode() != null ? request.getCurrencyCode() : "USD");
+        purchase.setExchangeRate(request.getExchangeRate() != null ? request.getExchangeRate() : java.math.BigDecimal.ONE);
+        purchase.setTotalInBaseCurrency(request.getTotalInBaseCurrency() != null ? request.getTotalInBaseCurrency() : request.getTotal());
 
         // Set supplier if provided
         if (request.getSupplierId() != null) {
@@ -87,12 +115,14 @@ public class PurchaseController {
             item.setProduct(product);
             item.setQuantity(itemRequest.getQuantity());
             item.setUnitCost(itemRequest.getUnitCost());
+            item.setUnitCostInBaseCurrency(itemRequest.getUnitCostInBaseCurrency() != null ? itemRequest.getUnitCostInBaseCurrency() : itemRequest.getUnitCost());
+            item.setSubtotalInBaseCurrency(itemRequest.getSubtotalInBaseCurrency() != null ? itemRequest.getSubtotalInBaseCurrency() : itemRequest.getUnitCost().multiply(java.math.BigDecimal.valueOf(itemRequest.getQuantity())));
 
             // Update product stock and cost
             // Safely handle null stock (products created without initial stock)
             int currentStock = product.getStock() != null ? product.getStock() : 0;
             product.setStock(currentStock + itemRequest.getQuantity());
-            product.setCostPrice(itemRequest.getUnitCost());
+            product.setCostPrice(item.getUnitCostInBaseCurrency());
             productRepository.save(product);
 
             // Add item to purchase
@@ -104,8 +134,15 @@ public class PurchaseController {
 
         purchaseRepository.save(purchase);
         
-        org.slf4j.LoggerFactory.getLogger(PurchaseController.class).info("[COMPRA/STOCK] Usuario: {} | Empresa: {} | ID Compra: {} | Total: {}", 
-            userDetails.getUsername(), purchase.getCompany().getName(), purchase.getId(), purchase.getTotal());
+        String itemsDetail = purchase.getItems().stream()
+                .map(i -> i.getQuantity() + "x " + i.getProduct().getName())
+                .collect(java.util.stream.Collectors.joining(", "));
+
+        org.slf4j.LoggerFactory.getLogger(PurchaseController.class).info("[NUEVA COMPRA] Gerente: {} | Proveedor: {} | Total Pagado: ${} | Detalle: [{}]", 
+            userDetails.getUsername(), 
+            purchase.getSupplier() != null ? purchase.getSupplier().getName() : "Sin Proveedor", 
+            purchase.getTotal(),
+            itemsDetail);
 
         return ResponseEntity.ok(new MessageResponse("Purchase recorded and stock updated!"));
     }

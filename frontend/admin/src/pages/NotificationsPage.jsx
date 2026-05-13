@@ -169,7 +169,7 @@ const NotificationsPage = () => {
             </div>
 
             {/* Modal de Detalle de Venta */}
-            <Modal show={showSaleModal} onHide={() => setShowSaleModal(false)} size="lg" centered className="rounded-4 overflow-hidden">
+            <Modal show={showSaleModal} onHide={() => setShowSaleModal(false)} size="lg" centered scrollable className="rounded-4 overflow-hidden">
                 <Modal.Header closeButton>
                     <Modal.Title className="fw-bold">Gestión de Pedido #{selectedSale?.id}</Modal.Title>
                 </Modal.Header>

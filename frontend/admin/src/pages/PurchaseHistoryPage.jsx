@@ -10,10 +10,13 @@ const PurchaseHistoryPage = () => {
     const [selectedPurchase, setSelectedPurchase] = useState(null);
     const [showDetail, setShowDetail] = useState(false);
 
-    // Filter states
+    // Filter states (inputs)
     const [filterSupplier, setFilterSupplier] = useState('');
     const [filterDateFrom, setFilterDateFrom] = useState('');
     const [filterDateTo, setFilterDateTo] = useState('');
+
+    // Active filters (sent to backend — only update on Apply click)
+    const [activeFilters, setActiveFilters] = useState({});
 
     // Pagination states
     const [page, setPage] = useState(0);
@@ -23,10 +26,8 @@ const PurchaseHistoryPage = () => {
 
     const loadPurchases = React.useCallback(() => {
         setLoading(true);
-        PurchaseService.getAll(page, pageSize).then(
+        PurchaseService.getAll(page, pageSize, activeFilters).then(
             (response) => {
-                // If we also had filters on the backend, we would pass them here.
-                // For now, let's stick to pagination as requested for performance.
                 setPurchases(response.data.content);
                 setTotalPages(response.data.totalPages);
                 setTotalElements(response.data.totalElements);
@@ -37,7 +38,7 @@ const PurchaseHistoryPage = () => {
                 setLoading(false);
             }
         );
-    }, [page, pageSize]);
+    }, [page, pageSize, activeFilters]);
 
     useEffect(() => {
         loadPurchases();
@@ -48,18 +49,22 @@ const PurchaseHistoryPage = () => {
         setShowDetail(true);
     };
 
+    const applyFilters = () => {
+        setPage(0);
+        setActiveFilters({
+            supplier: filterSupplier || undefined,
+            dateFrom: filterDateFrom || undefined,
+            dateTo: filterDateTo || undefined,
+        });
+    };
+
     const clearFilters = () => {
         setFilterSupplier('');
         setFilterDateFrom('');
         setFilterDateTo('');
+        setActiveFilters({});
         setPage(0);
     };
-
-    // Since backend current version only supports pagination, 
-    // we'll do light frontend search on the current page for better UX 
-    // OR we could implement full search on backend.
-    // Given the user just asked for pagination, I'll focus on that first.
-    // If they have thousands of purchases, pagination is the key.
 
     return (
         <div className="d-flex" style={{ height: '100vh', overflow: 'hidden', backgroundColor: '#f8f9fa' }}>
@@ -120,18 +125,58 @@ const PurchaseHistoryPage = () => {
                                             className="rounded-3 border-light bg-light"
                                         />
                                     </Form.Group>
-                                    <Button variant="dark" className="w-100 rounded-pill fw-bold py-2 shadow-sm">
-                                        Aplicar Filtros
+                                    <Button
+                                        variant="dark"
+                                        className="w-100 rounded-pill fw-bold py-2 shadow-sm"
+                                        onClick={applyFilters}
+                                    >
+                                        <FaSearch className="me-2" /> Aplicar Filtros
                                     </Button>
+                                    {/* Active filter tags */}
+                                    {Object.entries(activeFilters).some(([, v]) => v) && (
+                                        <div className="mt-3 d-flex flex-column gap-1">
+                                            <small className="text-muted fw-bold text-uppercase" style={{fontSize:'0.65rem'}}>Filtros aplicados:</small>
+                                            {activeFilters.supplier && (
+                                                <Badge bg="light" text="dark" className="border rounded-pill px-2 py-1 d-flex align-items-center gap-1">
+                                                    <FaTruck size={10} className="text-primary" /> {activeFilters.supplier}
+                                                </Badge>
+                                            )}
+                                            {activeFilters.dateFrom && (
+                                                <Badge bg="light" text="dark" className="border rounded-pill px-2 py-1 d-flex align-items-center gap-1">
+                                                    <FaCalendarAlt size={10} className="text-success" /> Desde: {activeFilters.dateFrom}
+                                                </Badge>
+                                            )}
+                                            {activeFilters.dateTo && (
+                                                <Badge bg="light" text="dark" className="border rounded-pill px-2 py-1 d-flex align-items-center gap-1">
+                                                    <FaCalendarAlt size={10} className="text-danger" /> Hasta: {activeFilters.dateTo}
+                                                </Badge>
+                                            )}
+                                        </div>
+                                    )}
                                 </Card.Body>
                             </Card>
 
-                            <Card className="border-0 shadow-sm rounded-4 bg-primary text-white overflow-hidden">
-                                <Card.Body className="p-4 position-relative" style={{ zIndex: 1 }}>
-                                    <h6 className="text-white-50 small text-uppercase fw-bold mb-4">Monto total periodo</h6>
-                                    <h2 className="fw-bold mb-0">${purchases.reduce((acc, p) => acc + (p.total || 0), 0).toLocaleString()}</h2>
-                                    <p className="small mb-0">Basado en la página actual</p>
-                                    <FaHistory className="position-absolute text-white-50" style={{ fontSize: '100px', bottom: '-20px', right: '-20px', opacity: 0.2 }} />
+                            {/* Stats card */}
+                            <Card className="border-0 shadow-sm rounded-4 overflow-hidden mt-3">
+                                <Card.Body className="p-3">
+                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                        <small className="text-muted text-uppercase fw-bold" style={{fontSize:'0.65rem'}}>Esta página</small>
+                                        <FaHistory className="text-muted opacity-50" size={12} />
+                                    </div>
+                                    <div className="d-flex gap-3">
+                                        <div>
+                                            <div className="fw-bold text-primary fs-5">{purchases.length}</div>
+                                            <small className="text-muted">compras</small>
+                                        </div>
+                                        <div>
+                                            <div className="fw-bold text-success fs-5">{purchases.reduce((acc, p) => acc + (p.items?.length || 0), 0)}</div>
+                                            <small className="text-muted">artículos</small>
+                                        </div>
+                                        <div>
+                                            <div className="fw-bold text-dark fs-5">{totalElements}</div>
+                                            <small className="text-muted">total</small>
+                                        </div>
+                                    </div>
                                 </Card.Body>
                             </Card>
                         </Col>
@@ -177,12 +222,13 @@ const PurchaseHistoryPage = () => {
                                                         </td>
                                                         <td className="py-3">
                                                             <div className="d-flex align-items-center">
-                                                                <div className="bg-light rounded-circle p-2 me-3 d-flex align-items-center justify-content-center" style={{ width: '40px', height: '40px' }}>
-                                                                    <FaTruck className="text-primary" />
+                                                                <div className="bg-light rounded-circle p-2 me-3 d-flex align-items-center justify-content-center flex-shrink-0" style={{ width: '38px', height: '38px' }}>
+                                                                    <FaTruck className="text-primary" size={13} />
                                                                 </div>
                                                                 <div>
                                                                     <div className="fw-bold">{purchase.supplier?.name || 'Proveedor Directo'}</div>
-                                                                    <div className="text-muted small">ID: {purchase.supplier?.id || 'N/A'}</div>
+                                                                    {purchase.supplier?.phone && <div className="text-muted small">{purchase.supplier.phone}</div>}
+                                                                    {!purchase.supplier?.phone && purchase.supplier?.email && <div className="text-muted small">{purchase.supplier.email}</div>}
                                                                 </div>
                                                             </div>
                                                         </td>
@@ -191,17 +237,31 @@ const PurchaseHistoryPage = () => {
                                                                 {purchase.items?.length || 0} productos
                                                             </Badge>
                                                         </td>
-                                                        <td className="py-3 text-end fw-bold text-dark">
-                                                            ${purchase.total?.toLocaleString() || 0}
+                                                        <td className="py-3 text-end">
+                                                            <div className="fw-bold text-dark">
+                                                                {purchase.currencyCode && purchase.currencyCode !== 'USD' ? (
+                                                                    <>
+                                                                        <span className="text-muted small me-1">{purchase.currencyCode}</span>
+                                                                        {purchase.total?.toLocaleString() || 0}
+                                                                    </>
+                                                                ) : (
+                                                                    `$${purchase.total?.toLocaleString() || 0}`
+                                                                )}
+                                                            </div>
+                                                            {purchase.currencyCode && purchase.currencyCode !== 'USD' && purchase.totalInBaseCurrency && (
+                                                                <div className="text-success small">
+                                                                    =${purchase.totalInBaseCurrency.toFixed(2)} USD
+                                                                </div>
+                                                            )}
                                                         </td>
                                                         <td className="px-4 py-3 text-center">
                                                             <Button
-                                                                variant="light"
+                                                                variant="outline-primary"
                                                                 size="sm"
-                                                                className="rounded-circle shadow-sm"
+                                                                className="rounded-pill px-3"
                                                                 onClick={() => openDetail(purchase)}
                                                             >
-                                                                <FaEye className="text-primary" />
+                                                                <FaEye className="me-1" /> Ver
                                                             </Button>
                                                         </td>
                                                     </tr>
@@ -210,30 +270,45 @@ const PurchaseHistoryPage = () => {
                                         </Table>
                                     )}
 
-                                    {!loading && totalPages > 1 && (
-                                        <div className="d-flex justify-content-between align-items-center p-4 border-top bg-light-subtle">
-                                            <small className="text-muted">Mostrando {purchases.length} de {totalElements} transacciones</small>
-                                            <div className="d-flex gap-2">
-                                                <Button
-                                                    variant="white"
-                                                    className="border shadow-sm rounded-pill px-3"
-                                                    size="sm"
-                                                    disabled={page === 0}
-                                                    onClick={() => setPage(prev => prev - 1)}
-                                                >
-                                                    Anterior
+                                    {!loading && totalPages > 0 && (
+                                        <div className="d-flex justify-content-between align-items-center px-4 py-3 border-top bg-light">
+                                            <small className="text-muted">{purchases.length} de {totalElements} compras</small>
+                                            <div className="d-flex align-items-center gap-1">
+                                                <Button variant="light" size="sm" className="border rounded-pill px-3"
+                                                    disabled={page === 0} onClick={() => setPage(0)}>
+                                                    «
                                                 </Button>
-                                                <div className="d-flex align-items-center px-2 fw-bold small text-primary">
-                                                    Página {page + 1} de {totalPages}
-                                                </div>
-                                                <Button
-                                                    variant="white"
-                                                    className="border shadow-sm rounded-pill px-3"
-                                                    size="sm"
-                                                    disabled={page >= totalPages - 1}
-                                                    onClick={() => setPage(prev => prev + 1)}
-                                                >
-                                                    Siguiente
+                                                <Button variant="light" size="sm" className="border rounded-pill px-3"
+                                                    disabled={page === 0} onClick={() => setPage(p => p - 1)}>
+                                                    ‹
+                                                </Button>
+                                                {/* Page number buttons — show up to 5 around current */}
+                                                {Array.from({ length: totalPages }, (_, i) => i)
+                                                    .filter(i => i === 0 || i === totalPages - 1 || Math.abs(i - page) <= 1)
+                                                    .reduce((acc, i, idx, arr) => {
+                                                        if (idx > 0 && i - arr[idx - 1] > 1) acc.push('...');
+                                                        acc.push(i);
+                                                        return acc;
+                                                    }, [])
+                                                    .map((item, idx) =>
+                                                        item === '...' ? (
+                                                            <span key={`e${idx}`} className="px-1 text-muted small">…</span>
+                                                        ) : (
+                                                            <Button key={item} size="sm"
+                                                                variant={item === page ? 'primary' : 'light'}
+                                                                className={`border rounded-pill px-3 ${item === page ? 'fw-bold' : ''}`}
+                                                                onClick={() => setPage(item)}>
+                                                                {item + 1}
+                                                            </Button>
+                                                        )
+                                                    )}
+                                                <Button variant="light" size="sm" className="border rounded-pill px-3"
+                                                    disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}>
+                                                    ›
+                                                </Button>
+                                                <Button variant="light" size="sm" className="border rounded-pill px-3"
+                                                    disabled={page >= totalPages - 1} onClick={() => setPage(totalPages - 1)}>
+                                                    »
                                                 </Button>
                                             </div>
                                         </div>
@@ -249,7 +324,8 @@ const PurchaseHistoryPage = () => {
                     show={showDetail} 
                     onHide={() => setShowDetail(false)} 
                     size="lg" 
-                    centered 
+                    centered
+                    scrollable
                     contentClassName="rounded-4 border-0 shadow-lg"
                 >
                     <Modal.Header closeButton className="border-0 px-4 pt-4">
@@ -278,8 +354,23 @@ const PurchaseHistoryPage = () => {
                                 <Col md={6} className="mb-4">
                                     <div className="bg-primary-subtle p-3 rounded-4 h-100 text-primary">
                                         <h6 className="text-uppercase small fw-bold mb-3 opacity-75">Resumen Financiero</h6>
-                                        <div className="h3 fw-bold mb-0">${selectedPurchase.total?.toLocaleString() || 0}</div>
-                                        <div className="small opacity-75">Pago registrado exitosamente</div>
+                                        {selectedPurchase.currencyCode && selectedPurchase.currencyCode !== 'USD' ? (
+                                            <>
+                                                <div className="h3 fw-bold mb-0">
+                                                    {selectedPurchase.currencyCode} {selectedPurchase.total?.toLocaleString() || 0}
+                                                </div>
+                                                <div className="small opacity-75 mb-2">Pagado en moneda local</div>
+                                                <div className="fw-bold">
+                                                    = ${selectedPurchase.totalInBaseCurrency?.toFixed(2) || '?'} USD
+                                                </div>
+                                                <div className="small opacity-75">Tasa: {selectedPurchase.exchangeRate} {selectedPurchase.currencyCode}/USD</div>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="h3 fw-bold mb-0">${selectedPurchase.total?.toLocaleString() || 0}</div>
+                                                <div className="small opacity-75">Pago registrado exitosamente</div>
+                                            </>
+                                        )}
                                     </div>
                                 </Col>
                                 <Col md={12}>
@@ -298,11 +389,22 @@ const PurchaseHistoryPage = () => {
                                                         </div>
                                                         <div>
                                                             <div className="fw-bold text-dark">{item.product?.name || 'Producto'}</div>
-                                                            <div className="text-muted small">Costo: ${item.unitCost} | Cantidad: {item.quantity}</div>
+                                                            <div className="text-muted small">
+                                                                Costo: {selectedPurchase.currencyCode && selectedPurchase.currencyCode !== 'USD' ? selectedPurchase.currencyCode : '$'}{item.unitCost}
+                                                                {item.unitCostInBaseCurrency && selectedPurchase.currencyCode !== 'USD' && (
+                                                                    <span className="text-success ms-2">(=${item.unitCostInBaseCurrency?.toFixed(4)} USD)</span>
+                                                                )}
+                                                                {' '}| Cantidad: {item.quantity}
+                                                            </div>
                                                         </div>
                                                     </div>
                                                     <div className="text-end">
-                                                        <div className="fw-bold text-dark">${(item.quantity * (item.unitCost || 0)).toLocaleString()}</div>
+                                                        <div className="fw-bold text-dark">
+                                                            {selectedPurchase.currencyCode && selectedPurchase.currencyCode !== 'USD' ? selectedPurchase.currencyCode : '$'}{(item.quantity * (item.unitCost || 0)).toLocaleString()}
+                                                        </div>
+                                                        {item.subtotalInBaseCurrency && selectedPurchase.currencyCode !== 'USD' && (
+                                                            <div className="text-success small">${item.subtotalInBaseCurrency?.toFixed(2)} USD</div>
+                                                        )}
                                                         <div className="text-muted small">Subtotal</div>
                                                     </div>
                                                 </div>

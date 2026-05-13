@@ -46,6 +46,15 @@ public class Shift {
     private BigDecimal expectedTransfer;
     private BigDecimal expectedMobile;
 
+    // Total change returned to customers (vueltos en efectivo)
+    private BigDecimal totalChangeGiven = BigDecimal.ZERO;
+
+    // Refunded (Egresos)
+    private BigDecimal refundedCash = BigDecimal.ZERO;
+    private BigDecimal refundedCard = BigDecimal.ZERO;
+    private BigDecimal refundedTransfer = BigDecimal.ZERO;
+    private BigDecimal refundedMobile = BigDecimal.ZERO;
+
     @Column(columnDefinition = "TEXT")
     private String observation;
 }

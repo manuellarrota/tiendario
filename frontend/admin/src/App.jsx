@@ -18,6 +18,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import SalesHistoryPage from './pages/SalesHistoryPage';
 import DailyClosingPage from './pages/DailyClosingPage';
 import ShiftHistoryPage from './pages/ShiftHistoryPage';
+import StaffPage from './pages/StaffPage';
 
 import AdminCompaniesPage from './pages/AdminCompaniesPage';
 import AdminPaymentsPage from './pages/AdminPaymentsPage';
@@ -51,7 +52,7 @@ function App() {
             {/* ── AUTHENTICATED (any logged-in manager/admin) ── */}
             <Route path="/dashboard"         element={<Auth><DashboardHome /></Auth>} />
             <Route path="/inventory"         element={<Auth><InventoryPage /></Auth>} />
-            <Route path="/categories"        element={<Auth><CategoriesPage /></Auth>} />
+            <Route path="/categories"        element={<ManagerOnly><CategoriesPage /></ManagerOnly>} />
             <Route path="/suppliers"         element={<ManagerOnly><SupplierPage /></ManagerOnly>} />
             <Route path="/customers"         element={<Auth><CustomersPage /></Auth>} />
             <Route path="/purchases/new"     element={<ManagerOnly><NewPurchasePage /></ManagerOnly>} />
@@ -59,6 +60,7 @@ function App() {
             <Route path="/pos"               element={<Auth><POSPage /></Auth>} />
             <Route path="/reports"           element={<ManagerOnly><ReportsPage /></ManagerOnly>} />
             <Route path="/company"           element={<ManagerOnly><CompanyPage /></ManagerOnly>} />
+            <Route path="/staff"             element={<ManagerOnly><StaffPage /></ManagerOnly>} />
             <Route path="/sales/history"     element={<Auth><SalesHistoryPage /></Auth>} />
             <Route path="/daily-closing"     element={<Auth><DailyClosingPage /></Auth>} />
             <Route path="/shifts/history"    element={<ManagerOnly><ShiftHistoryPage /></ManagerOnly>} />

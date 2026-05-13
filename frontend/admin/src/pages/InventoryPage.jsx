@@ -585,7 +585,7 @@ const InventoryPage = () => {
             </Container>
 
             {/* Create/Edit Modal */}
-            <Modal show={showModal} onHide={() => { setShowModal(false); setEditingProduct(null); }} centered size="lg">
+            <Modal show={showModal} onHide={() => { setShowModal(false); setEditingProduct(null); }} centered scrollable size="lg">
                 <Modal.Header closeButton className="border-0">
                     <Modal.Title className="fw-bold text-dark">{editingProduct ? 'Editar Producto' : 'Nuevo Producto'}</Modal.Title>
                 </Modal.Header>

@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Decimal from 'decimal.js';
-import { Container, Row, Col, Table, Button, Form, Card, Alert, Modal, Image, Badge } from "react-bootstrap";
+import { Container, Row, Col, Table, Button, Form, Card, Alert, Modal, Badge, InputGroup } from "react-bootstrap";
 import Sidebar from "../components/Sidebar";
 import Layout from "../components/Layout";
 import ProductService from "../services/product.service";
 import SupplierService from "../services/supplier.service";
 import PurchaseService from "../services/purchase.service";
 import CategoryService from "../services/category.service";
-import { FaPlus, FaSave, FaTruck, FaBoxOpen, FaImage, FaSearch, FaTimes } from "react-icons/fa";
+import PublicService from "../services/public.service";
+import { FaPlus, FaSave, FaTruck, FaBoxOpen, FaImage, FaSearch, FaTimes, FaExchangeAlt } from "react-icons/fa";
 
 const NewPurchasePage = () => {
     const [products, setProducts] = useState([]);
@@ -16,6 +17,10 @@ const NewPurchasePage = () => {
     const [cart, setCart] = useState([]);
     const [selectedSupplier, setSelectedSupplier] = useState("");
     const [message, setMessage] = useState("");
+
+    // Multi-currency
+    const [platformConfig, setPlatformConfig] = useState(null);
+    const [purchaseCurrency, setPurchaseCurrency] = useState("USD");
 
     // Item Form
     const [selectedProduct, setSelectedProduct] = useState("");
@@ -49,9 +54,38 @@ const NewPurchasePage = () => {
     // Predefined global categories
     const globalCategories = ["Ropa", "Tecnología", "Alimentos", "Hogar", "Deportes", "Salud y Belleza", "Juguetes", "Libros"];
 
+    // Derived currency data
+    const availableCurrencies = useMemo(() => {
+        if (!platformConfig) return [];
+        try {
+            return JSON.parse(platformConfig.currencies || '[]').filter(c => c.enabled);
+        } catch { return []; }
+    }, [platformConfig]);
+
+    const baseCurrencyCode = platformConfig?.baseCurrencyCode || 'USD';
+    const baseCurrencySymbol = platformConfig?.baseCurrencySymbol || '$';
+
+    const selectedCurrencyData = useMemo(() =>
+        availableCurrencies.find(c => c.code === purchaseCurrency) || { rate: 1, symbol: baseCurrencySymbol, code: baseCurrencyCode },
+        [availableCurrencies, purchaseCurrency, baseCurrencyCode, baseCurrencySymbol]
+    );
+
+    const exchangeRate = purchaseCurrency === baseCurrencyCode ? 1 : (selectedCurrencyData?.rate || 1);
+
+    const convertToBase = (amount) => {
+        if (purchaseCurrency === baseCurrencyCode) return new Decimal(amount);
+        return new Decimal(amount).div(exchangeRate);
+    };
+
+    // Returns symbol for a stored item's currency code
+    const getItemSymbol = (currencyCode) => {
+        if (!currencyCode || currencyCode === baseCurrencyCode) return baseCurrencySymbol;
+        const found = availableCurrencies.find(c => c.code === currencyCode);
+        return found ? found.symbol : currencyCode;
+    };
+
     const loadData = () => {
         ProductService.getAll().then(res => {
-            // Backend returns paginated object { products: [...] } or a plain array
             const data = res.data;
             setProducts(Array.isArray(data) ? data : (data.products || data.content || []));
         });
@@ -64,7 +98,7 @@ const NewPurchasePage = () => {
 
     useEffect(() => {
         loadData();
-        // Click outside listener for dropdown
+        PublicService.getPlatformConfig().then(res => setPlatformConfig(res.data));
         function handleClickOutside(event) {
             if (searchRef.current && !searchRef.current.contains(event.target)) {
                 setShowDropdown(false);
@@ -96,21 +130,28 @@ const NewPurchasePage = () => {
     const addToCart = () => {
         if (!selectedProduct || !quantity || !unitCost) return;
         const product = products.find(p => p.id === parseInt(selectedProduct));
+        const unitCostDec = new Decimal(unitCost);
+        const unitCostInBase = convertToBase(unitCostDec);
+        const subtotalInBase = unitCostInBase.times(quantity);
 
         const newItem = {
             product: product,
             quantity: parseInt(quantity),
-            unitCost: parseFloat(unitCost),
-            total: new Decimal(quantity).times(unitCost).toNumber()
+            unitCost: unitCostDec.toNumber(),
+            unitCostInBaseCurrency: unitCostInBase.toNumber(),
+            subtotalInBaseCurrency: subtotalInBase.toNumber(),
+            total: unitCostDec.times(quantity).toNumber(),
+            currencyCode: purchaseCurrency,
+            exchangeRate: exchangeRate
         };
 
         setCart([...cart, newItem]);
-        // Reset Item Form
         setSelectedProduct("");
         setSearchTerm("");
         setQuantity(1);
         setUnitCost("");
     };
+
 
     const handleCreateSupplier = (e) => {
         e.preventDefault();
@@ -187,21 +228,28 @@ const NewPurchasePage = () => {
         if (!selectedSupplier) { alert("❌ Por favor, selecciona un proveedor antes de continuar."); return; }
         if (cart.length === 0) { alert("❌ El carrito de compra está vacío. Agrega al menos un producto."); return; }
 
+        const totalInCurrency = cart.reduce((acc, item) => acc.plus(new Decimal(item.total)), new Decimal(0));
+        const totalInBase = cart.reduce((acc, item) => acc.plus(new Decimal(item.subtotalInBaseCurrency || item.total)), new Decimal(0));
+
         const purchaseData = {
             supplierId: parseInt(selectedSupplier),
+            currencyCode: purchaseCurrency,
+            exchangeRate: exchangeRate,
+            total: totalInCurrency.toNumber(),
+            totalInBaseCurrency: totalInBase.toNumber(),
             items: cart.map(item => ({
                 productId: item.product.id,
                 quantity: item.quantity,
-                unitCost: item.unitCost
-            })),
-            total: cart.reduce((acc, item) => acc.plus(new Decimal(item.total)), new Decimal(0)).toNumber()
+                unitCost: item.unitCost,
+                unitCostInBaseCurrency: item.unitCostInBaseCurrency,
+                subtotalInBaseCurrency: item.subtotalInBaseCurrency
+            }))
         };
 
         PurchaseService.create(purchaseData).then(
             () => {
                 setMessage("✅ ¡Compra registrada y Stock actualizado!");
                 setCart([]); setSelectedSupplier("");
-                // Reload products to update stock in list if needed
                 loadData();
             },
             (error) => {
@@ -254,28 +302,45 @@ const NewPurchasePage = () => {
                                     <tr>
                                         <th>Producto</th>
                                         <th className="text-center">Cant.</th>
-                                        <th className="text-end">Costo de Adq.</th>
-                                        <th className="text-end">Subtotal</th>
+                                        <th className="text-end">Costo (orig.)</th>
+                                        <th className="text-end">Subtotal (orig.)</th>
+                                        <th className="text-end text-success">Base ({baseCurrencyCode})</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {cart.map((item, idx) => (
+                                    {cart.map((item, idx) => {
+                                        const itemSymbol = getItemSymbol(item.currencyCode);
+                                        const isBase = !item.currencyCode || item.currencyCode === baseCurrencyCode;
+                                        return (
                                         <tr key={idx}>
                                             <td>
                                                 <span className="fw-bold">{item.product.name}</span>
                                                 {item.product.variant && <span className="text-muted small ms-2">({item.product.variant})</span>}
+                                                {!isBase && (
+                                                    <span className="ms-2 badge bg-light text-primary border small">{item.currencyCode}</span>
+                                                )}
                                             </td>
                                             <td className="text-center">{item.quantity}</td>
-                                            <td className="text-end">${item.unitCost}</td>
-                                            <td className="text-end fw-bold">${item.total}</td>
+                                            <td className="text-end">{itemSymbol}{item.unitCost}</td>
+                                            <td className="text-end fw-bold">{itemSymbol}{item.total.toFixed(2)}</td>
+                                            <td className="text-end text-success small fw-bold">
+                                                {baseCurrencySymbol}{(item.subtotalInBaseCurrency || item.total).toFixed(4)}
+                                            </td>
                                         </tr>
-                                    ))}
+                                        );
+                                    })}
                                 </tbody>
                             </Table>
                             {cart.length === 0 && <p className="text-center text-muted my-3">Agrega productos a la orden</p>}
 
                             <div className="text-end mt-3">
-                                <h4>Total: ${cart.reduce((acc, item) => acc.plus(new Decimal(item.total)), new Decimal(0)).toFixed(2)}</h4>
+                                {/* Always sum the base-currency subtotals — safe regardless of mixed currencies */}
+                                <div className="text-muted small mb-1">
+                                    {cart.length} producto(s) en la orden
+                                </div>
+                                <h4 className="mb-0 mt-1 text-success">
+                                    Total Base: {baseCurrencySymbol}{cart.reduce((acc, item) => acc.plus(new Decimal(item.subtotalInBaseCurrency || item.total)), new Decimal(0)).toFixed(2)} {baseCurrencyCode}
+                                </h4>
                             </div>
                         </Card>
                     </Col>
@@ -285,15 +350,25 @@ const NewPurchasePage = () => {
                             <h5 className="mb-3">1. Datos Proveedor</h5>
                             <Form.Group className="mb-3">
                                 <Form.Label>Seleccionar Proveedor</Form.Label>
-                                <Form.Select value={selectedSupplier} onChange={e => setSelectedSupplier(e.target.value)}>
+                                <Form.Select
+                                    value={selectedSupplier}
+                                    onChange={e => setSelectedSupplier(e.target.value)}
+                                    disabled={cart.length > 0}
+                                >
                                     <option value="">-- Elige un Proveedor --</option>
                                     {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                                 </Form.Select>
+                                {cart.length > 0 && (
+                                    <Form.Text className="text-warning fw-bold">
+                                        🔒 Bloqueado. Guarda la compra para cambiar de proveedor.
+                                    </Form.Text>
+                                )}
                             </Form.Group>
                             <Button
                                 variant="outline-success"
                                 size="sm"
                                 className="w-100"
+                                disabled={cart.length > 0}
                                 onClick={() => setShowSupplierModal(true)}
                             >
                                 <FaTruck className="me-2" /> Crear Nuevo Proveedor
@@ -301,7 +376,29 @@ const NewPurchasePage = () => {
                         </Card>
 
                         <Card className="border-0 shadow-sm p-4 mb-3">
-                            <h5 className="mb-3">2. Agregar Producto</h5>
+                            <h5 className="mb-3">2. Moneda y Producto</h5>
+
+                            {/* Currency Selector */}
+                            <Form.Group className="mb-3">
+                                <Form.Label className="fw-bold d-flex align-items-center gap-2">
+                                    <FaExchangeAlt className="text-primary" /> Moneda de la Factura
+                                </Form.Label>
+                                <Form.Select
+                                    value={purchaseCurrency}
+                                    onChange={e => setPurchaseCurrency(e.target.value)}
+                                    className="border-primary"
+                                >
+                                    <option value={baseCurrencyCode}>{baseCurrencyCode} (Moneda Base)</option>
+                                    {availableCurrencies.filter(c => c.code !== baseCurrencyCode).map(c => (
+                                        <option key={c.code} value={c.code}>{c.code} – {c.name} (Tasa: {c.rate})</option>
+                                    ))}
+                                </Form.Select>
+                                {purchaseCurrency !== baseCurrencyCode && (
+                                    <Form.Text className="text-success fw-bold">
+                                        1 {baseCurrencyCode} = {exchangeRate} {purchaseCurrency}
+                                    </Form.Text>
+                                )}
+                            </Form.Group>
 
                             {/* Custom Search Selector */}
                             <Form.Group className="mb-2 position-relative" ref={searchRef}>
@@ -350,17 +447,26 @@ const NewPurchasePage = () => {
                                 )}
                             </Form.Group>
 
-                            <Row className="align-items-end">
-                                <Col>
-                                    <Form.Group className="mb-3">
+                            <Row className="align-items-end g-2">
+                                <Col xs={12}>
+                                    <Form.Group className="mb-2">
                                         <Form.Label>Cantidad</Form.Label>
                                         <Form.Control type="number" min="1" value={quantity} onChange={e => setQuantity(e.target.value)} />
                                     </Form.Group>
                                 </Col>
-                                <Col>
+                                <Col xs={12}>
                                     <Form.Group className="mb-3">
-                                        <Form.Label>Costo de Adquisición ($)</Form.Label>
-                                        <Form.Control type="number" value={unitCost} onChange={e => setUnitCost(e.target.value)} />
+                                        <Form.Label>Costo por Unidad ({purchaseCurrency})</Form.Label>
+                                        <InputGroup>
+                                            <InputGroup.Text>{selectedCurrencyData.symbol}</InputGroup.Text>
+                                            <Form.Control type="number" value={unitCost} onChange={e => setUnitCost(e.target.value)} placeholder="0.00" />
+                                        </InputGroup>
+                                        {purchaseCurrency !== baseCurrencyCode && unitCost && (
+                                            <Form.Text className="text-primary fw-bold">
+                                                ≈ {baseCurrencySymbol}{convertToBase(unitCost).toFixed(4)} {baseCurrencyCode}
+                                                <span className="text-muted ms-2">(Tasa: {exchangeRate})</span>
+                                            </Form.Text>
+                                        )}
                                     </Form.Group>
                                 </Col>
                             </Row>
@@ -421,7 +527,7 @@ const NewPurchasePage = () => {
             </Modal>
 
             {/* New Product Modal */}
-            <Modal show={showProductModal} onHide={() => { setShowProductModal(false); resetProductForm(); }} centered size="lg">
+            <Modal show={showProductModal} onHide={() => { setShowProductModal(false); resetProductForm(); }} centered scrollable size="lg">
                 <Modal.Header closeButton className="border-0">
                     <Modal.Title className="fw-bold text-dark">Nuevo Producto</Modal.Title>
                 </Modal.Header>

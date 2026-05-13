@@ -26,6 +26,9 @@ public class Customer {
 
     private LocalDateTime createdAt;
     private Integer loyaltyPoints = 0;
+    
+    @Column(precision = 10, scale = 2)
+    private java.math.BigDecimal storeCredit = java.math.BigDecimal.ZERO;
 
     @PrePersist
     protected void onCreate() {

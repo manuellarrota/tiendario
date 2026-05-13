@@ -55,6 +55,17 @@ public class SaleService {
     }
 
     public Page<Sale> getCompanySalesPaginated(UserDetailsImpl userDetails, SaleStatus status, Pageable pageable) {
+        boolean isCashier = userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_CASHIER"));
+        boolean isManager = userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_MANAGER")) || 
+                            userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        if (isCashier && !isManager) {
+            if (status != null) {
+                return saleRepository.findByCompanyIdAndUserIdAndStatus(userDetails.getCompanyId(), userDetails.getId(), status, pageable);
+            }
+            return saleRepository.findByCompanyIdAndUserId(userDetails.getCompanyId(), userDetails.getId(), pageable);
+        }
+
         if (status != null) {
             return saleRepository.findByCompanyIdAndStatus(userDetails.getCompanyId(), status, pageable);
         }
@@ -153,24 +164,46 @@ public class SaleService {
 
         // Handle payments
         if (sale.getPayments() != null && !sale.getPayments().isEmpty()) {
+            java.math.BigDecimal totalPaidBase = java.math.BigDecimal.ZERO;
             for (SalePayment payment : sale.getPayments()) {
                 payment.setSale(sale);
                 // Ensure amountInBaseCurrency is calculated if not provided
                 if (payment.getAmountInBaseCurrency() == null && payment.getExchangeRate() != null && payment.getExchangeRate().compareTo(java.math.BigDecimal.ZERO) > 0) {
                      payment.setAmountInBaseCurrency(payment.getAmount().divide(payment.getExchangeRate(), 2, java.math.RoundingMode.HALF_UP));
                 }
+                totalPaidBase = totalPaidBase.add(payment.getAmountInBaseCurrency());
+            }
+
+            // If total paid is greater than computed total, record the change as a negative cash payment
+            java.math.BigDecimal change = totalPaidBase.subtract(computedTotal);
+            if (change.compareTo(java.math.BigDecimal.ZERO) > 0) {
+                SalePayment changePayment = new SalePayment();
+                changePayment.setSale(sale);
+                changePayment.setMethod(com.tiendario.domain.PaymentMethod.CASH);
+                changePayment.setAmount(change.negate());
+                changePayment.setAmountInBaseCurrency(change.negate());
+                changePayment.setExchangeRate(java.math.BigDecimal.ONE);
+                // Try to infer base currency from other payments, default to USD if not found
+                String baseCurrency = sale.getPayments().get(0).getCurrencyCode();
+                changePayment.setCurrencyCode(baseCurrency != null ? baseCurrency : "USD"); 
+                sale.getPayments().add(changePayment);
             }
         }
 
         saleRepository.save(sale);
 
-        log.info("[VENTA] Usuario: {} | Empresa: {} | ID: {} | Monto: {} | Estado: {} | Cliente: {}", 
-            cashier != null ? cashier.getUsername() : "Desconocido",
+        String itemsDetail = sale.getItems().stream()
+                .map(i -> i.getQuantity() + "x " + i.getProduct().getName())
+                .collect(Collectors.joining(", "));
+
+        log.info("[NUEVA VENTA] Cajero: {} | Cliente: {} | Empresa: {} | Factura ID: {} | Total: ${} | Estado: {} | Detalle: [{}]", 
+            cashier != null ? cashier.getUsername() : "Desconocido/Sistema",
+            sale.getCustomerName() != null ? sale.getCustomerName() : "Público General",
             company.getName(),
             sale.getId(),
             sale.getTotalAmount(),
             sale.getStatus(),
-            sale.getCustomerName() != null ? sale.getCustomerName() : "General");
+            itemsDetail);
 
         // Notify store owner about new marketplace order (PENDING orders only)
         if (SaleStatus.PENDING.equals(sale.getStatus())) {
@@ -212,15 +245,21 @@ public class SaleService {
         // Restore stock if cancelling an order that had reserved stock
         if (com.tiendario.domain.SaleStatus.CANCELLED.equals(status)
                 && !com.tiendario.domain.SaleStatus.CANCELLED.equals(sale.getStatus())) {
+            
+            StringBuilder stockRestored = new StringBuilder();
+
             if (sale.getItems() != null) {
                 for (SaleItem item : sale.getItems()) {
                     Product product = item.getProduct();
                     if (product != null) {
                         product.setStock(product.getStock() + item.getQuantity());
                         productRepository.save(product);
+                        stockRestored.append("+").append(item.getQuantity()).append(" ").append(product.getName()).append(", ");
                     }
                 }
             }
+            log.warn("[VENTA CANCELADA] Usuario: {} | Factura ID: {} | Motivo: Cambio de estado a CANCELLED | Stock devuelto: [{}]", 
+                userDetails.getUsername(), sale.getId(), stockRestored.toString());
         }
 
         sale.setStatus(status);

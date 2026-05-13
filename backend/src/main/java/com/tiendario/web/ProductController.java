@@ -366,14 +366,23 @@ public class ProductController {
         product.setDescription(productDetails.getDescription());
         product.setImageUrl(productDetails.getImageUrl());
 
-        product.setPrice(productDetails.getPrice());
+        java.math.BigDecimal oldPrice = product.getPrice();
+        java.math.BigDecimal newPrice = productDetails.getPrice();
+
+        product.setPrice(newPrice);
         product.setCostPrice(productDetails.getCostPrice());
         product.setStock(productDetails.getStock());
         product.setMinStock(productDetails.getMinStock());
 
         Product updatedProduct = productRepository.save(product);
-        log.info("📝 [PRODUCTO] Usuario {} actualizó producto: '{}' (SKU: {})", 
+        
+        if (oldPrice != null && newPrice != null && oldPrice.compareTo(newPrice) != 0) {
+            log.info("[ALERTA PRECIO] Usuario: {} | Producto: {} | Viejo Precio: ${} | Nuevo Precio: ${}", 
+                userDetails.getUsername(), updatedProduct.getName(), oldPrice, newPrice);
+        } else {
+            log.info("📝 [PRODUCTO] Usuario {} actualizó producto: '{}' (SKU: {})", 
                 userDetails.getUsername(), updatedProduct.getName(), updatedProduct.getSku());
+        }
 
         // Update index
         productIndexService.indexProduct(updatedProduct);

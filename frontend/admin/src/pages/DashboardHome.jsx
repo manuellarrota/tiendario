@@ -113,6 +113,12 @@ const DashboardHome = () => {
         }
     }, [chartPeriod, isSuperAdmin, isBlocked]);
 
+    useEffect(() => {
+        if (user?.roles?.includes('ROLE_CASHIER') && !user?.roles?.includes('ROLE_MANAGER') && !isSuperAdmin) {
+            window.location.href = '/pos';
+        }
+    }, [user, isSuperAdmin]);
+
     const handleSubscriptionChange = (type) => {
         if (type === 'upgrade' || type === 'trial') {
             setProcessingPayment(true);

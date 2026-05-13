@@ -439,7 +439,7 @@ const CompanyPage = () => {
                     </Row>
 
                     {/* Modal para reportar pago */}
-                    <Modal show={showModal} onHide={() => setShowModal(false)} centered size="lg">
+                    <Modal show={showModal} onHide={() => setShowModal(false)} centered scrollable size="lg">
                         <Modal.Header closeButton className="border-0 pb-0">
                             <Modal.Title className="fw-bold">Reportar Pago de Membresía</Modal.Title>
                         </Modal.Header>

@@ -333,12 +333,28 @@ const POSPage = () => {
     };
 
     const handleCloseShift = () => {
+        const { reportedCash, reportedCard, reportedTransfer, reportedMobile, observation } = closingData;
+        if (reportedCash === "" || reportedCard === "" || reportedTransfer === "" || reportedMobile === "" || observation.trim() === "") {
+            triggerToast("Todos los campos numéricos y la observación son obligatorios para cerrar la caja.", "error");
+            return;
+        }
+
+        if (parseFloat(reportedCash) < 0 || parseFloat(reportedCard) < 0 || parseFloat(reportedTransfer) < 0 || parseFloat(reportedMobile) < 0) {
+            triggerToast("Los montos no pueden ser negativos.", "error");
+            return;
+        }
+
         ShiftService.closeShift(currentShift.id, closingData).then(() => {
             triggerToast("Caja cerrada. Gracias por tu jornada.");
             setCurrentShift(null);
             setShowShiftClosingModal(false);
             setShowShiftOpeningModal(true); // Requiere abrir una nueva si quiere seguir
-        }).catch(err => triggerToast("Error al cerrar caja", "error"));
+            // Reset form
+            setClosingData({ reportedCash: "", reportedCard: "", reportedTransfer: "", reportedMobile: "", observation: "" });
+        }).catch(err => {
+            const errorMsg = err.response && err.response.data && err.response.data.message ? err.response.data.message : "Error al cerrar caja";
+            triggerToast(errorMsg, "error");
+        });
     };
 
     useEffect(() => {
@@ -757,7 +773,7 @@ const POSPage = () => {
                     </Modal.Body>
                 </Modal>
 
-                <Modal show={showShiftClosingModal} onHide={() => setShowShiftClosingModal(false)} centered size="lg">
+                <Modal show={showShiftClosingModal} onHide={() => setShowShiftClosingModal(false)} centered scrollable size="lg">
                     <Modal.Header closeButton>
                         <Modal.Title className="fw-bold">Cierre de Caja (Arqueo)</Modal.Title>
                     </Modal.Header>
@@ -769,25 +785,25 @@ const POSPage = () => {
                             <Col md={6}>
                                 <Form.Group>
                                     <Form.Label className="small fw-bold">Efectivo Total ({baseCurrencySymbol})</Form.Label>
-                                    <Form.Control type="number" value={closingData.reportedCash} onChange={e => setClosingData({...closingData, reportedCash: e.target.value})} placeholder="Cuenta los billetes..." />
+                                    <Form.Control type="number" min="0" step="0.01" value={closingData.reportedCash} onChange={e => setClosingData({...closingData, reportedCash: e.target.value})} placeholder="Cuenta los billetes..." />
                                 </Form.Group>
                             </Col>
                             <Col md={6}>
                                 <Form.Group>
                                     <Form.Label className="small fw-bold">Total Tarjeta/Punto ({baseCurrencySymbol})</Form.Label>
-                                    <Form.Control type="number" value={closingData.reportedCard} onChange={e => setClosingData({...closingData, reportedCard: e.target.value})} placeholder="Suma los vouchers..." />
+                                    <Form.Control type="number" min="0" step="0.01" value={closingData.reportedCard} onChange={e => setClosingData({...closingData, reportedCard: e.target.value})} placeholder="Suma los vouchers..." />
                                 </Form.Group>
                             </Col>
                             <Col md={6}>
                                 <Form.Group>
                                     <Form.Label className="small fw-bold">Total Transferencias ({baseCurrencySymbol})</Form.Label>
-                                    <Form.Control type="number" value={closingData.reportedTransfer} onChange={e => setClosingData({...closingData, reportedTransfer: e.target.value})} placeholder="Revisa el banco..." />
+                                    <Form.Control type="number" min="0" step="0.01" value={closingData.reportedTransfer} onChange={e => setClosingData({...closingData, reportedTransfer: e.target.value})} placeholder="Revisa el banco..." />
                                 </Form.Group>
                             </Col>
                             <Col md={6}>
                                 <Form.Group>
                                     <Form.Label className="small fw-bold">Total Pago Móvil ({baseCurrencySymbol})</Form.Label>
-                                    <Form.Control type="number" value={closingData.reportedMobile} onChange={e => setClosingData({...closingData, reportedMobile: e.target.value})} placeholder="Revisa el cel..." />
+                                    <Form.Control type="number" min="0" step="0.01" value={closingData.reportedMobile} onChange={e => setClosingData({...closingData, reportedMobile: e.target.value})} placeholder="Revisa el cel..." />
                                 </Form.Group>
                             </Col>
                             <Col md={12}>

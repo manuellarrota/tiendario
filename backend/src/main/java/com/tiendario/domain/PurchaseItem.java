@@ -15,9 +15,12 @@ public class PurchaseItem {
 
     private Integer quantity;
     private BigDecimal unitCost;
+    private BigDecimal unitCostInBaseCurrency;
+    private BigDecimal subtotalInBaseCurrency;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id")
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private Product product;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -290,7 +290,7 @@ const MarketplacePage = () => {
         // Prefill customer data from logged-in user
         setCustomerData({
             name: user.name || user.username || '',
-            email: user.email || user.username || '',
+            email: user.email || '',
             phone: user.phone || '',
             address: '',
             quantity: 1,
@@ -313,6 +313,7 @@ const MarketplacePage = () => {
                 storeGroups[storeId] = {
                     companyId: storeId,
                     companyName: item.companyName,
+                    address: item.address || '',
                     latitude: item.latitude,
                     longitude: item.longitude,
                     items: []
@@ -939,28 +940,35 @@ const MarketplacePage = () => {
                                 </Col>
                                 <Col lg={6} className="bg-light d-flex flex-column h-100">
                                     <div className="flex-grow-1" style={{ minHeight: '500px' }}>
-                                        {selectedStore?.latitude && selectedStore?.longitude && selectedStore.latitude !== 0.0 ? (
-                                            <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
-                                                <iframe
-                                                    width="100%"
-                                                    style={{ flexGrow: 1, border: 0, minHeight: '400px' }}
-                                                    src={`https://maps.google.com/maps?q=${selectedStore.latitude},${selectedStore.longitude}&z=15&output=embed`}
-                                                    allowFullScreen
-                                                ></iframe>
-                                                <a href={`https://www.google.com/maps/dir/?api=1&destination=${selectedStore.latitude},${selectedStore.longitude}`}
-                                                    target="_blank" rel="noreferrer"
-                                                    className="btn btn-primary rounded-0 py-3 fw-bold shadow-none"
-                                                    style={{ textDecoration: 'none', borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
-                                                    📍 Cómo llegar (Google Maps)
-                                                </a>
-                                            </div>
-                                        ) : (
-                                            <div className="d-flex flex-column align-items-center justify-content-center h-100 bg-light p-5 text-center">
-                                                <div className="display-1 mb-3">🏢</div>
-                                                <h4 className="fw-bold mb-2">Ubicación No Disponible</h4>
-                                                <p className="text-muted">Esta tienda no ha configurado sus coordenadas físicas en el mapa.</p>
-                                            </div>
-                                        )}
+                                        {(() => {
+                                            const hasCoords = selectedStore?.latitude && selectedStore?.longitude && selectedStore.latitude !== 0.0;
+                                            const hasAddress = selectedStore?.address && selectedStore.address.trim().length > 3;
+                                            const mapSrc = hasCoords
+                                                ? `https://maps.google.com/maps?q=${selectedStore.latitude},${selectedStore.longitude}&z=15&output=embed`
+                                                : hasAddress
+                                                ? `https://maps.google.com/maps?q=${encodeURIComponent(selectedStore.address + ', Venezuela')}&z=15&output=embed`
+                                                : null;
+                                            const dirUrl = hasCoords
+                                                ? `https://www.google.com/maps/dir/?api=1&destination=${selectedStore.latitude},${selectedStore.longitude}`
+                                                : hasAddress
+                                                ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(selectedStore.address + ', Venezuela')}`
+                                                : null;
+                                            return mapSrc ? (
+                                                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                                    <iframe width="100%" style={{ flexGrow: 1, border: 0, minHeight: '400px' }} src={mapSrc} allowFullScreen />
+                                                    <a href={dirUrl} target="_blank" rel="noreferrer"
+                                                        className="btn btn-primary rounded-0 py-3 fw-bold shadow-none">
+                                                        📍 Cómo llegar (Google Maps)
+                                                    </a>
+                                                </div>
+                                            ) : (
+                                                <div className="d-flex flex-column align-items-center justify-content-center h-100 bg-light p-5 text-center">
+                                                    <div className="display-1 mb-3">🏢</div>
+                                                    <h4 className="fw-bold mb-2">Ubicación No Disponible</h4>
+                                                    <p className="text-muted">Esta tienda no ha configurado su ubicación.</p>
+                                                </div>
+                                            );
+                                        })()}
                                     </div>
                                 </Col>
                             </Row>
@@ -977,21 +985,24 @@ const MarketplacePage = () => {
                                 </p>
 
                                 <div className="rounded-4 overflow-hidden border shadow-sm mb-5" style={{ height: '350px' }}>
-                                    {selectedStore?.latitude && selectedStore?.longitude && selectedStore.latitude !== 0.0 ? (
-                                        <iframe
-                                            width="100%"
-                                            height="100%"
-                                            style={{ border: 0 }}
-                                            src={`https://maps.google.com/maps?q=${selectedStore.latitude},${selectedStore.longitude}&z=15&output=embed`}
-                                            allowFullScreen
-                                        ></iframe>
-                                    ) : (
-                                        <div className="d-flex flex-column align-items-center justify-content-center h-100 bg-light p-4 text-center">
-                                            <div className="display-4 mb-2">📍</div>
-                                            <h5 className="fw-bold mb-1">Ubicación Pendiente</h5>
-                                            <p className="text-muted small">Contactar directo para obtener la dirección exacta.</p>
-                                        </div>
-                                    )}
+                                    {(() => {
+                                        const hasCoords = selectedStore?.latitude && selectedStore?.longitude && selectedStore.latitude !== 0.0;
+                                        const hasAddress = selectedStore?.address && selectedStore.address.trim().length > 3;
+                                        const mapSrc = hasCoords
+                                            ? `https://maps.google.com/maps?q=${selectedStore.latitude},${selectedStore.longitude}&z=15&output=embed`
+                                            : hasAddress
+                                            ? `https://maps.google.com/maps?q=${encodeURIComponent(selectedStore.address + ', Venezuela')}&z=15&output=embed`
+                                            : null;
+                                        return mapSrc ? (
+                                            <iframe width="100%" height="100%" style={{ border: 0 }} src={mapSrc} allowFullScreen />
+                                        ) : (
+                                            <div className="d-flex flex-column align-items-center justify-content-center h-100 bg-light p-4 text-center">
+                                                <div className="display-4 mb-2">📍</div>
+                                                <h5 className="fw-bold mb-1">Ubicación Pendiente</h5>
+                                                <p className="text-muted small">Contactar directo para obtener la dirección exacta.</p>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                                 <div className="d-grid gap-2">
                                     <Button variant="primary" className="py-3 rounded-pill fw-bold shadow-sm" onClick={() => setShowStoreModal(false)}>
@@ -1153,16 +1164,21 @@ const MarketplacePage = () => {
                                             <Col sm={6}>
                                                 <div className="bg-light rounded-3 p-3 h-100">
                                                     <small className="text-muted d-block mb-1">📍 Ubicación</small>
-                                                    <small className="fw-bold">San Cristóbal, Táchira</small>
+                                                    <small className="fw-bold">{store.address || 'Dirección no disponible'}</small>
                                                     <br />
-                                                    <a
-                                                        href={`https://www.google.com/maps/dir/?api=1&destination=${store.latitude},${store.longitude}`}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="btn btn-sm btn-outline-primary mt-2 rounded-pill"
-                                                    >
-                                                        Ver en Mapa
-                                                    </a>
+                                                    {(store.address || (store.latitude && store.latitude !== 0)) && (
+                                                        <a
+                                                            href={store.latitude && store.latitude !== 0
+                                                                ? `https://www.google.com/maps/dir/?api=1&destination=${store.latitude},${store.longitude}`
+                                                                : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(store.address + ', Venezuela')}`
+                                                            }
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="btn btn-sm btn-outline-primary mt-2 rounded-pill"
+                                                        >
+                                                            Ver en Mapa
+                                                        </a>
+                                                    )}
                                                 </div>
                                             </Col>
                                             <Col sm={6}>

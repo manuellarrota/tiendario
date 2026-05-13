@@ -8,6 +8,7 @@ const SupplierPage = () => {
     const [suppliers, setSuppliers] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [message, setMessage] = useState("");
+    const [modalError, setModalError] = useState("");
 
     // Form State
     const [name, setName] = useState("");
@@ -68,6 +69,7 @@ const SupplierPage = () => {
 
     const handleCreate = (e) => {
         e.preventDefault();
+        setModalError("");
         SupplierService.create({ name, email, phone }).then(
             () => {
                 setMessage("✅ Proveedor creado correctamente");
@@ -76,9 +78,9 @@ const SupplierPage = () => {
                 setName(""); setEmail(""); setPhone("");
                 setTimeout(() => setMessage(""), 3000);
             },
-            () => {
-                setMessage("❌ Error creando proveedor");
-                setTimeout(() => setMessage(""), 5000);
+            (error) => {
+                setModalError(error.response?.data?.message || "❌ Error creando proveedor");
+                setTimeout(() => setModalError(""), 5000);
             }
         );
     };
@@ -95,6 +97,11 @@ const SupplierPage = () => {
         return sortDir === "asc" ? <FaSortUp className="ms-1 text-primary" size={12} /> : <FaSortDown className="ms-1 text-primary" size={12} />;
     };
 
+    const openModal = () => {
+        setModalError("");
+        setShowModal(true);
+    };
+
     return (
         <Layout>
             <Container fluid>
@@ -103,12 +110,12 @@ const SupplierPage = () => {
                         <h2 className="display-6 fw-bold mb-0 text-gradient">Proveedores</h2>
                         <p className="text-secondary mb-0">Gestiona tus contactos comerciales y de abastecimiento.</p>
                     </div>
-                    <Button variant="primary" className="px-4 py-2 shadow-sm rounded-pill" onClick={() => setShowModal(true)}>
+                    <Button variant="primary" className="px-4 py-2 shadow-sm rounded-pill" onClick={openModal}>
                         <FaPlus className="me-2" /> Nuevo Proveedor
                     </Button>
                 </div>
 
-                {message && <Alert variant="info" className="border-0 shadow-sm rounded-4 mb-4">{message}</Alert>}
+                {message && <Alert variant="success" className="border-0 shadow-sm rounded-4 mb-4">{message}</Alert>}
 
                 {/* Search Bar */}
                 <div className="mb-4">
@@ -214,6 +221,7 @@ const SupplierPage = () => {
                     <Modal.Title className="fw-bold text-dark">Nuevo Proveedor</Modal.Title>
                 </Modal.Header>
                 <Modal.Body className="p-4">
+                    {modalError && <Alert variant="danger" className="border-0 shadow-sm rounded-3 mb-3">{modalError}</Alert>}
                     <Form onSubmit={handleCreate}>
                         <Form.Group className="mb-3">
                             <Form.Label className="fw-bold small">Nombre Empresa / Razón Social *</Form.Label>

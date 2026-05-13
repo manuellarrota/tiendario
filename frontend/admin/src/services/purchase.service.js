@@ -12,11 +12,12 @@ const getAuthHeader = () => {
     }
 }
 
-const getAll = (page = 0, size = 10) => {
-    return axios.get(API_URL, { 
-        params: { page, size },
-        headers: getAuthHeader() 
-    });
+const getAll = (page = 0, size = 10, filters = {}) => {
+    const params = { page, size };
+    if (filters.supplier) params.supplier = filters.supplier;
+    if (filters.dateFrom) params.dateFrom = filters.dateFrom;
+    if (filters.dateTo) params.dateTo = filters.dateTo;
+    return axios.get(API_URL, { params, headers: getAuthHeader() });
 };
 
 const create = (data) => {
