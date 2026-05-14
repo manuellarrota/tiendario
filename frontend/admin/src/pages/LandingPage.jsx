@@ -4,6 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaCheck, FaTimes, FaRocket, FaStore, FaLock, FaUser, FaEnvelope, FaBolt, FaChartBar, FaMapMarkerAlt } from 'react-icons/fa';
 import AuthService from '../services/auth.service';
 import axios from 'axios';
+import StoreLocationMap from '../components/StoreLocationMap';
 
 const LandingPage = () => {
     const [username, setUsername] = useState("");
@@ -27,9 +28,6 @@ const LandingPage = () => {
     const [regPlan, setRegPlan] = useState("free");
     const [regPosition, setRegPosition] = useState(null);
     const [regAddress, setRegAddress] = useState("");
-    const [isSearchingMap, setIsSearchingMap] = useState(false);
-    const [mapError, setMapError] = useState("");
-    const [debouncedAddressForMap, setDebouncedAddressForMap] = useState("");
 
     // Forgot Password State
     const [showForgotModal, setShowForgotModal] = useState(false);
@@ -117,48 +115,6 @@ const LandingPage = () => {
     }, [searchParams, navigate]);
 
 
-    // Geocode address while typing (Debounced)
-    useEffect(() => {
-        if (!regAddress || regAddress.length < 5) {
-            setMapError("");
-            setIsSearchingMap(false);
-            setDebouncedAddressForMap("");
-            return;
-        }
-        
-        setIsSearchingMap(true);
-        setMapError("");
-
-        const timeoutId = setTimeout(() => {
-            // Update the map source only after user stops typing
-            setDebouncedAddressForMap(regAddress);
-
-            // Contextualize the search for better local results
-            const query = encodeURIComponent(`${regAddress}, Venezuela`);
-            axios.get(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`, {
-                headers: { 'Accept-Language': 'es' }
-            })
-                .then(response => {
-                    if (response.data && response.data.length > 0) {
-                        const { lat, lon } = response.data[0];
-                        const newPos = { lat: parseFloat(lat), lng: parseFloat(lon) };
-                        setRegPosition(newPos);
-                        setMapError("");
-                    } else {
-                        // Nominatim didn't find coords - iframe still shows the address fine
-                        setRegPosition(null);
-                    }
-                    setIsSearchingMap(false);
-                })
-                .catch(err => {
-                    console.warn('Geocoding silenced:', err);
-                    // Silently fail - user can still register with address text only
-                    setIsSearchingMap(false);
-                });
-        }, 1000);
-
-        return () => clearTimeout(timeoutId);
-    }, [regAddress]);
 
     const handleLogin = (e) => {
         e.preventDefault();
@@ -532,34 +488,10 @@ const LandingPage = () => {
 
                                 <Form.Group className="mb-4">
                                     <Form.Label>Punto en el Mapa (Ubicación GPS)</Form.Label>
-                                    <div style={{ position: 'relative', height: '280px', width: '100%', borderRadius: '12px', overflow: 'hidden', border: '1px solid #dee2e6', backgroundColor: '#f8f9fa' }}>
-                                        {debouncedAddressForMap.length >= 5 ? (
-                                            <>
-                                                <iframe
-                                                    width="100%"
-                                                    height="100%"
-                                                    style={{ border: 0, display: 'block' }}
-                                                    src={`https://maps.google.com/maps?q=${encodeURIComponent(debouncedAddressForMap + ', Venezuela')}&z=16&output=embed`}
-                                                    allowFullScreen
-                                                    loading="lazy"
-                                                    title="Ubicación de la tienda"
-                                                />
-                                                {isSearchingMap && (
-                                                    <div style={{ position: 'absolute', top: 8, right: 8, background: 'rgba(255,255,255,0.9)', borderRadius: 8, padding: '4px 10px', fontSize: '0.75rem', color: '#6366f1', fontWeight: 600 }}>
-                                                        Buscando coordenadas...
-                                                    </div>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <div className="d-flex flex-column align-items-center justify-content-center h-100 text-center p-3 text-muted">
-                                                <FaMapMarkerAlt size={40} className="mb-2 opacity-50" />
-                                                <small>Escribe tu dirección arriba para verla en el mapa</small>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <small className="mt-1 d-block text-secondary">
-                                        {regPosition ? '📍 Ubicación GPS guardada ✓' : 'El mapa se actualizará mientras escribes tu dirección.'}
-                                    </small>
+                                    <StoreLocationMap 
+                                        address={regAddress} 
+                                        onLocationDetected={setRegPosition} 
+                                    />
                                 </Form.Group>
 
                                 {regMessage && (

@@ -3,6 +3,7 @@ import { Container, Table, Badge, Button, Card, Spinner, Alert } from 'react-boo
 import { FaUsers, FaUserShield, FaStore, FaToggleOn, FaToggleOff } from 'react-icons/fa';
 import AdminService from '../services/admin.service';
 import Sidebar from '../components/Sidebar';
+import Layout from '../components/Layout';
 
 const AdminUsersPage = () => {
     const [users, setUsers] = useState([]);
@@ -57,18 +58,16 @@ const AdminUsersPage = () => {
 
     if (loading) {
         return (
-            <div className="d-flex" style={{ height: '100vh' }}>
-                <Sidebar />
+            <Layout>
                 <div className="flex-grow-1 d-flex align-items-center justify-content-center">
                     <Spinner animation="border" variant="primary" />
                 </div>
-            </div>
+            </Layout>
         );
     }
 
     return (
-        <div className="d-flex admin-content-area overflow-hidden">
-            <Sidebar />
+        <Layout>
             <div className="flex-grow-1 p-3 p-md-4 main-content-mobile-fix" style={{ overflowY: 'auto' }}>
                 <Container className="py-4">
                     <h2 className="mb-4 d-flex align-items-center">
@@ -145,7 +144,7 @@ const AdminUsersPage = () => {
                     </Card>
                 </Container>
             </div>
-        </div>
+        </Layout>
     );
 };
 

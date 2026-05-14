@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Decimal from 'decimal.js';
 import { Container, Row, Col, Card, Form, Button, ListGroup, InputGroup, Table, Modal, Alert, OverlayTrigger, Tooltip, Spinner, Badge, Toast, ToastContainer } from 'react-bootstrap';
 import { FaSearch, FaPlus, FaMinus, FaTrash, FaShoppingCart, FaEdit, FaLock, FaExclamationTriangle, FaExchangeAlt, FaUserPlus, FaUserAlt, FaUserCheck, FaBarcode, FaHome, FaSignOutAlt, FaBell, FaHistory, FaCashRegister, FaTruck, FaBox, FaTags } from 'react-icons/fa';
@@ -11,6 +12,7 @@ import CustomerService from '../services/customer.service';
 import ShiftService from '../services/shift.service';
 
 const POSPage = () => {
+    const navigate = useNavigate();
     // 1. STATE
     const [products, setProducts] = useState([]);
     const [cart, setCart] = useState([]);
@@ -855,6 +857,9 @@ const POSPage = () => {
 
                         <Button variant="primary" size="lg" className="w-100 py-3 rounded-4 fw-bold shadow mt-2" onClick={handleOpenShift}>
                             ABRIR CAJA Y EMPEZAR
+                        </Button>
+                        <Button variant="link" className="text-muted w-100 mt-2 text-decoration-none small" onClick={() => navigate('/dashboard')}>
+                            Cancelar y volver al Dashboard
                         </Button>
                     </Modal.Body>
                 </Modal>

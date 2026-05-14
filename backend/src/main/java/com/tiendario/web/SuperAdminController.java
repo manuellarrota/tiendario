@@ -94,8 +94,7 @@ public class SuperAdminController {
                 stats.put("trialPlanCount", trialPlanCount);
                 stats.put("paidPlanCount", paidPlanCount);
 
-                // 4. Global Revenue (Sales) - This is GMV (Gross Merchandise Value) of the
-                // platform
+                // 4. Global Revenue (Sales)
                 List<Sale> allSales = saleRepository.findAll();
                 BigDecimal globalGmv = allSales.stream()
                                 .map(Sale::getTotalAmount)
@@ -106,13 +105,13 @@ public class SuperAdminController {
                 long totalProducts = productRepository.count();
                 stats.put("totalProducts", totalProducts);
 
-                // 6. MRR Estimation (Monthly Recurring Revenue)
+                // 6. MRR Estimation
                 com.tiendario.domain.GlobalConfig config = configRepository.findFirstByOrderByIdAsc()
                                 .orElse(new com.tiendario.domain.GlobalConfig());
                 BigDecimal mrr = config.getPremiumPlanMonthlyPrice().multiply(BigDecimal.valueOf(paidPlanCount));
                 stats.put("mrr", mrr);
 
-                // 7. Active Shops (Last 30 days based on sales)
+                // 7. Active Shops
                 java.time.LocalDateTime thirtyDaysAgo = java.time.LocalDateTime.now().minusDays(30);
                 Long activeShops = saleRepository.countActiveCompaniesSince(thirtyDaysAgo);
                 stats.put("activeShops", activeShops != null ? activeShops : 0);
@@ -121,21 +120,15 @@ public class SuperAdminController {
                 long totalOrders = saleRepository.count();
                 stats.put("totalOrders", totalOrders);
 
-                // 9. Average Order Value (Global AOV)
+                // 9. Average Order Value
                 BigDecimal aov = totalOrders > 0
                                 ? globalGmv.divide(BigDecimal.valueOf(totalOrders), 2, java.math.RoundingMode.HALF_UP)
                                 : BigDecimal.ZERO;
                 stats.put("globalAov", aov);
 
-                // 10. Conversion Rate (Paid / Total)
+                // 10. Conversion Rate
                 double conversionRate = totalCompanies > 0 ? (double) paidPlanCount / totalCompanies * 100 : 0;
                 stats.put("conversionRate", Math.round(conversionRate * 100.0) / 100.0);
-
-                // 11. Potential Churn (No sales in last 15 days)
-                java.time.LocalDateTime fifteenDaysAgo = java.time.LocalDateTime.now().minusDays(15);
-                List<Long> companiesWithRecentSales = saleRepository.findUniqueCompanyIdsSince(fifteenDaysAgo);
-                long churnedShops = totalCompanies - companiesWithRecentSales.size();
-                stats.put("churnedShops", churnedShops);
 
                 return ResponseEntity.ok(stats);
         }
@@ -155,7 +148,7 @@ public class SuperAdminController {
                 company.setLatitude(companyDetails.getLatitude());
                 company.setLongitude(companyDetails.getLongitude());
                 company.setDescription(companyDetails.getDescription());
-                company.setImageUrl(companyDetails.getImageUrl());
+                company.setAddress(companyDetails.getAddress());
                 companyRepository.save(company);
                 return ResponseEntity.ok(new MessageResponse("Company updated successfully"));
         }
@@ -174,17 +167,12 @@ public class SuperAdminController {
                                 companyRepository.save(company);
                                 log.info("[SUSCRIPCIÓN ACTUALIZADA] Estado: {} | Empresa: {} (ID: {})", 
                                         newStatus, company.getName(), company.getId());
-                                return ResponseEntity
-                                                .ok(new MessageResponse(
-                                                                "Subscription updated successfully!"));
+                                return ResponseEntity.ok(new MessageResponse("Subscription updated successfully!"));
                         } catch (IllegalArgumentException e) {
-                                return ResponseEntity.badRequest()
-                                                .body(new MessageResponse(
-                                                                "Invalid subscription status"));
+                                return ResponseEntity.badRequest().body(new MessageResponse("Invalid subscription status"));
                         }
                 }
-                return ResponseEntity.badRequest()
-                                .body(new MessageResponse("Status is required"));
+                return ResponseEntity.badRequest().body(new MessageResponse("Status is required"));
         }
 
         @GetMapping("/users")
@@ -203,9 +191,7 @@ public class SuperAdminController {
         @PreAuthorize("hasRole('ADMIN')")
         public ResponseEntity<?> approvePayment(@PathVariable Long id) {
                 subscriptionService.approvePayment(id);
-                log.info("[PAGO APROBADO] Pago ID: {} aprobado por SuperAdmin", id);
-                return ResponseEntity.ok(
-                                new MessageResponse("Payment approved successfully"));
+                return ResponseEntity.ok(new MessageResponse("Payment approved successfully"));
         }
 
         @PostMapping("/payments/{id}/reject")
@@ -213,7 +199,6 @@ public class SuperAdminController {
         public ResponseEntity<?> rejectPayment(@PathVariable Long id, @RequestBody Map<String, String> request) {
                 String reason = request.get("reason");
                 subscriptionService.rejectPayment(id, reason);
-                log.warn("[PAGO RECHAZADO] Pago ID: {} rechazado por SuperAdmin | Razón: {}", id, reason);
                 return ResponseEntity.ok(new MessageResponse("Payment rejected"));
         }
 
@@ -224,10 +209,7 @@ public class SuperAdminController {
                                 .orElseThrow(() -> new RuntimeException("User not found"));
                 user.setEnabled(!user.isEnabled());
                 userRepository.save(user);
-                log.warn("[USUARIO TOGGLE] Usuario: {} | Nuevo estado: {} | Acción por SuperAdmin", 
-                        user.getUsername(), user.isEnabled() ? "HABILITADO" : "DESHABILITADO");
-                return ResponseEntity.ok(new MessageResponse(
-                                "User " + (user.isEnabled() ? "enabled" : "disabled") + " successfully"));
+                return ResponseEntity.ok(new MessageResponse("User status toggled successfully"));
         }
 
         @GetMapping("/config")
@@ -243,7 +225,6 @@ public class SuperAdminController {
                 com.tiendario.domain.GlobalConfig current = configRepository.findFirstByOrderByIdAsc()
                                 .orElseGet(() -> new com.tiendario.domain.GlobalConfig());
 
-                // Update only editable fields
                 current.setFreePlanProductLimit(newConfig.getFreePlanProductLimit());
                 current.setPremiumPlanMonthlyPrice(newConfig.getPremiumPlanMonthlyPrice());
                 current.setTrialDays(newConfig.getTrialDays());
@@ -263,8 +244,6 @@ public class SuperAdminController {
                 return ResponseEntity.ok(new MessageResponse("Configuration updated successfully"));
         }
 
-        // --- CATALOG MANAGEMENT ---
-
         @GetMapping("/catalog")
         @PreAuthorize("hasRole('ADMIN')")
         public ResponseEntity<?> getAllCatalogProducts() {
@@ -280,7 +259,6 @@ public class SuperAdminController {
                 cp.setDescription(details.getDescription());
                 cp.setImageUrl(details.getImageUrl());
 
-                // Update category if provided
                 if (details.getCategory() != null && details.getCategory().getName() != null) {
                         Category cat = categoryRepository.findFirstByNameIgnoreCase(details.getCategory().getName().trim())
                                         .orElse(null);
@@ -289,11 +267,7 @@ public class SuperAdminController {
                         cp.setCategory(null);
                 }
 
-                CatalogProduct saved = catalogProductRepository.save(cp);
-
-                // Optional: Trigger a background task to sync all local products or just rely
-                // on the link
-                return ResponseEntity.ok(saved);
+                return ResponseEntity.ok(catalogProductRepository.save(cp));
         }
 
         @DeleteMapping("/catalog/{id}")
@@ -303,14 +277,6 @@ public class SuperAdminController {
                 return ResponseEntity.ok(new MessageResponse("Catalog item deleted"));
         }
 
-        // ─── ONBOARDING DE TIENDAS
-        // ────────────────────────────────────────────────────
-
-        /**
-         * Paso 1 del onboarding: Crea empresa + usuario gestor, activado directamente.
-         * Body: { companyName, username, email, password, phoneNumber, latitude,
-         * longitude, description, subscriptionStatus }
-         */
         @PostMapping("/onboard/create-store")
         @PreAuthorize("hasRole('ADMIN')")
         @Transactional
@@ -324,24 +290,23 @@ public class SuperAdminController {
                 String planStr = (String) body.getOrDefault("subscriptionStatus", "TRIAL");
                 Double lat = body.get("latitude") != null ? ((Number) body.get("latitude")).doubleValue() : 0.0;
                 Double lng = body.get("longitude") != null ? ((Number) body.get("longitude")).doubleValue() : 0.0;
+                String address = (String) body.getOrDefault("address", "");
 
                 if (userRepository.existsByUsername(username)) {
-                        return ResponseEntity.badRequest()
-                                        .body(new MessageResponse("Error: El nombre de usuario ya está en uso."));
+                        return ResponseEntity.badRequest().body(new MessageResponse("Error: El usuario ya existe."));
                 }
                 if (userRepository.existsByEmail(email)) {
-                        return ResponseEntity.badRequest()
-                                        .body(new MessageResponse("Error: El correo electrónico ya está registrado."));
+                        return ResponseEntity.badRequest().body(new MessageResponse("Error: El email ya existe."));
                 }
 
                 try {
-                        // Crear empresa
                         Company company = new Company();
                         company.setName(companyName);
                         company.setPhoneNumber(phone);
                         company.setDescription(description);
                         company.setLatitude(lat);
                         company.setLongitude(lng);
+                        company.setAddress(address);
 
                         SubscriptionStatus plan;
                         try {
@@ -356,97 +321,62 @@ public class SuperAdminController {
                         }
                         companyRepository.save(company);
 
-                        // Crear usuario gestor (activado directamente — el CEO lo registra en persona)
                         User user = new User();
                         user.setUsername(username);
                         user.setEmail(email);
                         user.setPassword(passwordEncoder.encode(password));
                         user.setRole(Role.ROLE_MANAGER);
-                        user.setEnabled(true); // Activado inmediatamente
+                        user.setEnabled(true);
                         user.setCompany(company);
                         userRepository.save(user);
 
-                        log.info("[TIENDA ONBOARDING] Nueva tienda: {} | Gestor: {} | Plan: {} | Empresa ID: {}", 
-                                company.getName(), user.getUsername(), plan, company.getId());
+                        log.info("[TIENDA ONBOARDING] Nueva tienda: {} | Gestor: {}", company.getName(), user.getUsername());
 
-                        // Enviar credenciales
                         try {
                                 emailService.sendStoreCredentials(email, company.getName(), username, password);
-                        } catch (Exception e) {
-                                e.printStackTrace();
-                        }
+                        } catch (Exception e) {}
 
                         Map<String, Object> result = new HashMap<>();
                         result.put("companyId", company.getId());
-                        result.put("userId", user.getId());
                         result.put("companyName", company.getName());
                         result.put("message", "Tienda creada exitosamente.");
                         return ResponseEntity.ok(result);
-                } catch (org.springframework.dao.DataIntegrityViolationException e) {
-                        String cause = e.getMostSpecificCause().getMessage().toLowerCase();
-                        String friendlyMsg;
-                        if (cause.contains("email")) {
-                                friendlyMsg = "Error: El correo electrónico ya está en uso por otra cuenta.";
-                        } else if (cause.contains("username")) {
-                                friendlyMsg = "Error: El nombre de usuario ya está en uso. Por favor elige otro.";
-                        } else {
-                                friendlyMsg = "Error: Ya existe una tienda o usuario con esos datos. Verifica el correo y usuario.";
-                        }
-                        log.error("createStore constraint violation for user '{}': {}", username, cause);
-                        return ResponseEntity.badRequest().body(new MessageResponse(friendlyMsg));
+                } catch (Exception e) {
+                        return ResponseEntity.badRequest().body(new MessageResponse("Error al crear tienda: " + e.getMessage()));
                 }
         }
 
-        /**
-         * Paso 2: Agregar una categoría global.
-         * Body: { name, description }
-         */
         @PostMapping("/categories/global")
         @PreAuthorize("hasRole('ADMIN')")
         public ResponseEntity<?> addGlobalCategory(@RequestBody Map<String, String> body) {
                 String catName = body.get("name");
                 if (catName == null || catName.trim().isEmpty()) {
-                        return ResponseEntity.badRequest().body(new MessageResponse("Nombre de categoría requerido."));
+                        return ResponseEntity.badRequest().body(new MessageResponse("Nombre requerido."));
                 }
 
-                Category cat = categoryRepository.findFirstByNameIgnoreCase(catName.trim()).orElse(null);
-                if (cat == null) {
-                        cat = new Category();
-                        cat.setName(catName.trim());
-                        cat.setDescription(body.getOrDefault("description", ""));
-                        cat = categoryRepository.save(cat);
-                }
+                Category cat = categoryRepository.findFirstByNameIgnoreCase(catName.trim())
+                                .orElseGet(() -> {
+                                        Category newCat = new Category();
+                                        newCat.setName(catName.trim());
+                                        newCat.setDescription(body.getOrDefault("description", ""));
+                                        return categoryRepository.save(newCat);
+                                });
                 return ResponseEntity.ok(cat);
         }
 
-        /**
-         * Paso 3: Agregar un producto al inventario de una empresa específica.
-         * Se vincula automáticamente al catálogo global por SKU.
-         * Body: { name, sku, price, stock, category, costPrice, imageUrl, minStock }
-         */
         @PostMapping("/onboard/{companyId}/products")
         @PreAuthorize("hasRole('ADMIN')")
         @Transactional
-        public ResponseEntity<?> addProductToCompany(@PathVariable Long companyId,
-                        @RequestBody Map<String, Object> body) {
-                Company company = companyRepository.findById(companyId)
-                                .orElse(null);
-                if (company == null) {
-                        return ResponseEntity.badRequest().body(new MessageResponse("Empresa no encontrada."));
-                }
+        public ResponseEntity<?> addProductToCompany(@PathVariable Long companyId, @RequestBody Map<String, Object> body) {
+                Company company = companyRepository.findById(companyId).orElse(null);
+                if (company == null) return ResponseEntity.badRequest().body(new MessageResponse("Empresa no encontrada."));
 
                 String sku = (String) body.get("sku");
                 String name = (String) body.get("name");
                 String catName = (String) body.getOrDefault("category", "");
 
-                final String catNameTrim = (catName != null) ? catName.trim() : "";
+                Category category = catName.isEmpty() ? null : categoryRepository.findFirstByNameIgnoreCase(catName.trim()).orElse(null);
 
-                // 1. Buscar Categoría Global (Solo si existe)
-                final Category category = catNameTrim.isEmpty() ? null
-                                : categoryRepository.findFirstByNameIgnoreCase(catNameTrim)
-                                                .orElse(null);
-
-                // 2. Buscar o Crear en Catálogo Maestro (por SKU)
                 CatalogProduct catalogProduct = null;
                 if (sku != null && !sku.trim().isEmpty()) {
                         catalogProduct = catalogProductRepository.findBySku(sku.trim())
@@ -454,8 +384,6 @@ public class SuperAdminController {
                                                 CatalogProduct cp = new CatalogProduct();
                                                 cp.setSku(sku.trim());
                                                 cp.setName(name);
-                                                cp.setDescription((String) body.getOrDefault("description", ""));
-                                                cp.setImageUrl((String) body.getOrDefault("imageUrl", ""));
                                                 cp.setCategory(category);
                                                 return catalogProductRepository.save(cp);
                                         });
@@ -464,14 +392,11 @@ public class SuperAdminController {
                 Product p = new Product();
                 p.setName(name);
                 p.setSku(sku != null ? sku.trim() : "");
-                p.setCategory(catName != null ? catName.trim() : "");
-                p.setImageUrl((String) body.getOrDefault("imageUrl", ""));
-                p.setPrice(body.get("price") != null ? new BigDecimal(body.get("price").toString()) : BigDecimal.ZERO);
-                p.setCostPrice(body.get("costPrice") != null ? new BigDecimal(body.get("costPrice").toString()) : null);
-                p.setStock(body.get("stock") != null ? Integer.parseInt(body.get("stock").toString()) : 0);
-                p.setMinStock(body.get("minStock") != null ? Integer.parseInt(body.get("minStock").toString()) : 5);
+                p.setCategory(catName);
+                p.setPrice(new BigDecimal(body.get("price").toString()));
+                p.setStock(Integer.parseInt(body.get("stock").toString()));
                 p.setCompany(company);
-                p.setCatalogProduct(catalogProduct); // Vínculo Maestro
+                p.setCatalogProduct(catalogProduct);
 
                 productRepository.save(p);
                 return ResponseEntity.ok(p);
@@ -480,11 +405,6 @@ public class SuperAdminController {
         @GetMapping("/categories/global")
         @PreAuthorize("hasRole('ADMIN')")
         public ResponseEntity<?> getAllGlobalCategories() {
-                List<String> names = categoryRepository.findAll().stream()
-                                .map(Category::getName)
-                                .map(String::trim)
-                                .distinct()
-                                .collect(java.util.stream.Collectors.toList());
-                return ResponseEntity.ok(names);
+                return ResponseEntity.ok(categoryRepository.findAll().stream().map(Category::getName).distinct().toList());
         }
 }

@@ -24,6 +24,13 @@ const updateCompanySubscription = (id, status) => {
     });
 };
 
+const updateCompany = (id, data) => {
+    const user = AuthService.getCurrentUser();
+    return axios.put(API_URL + `companies/${id}`, data, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
 const getGlobalPayments = () => {
     const user = AuthService.getCurrentUser();
     return axios.get(API_URL + "payments", {
@@ -115,8 +122,6 @@ const addProductToCompany = (companyId, data) => {
     });
 };
 
-
-
 const getGlobalCategories = () => {
     const user = AuthService.getCurrentUser();
     return axios.get(API_URL + "categories/global", {
@@ -124,9 +129,31 @@ const getGlobalCategories = () => {
     });
 };
 
+const getCatalogSuggestions = () => {
+    const user = AuthService.getCurrentUser();
+    return axios.get(API_URL + "catalog-suggestions", {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+const approveCatalogSuggestion = (id) => {
+    const user = AuthService.getCurrentUser();
+    return axios.put(API_URL + `catalog-suggestions/${id}/approve`, {}, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+const rejectCatalogSuggestion = (id) => {
+    const user = AuthService.getCurrentUser();
+    return axios.put(API_URL + `catalog-suggestions/${id}/reject`, {}, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
 const AdminService = {
     getGlobalStats,
     getAllCompanies,
+    updateCompany,
     updateCompanySubscription,
     getGlobalPayments,
     approvePayment,
@@ -141,8 +168,10 @@ const AdminService = {
     createStore,
     addGlobalCategory,
     addProductToCompany,
-
     getGlobalCategories,
+    getCatalogSuggestions,
+    approveCatalogSuggestion,
+    rejectCatalogSuggestion,
 };
 
 export default AdminService;

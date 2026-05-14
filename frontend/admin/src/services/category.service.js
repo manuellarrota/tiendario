@@ -24,9 +24,14 @@ const deleteCategory = (id) => {
     return axios.delete(API_URL + id, { headers: getAuthHeader() });
 };
 
+const update = (id, data) => {
+    return axios.put(API_URL + id, data, { headers: getAuthHeader() });
+};
+
 const CategoryService = {
     getAll,
     create,
+    update,
     delete: deleteCategory,
 };
 

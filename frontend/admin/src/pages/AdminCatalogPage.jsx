@@ -3,6 +3,7 @@ import { Container, Table, Badge, Button, Card, Spinner, Form, Modal, Alert } fr
 import { FaBox, FaEdit, FaTrash, FaImage } from 'react-icons/fa';
 import AdminService from '../services/admin.service';
 import Sidebar from '../components/Sidebar';
+import Layout from '../components/Layout';
 
 const AdminCatalogPage = () => {
     const [catalog, setCatalog] = useState([]);
@@ -82,12 +83,11 @@ const AdminCatalogPage = () => {
 
     if (loading) {
         return (
-            <div className="d-flex" style={{ height: '100vh' }}>
-                <Sidebar />
+            <Layout>
                 <div className="flex-grow-1 d-flex align-items-center justify-content-center">
                     <Spinner animation="border" variant="primary" />
                 </div>
-            </div>
+            </Layout>
         );
     }
 
@@ -102,8 +102,7 @@ const AdminCatalogPage = () => {
     const paginatedCatalog = filteredCatalog.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
     return (
-        <div className="d-flex admin-content-area overflow-hidden">
-            <Sidebar />
+        <Layout>
             <div className="flex-grow-1 p-3 p-md-4 main-content-mobile-fix" style={{ overflowY: 'auto' }}>
                 <Container className="py-4">
                     <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
@@ -250,7 +249,7 @@ const AdminCatalogPage = () => {
                     </Button>
                 </Modal.Footer>
             </Modal>
-        </div>
+        </Layout>
     );
 };
 

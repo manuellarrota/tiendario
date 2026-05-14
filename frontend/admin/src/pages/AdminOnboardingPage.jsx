@@ -1,29 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { Container, Card, Button, Form, Alert, Badge, Spinner, Row, Col, ProgressBar } from 'react-bootstrap';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
-import Sidebar from '../components/Sidebar';
+import Layout from '../components/Layout';
 import AdminService from '../services/admin.service';
+import StoreLocationMap from '../components/StoreLocationMap';
 import {
     FaStore, FaUser, FaTags, FaBoxOpen, FaCheckCircle,
     FaPlus, FaTrash, FaMapMarkerAlt, FaArrowRight, FaArrowLeft,
     FaRocket, FaShieldAlt
 } from 'react-icons/fa';
 
-// Fix Leaflet icons
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-    iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
-
-const LocationPicker = ({ position, setPosition }) => {
-    useMapEvents({ click(e) { setPosition(e.latlng); } });
-    return position ? <Marker position={position} /> : null;
-};
 
 const STEPS = [
     { label: 'Tienda', icon: FaStore },
@@ -54,6 +40,7 @@ export default function AdminOnboardingPage() {
     const [description, setDescription] = useState('');
     const [plan, setPlan] = useState('TRIAL');
     const [position, setPosition] = useState(null);
+    const [address, setAddress] = useState('');
 
     // Step 1 — Cuenta de Acceso
     const [username, setUsername] = useState('');
@@ -91,6 +78,7 @@ export default function AdminOnboardingPage() {
                 subscriptionStatus: plan,
                 latitude: position?.lat || 0,
                 longitude: position?.lng || 0,
+                address: address,
             });
             setCreatedCompanyId(res.data.companyId);
             setCreatedCompanyName(res.data.companyName);
@@ -201,16 +189,25 @@ export default function AdminOnboardingPage() {
     };
 
     const resetWizard = () => {
-        setStep(0); setCompanyName(''); setPhone(''); setDescription(''); setPlan('TRIAL'); setPosition(null);
+        setStep(0); setCompanyName(''); setPhone(''); setDescription(''); setPlan('TRIAL'); setPosition(null); setAddress('');
         setUsername(''); setEmail(''); setPassword('');
         setCategories([]); setCatInput('');
         setProducts([{ ...INITIAL_PRODUCT }]); setSavedProducts([]);
         setCreatedCompanyId(null); setCreatedCompanyName(''); setError('');
     };
 
+    if (loading && step > 0 && step < 4) {
+        return (
+            <Layout>
+                <div className="flex-grow-1 d-flex align-items-center justify-content-center">
+                    <Spinner animation="border" variant="primary" />
+                </div>
+            </Layout>
+        );
+    }
+
     return (
-        <div className="d-flex admin-content-area overflow-hidden">
-            <Sidebar />
+        <Layout>
             <div className="flex-grow-1 p-3 p-md-4 main-content-mobile-fix" style={{ overflowY: 'auto', background: 'linear-gradient(135deg, #f8faff 0%, #eef2ff 100%)' }}>
                 <Container className="py-4" style={{ maxWidth: 820 }}>
 
@@ -304,17 +301,21 @@ export default function AdminOnboardingPage() {
                                             </div>
                                         </Col>
                                         <Col md={12}>
+                                            <Form.Group>
+                                                <Form.Label className="fw-semibold small">Dirección Física <span className="text-danger">*</span></Form.Label>
+                                                <Form.Control className="rounded-3" placeholder="Ej: Av. Principal con Calle 5, Local 1"
+                                                    value={address} onChange={e => setAddress(e.target.value)} required />
+                                            </Form.Group>
+                                        </Col>
+                                        <Col md={12}>
                                             <Form.Label className="fw-semibold small d-flex align-items-center gap-2">
                                                 <FaMapMarkerAlt className="text-danger" /> Ubicación en el Mapa
-                                                {position && <Badge bg="success" className="rounded-pill px-2">Marcada</Badge>}
                                             </Form.Label>
-                                            <div style={{ height: 260, borderRadius: 12, overflow: 'hidden', border: '1px solid #e0e7ff' }}>
-                                                <MapContainer center={[10.4806, -66.9036]} zoom={10} style={{ height: '100%', width: '100%' }}>
-                                                    <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                                                    <LocationPicker position={position} setPosition={setPosition} />
-                                                </MapContainer>
-                                            </div>
-                                            <small className="text-muted">Haz clic en el mapa para marcar la ubicación de la tienda.</small>
+                                            <StoreLocationMap 
+                                                address={address} 
+                                                onLocationDetected={setPosition} 
+                                                height="260px"
+                                            />
                                         </Col>
                                     </Row>
                                     <div className="d-flex justify-content-end mt-4">
@@ -618,6 +619,6 @@ export default function AdminOnboardingPage() {
                     )}
                 </Container>
             </div>
-        </div>
+        </Layout>
     );
 }

@@ -4,6 +4,8 @@ import { FaBuilding, FaUsers, FaEdit, FaCheck, FaTimes } from 'react-icons/fa';
 import AdminService from '../services/admin.service';
 import Sidebar from '../components/Sidebar';
 import Layout from '../components/Layout';
+import StoreLocationMap from '../components/StoreLocationMap';
+import { Modal, Row, Col } from 'react-bootstrap';
 
 const AdminCompaniesPage = () => {
     const [companies, setCompanies] = useState([]);
@@ -13,6 +15,16 @@ const AdminCompaniesPage = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const ITEMS_PER_PAGE = 10;
+
+    // Edit Modal State
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedCompany, setSelectedCompany] = useState(null);
+    const [editName, setEditName] = useState('');
+    const [editPhone, setEditPhone] = useState('');
+    const [editDescription, setEditDescription] = useState('');
+    const [editAddress, setEditAddress] = useState('');
+    const [editPosition, setEditPosition] = useState(null);
+    const [saving, setSaving] = useState(false);
 
     const loadCompanies = () => {
         setLoading(true);
@@ -46,6 +58,44 @@ const AdminCompaniesPage = () => {
                 console.error("Error updating company", error);
                 alert("❌ Error al actualizar el estado de la suscripción.");
                 setUpdating(null);
+            }
+        );
+    };
+
+    const handleEditClick = (company) => {
+        setSelectedCompany(company);
+        setEditName(company.name || '');
+        setEditPhone(company.phoneNumber || '');
+        setEditDescription(company.description || '');
+        setEditAddress(company.address || '');
+        setEditPosition({ lat: company.latitude, lng: company.longitude });
+        setShowEditModal(true);
+    };
+
+    const handleUpdateCompany = (e) => {
+        e.preventDefault();
+        setSaving(true);
+        const data = {
+            name: editName,
+            phoneNumber: editPhone,
+            description: editDescription,
+            address: editAddress,
+            latitude: editPosition?.lat || 0,
+            longitude: editPosition?.lng || 0
+        };
+
+        AdminService.updateCompany(selectedCompany.id, data).then(
+            () => {
+                setCompanies(companies.map(c =>
+                    c.id === selectedCompany.id ? { ...c, ...data } : c
+                ));
+                setShowEditModal(false);
+                setSaving(false);
+            },
+            (error) => {
+                console.error("Error updating company", error);
+                alert("❌ Error al actualizar los datos de la empresa.");
+                setSaving(false);
             }
         );
     };
@@ -119,23 +169,28 @@ const AdminCompaniesPage = () => {
                                                 </Badge>
                                             </td>
                                             <td>
-                                                <Dropdown>
-                                                    <Dropdown.Toggle variant="outline-primary" size="sm" className="rounded-pill" id={`dropdown-${company.id}`} disabled={updating === company.id}>
-                                                        {updating === company.id ? <Spinner size="sm" animation="border" /> : <><FaEdit className="me-1" /> Cambiar Plan</>}
-                                                    </Dropdown.Toggle>
+                                                <div className="d-flex gap-2">
+                                                    <Button variant="outline-primary" size="sm" className="rounded-pill" onClick={() => handleEditClick(company)}>
+                                                        <FaEdit className="me-1" /> Editar
+                                                    </Button>
+                                                    <Dropdown>
+                                                        <Dropdown.Toggle variant="outline-secondary" size="sm" className="rounded-pill" id={`dropdown-${company.id}`} disabled={updating === company.id}>
+                                                            {updating === company.id ? <Spinner size="sm" animation="border" /> : <><FaUsers className="me-1" /> Plan</>}
+                                                        </Dropdown.Toggle>
 
-                                                    <Dropdown.Menu>
-                                                        <Dropdown.Item onClick={() => handleStatusChange(company.id, 'PAID')}>
-                                                            <span className="text-success fw-bold">PREMIUM</span> (Pago activo)
-                                                        </Dropdown.Item>
-                                                        <Dropdown.Item onClick={() => handleStatusChange(company.id, 'TRIAL')}>
-                                                            <span className="text-warning fw-bold">PRUEBA</span> (Onboarding)
-                                                        </Dropdown.Item>
-                                                        <Dropdown.Item onClick={() => handleStatusChange(company.id, 'PAST_DUE')}>
-                                                            <span className="text-danger fw-bold">VENCIDO</span> (Bloqueado)
-                                                        </Dropdown.Item>
-                                                    </Dropdown.Menu>
-                                                </Dropdown>
+                                                        <Dropdown.Menu>
+                                                            <Dropdown.Item onClick={() => handleStatusChange(company.id, 'PAID')}>
+                                                                <span className="text-success fw-bold">PREMIUM</span> (Pago activo)
+                                                            </Dropdown.Item>
+                                                            <Dropdown.Item onClick={() => handleStatusChange(company.id, 'TRIAL')}>
+                                                                <span className="text-warning fw-bold">PRUEBA</span> (Onboarding)
+                                                            </Dropdown.Item>
+                                                            <Dropdown.Item onClick={() => handleStatusChange(company.id, 'PAST_DUE')}>
+                                                                <span className="text-danger fw-bold">VENCIDO</span> (Bloqueado)
+                                                            </Dropdown.Item>
+                                                        </Dropdown.Menu>
+                                                    </Dropdown>
+                                                </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -159,6 +214,83 @@ const AdminCompaniesPage = () => {
                     </Card.Body>
                 </Card>
             </Container>
+
+            {/* Edit Company Modal */}
+            <Modal show={showEditModal} onHide={() => setShowEditModal(false)} size="lg" centered>
+                <Modal.Header closeButton className="border-0">
+                    <Modal.Title className="fw-bold">Editar Datos de Tienda</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="p-4">
+                    <Form onSubmit={handleUpdateCompany}>
+                        <Row>
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="small fw-bold">Nombre de la Empresa</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        value={editName}
+                                        onChange={(e) => setEditName(e.target.value)}
+                                        required
+                                        className="rounded-3"
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="small fw-bold">Teléfono</Form.Label>
+                                    <Form.Control
+                                        type="tel"
+                                        value={editPhone}
+                                        onChange={(e) => setEditPhone(e.target.value)}
+                                        className="rounded-3"
+                                    />
+                                </Form.Group>
+                            </Col>
+                        </Row>
+
+                        <Form.Group className="mb-3">
+                            <Form.Label className="small fw-bold">Descripción</Form.Label>
+                            <Form.Control
+                                as="textarea"
+                                rows={2}
+                                value={editDescription}
+                                onChange={(e) => setEditDescription(e.target.value)}
+                                className="rounded-3"
+                            />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                            <Form.Label className="small fw-bold">Dirección Física</Form.Label>
+                            <Form.Control
+                                type="text"
+                                value={editAddress}
+                                onChange={(e) => setEditAddress(e.target.value)}
+                                required
+                                className="rounded-3"
+                            />
+                        </Form.Group>
+
+                        <div className="mb-3">
+                            <Form.Label className="small fw-bold">Ubicación en el Mapa</Form.Label>
+                            <StoreLocationMap 
+                                address={editAddress} 
+                                onLocationDetected={setEditPosition} 
+                                height="250px"
+                            />
+                        </div>
+
+                        <div className="d-flex justify-content-end gap-2 mt-4">
+                            <Button variant="light" className="rounded-pill px-4" onClick={() => setShowEditModal(false)}>
+                                Cancelar
+                            </Button>
+                            <Button variant="primary" type="submit" className="rounded-pill px-4 fw-bold shadow-sm" disabled={saving}>
+                                {saving ? <Spinner size="sm" animation="border" className="me-2" /> : <FaCheck className="me-2" />}
+                                Guardar Cambios
+                            </Button>
+                        </div>
+                    </Form>
+                </Modal.Body>
+            </Modal>
         </Layout>
     );
 };

@@ -54,4 +54,17 @@ public class CategoryController {
         categoryRepository.delete(category);
         return ResponseEntity.ok(new MessageResponse("Category deleted globally!"));
     }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<?> updateCategory(@PathVariable Long id, @RequestBody Category categoryDetails) {
+        Category category = categoryRepository.findById(id).orElse(null);
+        if (category == null) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: Category not found."));
+        }
+        category.setName(categoryDetails.getName().trim());
+        category.setDescription(categoryDetails.getDescription());
+        categoryRepository.save(category);
+        return ResponseEntity.ok(category);
+    }
 }
