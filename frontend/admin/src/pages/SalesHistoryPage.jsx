@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Table, Badge, Button, Modal, ListGroup, Form, OverlayTrigger, Tooltip } from 'react-bootstrap';
-import { FaHistory, FaEye, FaCheckCircle, FaClock, FaUser, FaPhoneAlt, FaMapMarkerAlt } from 'react-icons/fa';
+import { FaHistory, FaEye, FaCheckCircle, FaClock, FaUser, FaPhoneAlt, FaMapMarkerAlt, FaSearch, FaUndo } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import SaleService from '../services/sale.service';
 import PublicService from '../services/public.service';
@@ -193,8 +193,8 @@ const SalesHistoryPage = () => {
                 <Card className="border-0 shadow-sm rounded-4 mb-4">
                     <Card.Body className="p-4">
                         <Row className="g-3">
-                            <Col md={2}>
-                                <Form.Label className="small fw-bold text-muted text-uppercase">Buscar Cliente</Form.Label>
+                            <Col md={3}>
+                                <Form.Label className="small fw-bold text-muted text-uppercase">Cliente</Form.Label>
                                 <Form.Control
                                     type="text"
                                     placeholder="Nombre o Cédula..."
@@ -234,7 +234,15 @@ const SalesHistoryPage = () => {
                                     <option value="CANCELLED">Cancelados</option>
                                 </Form.Select>
                             </Col>
-                            <Col md={2}>
+                            <Col md={3} className="d-flex align-items-end gap-2">
+                                <Button variant="primary" className="w-100 rounded-3 shadow-sm fw-bold" onClick={applyFilters}>
+                                    <FaSearch className="me-2" /> Filtrar
+                                </Button>
+                                <Button variant="light" className="w-100 rounded-3 border shadow-sm fw-bold text-muted" onClick={clearFilters}>
+                                    <FaUndo className="me-2" /> Limpiar
+                                </Button>
+                            </Col>
+                            <Col md={3} className="mt-2">
                                 <Form.Label className="small fw-bold text-muted text-uppercase">Medio de Pago</Form.Label>
                                 <Form.Select
                                     className="rounded-3 border-light bg-light"
@@ -247,14 +255,6 @@ const SalesHistoryPage = () => {
                                     <option value="MOBILE_PAYMENT">Pago Móvil</option>
                                     <option value="CARD">Tarjeta</option>
                                 </Form.Select>
-                            </Col>
-                            <Col md={2} className="d-flex align-items-end gap-2">
-                                <Button variant="primary" className="w-100 rounded-3" onClick={applyFilters}>
-                                    Filtrar
-                                </Button>
-                                <Button variant="light" className="w-100 rounded-3 border" onClick={clearFilters}>
-                                    Limpiar
-                                </Button>
                             </Col>
                         </Row>
                     </Card.Body>
