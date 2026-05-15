@@ -36,11 +36,17 @@ public class SaleController {
     public Page<Sale> getCompanySales(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String customer,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime dateFrom,
+            @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime dateTo,
+            @RequestParam(required = false) com.tiendario.domain.PaymentMethod paymentMethod,
             @RequestParam(required = false) com.tiendario.domain.SaleStatus status) {
+        
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
         Pageable pageable = PageRequest.of(page, size, Sort.by("date").descending());
-        return saleService.getCompanySalesPaginated(userDetails, status, pageable);
+        
+        return saleService.getFilteredSales(userDetails, customer, dateFrom, dateTo, paymentMethod, status, pageable);
     }
 
     @GetMapping("/{id}")

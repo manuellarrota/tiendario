@@ -8,7 +8,7 @@ import SupplierService from "../services/supplier.service";
 import PurchaseService from "../services/purchase.service";
 import CategoryService from "../services/category.service";
 import PublicService from "../services/public.service";
-import { FaPlus, FaSave, FaTruck, FaBoxOpen, FaImage, FaSearch, FaTimes, FaExchangeAlt } from "react-icons/fa";
+import { FaPlus, FaSave, FaTruck, FaBoxOpen, FaImage, FaSearch, FaTimes, FaExchangeAlt, FaTrash } from "react-icons/fa";
 
 const NewPurchasePage = () => {
     const [products, setProducts] = useState([]);
@@ -21,6 +21,7 @@ const NewPurchasePage = () => {
     // Multi-currency
     const [platformConfig, setPlatformConfig] = useState(null);
     const [purchaseCurrency, setPurchaseCurrency] = useState("USD");
+    const [paymentMethod, setPaymentMethod] = useState("CASH");
 
     // Item Form
     const [selectedProduct, setSelectedProduct] = useState("");
@@ -134,24 +135,73 @@ const NewPurchasePage = () => {
         const product = products.find(p => p.id === parseInt(selectedProduct));
         const unitCostDec = new Decimal(unitCost);
         const unitCostInBase = convertToBase(unitCostDec);
-        const subtotalInBase = unitCostInBase.times(quantity).toDecimalPlaces(2);
+        const qty = parseInt(quantity);
 
-        const newItem = {
-            product: product,
-            quantity: parseInt(quantity),
-            unitCost: unitCostDec.toNumber(),
-            unitCostInBaseCurrency: unitCostInBase.toNumber(),
-            subtotalInBaseCurrency: subtotalInBase.toNumber(),
-            total: unitCostDec.times(quantity).toDecimalPlaces(2).toNumber(),
-            currencyCode: purchaseCurrency,
-            exchangeRate: exchangeRate
-        };
+        const existingItemIndex = cart.findIndex(item => item.product.id === product.id && item.currencyCode === purchaseCurrency);
 
-        setCart([...cart, newItem]);
+        if (existingItemIndex > -1) {
+            // Unify: Update existing item with new quantity and latest cost
+            const newCart = [...cart];
+            const existingItem = newCart[existingItemIndex];
+            const newQty = existingItem.quantity + qty;
+            
+            existingItem.quantity = newQty;
+            existingItem.unitCost = unitCostDec.toNumber();
+            existingItem.unitCostInBaseCurrency = unitCostInBase.toNumber();
+            existingItem.total = unitCostDec.times(newQty).toDecimalPlaces(2).toNumber();
+            existingItem.subtotalInBaseCurrency = unitCostInBase.times(newQty).toDecimalPlaces(2).toNumber();
+            
+            setCart(newCart);
+        } else {
+            const subtotalInBase = unitCostInBase.times(qty).toDecimalPlaces(2);
+            const newItem = {
+                product: product,
+                quantity: qty,
+                unitCost: unitCostDec.toNumber(),
+                unitCostInBaseCurrency: unitCostInBase.toNumber(),
+                subtotalInBaseCurrency: subtotalInBase.toNumber(),
+                total: unitCostDec.times(qty).toDecimalPlaces(2).toNumber(),
+                currencyCode: purchaseCurrency,
+                exchangeRate: exchangeRate
+            };
+            setCart([...cart, newItem]);
+        }
+
         setSelectedProduct("");
         setSearchTerm("");
         setQuantity(1);
         setUnitCost("");
+    };
+
+    const removeFromCart = (index) => {
+        const newCart = [...cart];
+        newCart.splice(index, 1);
+        setCart(newCart);
+    };
+
+    const updateCartItem = (index, field, value) => {
+        if (value < 0) return;
+        const newCart = [...cart];
+        const item = newCart[index];
+        
+        if (field === 'quantity') {
+            item.quantity = parseInt(value) || 0;
+        } else if (field === 'unitCost') {
+            item.unitCost = parseFloat(value) || 0;
+            // Recalculate base cost using the item's own exchange rate
+            const costDec = new Decimal(item.unitCost);
+            item.unitCostInBaseCurrency = costDec.div(item.exchangeRate || 1).toDecimalPlaces(2).toNumber();
+        }
+
+        // Recalculate totals
+        const qtyDec = new Decimal(item.quantity);
+        const costDec = new Decimal(item.unitCost);
+        const baseCostDec = new Decimal(item.unitCostInBaseCurrency);
+
+        item.total = costDec.times(qtyDec).toDecimalPlaces(2).toNumber();
+        item.subtotalInBaseCurrency = baseCostDec.times(qtyDec).toDecimalPlaces(2).toNumber();
+
+        setCart(newCart);
     };
 
 
@@ -243,6 +293,7 @@ const NewPurchasePage = () => {
             exchangeRate: exchangeRate,
             total: totalInCurrency.toNumber(),
             totalInBaseCurrency: totalInBase.toNumber(),
+            paymentMethod: paymentMethod,
             items: cart.map(item => ({
                 productId: item.product.id,
                 quantity: item.quantity,
@@ -307,10 +358,11 @@ const NewPurchasePage = () => {
                                 <thead className="bg-light">
                                     <tr>
                                         <th>Producto</th>
-                                        <th className="text-center">Cant.</th>
-                                        <th className="text-end">Costo (orig.)</th>
-                                        <th className="text-end">Subtotal (orig.)</th>
+                                        <th className="text-center" style={{ width: '90px' }}>Cant.</th>
+                                        <th className="text-start" style={{ width: '165px' }}>Costo Unit.</th>
+                                        <th className="text-end">Subtotal</th>
                                         <th className="text-end text-success">Base ({baseCurrencyCode})</th>
+                                        <th className="text-center">Acción</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -320,17 +372,26 @@ const NewPurchasePage = () => {
                                         return (
                                         <tr key={idx}>
                                             <td>
-                                                <span className="fw-bold">{item.product.name}</span>
-                                                {item.product.variant && <span className="text-muted small ms-2">({item.product.variant})</span>}
-                                                {!isBase && (
-                                                    <span className="ms-2 badge bg-light text-primary border small">{item.currencyCode}</span>
-                                                )}
+                                                <div className="fw-bold text-dark">{item.product.name}</div>
+                                                <div className="d-flex align-items-center gap-1 mt-1">
+                                                    {item.product.variant && <Badge bg="light" text="dark" className="border small fw-normal">{item.product.variant}</Badge>}
+                                                    {!isBase && <Badge bg="primary" className="small">{item.currencyCode}</Badge>}
+                                                </div>
                                             </td>
-                                            <td className="text-center">{item.quantity}</td>
-                                            <td className="text-end">{itemSymbol}{item.unitCost}</td>
-                                            <td className="text-end fw-bold">{itemSymbol}{item.total.toFixed(2)}</td>
-                                            <td className="text-end text-success small fw-bold">
-                                                {baseCurrencySymbol}{(item.subtotalInBaseCurrency || item.total).toFixed(4)}
+                                            <td className="text-center pt-3" style={{ width: '90px' }}>
+                                                <span className="fw-bold">{item.quantity}</span>
+                                            </td>
+                                            <td className="text-start pt-3" style={{ width: '165px' }}>
+                                                <span className="fw-bold">{itemSymbol}{item.unitCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                            </td>
+                                            <td className="text-end fw-bold pt-3">{itemSymbol}{item.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                            <td className="text-end text-success small fw-bold pt-3">
+                                                {baseCurrencySymbol}{(item.subtotalInBaseCurrency || item.total).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                            </td>
+                                            <td className="text-center pt-2">
+                                                <Button variant="link" className="text-danger p-0" onClick={() => removeFromCart(idx)}>
+                                                    <FaTrash size={14} />
+                                                </Button>
                                             </td>
                                         </tr>
                                         );
@@ -345,7 +406,7 @@ const NewPurchasePage = () => {
                                     {cart.length} producto(s) en la orden
                                 </div>
                                 <h4 className="mb-0 mt-1 text-success">
-                                    Total Base: {baseCurrencySymbol}{cart.reduce((acc, item) => acc.plus(new Decimal(item.subtotalInBaseCurrency || item.total)), new Decimal(0)).toFixed(2)} {baseCurrencyCode}
+                                    Total Base: {baseCurrencySymbol}{cart.reduce((acc, item) => acc.plus(new Decimal(item.subtotalInBaseCurrency || item.total)), new Decimal(0)).toNumber().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}
                                 </h4>
                             </div>
                         </Card>
@@ -393,17 +454,41 @@ const NewPurchasePage = () => {
                                     value={purchaseCurrency}
                                     onChange={e => setPurchaseCurrency(e.target.value)}
                                     className="border-primary"
+                                    disabled={cart.length > 0}
                                 >
                                     <option value={baseCurrencyCode}>{baseCurrencyCode} (Moneda Base)</option>
                                     {availableCurrencies.filter(c => c.code !== baseCurrencyCode).map(c => (
                                         <option key={c.code} value={c.code}>{c.code} – {c.name} (Tasa: {c.rate})</option>
                                     ))}
                                 </Form.Select>
-                                {purchaseCurrency !== baseCurrencyCode && (
-                                    <Form.Text className="text-success fw-bold">
-                                        1 {baseCurrencyCode} = {exchangeRate} {purchaseCurrency}
+                                {cart.length > 0 ? (
+                                    <Form.Text className="text-warning fw-bold">
+                                        🔒 Bloqueado. Guarda la compra para cambiar la moneda.
                                     </Form.Text>
+                                ) : (
+                                    purchaseCurrency !== baseCurrencyCode && (
+                                        <Form.Text className="text-success fw-bold">
+                                            1 {baseCurrencyCode} = {exchangeRate} {purchaseCurrency}
+                                        </Form.Text>
+                                    )
                                 )}
+                            </Form.Group>
+
+                            {/* Payment Method Selector */}
+                            <Form.Group className="mb-3">
+                                <Form.Label className="fw-bold d-flex align-items-center gap-2">
+                                    💳 Medio de Pago
+                                </Form.Label>
+                                <Form.Select
+                                    value={paymentMethod}
+                                    onChange={e => setPaymentMethod(e.target.value)}
+                                    className="border-primary"
+                                >
+                                    <option value="CASH">💵 Efectivo / Cash</option>
+                                    <option value="TRANSFER">🏦 Transferencia / Zelle</option>
+                                    <option value="MOBILE_PAYMENT">📱 Pago Móvil</option>
+                                    <option value="CARD">💳 Tarjeta (Débito/Crédito)</option>
+                                </Form.Select>
                             </Form.Group>
 
                             {/* Custom Search Selector */}
@@ -469,8 +554,8 @@ const NewPurchasePage = () => {
                                         </InputGroup>
                                         {purchaseCurrency !== baseCurrencyCode && unitCost && (
                                             <Form.Text className="text-primary fw-bold">
-                                                ≈ {baseCurrencySymbol}{convertToBase(unitCost).toFixed(4)} {baseCurrencyCode}
-                                                <span className="text-muted ms-2">(Tasa: {exchangeRate})</span>
+                                                ≈ {baseCurrencySymbol}{Number(convertToBase(unitCost)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} {baseCurrencyCode}
+                                                <span className="text-muted ms-2">(Tasa: {Number(exchangeRate).toLocaleString()})</span>
                                             </Form.Text>
                                         )}
                                     </Form.Group>
@@ -481,11 +566,22 @@ const NewPurchasePage = () => {
                             </Button>
                         </Card>
 
-                        <Button variant="primary" size="lg" className="w-100 py-3 fw-bold shadow-glow" onClick={handleSavePurchase}>
-                            <FaSave className="me-2" /> Guardar Compra
-                        </Button>
                     </Col>
                 </Row>
+ 
+                {/* Floating Save Button - Replicating POS behavior */}
+                {cart.length > 0 && (
+                     <div className="pos-floating-checkout shadow-lg animate-in">
+                        <Button 
+                            className="btn-premium-checkout px-5" 
+                            onClick={handleSavePurchase}
+                        >
+                            <FaSave className="me-2" /> 
+                            GUARDAR COMPRA: {selectedCurrencyData.symbol}{cart.reduce((acc, item) => acc.plus(new Decimal(item.total)), new Decimal(0)).toNumber().toLocaleString(undefined, { minimumFractionDigits: 2 })} {purchaseCurrency} 
+                            ({paymentMethod === 'CASH' ? 'Efectivo' : paymentMethod === 'TRANSFER' ? 'Transferencia' : paymentMethod === 'MOBILE_PAYMENT' ? 'Pago Móvil' : 'Tarjeta'})
+                        </Button>
+                     </div>
+                )}
             </Container>
 
             {/* New Supplier Modal */}

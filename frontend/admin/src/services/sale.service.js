@@ -3,12 +3,15 @@ import AuthService from "./auth.service";
 
 const API_URL = import.meta.env.VITE_API_URL + "/sales/";
 
-const getSales = (page = 0, size = 10, status = null) => {
+const getSales = (page = 0, size = 10, status = null, customer = '', dateFrom = null, dateTo = null, paymentMethod = null) => {
     const user = AuthService.getCurrentUser();
     const params = { page, size };
-    if (status && status !== 'ALL') {
-        params.status = status;
-    }
+    if (status && status !== 'ALL') params.status = status;
+    if (customer) params.customer = customer;
+    if (dateFrom) params.dateFrom = dateFrom;
+    if (dateTo) params.dateTo = dateTo;
+    if (paymentMethod && paymentMethod !== 'ALL') params.paymentMethod = paymentMethod;
+
     return axios.get(API_URL, {
         params,
         headers: { Authorization: 'Bearer ' + user.token }

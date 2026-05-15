@@ -17,6 +17,12 @@ const SalesHistoryPage = () => {
     const [totalElements, setTotalElements] = useState(0);
     const [pageSize] = useState(10);
 
+    const [filterCustomer, setFilterCustomer] = useState('');
+    const [filterDateFrom, setFilterDateFrom] = useState('');
+    const [filterDateTo, setFilterDateTo] = useState('');
+    const [filterPaymentMethod, setFilterPaymentMethod] = useState('ALL');
+    const [activeFilters, setActiveFilters] = useState({});
+
     const formatSecondary = (amount) => {
         if (!platformConfig || !platformConfig.enableSecondaryCurrency) return null;
         const converted = amount * platformConfig.exchangeRate;
@@ -25,7 +31,20 @@ const SalesHistoryPage = () => {
 
     const loadSales = React.useCallback((silent = false) => {
         if (!silent) setLoading(true);
-        SaleService.getSales(page, pageSize, filterStatus).then(
+        
+        // Convert local dates to ISO if present
+        const dFrom = activeFilters.dateFrom ? `${activeFilters.dateFrom}T00:00:00` : null;
+        const dTo = activeFilters.dateTo ? `${activeFilters.dateTo}T23:59:59` : null;
+
+        SaleService.getSales(
+            page, 
+            pageSize, 
+            activeFilters.status || 'ALL', 
+            activeFilters.customer || '', 
+            dFrom, 
+            dTo,
+            activeFilters.paymentMethod || 'ALL'
+        ).then(
             (response) => {
                 setSales(response.data.content);
                 setTotalPages(response.data.totalPages);
@@ -37,7 +56,7 @@ const SalesHistoryPage = () => {
                 setLoading(false);
             }
         );
-    }, [page, pageSize, filterStatus]);
+    }, [page, pageSize, activeFilters]);
 
     useEffect(() => {
         loadSales();
@@ -133,37 +152,113 @@ const SalesHistoryPage = () => {
         return formatPaymentMethod(sale.paymentMethod);
     };
 
+    const applyFilters = () => {
+        setPage(0);
+        setActiveFilters({
+            customer: filterCustomer || undefined,
+            dateFrom: filterDateFrom || undefined,
+            dateTo: filterDateTo || undefined,
+            status: filterStatus !== 'ALL' ? filterStatus : undefined,
+            paymentMethod: filterPaymentMethod !== 'ALL' ? filterPaymentMethod : undefined
+        });
+    };
+
+    const clearFilters = () => {
+        setFilterCustomer('');
+        setFilterDateFrom('');
+        setFilterDateTo('');
+        setFilterStatus('ALL');
+        setFilterPaymentMethod('ALL');
+        setActiveFilters({});
+        setPage(0);
+    };
+
     const filteredSales = sales;
 
     return (
-        <div className="d-flex" style={{ height: '100vh', overflow: 'hidden' }}>
+        <div className="d-flex" style={{ height: '100vh', overflow: 'hidden', backgroundColor: '#f8f9fa' }}>
             <Sidebar />
             <div className="flex-grow-1 p-4" style={{ overflowY: 'auto' }}>
-
-
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <div>
                         <h2 className="fw-bold mb-0">Historial de Ventas</h2>
                         <p className="text-muted">Administra tus ventas del local y pedidos del Marketplace</p>
                     </div>
-                    <div className="d-flex gap-2">
-                        <Form.Select
-                            className="rounded-3 shadow-sm"
-                            style={{ width: '200px' }}
-                            value={filterStatus}
-                            onChange={(e) => setFilterStatus(e.target.value)}
-                        >
-                            <option value="ALL">Todos los estados</option>
-                            <option value="PENDING">Pendientes</option>
-                            <option value="PREPARING">En Preparación</option>
-                            <option value="READY_FOR_PICKUP">Listos para Retiro</option>
-                            <option value="PAID">Compra Finalizada</option>
-                        </Form.Select>
-                        <Button variant="outline-primary" onClick={loadSales} className="rounded-3 shadow-sm">
-                            Actualizar
-                        </Button>
-                    </div>
+                    <Button variant="primary" onClick={() => loadSales()} className="rounded-pill px-4 shadow-sm">
+                        <FaHistory className="me-2" /> Actualizar Lista
+                    </Button>
                 </div>
+
+                {/* Filter Bar */}
+                <Card className="border-0 shadow-sm rounded-4 mb-4">
+                    <Card.Body className="p-4">
+                        <Row className="g-3">
+                            <Col md={2}>
+                                <Form.Label className="small fw-bold text-muted text-uppercase">Buscar Cliente</Form.Label>
+                                <Form.Control
+                                    type="text"
+                                    placeholder="Nombre o Cédula..."
+                                    className="rounded-3 border-light bg-light"
+                                    value={filterCustomer}
+                                    onChange={(e) => setFilterCustomer(e.target.value)}
+                                />
+                            </Col>
+                            <Col md={2}>
+                                <Form.Label className="small fw-bold text-muted text-uppercase">Desde</Form.Label>
+                                <Form.Control
+                                    type="date"
+                                    className="rounded-3 border-light bg-light"
+                                    value={filterDateFrom}
+                                    onChange={(e) => setFilterDateFrom(e.target.value)}
+                                />
+                            </Col>
+                            <Col md={2}>
+                                <Form.Label className="small fw-bold text-muted text-uppercase">Hasta</Form.Label>
+                                <Form.Control
+                                    type="date"
+                                    className="rounded-3 border-light bg-light"
+                                    value={filterDateTo}
+                                    onChange={(e) => setFilterDateTo(e.target.value)}
+                                />
+                            </Col>
+                            <Col md={2}>
+                                <Form.Label className="small fw-bold text-muted text-uppercase">Estado</Form.Label>
+                                <Form.Select
+                                    className="rounded-3 border-light bg-light"
+                                    value={filterStatus}
+                                    onChange={(e) => setFilterStatus(e.target.value)}
+                                >
+                                    <option value="ALL">Todos</option>
+                                    <option value="PENDING">Pendientes</option>
+                                    <option value="PAID">Pagados</option>
+                                    <option value="CANCELLED">Cancelados</option>
+                                </Form.Select>
+                            </Col>
+                            <Col md={2}>
+                                <Form.Label className="small fw-bold text-muted text-uppercase">Medio de Pago</Form.Label>
+                                <Form.Select
+                                    className="rounded-3 border-light bg-light"
+                                    value={filterPaymentMethod}
+                                    onChange={(e) => setFilterPaymentMethod(e.target.value)}
+                                >
+                                    <option value="ALL">Cualquiera</option>
+                                    <option value="CASH">Efectivo</option>
+                                    <option value="TRANSFER">Transferencia</option>
+                                    <option value="MOBILE_PAYMENT">Pago Móvil</option>
+                                    <option value="CARD">Tarjeta</option>
+                                </Form.Select>
+                            </Col>
+                            <Col md={2} className="d-flex align-items-end gap-2">
+                                <Button variant="primary" className="w-100 rounded-3" onClick={applyFilters}>
+                                    Filtrar
+                                </Button>
+                                <Button variant="light" className="w-100 rounded-3 border" onClick={clearFilters}>
+                                    Limpiar
+                                </Button>
+                            </Col>
+                        </Row>
+                    </Card.Body>
+                </Card>
 
                 <Card className="border-0 shadow-sm rounded-4 overflow-hidden">
                     <Card.Body className="p-0">

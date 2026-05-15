@@ -88,12 +88,15 @@ const POSPage = () => {
         setTimeout(() => setShowToast(false), 3000);
     }, []);
 
-    const formatSecondary = (amount) => {
-        const ves = availableCurrencies.find(c => c.code === 'VES');
-        if (!ves) return null;
-        const converted = new Decimal(amount).times(ves.rate).toNumber();
-        return `${ves.symbol} ${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const formatInCurrency = (amount, currencyCode) => {
+        const curr = availableCurrencies.find(c => c.code === currencyCode);
+        if (!curr) return null;
+        const converted = new Decimal(amount).times(curr.rate).toNumber();
+        const decimals = currencyCode === 'COP' ? 0 : 2;
+        return `${curr.symbol} ${converted.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
     };
+
+    const formatSecondary = (amount) => formatInCurrency(amount, 'VES');
 
     const getSelectedCurrency = useCallback(() => availableCurrencies.find(c => c.code === paymentCurrency), [availableCurrencies, paymentCurrency]);
 
@@ -688,9 +691,23 @@ const POSPage = () => {
                         <Row className="g-4">
                             <Col md={7}>
                                 <div className="payment-summary-card mb-4">
-                                    <div className="d-flex justify-content-between align-items-center mb-2">
+                                    <div className="d-flex justify-content-between align-items-end mb-2">
                                         <span className="text-muted small fw-bold">TOTAL A PAGAR</span>
-                                        <span className="fs-4 fw-black">{baseCurrencySymbol}{total.toFixed(2)}</span>
+                                        <div className="text-end">
+                                            <div className="fs-4 fw-black">{baseCurrencySymbol}{total.toFixed(2)}</div>
+                                            {formatSecondary(total) && (
+                                                <div className="text-muted small fw-bold">
+                                                    {formatSecondary(total)} 
+                                                    <span className="ms-1 opacity-75" style={{ fontSize: '0.75rem' }}>(Tasa: {availableCurrencies.find(c => c.code === 'VES')?.rate})</span>
+                                                </div>
+                                            )}
+                                            {formatInCurrency(total, 'COP') && (
+                                                <div className="text-muted small fw-bold">
+                                                    {formatInCurrency(total, 'COP')} COP
+                                                    <span className="ms-1 opacity-75" style={{ fontSize: '0.75rem' }}>(Tasa: {availableCurrencies.find(c => c.code === 'COP')?.rate})</span>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="progress mb-2" style={{ height: '8px', borderRadius: '10px' }}>
                                         <div 
@@ -701,7 +718,14 @@ const POSPage = () => {
                                     </div>
                                     <div className="d-flex justify-content-between small">
                                         <span className="text-success fw-bold">Pagado: {baseCurrencySymbol}{totalPaidInBase.toFixed(2)}</span>
-                                        <span className="text-primary fw-bold">Pendiente: {baseCurrencySymbol}{remainingToPay.toFixed(2)}</span>
+                                        <div className="text-end">
+                                            <span className="text-primary fw-bold d-block">Pendiente: {baseCurrencySymbol}{remainingToPay.toFixed(2)}</span>
+                                            {remainingToPay.gt(0) && (
+                                                <div className="text-muted fw-bold" style={{ fontSize: '0.65rem' }}>
+                                                    {formatSecondary(remainingToPay)} VES | {formatInCurrency(remainingToPay, 'COP')} COP
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 

@@ -19,15 +19,17 @@ public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
 
     @Query("SELECT p FROM Purchase p LEFT JOIN p.supplier s " +
            "WHERE p.company.id = :companyId " +
-           "AND (:supplierName IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', :supplierName, '%'))) " +
-           "AND (:dateFrom IS NULL OR p.date >= :dateFrom) " +
-           "AND (:dateTo IS NULL OR p.date <= :dateTo) " +
+           "AND (CAST(:searchTerm AS string) IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(p.invoiceNumber) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) " +
+           "AND (CAST(:dateFrom AS string) IS NULL OR p.date >= :dateFrom) " +
+           "AND (CAST(:dateTo AS string) IS NULL OR p.date <= :dateTo) " +
+           "AND (CAST(:paymentMethod AS string) IS NULL OR p.paymentMethod = :paymentMethod) " +
            "ORDER BY p.date DESC")
     Page<Purchase> findByFilters(
         @Param("companyId") Long companyId,
-        @Param("supplierName") String supplierName,
+        @Param("searchTerm") String searchTerm,
         @Param("dateFrom") LocalDateTime dateFrom,
         @Param("dateTo") LocalDateTime dateTo,
+        @Param("paymentMethod") String paymentMethod,
         Pageable pageable
     );
 }

@@ -405,6 +405,9 @@ public class SuperAdminController {
         @GetMapping("/categories/global")
         @PreAuthorize("hasRole('ADMIN')")
         public ResponseEntity<?> getAllGlobalCategories() {
-                return ResponseEntity.ok(categoryRepository.findAll().stream().map(Category::getName).distinct().toList());
+                return ResponseEntity.ok(categoryRepository.findAll().stream()
+                        .map(Category::getName)
+                        .distinct()
+                        .collect(java.util.stream.Collectors.toList()));
         }
 }

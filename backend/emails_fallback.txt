@@ -205,3 +205,4 @@
 [2026-04-15T17:31:59.088403] TO: manager@tiendario.com | SUBJECT: ✉️ Verifica tu cuenta — Tiendario | HTML: (logged)
 [2026-04-15T17:33:41.624324400] TO: manager@tiendario.com | SUBJECT: ✉️ Verifica tu cuenta — Tiendario | HTML: (logged)
 [2026-04-15T17:34:56.462265700] TO: manager@tiendario.com | SUBJECT: ✉️ Verifica tu cuenta — Tiendario | HTML: (logged)
+[2026-05-14T10:36:05.522398100] TO: cdosempresarial@gmail.com | SUBJECT: ✉️ Verifica tu cuenta — Tiendario | HTML: (logged)

@@ -175,7 +175,7 @@ const Sidebar = () => {
                         ) : (
                             <>
                                 {/* Dashboard — acceso rápido */}
-                                <NavItem to="/dashboard" icon={FaHome} label="Dashboard" description="Resumen rápido de tus ventas y actividad reciente." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/dashboard" icon={FaHome} label="Inicio" description="Resumen rápido de tus ventas y actividad reciente." collapsed={collapsed} setIsOpen={setIsOpen} />
 
                                 {/* ── OPERACIÓN ───────────── */}
                                 <NavGroup label="🟢 Operación" collapsed={collapsed} />

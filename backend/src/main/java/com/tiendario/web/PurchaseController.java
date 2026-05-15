@@ -46,7 +46,8 @@ public class PurchaseController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(required = false) String supplier,
             @RequestParam(required = false) String dateFrom,
-            @RequestParam(required = false) String dateTo) {
+            @RequestParam(required = false) String dateTo,
+            @RequestParam(required = false) com.tiendario.domain.PaymentMethod paymentMethod) {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
         Pageable pageable = PageRequest.of(page, size, Sort.by("date").descending());
@@ -61,18 +62,14 @@ public class PurchaseController {
                 to = java.time.LocalDate.parse(dateTo).atTime(23, 59, 59);
         } catch (Exception ignored) {}
 
-        // Use filtered query if any filter is active
-        boolean hasFilters = (supplier != null && !supplier.isBlank()) || from != null || to != null;
-        if (hasFilters) {
-            return purchaseRepository.findByFilters(
-                userDetails.getCompanyId(),
-                (supplier != null && !supplier.isBlank()) ? supplier : null,
-                from,
-                to,
-                pageable
-            );
-        }
-        return purchaseRepository.findByCompanyId(userDetails.getCompanyId(), pageable);
+        return purchaseRepository.findByFilters(
+            userDetails.getCompanyId(),
+            (supplier != null && !supplier.isBlank()) ? supplier : null,
+            from,
+            to,
+            paymentMethod != null ? paymentMethod.name() : null,
+            pageable
+        );
     }
 
     @PostMapping
@@ -91,6 +88,9 @@ public class PurchaseController {
         purchase.setCurrencyCode(request.getCurrencyCode() != null ? request.getCurrencyCode() : "USD");
         purchase.setExchangeRate(request.getExchangeRate() != null ? request.getExchangeRate() : java.math.BigDecimal.ONE);
         purchase.setTotalInBaseCurrency(request.getTotalInBaseCurrency() != null ? request.getTotalInBaseCurrency() : request.getTotal());
+        if (request.getPaymentMethod() != null) {
+            purchase.setPaymentMethod(request.getPaymentMethod());
+        }
 
         // Set supplier if provided
         if (request.getSupplierId() != null) {
@@ -115,8 +115,8 @@ public class PurchaseController {
             item.setProduct(product);
             item.setQuantity(itemRequest.getQuantity());
             item.setUnitCost(itemRequest.getUnitCost());
-            item.setUnitCostInBaseCurrency(itemRequest.getUnitCostInBaseCurrency() != null ? itemRequest.getUnitCostInBaseCurrency() : itemRequest.getUnitCost());
-            item.setSubtotalInBaseCurrency(itemRequest.getSubtotalInBaseCurrency() != null ? itemRequest.getSubtotalInBaseCurrency() : itemRequest.getUnitCost().multiply(java.math.BigDecimal.valueOf(itemRequest.getQuantity())));
+            item.setUnitCostInBaseCurrency(itemRequest.getUnitCostInBaseCurrency() != null ? itemRequest.getUnitCostInBaseCurrency() : itemRequest.getUnitCost().divide(purchase.getExchangeRate(), 4, java.math.RoundingMode.HALF_UP));
+            item.setSubtotalInBaseCurrency(itemRequest.getSubtotalInBaseCurrency() != null ? itemRequest.getSubtotalInBaseCurrency() : item.getUnitCostInBaseCurrency().multiply(java.math.BigDecimal.valueOf(itemRequest.getQuantity())));
 
             // Update product stock and cost
             // Safely handle null stock (products created without initial stock)

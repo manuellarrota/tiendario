@@ -28,6 +28,7 @@ const LandingPage = () => {
     const [regPlan, setRegPlan] = useState("free");
     const [regPosition, setRegPosition] = useState(null);
     const [regAddress, setRegAddress] = useState("");
+    const [regLoading, setRegLoading] = useState(false);
 
     // Forgot Password State
     const [showForgotModal, setShowForgotModal] = useState(false);
@@ -138,6 +139,7 @@ const LandingPage = () => {
         e.preventDefault();
         setRegMessage("");
         setRegSuccessful(false);
+        setRegLoading(true);
 
         const lat = regPosition ? regPosition.lat : 0;
         const lng = regPosition ? regPosition.lng : 0;
@@ -146,8 +148,10 @@ const LandingPage = () => {
             () => {
                 setRegMessage("✅ ¡Registro exitoso! Por favor, revisa tu correo electrónico para activar tu cuenta antes de iniciar sesión.");
                 setRegSuccessful(true);
+                setRegLoading(false);
             },
             (error) => {
+                setRegLoading(false);
                 let userFriendlyMessage = error.translatedMessage;
 
                 // Specific validations from server (business logic)
@@ -501,8 +505,8 @@ const LandingPage = () => {
                                 )}
 
                                 {!regSuccessful ? (
-                                    <Button variant="primary" type="submit" className="w-100 rounded-pill fw-bold">
-                                        Registrar y Comenzar
+                                    <Button variant="primary" type="submit" className="w-100 rounded-pill fw-bold" disabled={regLoading}>
+                                        {regLoading ? <Spinner size="sm" animation="border" className="me-2" /> : "Registrar y Comenzar"}
                                     </Button>
                                 ) : (
                                     <Button variant="secondary" className="w-100 rounded-pill fw-bold" onClick={() => setShowRegisterModal(false)}>

@@ -23,6 +23,9 @@ public class Purchase {
     private String currencyCode = "USD";
     private BigDecimal exchangeRate = BigDecimal.ONE;
     private BigDecimal totalInBaseCurrency;
+    
+    @Enumerated(EnumType.STRING)
+    private PaymentMethod paymentMethod = PaymentMethod.CASH;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "supplier_id")

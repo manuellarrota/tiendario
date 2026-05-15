@@ -17,6 +17,7 @@ const getAll = (page = 0, size = 10, filters = {}) => {
     if (filters.supplier) params.supplier = filters.supplier;
     if (filters.dateFrom) params.dateFrom = filters.dateFrom;
     if (filters.dateTo) params.dateTo = filters.dateTo;
+    if (filters.paymentMethod && filters.paymentMethod !== 'ALL') params.paymentMethod = filters.paymentMethod;
     return axios.get(API_URL, { params, headers: getAuthHeader() });
 };
 

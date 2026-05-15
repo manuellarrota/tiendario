@@ -7,7 +7,7 @@ import DashboardService from '../services/dashboard.service';
 import CompanyService from '../services/company.service';
 import PaymentService from '../services/payment.service';
 import AdminService from '../services/admin.service';
-import { FaRocket, FaGem, FaUsers, FaStore, FaChartLine, FaGlobe, FaReceipt, FaMoneyBillWave, FaClock, FaCheckCircle, FaTimesCircle, FaCog } from 'react-icons/fa';
+import { FaRocket, FaGem, FaUsers, FaStore, FaChartLine, FaGlobe, FaReceipt, FaMoneyBillWave, FaClock, FaCheckCircle, FaTimesCircle, FaCog, FaBox } from 'react-icons/fa';
 
 const DashboardHome = () => {
     const user = AuthService.getCurrentUser();
@@ -295,7 +295,7 @@ const DashboardHome = () => {
                                         <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-success" style={{ cursor: 'help' }}>
                                             <Card.Body className="p-4">
                                                 <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Ingresos (MRR)</span>
-                                                <h1 className="display-5 fw-bold text-success mb-1">${Number(summary?.mrr || 0).toLocaleString()}</h1>
+                                                <h1 className="display-5 fw-bold text-success mb-1">${Number(summary?.mrr || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</h1>
                                                 <small className="text-muted fw-medium"><FaMoneyBillWave className="me-1" /> Recurrencia Mensual</small>
                                             </Card.Body>
                                         </Card>
@@ -321,7 +321,7 @@ const DashboardHome = () => {
                                                     <FaGlobe className="text-success h3 mb-0" />
                                                 </div>
                                                 <h5 className="fw-bold mb-1">Volumen Global de la Plataforma</h5>
-                                                <h2 className="fw-bold text-dark">${Number(summary?.globalGmv || 0).toLocaleString()}</h2>
+                                                <h2 className="fw-bold text-dark">${Number(summary?.globalGmv || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</h2>
                                                 <p className="text-muted small">Monto total transaccionado</p>
                                             </Card.Body>
                                         </Card>
@@ -335,7 +335,7 @@ const DashboardHome = () => {
                                                     <FaChartLine className="text-warning h3 mb-0" />
                                                 </div>
                                                 <h5 className="fw-bold mb-1">Valor Promedio por Pedido (Global)</h5>
-                                                <h2 className="fw-bold text-dark">${Number(summary?.globalAov || 0).toLocaleString()}</h2>
+                                                <h2 className="fw-bold text-dark">${Number(summary?.globalAov || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</h2>
                                                 <p className="text-muted small">Promedio por pedido</p>
                                             </Card.Body>
                                         </Card>
@@ -369,62 +369,74 @@ const DashboardHome = () => {
                             <>
                                 <Row className="g-4 reveal-up delay-2">
                                     <Col lg={3} md={6}>
-                                        <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Cantidad total de productos únicos que tienes registrados en tu inventario.")}>
-                                            <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-dark" style={{ cursor: 'help' }}>
-                                                <Card.Body className="p-4">
-                                                    <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Inventario Total</span>
-                                                    <h1 className="display-5 fw-bold text-dark mb-1">{summary?.totalProducts || 0}</h1>
-                                                    <small className="text-muted">Productos Disponibles</small>
-                                                </Card.Body>
-                                            </Card>
-                                        </OverlayTrigger>
+                                        <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-dark">
+                                            <Card.Body className="p-4">
+                                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                                    <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Cantidad total de productos únicos que tienes registrados en tu inventario.")}>
+                                                        <span className="text-secondary small text-uppercase fw-bold letter-spacing-1 cursor-help">Inventario Total</span>
+                                                    </OverlayTrigger>
+                                                    <FaBox className="text-dark opacity-50" />
+                                                </div>
+                                                <h3 className="fw-bold mb-1 text-dark">{summary?.totalProducts || 0}</h3>
+                                                <small className="text-muted">Productos Disponibles</small>
+                                            </Card.Body>
+                                        </Card>
                                     </Col>
 
                                     <Col lg={3} md={6}>
-                                        <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Monto neto de ventas realizadas el día de hoy comparado con el cierre de ayer.")}>
-                                            <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-primary" style={{ cursor: 'help' }}>
-                                                <Card.Body className="p-4">
-                                                    <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Ventas Hoy</span>
-                                                    <h1 className="display-5 fw-bold text-primary mb-1">${Number(summary?.revenueToday || 0).toLocaleString()}</h1>
+                                        <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-primary">
+                                            <Card.Body className="p-4">
+                                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                                    <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Monto neto de ventas realizadas el día de hoy comparado con el cierre de ayer.")}>
+                                                        <span className="text-secondary small text-uppercase fw-bold letter-spacing-1 cursor-help">Ventas Hoy</span>
+                                                    </OverlayTrigger>
+                                                    <FaMoneyBillWave className="text-primary opacity-50" />
+                                                </div>
+                                                    <h3 className="fw-bold mb-1 text-primary">${Number(summary?.revenueToday || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
                                                     <div className="d-flex align-items-center gap-2">
                                                         {summary?.revenueGrowth >= 0 ? (
                                                             <span className="text-success small fw-bold">↑ {summary?.revenueGrowth}%</span>
                                                         ) : (
                                                             <span className="text-danger small fw-bold">↓ {Math.abs(summary?.revenueGrowth)}%</span>
                                                         )}
-                                                        <small className="text-muted">vs ayer (${Number(summary?.revenueYesterday || 0).toLocaleString()})</small>
+                                                        <small className="text-muted">vs ayer (${Number(summary?.revenueYesterday || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })})</small>
                                                     </div>
-                                                </Card.Body>
-                                            </Card>
-                                        </OverlayTrigger>
+                                            </Card.Body>
+                                        </Card>
                                     </Col>
 
                                     <Col lg={3} md={6}>
-                                        <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Average Order Value: Valor promedio de tus ventas hoy.")}>
-                                            <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-warning" style={{ cursor: 'help' }}>
-                                                <Card.Body className="p-4">
-                                                    <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Ticket Promedio</span>
-                                                    <h1 className="display-5 fw-bold text-warning mb-1">${Number(summary?.shopAov || 0).toLocaleString()}</h1>
+                                        <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-warning">
+                                            <Card.Body className="p-4">
+                                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                                    <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Average Order Value: Valor promedio de tus ventas hoy.")}>
+                                                        <span className="text-secondary small text-uppercase fw-bold letter-spacing-1 cursor-help">Ticket Promedio</span>
+                                                    </OverlayTrigger>
+                                                    <FaChartLine className="text-warning opacity-50" />
+                                                </div>
+                                                    <h3 className="fw-bold mb-1 text-warning">${Number(summary?.shopAov || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
                                                     <small className="text-muted">Promedio por Venta</small>
-                                                </Card.Body>
-                                            </Card>
-                                        </OverlayTrigger>
+                                            </Card.Body>
+                                        </Card>
                                     </Col>
 
                                     <Col lg={3} md={6}>
-                                        <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Estado de alerta de tu inventario. Indica cuántos productos están por debajo del stock mínimo.")}>
-                                            <Card className={`glass-card-admin h-100 border-0 shadow-sm border-start border-4 ${summary?.lowStockCount > 0 ? 'border-danger' : 'border-success'}`} style={{ cursor: 'help' }}>
-                                                <Card.Body className="p-4">
-                                                    <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Semáforo de Stock</span>
-                                                    <h1 className={`display-5 fw-bold mb-1 ${summary?.lowStockCount > 0 ? 'text-danger' : 'text-success'}`}>
-                                                        {summary?.lowStockCount || 0}
-                                                    </h1>
-                                                    <small className={`${summary?.lowStockCount > 0 ? 'text-danger' : 'text-muted'} fw-medium`}>
-                                                        {summary?.lowStockCount > 0 ? '¡Atención! Stock Crítico' : 'Stock saludable'}
-                                                    </small>
-                                                </Card.Body>
-                                            </Card>
-                                        </OverlayTrigger>
+                                        <Card className={`glass-card-admin h-100 border-0 shadow-sm border-start border-4 ${summary?.lowStockCount > 0 ? 'border-danger' : 'border-success'}`}>
+                                            <Card.Body className="p-4">
+                                                <div className="d-flex justify-content-between align-items-center mb-2">
+                                                    <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Estado de alerta de tu inventario. Indica cuántos productos están por debajo del stock mínimo.")}>
+                                                        <span className="text-secondary small text-uppercase fw-bold letter-spacing-1 cursor-help">Semáforo de Stock</span>
+                                                    </OverlayTrigger>
+                                                    <FaRocket className={`${summary?.lowStockCount > 0 ? 'text-danger' : 'text-success'} opacity-50`} />
+                                                </div>
+                                                <h3 className={`fw-bold mb-1 ${summary?.lowStockCount > 0 ? 'text-danger' : 'text-success'}`}>
+                                                    {summary?.lowStockCount || 0}
+                                                </h3>
+                                                <small className={`${summary?.lowStockCount > 0 ? 'text-danger' : 'text-muted'} fw-medium`}>
+                                                    {summary?.lowStockCount > 0 ? '¡Atención! Stock Crítico' : 'Stock saludable'}
+                                                </small>
+                                            </Card.Body>
+                                        </Card>
                                     </Col>
 
                                     {/* Sales Performance Chart Section */}

@@ -53,7 +53,7 @@ export const LoginModal = ({
 
 export const RegisterModal = ({
     show, onHide, registerData, setRegisterData,
-    registerMessage, registerSuccess, onRegister, onSwitchToLogin
+    registerMessage, registerSuccess, registerLoading, onRegister, onSwitchToLogin
 }) => (
     <Modal show={show} onHide={onHide} centered scrollable className="rounded-4 overflow-hidden">
         <Modal.Header closeButton className="border-0 pb-0">
@@ -119,8 +119,8 @@ export const RegisterModal = ({
                     />
                 </Form.Group>
                 {!registerSuccess && (
-                    <Button variant="success" type="submit" className="w-100 py-2 fw-bold shadow-sm">
-                        Registrarse
+                    <Button variant="success" type="submit" className="w-100 py-2 fw-bold shadow-sm" disabled={registerLoading}>
+                        {registerLoading ? "Registrando..." : "Registrarse"}
                     </Button>
                 )}
                 {registerSuccess && (

@@ -412,6 +412,7 @@ const MarketplacePage = () => {
     const [registerData, setRegisterData] = useState({ name: '', email: '', password: '', phone: '', cedula: '' });
     const [registerMessage, setRegisterMessage] = useState('');
     const [registerSuccess, setRegisterSuccess] = useState(false);
+    const [registerLoading, setRegisterLoading] = useState(false);
 
     const getAdminUrl = () => {
         const configured = import.meta.env.VITE_ADMIN_URL;
@@ -457,19 +458,19 @@ const MarketplacePage = () => {
         e.preventDefault();
         setRegisterMessage("");
         setRegisterSuccess(false);
+        setRegisterLoading(true);
 
         AuthService.register(registerData.name, registerData.email, registerData.password, 'client', null, registerData.phone, registerData.cedula).then(
             (response) => {
                 setRegisterSuccess(true);
+                setRegisterLoading(false);
                 setRegisterMessage("¡Registro exitoso! Ya puedes iniciar sesión.");
                 setRegisterData({ name: '', email: '', password: '', phone: '', cedula: '' });
-                // Optional: switch to login modal after delay
-                // setShowRegisterModal(false);
-                // setShowLoginModal(true);
             },
             (error) => {
                 setRegisterMessage(error.translatedMessage || "Hubo un error al registrar tu cuenta.");
                 setRegisterSuccess(false);
+                setRegisterLoading(false);
             }
         );
     };
@@ -1248,6 +1249,7 @@ const MarketplacePage = () => {
                 setRegisterData={setRegisterData}
                 registerMessage={registerMessage}
                 registerSuccess={registerSuccess}
+                registerLoading={registerLoading}
                 onRegister={handleRegister}
                 onSwitchToLogin={openLogin}
             />

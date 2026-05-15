@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Table, Card, Badge, Button, Row, Col, Form, Modal, ListGroup } from 'react-bootstrap';
 import { FaHistory, FaCalendarAlt, FaTruck, FaEye, FaSearch, FaTimes, FaInbox } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import PurchaseService from '../services/purchase.service';
+import PublicService from '../services/public.service';
 
 const PurchaseHistoryPage = () => {
     const navigate = useNavigate();
@@ -11,11 +12,21 @@ const PurchaseHistoryPage = () => {
     const [loading, setLoading] = useState(true);
     const [selectedPurchase, setSelectedPurchase] = useState(null);
     const [showDetail, setShowDetail] = useState(false);
+    const [platformConfig, setPlatformConfig] = useState(null);
+ 
+    const availableCurrencies = useMemo(() => {
+        if (!platformConfig) return [];
+        try {
+            const parsed = JSON.parse(platformConfig.currencies || '[]');
+            return parsed.filter(c => c.enabled);
+        } catch { return []; }
+    }, [platformConfig]);
 
     // Filter states (inputs)
-    const [filterSupplier, setFilterSupplier] = useState('');
+    const [filterSearch, setFilterSearch] = useState('');
     const [filterDateFrom, setFilterDateFrom] = useState('');
     const [filterDateTo, setFilterDateTo] = useState('');
+    const [filterPaymentMethod, setFilterPaymentMethod] = useState('ALL');
 
     // Active filters (sent to backend — only update on Apply click)
     const [activeFilters, setActiveFilters] = useState({});
@@ -44,6 +55,7 @@ const PurchaseHistoryPage = () => {
 
     useEffect(() => {
         loadPurchases();
+        PublicService.getPlatformConfig().then(res => setPlatformConfig(res.data));
     }, [loadPurchases]);
 
     const openDetail = (purchase) => {
@@ -54,18 +66,30 @@ const PurchaseHistoryPage = () => {
     const applyFilters = () => {
         setPage(0);
         setActiveFilters({
-            supplier: filterSupplier || undefined,
+            supplier: filterSearch || undefined,
             dateFrom: filterDateFrom || undefined,
             dateTo: filterDateTo || undefined,
+            paymentMethod: filterPaymentMethod !== 'ALL' ? filterPaymentMethod : undefined
         });
     };
 
     const clearFilters = () => {
-        setFilterSupplier('');
+        setFilterSearch('');
         setFilterDateFrom('');
         setFilterDateTo('');
+        setFilterPaymentMethod('ALL');
         setActiveFilters({});
         setPage(0);
+    };
+
+    const renderPaymentMethod = (method) => {
+        switch (method) {
+            case 'CASH': return <Badge bg="success" className="rounded-pill px-2"><span className="me-1">💵</span> Efectivo</Badge>;
+            case 'TRANSFER': return <Badge bg="primary" className="rounded-pill px-2"><span className="me-1">🏦</span> Transf / Zelle</Badge>;
+            case 'MOBILE_PAYMENT': return <Badge bg="info" className="rounded-pill px-2"><span className="me-1">📱</span> P. Móvil</Badge>;
+            case 'CARD': return <Badge bg="warning" text="dark" className="rounded-pill px-2"><span className="me-1">💳</span> Tarjeta</Badge>;
+            default: return <Badge bg="light" text="dark" className="rounded-pill px-2 border">{method || 'N/A'}</Badge>;
+        }
     };
 
     return (
@@ -83,108 +107,67 @@ const PurchaseHistoryPage = () => {
                         </Button>
                     </div>
 
-                    <Row>
-                        {/* Filters Sidebar/Column */}
-                        <Col lg={3}>
-                            <Card className="border-0 shadow-sm rounded-4 mb-4">
-                                <Card.Body className="p-4">
-                                    <div className="d-flex justify-content-between align-items-center mb-3">
-                                        <h6 className="fw-bold mb-0 text-uppercase small text-muted">Filtros de Búsqueda</h6>
-                                        {(filterSupplier || filterDateFrom || filterDateTo) && (
-                                            <Button variant="link" size="sm" className="p-0 text-decoration-none" onClick={clearFilters}>
-                                                Limpiar
-                                            </Button>
-                                        )}
-                                    </div>
-                                    <Form.Group className="mb-3">
-                                        <Form.Label className="small fw-bold">Proveedor</Form.Label>
-                                        <div className="position-relative">
-                                            <Form.Control
-                                                type="text"
-                                                placeholder="Nombre del proveedor..."
-                                                value={filterSupplier}
-                                                onChange={(e) => setFilterSupplier(e.target.value)}
-                                                className="rounded-3 border-light bg-light"
-                                            />
-                                            <FaSearch className="position-absolute text-muted" style={{ top: '12px', right: '12px' }} />
-                                        </div>
-                                    </Form.Group>
-                                    <Form.Group className="mb-3">
-                                        <Form.Label className="small fw-bold">Desde</Form.Label>
-                                        <Form.Control
-                                            type="date"
-                                            value={filterDateFrom}
-                                            onChange={(e) => setFilterDateFrom(e.target.value)}
-                                            className="rounded-3 border-light bg-light"
-                                        />
-                                    </Form.Group>
-                                    <Form.Group className="mb-4">
-                                        <Form.Label className="small fw-bold">Hasta</Form.Label>
-                                        <Form.Control
-                                            type="date"
-                                            value={filterDateTo}
-                                            onChange={(e) => setFilterDateTo(e.target.value)}
-                                            className="rounded-3 border-light bg-light"
-                                        />
-                                    </Form.Group>
-                                    <Button
-                                        variant="dark"
-                                        className="w-100 rounded-pill fw-bold py-2 shadow-sm"
-                                        onClick={applyFilters}
+                    {/* Filter Bar */}
+                    <Card className="border-0 shadow-sm rounded-4 mb-4">
+                        <Card.Body className="p-4">
+                            <Row className="g-3">
+                                <Col md={3}>
+                                    <Form.Label className="small fw-bold text-muted text-uppercase">Proveedor / Factura</Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        placeholder="Nombre o Nro..."
+                                        className="rounded-3 border-light bg-light"
+                                        value={filterSearch}
+                                        onChange={(e) => setFilterSearch(e.target.value)}
+                                    />
+                                </Col>
+                                <Col md={2}>
+                                    <Form.Label className="small fw-bold text-muted text-uppercase">Desde</Form.Label>
+                                    <Form.Control
+                                        type="date"
+                                        className="rounded-3 border-light bg-light"
+                                        value={filterDateFrom}
+                                        onChange={(e) => setFilterDateFrom(e.target.value)}
+                                    />
+                                </Col>
+                                <Col md={2}>
+                                    <Form.Label className="small fw-bold text-muted text-uppercase">Hasta</Form.Label>
+                                    <Form.Control
+                                        type="date"
+                                        className="rounded-3 border-light bg-light"
+                                        value={filterDateTo}
+                                        onChange={(e) => setFilterDateTo(e.target.value)}
+                                    />
+                                </Col>
+                                <Col md={2}>
+                                    <Form.Label className="small fw-bold text-muted text-uppercase">Medio de Pago</Form.Label>
+                                    <Form.Select
+                                        className="rounded-3 border-light bg-light"
+                                        value={filterPaymentMethod}
+                                        onChange={(e) => setFilterPaymentMethod(e.target.value)}
                                     >
-                                        <FaSearch className="me-2" /> Aplicar Filtros
+                                        <option value="ALL">Todos</option>
+                                        <option value="CASH">Efectivo</option>
+                                        <option value="TRANSFER">Transferencia</option>
+                                        <option value="MOBILE_PAYMENT">Pago Móvil</option>
+                                        <option value="CARD">Tarjeta</option>
+                                    </Form.Select>
+                                </Col>
+                                <Col md={3} className="d-flex align-items-end gap-2">
+                                    <Button variant="primary" className="w-100 rounded-3 shadow-sm fw-bold" onClick={applyFilters}>
+                                        <FaSearch className="me-2" /> Filtrar
                                     </Button>
-                                    {/* Active filter tags */}
-                                    {Object.entries(activeFilters).some(([, v]) => v) && (
-                                        <div className="mt-3 d-flex flex-column gap-1">
-                                            <small className="text-muted fw-bold text-uppercase" style={{fontSize:'0.65rem'}}>Filtros aplicados:</small>
-                                            {activeFilters.supplier && (
-                                                <Badge bg="light" text="dark" className="border rounded-pill px-2 py-1 d-flex align-items-center gap-1">
-                                                    <FaTruck size={10} className="text-primary" /> {activeFilters.supplier}
-                                                </Badge>
-                                            )}
-                                            {activeFilters.dateFrom && (
-                                                <Badge bg="light" text="dark" className="border rounded-pill px-2 py-1 d-flex align-items-center gap-1">
-                                                    <FaCalendarAlt size={10} className="text-success" /> Desde: {activeFilters.dateFrom}
-                                                </Badge>
-                                            )}
-                                            {activeFilters.dateTo && (
-                                                <Badge bg="light" text="dark" className="border rounded-pill px-2 py-1 d-flex align-items-center gap-1">
-                                                    <FaCalendarAlt size={10} className="text-danger" /> Hasta: {activeFilters.dateTo}
-                                                </Badge>
-                                            )}
-                                        </div>
-                                    )}
-                                </Card.Body>
-                            </Card>
+                                    <Button variant="light" className="w-100 rounded-3 border shadow-sm" onClick={clearFilters}>
+                                        Limpiar
+                                    </Button>
+                                </Col>
+                            </Row>
+                        </Card.Body>
+                    </Card>
 
-                            {/* Stats card */}
-                            <Card className="border-0 shadow-sm rounded-4 overflow-hidden mt-3">
-                                <Card.Body className="p-3">
-                                    <div className="d-flex justify-content-between align-items-center mb-2">
-                                        <small className="text-muted text-uppercase fw-bold" style={{fontSize:'0.65rem'}}>Esta página</small>
-                                        <FaHistory className="text-muted opacity-50" size={12} />
-                                    </div>
-                                    <div className="d-flex gap-3">
-                                        <div>
-                                            <div className="fw-bold text-primary fs-5">{purchases.length}</div>
-                                            <small className="text-muted">compras</small>
-                                        </div>
-                                        <div>
-                                            <div className="fw-bold text-success fs-5">{purchases.reduce((acc, p) => acc + (p.items?.length || 0), 0)}</div>
-                                            <small className="text-muted">artículos</small>
-                                        </div>
-                                        <div>
-                                            <div className="fw-bold text-dark fs-5">{totalElements}</div>
-                                            <small className="text-muted">total</small>
-                                        </div>
-                                    </div>
-                                </Card.Body>
-                            </Card>
-                        </Col>
-
+                    <Row>
                         {/* Transactions List */}
-                        <Col lg={9}>
+                        <Col lg={12}>
                             <Card className="border-0 shadow-sm rounded-4 overflow-hidden">
                                 <Card.Body className="p-0">
                                     {loading ? (
@@ -205,6 +188,7 @@ const PurchaseHistoryPage = () => {
                                                 <tr>
                                                     <th className="px-4 py-3 border-0 small text-muted text-uppercase fw-bold">Compra</th>
                                                     <th className="py-3 border-0 small text-muted text-uppercase fw-bold">Proveedor</th>
+                                                    <th className="py-3 border-0 small text-muted text-uppercase fw-bold text-center">Pago</th>
                                                     <th className="py-3 border-0 small text-muted text-uppercase fw-bold text-center">Artículos</th>
                                                     <th className="py-3 border-0 small text-muted text-uppercase fw-bold text-end">Total</th>
                                                     <th className="px-4 py-3 border-0 small text-muted text-uppercase fw-bold text-center">Acciones</th>
@@ -235,6 +219,9 @@ const PurchaseHistoryPage = () => {
                                                             </div>
                                                         </td>
                                                         <td className="py-3 text-center">
+                                                            {renderPaymentMethod(purchase.paymentMethod)}
+                                                        </td>
+                                                        <td className="py-3 text-center">
                                                             <Badge bg="soft-primary" className="text-primary rounded-pill px-3 py-2 fw-normal" style={{ backgroundColor: '#e7f1ff' }}>
                                                                 {purchase.items?.length || 0} productos
                                                             </Badge>
@@ -244,15 +231,15 @@ const PurchaseHistoryPage = () => {
                                                                 {purchase.currencyCode && purchase.currencyCode !== 'USD' ? (
                                                                     <>
                                                                         <span className="text-muted small me-1">{purchase.currencyCode}</span>
-                                                                        {purchase.total?.toLocaleString() || 0}
+                                                                        {Number(purchase.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                                                     </>
                                                                 ) : (
-                                                                    `$${purchase.total?.toLocaleString() || 0}`
+                                                                    `$${Number(purchase.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
                                                                 )}
                                                             </div>
-                                                            {purchase.currencyCode && purchase.currencyCode !== 'USD' && purchase.totalInBaseCurrency && (
+                                                            {purchase.currencyCode && purchase.currencyCode !== 'USD' && (
                                                                 <div className="text-success small">
-                                                                    =${purchase.totalInBaseCurrency.toFixed(2)} USD
+                                                                    =${Number(purchase.total / (purchase.exchangeRate || 1)).toLocaleString(undefined, { minimumFractionDigits: 2 })} USD
                                                                 </div>
                                                             )}
                                                         </td>
@@ -354,26 +341,39 @@ const PurchaseHistoryPage = () => {
                                     </div>
                                 </Col>
                                 <Col md={6} className="mb-4">
-                                    <div className="bg-primary-subtle p-3 rounded-4 h-100 text-primary">
-                                        <h6 className="text-uppercase small fw-bold mb-3 opacity-75">Resumen Financiero</h6>
-                                        {selectedPurchase.currencyCode && selectedPurchase.currencyCode !== 'USD' ? (
-                                            <>
-                                                <div className="h3 fw-bold mb-0">
-                                                    {selectedPurchase.currencyCode} {selectedPurchase.total?.toLocaleString() || 0}
+                                        <div className="bg-primary-subtle p-3 rounded-4 h-100 text-primary">
+                                            <div className="d-flex justify-content-between align-items-start mb-3">
+                                                <h6 className="text-uppercase small fw-bold opacity-75 mb-0">Resumen Financiero</h6>
+                                                <div className="text-end">
+                                                    <Badge bg="primary" className="mb-1 d-block">
+                                                        Factura: {selectedPurchase.invoiceNumber || 'S/N'}
+                                                    </Badge>
+                                                    <div className="small opacity-75" style={{ fontSize: '0.7rem' }}>
+                                                        {new Date(selectedPurchase.date).toLocaleString()}
+                                                    </div>
                                                 </div>
-                                                <div className="small opacity-75 mb-2">Pagado en moneda local</div>
-                                                <div className="fw-bold">
-                                                    = ${selectedPurchase.totalInBaseCurrency?.toFixed(2) || '?'} USD
-                                                </div>
-                                                <div className="small opacity-75">Tasa: {selectedPurchase.exchangeRate} {selectedPurchase.currencyCode}/USD</div>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <div className="h3 fw-bold mb-0">${selectedPurchase.total?.toLocaleString() || 0}</div>
-                                                <div className="small opacity-75">Pago registrado exitosamente</div>
-                                            </>
-                                        )}
-                                    </div>
+                                            </div>
+                                            
+                                            <div className="d-flex align-items-center gap-3 mb-2">
+                                                <h3 className="fw-bold mb-0">
+                                                    {selectedPurchase.currencyCode} {Number(selectedPurchase.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                                </h3>
+                                                {renderPaymentMethod(selectedPurchase.paymentMethod)}
+                                            </div>
+
+                                            <div className="small opacity-75 mb-3">
+                                                Monto total de la transacción original
+                                            </div>
+                                            
+                                            <div className="border-top pt-2 border-primary border-opacity-10">
+                                                {selectedPurchase.currencyCode !== 'USD' && (
+                                                    <div className="fw-bold small mb-1">
+                                                        Equivalente Base: ${Number(selectedPurchase.total / (selectedPurchase.exchangeRate || 1)).toLocaleString(undefined, { minimumFractionDigits: 2 })} USD
+                                                        <span className="ms-2 opacity-75 fw-normal">(Tasa: {Number(selectedPurchase.exchangeRate || 1).toLocaleString()})</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
                                 </Col>
                                 <Col md={12}>
                                     <h6 className="text-uppercase small fw-bold text-muted mb-3">Artículos del Lote</h6>
@@ -392,22 +392,23 @@ const PurchaseHistoryPage = () => {
                                                         <div>
                                                             <div className="fw-bold text-dark">{item.product?.name || 'Producto'}</div>
                                                             <div className="text-muted small">
-                                                                Costo: {selectedPurchase.currencyCode && selectedPurchase.currencyCode !== 'USD' ? selectedPurchase.currencyCode : '$'}{item.unitCost}
-                                                                {item.unitCostInBaseCurrency && selectedPurchase.currencyCode !== 'USD' && (
-                                                                    <span className="text-success ms-2">(=${item.unitCostInBaseCurrency?.toFixed(4)} USD)</span>
-                                                                )}
+                                                                Costo: <span className="fw-bold text-dark">{Number(item.unitCost || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })} {selectedPurchase.currencyCode}</span>
                                                                 {' '}| Cantidad: {item.quantity}
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <div className="text-end">
                                                         <div className="fw-bold text-dark">
-                                                            {selectedPurchase.currencyCode && selectedPurchase.currencyCode !== 'USD' ? selectedPurchase.currencyCode : '$'}{(item.quantity * (item.unitCost || 0)).toLocaleString()}
+                                                            {selectedPurchase.currencyCode} {Number(item.quantity * (item.unitCost || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                                         </div>
-                                                        {item.subtotalInBaseCurrency && selectedPurchase.currencyCode !== 'USD' && (
-                                                            <div className="text-success small">${item.subtotalInBaseCurrency?.toFixed(2)} USD</div>
-                                                        )}
-                                                        <div className="text-muted small">Subtotal</div>
+                                                        <div className="text-success small fw-bold">
+                                                            {selectedPurchase.currencyCode === 'USD' ? (
+                                                                `= $${Number(item.quantity * item.unitCost).toLocaleString(undefined, { minimumFractionDigits: 2 })} USD`
+                                                            ) : (
+                                                                `= $${Number((item.unitCost / (selectedPurchase.exchangeRate || 1)) * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2 })} USD`
+                                                            )}
+                                                        </div>
+                                                        <div className="text-muted small">Subtotal Artículos</div>
                                                     </div>
                                                 </div>
                                             </ListGroup.Item>

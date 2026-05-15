@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -45,6 +46,23 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
             "ORDER BY totalSold DESC",
             countQuery = "SELECT COUNT(DISTINCT si.product.name) FROM SaleItem si WHERE si.sale.company.id = :companyId")
     Page<Object[]> findTopSellingProductsByCompany(Long companyId, org.springframework.data.domain.Pageable pageable);
+
+    @Query("SELECT s FROM Sale s WHERE s.company.id = :companyId " +
+            "AND (CAST(:customerName AS string) IS NULL OR LOWER(s.customerName) LIKE LOWER(CONCAT('%', :customerName, '%')) OR LOWER(s.customerCedula) LIKE LOWER(CONCAT('%', :customerName, '%'))) " +
+            "AND (CAST(:dateFrom AS string) IS NULL OR s.date >= :dateFrom) " +
+            "AND (CAST(:dateTo AS string) IS NULL OR s.date <= :dateTo) " +
+            "AND (CAST(:paymentMethod AS string) IS NULL OR s.paymentMethod = :paymentMethod) " +
+            "AND (CAST(:status AS string) IS NULL OR s.status = :status) " +
+            "ORDER BY s.date DESC")
+    Page<Sale> findByFilters(
+            @Param("companyId") Long companyId,
+            @Param("customerName") String customerName,
+            @Param("dateFrom") LocalDateTime dateFrom,
+            @Param("dateTo") LocalDateTime dateTo,
+            @Param("paymentMethod") String paymentMethod,
+            @Param("status") String status,
+            Pageable pageable
+    );
 
     @Query("SELECT DISTINCT s.company.id FROM Sale s WHERE s.date >= :sinceDate")
     List<Long> findUniqueCompanyIdsSince(LocalDateTime sinceDate);

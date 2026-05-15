@@ -72,6 +72,30 @@ public class SaleService {
         return saleRepository.findByCompanyId(userDetails.getCompanyId(), pageable);
     }
 
+    public Page<Sale> getFilteredSales(
+            UserDetailsImpl userDetails,
+            String customerName,
+            LocalDateTime dateFrom,
+            LocalDateTime dateTo,
+            PaymentMethod paymentMethod,
+            SaleStatus status,
+            Pageable pageable) {
+        
+        // Potential logic: If cashier, they might only see their own sales? 
+        // For now, let's keep it global if they have access to history, 
+        // but we can add the userId filter if needed.
+        
+        return saleRepository.findByFilters(
+                userDetails.getCompanyId(),
+                customerName,
+                dateFrom,
+                dateTo,
+                paymentMethod != null ? paymentMethod.name() : null,
+                status != null ? status.name() : null,
+                pageable
+        );
+    }
+
     public Sale getSaleById(Long id, UserDetailsImpl userDetails) {
         Sale sale = saleRepository.findById(id).orElse(null);
         if (sale == null || !sale.getCompany().getId().equals(userDetails.getCompanyId())) {

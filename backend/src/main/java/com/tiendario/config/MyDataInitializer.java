@@ -56,16 +56,16 @@ public class MyDataInitializer implements CommandLineRunner {
             // 2. Ensure Demo Managers & Customers
             createSuperAdmin("admin", "Admin123!");
             createManager("manager_pro",  "Manager123!", "Ferretería Central",    SubscriptionStatus.PAID,  7.789354, -72.219738, "Av. 19 de Abril, San Cristóbal");
-            createManager("manager_free", "Manager123!", "Minimarket El Rincón",  SubscriptionStatus.TRIAL, 7.792100, -72.215400, "Calle 5, Barrio Obrero, San Cristóbal");
-            createCashier("cajero_pro",   "Cajero123!",  "Ferretería Central");
-            createCustomer("cliente", "Cliente123!");
+            //createManager("manager_free", "Manager123!", "Minimarket El Rincón",  SubscriptionStatus.TRIAL, 7.792100, -72.215400, "Calle 5, Barrio Obrero, San Cristóbal");
+            //createCashier("cajero_pro",   "Cajero123!",  "Ferretería Central");
+            //reateCustomer("cliente", "Cliente123!");
 
 
             // 3. Seed requested categories
             seedBaseCategories();
 
             // 4. Seed 100 products per category
-            seedDemoProducts();
+            //seedDemoProducts();
 
             // 5. Seed detailed data for manager_pro
             seedManagerProData();
@@ -111,27 +111,31 @@ public class MyDataInitializer implements CommandLineRunner {
                 Product p6 = createProduct(company, "Cerradura de Pomo Bronce", "Ferretería", "ST-006", 22.0, 12.0, 18, "Dormitorio/Baño", "Cisa");
 
                 // 3. Create Purchases (Stock entry - More variety for reports)
-                System.err.println("Generating historical purchases for " + manager.getUsername() + "...");
-                createPurchase(company, sup1, List.of(p1, p2, p3), java.time.LocalDateTime.now().minusDays(25), "INV-B001");
-                createPurchase(company, sup2, List.of(p4, p5), java.time.LocalDateTime.now().minusDays(20), "INV-B002");
-                createPurchase(company, sup1, List.of(p1, p6), java.time.LocalDateTime.now().minusDays(15), "INV-B003");
-                createPurchase(company, sup2, List.of(p2, p3, p4), java.time.LocalDateTime.now().minusDays(10), "INV-B004");
-                createPurchase(company, sup1, List.of(p5, p6), java.time.LocalDateTime.now().minusDays(5), "INV-B005");
+                System.err.println("Generating historical multi-currency purchases for " + manager.getUsername() + "...");
+                createPurchase(company, sup1, List.of(p1, p2, p3), java.time.LocalDateTime.now().minusDays(25), "INV-B001", "USD", 1.0, PaymentMethod.TRANSFER);
+                createPurchase(company, sup2, List.of(p4, p5), java.time.LocalDateTime.now().minusDays(20), "INV-B002", "VES", 36.5, PaymentMethod.MOBILE_PAYMENT);
+                createPurchase(company, sup1, List.of(p1, p6), java.time.LocalDateTime.now().minusDays(15), "INV-B003", "USD", 1.0, PaymentMethod.CASH);
+                createPurchase(company, sup2, List.of(p2, p3, p4), java.time.LocalDateTime.now().minusDays(10), "INV-B004", "VES", 36.8, PaymentMethod.TRANSFER);
+                createPurchase(company, sup1, List.of(p5, p6), java.time.LocalDateTime.now().minusDays(5), "INV-B005", "USD", 1.0, PaymentMethod.CARD);
 
                 // 4. Create Sales (Diverse states and history)
-                System.err.println("Generating historical sales for charting...");
+                System.err.println("Generating historical sales for charting (Mixed Currencies)...");
                 java.util.Random rnd = new java.util.Random();
-                PaymentMethod[] methods = PaymentMethod.values();
-                SaleStatus[] statuses = SaleStatus.values();
+                PaymentMethod[] methods = {PaymentMethod.CASH, PaymentMethod.MOBILE_PAYMENT, PaymentMethod.TRANSFER, PaymentMethod.CARD};
+                SaleStatus[] statuses = {SaleStatus.PAID, SaleStatus.PAID, SaleStatus.PAID, SaleStatus.PENDING}; // Mostly paid
                 String[] names = {"Juan Pérez", "María García", "Luis Rodríguez", "Ana Martínez", "Carlos Ruiz", "Elena Blanco", "Pedro Sánchez", "Santi Castro"};
 
-                for (int i = 1; i <= 45; i++) {
+                for (int i = 1; i <= 60; i++) {
                     java.time.LocalDateTime saleDate = java.time.LocalDateTime.now().minusDays(rnd.nextInt(30)).minusHours(rnd.nextInt(24));
                     SaleStatus randomStatus = statuses[rnd.nextInt(statuses.length)];
                     PaymentMethod randomMethod = methods[rnd.nextInt(methods.length)];
                     String randomName = names[rnd.nextInt(names.length)];
                     
-                    // Pick 1-3 random products from the specialized set
+                    // Determine currency for this sale
+                    String currency = (rnd.nextBoolean()) ? "USD" : "VES";
+                    double rate = currency.equals("USD") ? 1.0 : 36.0 + (rnd.nextDouble() * 1.5);
+
+                    // Pick 1-3 random products
                     List<Product> allSpecialized = List.of(p1, p2, p3, p4, p5, p6);
                     List<Product> saleProducts = new java.util.ArrayList<>();
                     int itemsCount = 1 + rnd.nextInt(3);
@@ -139,10 +143,10 @@ public class MyDataInitializer implements CommandLineRunner {
                         saleProducts.add(allSpecialized.get(rnd.nextInt(allSpecialized.size())));
                     }
 
-                    createSale(company, manager, randomName, saleProducts, randomStatus, randomMethod, saleDate);
+                    createSale(company, manager, randomName, saleProducts, randomStatus, randomMethod, saleDate, currency, rate);
                 }
                 
-                System.err.println("✓ Manager Pro data seeded successfully with historical sales.");
+                System.err.println("✓ Manager Pro data seeded successfully with 60 historical sales and 5 purchases.");
             }
         }
     }
@@ -162,12 +166,15 @@ public class MyDataInitializer implements CommandLineRunner {
         return productRepository.save(p);
     }
 
-    private void createPurchase(Company company, Supplier supplier, List<Product> products, java.time.LocalDateTime date, String invoice) {
+    private void createPurchase(Company company, Supplier supplier, List<Product> products, java.time.LocalDateTime date, String invoice, String currency, double rate, PaymentMethod method) {
         Purchase purchase = new Purchase();
         purchase.setCompany(company);
         purchase.setSupplier(supplier);
         purchase.setDate(date);
         purchase.setInvoiceNumber(invoice);
+        purchase.setCurrencyCode(currency);
+        purchase.setExchangeRate(BigDecimal.valueOf(rate));
+        purchase.setPaymentMethod(method);
         
         BigDecimal total = BigDecimal.ZERO;
         List<PurchaseItem> items = new java.util.ArrayList<>();
@@ -176,13 +183,25 @@ public class MyDataInitializer implements CommandLineRunner {
             item.setPurchase(purchase);
             item.setProduct(p);
             item.setQuantity(10);
-            item.setUnitCost(p.getCostPrice());
-            BigDecimal subtotal = p.getCostPrice().multiply(BigDecimal.valueOf(10));
+            
+            // Set cost in the purchase currency
+            BigDecimal unitCost = p.getCostPrice().multiply(BigDecimal.valueOf(rate));
+            item.setUnitCost(unitCost);
+            item.setUnitCostInBaseCurrency(p.getCostPrice());
+            
+            BigDecimal subtotal = unitCost.multiply(BigDecimal.valueOf(10));
             total = total.add(subtotal);
+            
+            item.setSubtotalInBaseCurrency(p.getCostPrice().multiply(BigDecimal.valueOf(10)));
             items.add(item);
+
+            // Update product stock
+            p.setStock(p.getStock() + 10);
+            productRepository.save(p);
         }
         purchase.setItems(items);
         purchase.setTotal(total);
+        purchase.setTotalInBaseCurrency(total.divide(BigDecimal.valueOf(rate), 2, java.math.RoundingMode.HALF_UP));
         purchaseRepository.save(purchase);
     }
 
@@ -201,7 +220,7 @@ public class MyDataInitializer implements CommandLineRunner {
         }
     }
 
-    private void createSale(Company company, User user, String customerName, List<Product> products, SaleStatus status, PaymentMethod method, java.time.LocalDateTime date) {
+    private void createSale(Company company, User user, String customerName, List<Product> products, SaleStatus status, PaymentMethod method, java.time.LocalDateTime date, String currency, double rate) {
         Sale sale = new Sale();
         sale.setCompany(company);
         sale.setUser(user);
@@ -209,8 +228,8 @@ public class MyDataInitializer implements CommandLineRunner {
         sale.setStatus(status);
         sale.setPaymentMethod(method);
         sale.setDate(date);
-        sale.setPaymentCurrency("USD");
-        sale.setExchangeRateUsed(BigDecimal.ONE);
+        sale.setPaymentCurrency(currency);
+        sale.setExchangeRateUsed(BigDecimal.valueOf(rate));
 
         BigDecimal total = BigDecimal.ZERO;
         List<SaleItem> items = new java.util.ArrayList<>();
@@ -223,10 +242,31 @@ public class MyDataInitializer implements CommandLineRunner {
             item.setSubtotal(p.getPrice());
             total = total.add(p.getPrice());
             items.add(item);
+
+            // Update stock
+            if (p.getStock() > 0) {
+                p.setStock(p.getStock() - 1);
+                productRepository.save(p);
+            }
         }
         sale.setItems(items);
         sale.setTotalAmount(total);
-        sale.setPaymentAmountInCurrency(total);
+        
+        // Convert total to payment currency
+        BigDecimal totalInCurrency = total.multiply(BigDecimal.valueOf(rate));
+        sale.setPaymentAmountInCurrency(totalInCurrency);
+
+        // Create formal SalePayment record
+        SalePayment payment = new SalePayment();
+        payment.setSale(sale);
+        payment.setMethod(method);
+        payment.setAmount(totalInCurrency);
+        payment.setCurrencyCode(currency);
+        payment.setExchangeRate(BigDecimal.valueOf(rate));
+        payment.setAmountInBaseCurrency(total);
+        
+        sale.setPayments(java.util.List.of(payment));
+        
         saleRepository.save(sale);
     }
 
