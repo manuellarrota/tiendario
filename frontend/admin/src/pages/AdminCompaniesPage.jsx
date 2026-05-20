@@ -24,7 +24,11 @@ const AdminCompaniesPage = () => {
     const [editDescription, setEditDescription] = useState('');
     const [editAddress, setEditAddress] = useState('');
     const [editPosition, setEditPosition] = useState(null);
+    const [editPlan, setEditPlan] = useState('BASIC');
+    const [editHasBilling, setEditHasBilling] = useState(false);
+    const [editExtraRegisters, setEditExtraRegisters] = useState(0);
     const [saving, setSaving] = useState(false);
+    const [saveError, setSaveError] = useState('');
 
     const loadCompanies = () => {
         setLoading(true);
@@ -47,7 +51,7 @@ const AdminCompaniesPage = () => {
 
     const handleStatusChange = (companyId, newStatus) => {
         setUpdating(companyId);
-        AdminService.updateCompanySubscription(companyId, newStatus).then(
+        AdminService.updateCompanySubscription(companyId, { status: newStatus }).then(
             () => {
                 setCompanies(companies.map(c =>
                     c.id === companyId ? { ...c, subscriptionStatus: newStatus } : c
@@ -56,7 +60,7 @@ const AdminCompaniesPage = () => {
             },
             (error) => {
                 console.error("Error updating company", error);
-                alert("❌ Error al actualizar el estado de la suscripción.");
+                setError("Error al actualizar el estado de la suscripción.");
                 setUpdating(null);
             }
         );
@@ -69,6 +73,9 @@ const AdminCompaniesPage = () => {
         setEditDescription(company.description || '');
         setEditAddress(company.address || '');
         setEditPosition({ lat: company.latitude, lng: company.longitude });
+        setEditPlan(company.subscriptionPlan || 'BASIC');
+        setEditHasBilling(company.hasElectronicBilling || false);
+        setEditExtraRegisters(company.extraRegisters || 0);
         setShowEditModal(true);
     };
 
@@ -86,11 +93,27 @@ const AdminCompaniesPage = () => {
 
         AdminService.updateCompany(selectedCompany.id, data).then(
             () => {
-                setCompanies(companies.map(c =>
-                    c.id === selectedCompany.id ? { ...c, ...data } : c
-                ));
-                setShowEditModal(false);
-                setSaving(false);
+                // Update subscription data as well
+                const subData = {
+                    plan: editPlan,
+                    hasElectronicBilling: editHasBilling,
+                    extraRegisters: editExtraRegisters
+                };
+                AdminService.updateCompanySubscription(selectedCompany.id, subData).then(
+                    () => {
+                        setCompanies(companies.map(c =>
+                            c.id === selectedCompany.id ? { ...c, ...data, subscriptionPlan: editPlan, hasElectronicBilling: editHasBilling, extraRegisters: editExtraRegisters } : c
+                        ));
+                        setShowEditModal(false);
+                        setSaveError('');
+                        setSaving(false);
+                    },
+                    (error) => {
+                        console.error("Error updating subscription details", error);
+                        setSaveError('No se pudo actualizar el plan. Los datos básicos sí fueron guardados.');
+                        setSaving(false);
+                    }
+                );
             },
             (error) => {
                 console.error("Error updating company", error);
@@ -158,15 +181,16 @@ const AdminCompaniesPage = () => {
                                         <td>
                                             <div className="fw-bold fs-5">{company.name}</div>
                                         </td>
-                                        <td>
+                                            <td>
                                                 <Badge
                                                     bg={company.subscriptionStatus === 'PAID' ? 'success' : company.subscriptionStatus === 'TRIAL' ? 'warning' : 'secondary'}
-                                                    className="px-3 py-2 rounded-pill"
+                                                    className="px-3 py-2 rounded-pill mb-1"
                                                 >
-                                                    {company.subscriptionStatus === 'PAID' ? '💎 PREMIUM' : 
+                                                    {company.subscriptionStatus === 'PAID' ? '💎 ' + (company.subscriptionPlan || 'PREMIUM') : 
                                                      company.subscriptionStatus === 'TRIAL' ? '⏱️ PRUEBA' : 
                                                      company.subscriptionStatus === 'PAST_DUE' ? '⚠️ VENCIDO' : company.subscriptionStatus}
                                                 </Badge>
+                                                {company.hasElectronicBilling && <Badge bg="info" className="ms-1 rounded-pill">Facturación ✅</Badge>}
                                             </td>
                                             <td>
                                                 <div className="d-flex gap-2">
@@ -221,6 +245,11 @@ const AdminCompaniesPage = () => {
                     <Modal.Title className="fw-bold">Editar Datos de Tienda</Modal.Title>
                 </Modal.Header>
                 <Modal.Body className="p-4">
+                    {saveError && (
+                        <Alert variant="danger" className="rounded-3 small py-2 mb-3" onClose={() => setSaveError('')} dismissible>
+                            {saveError}
+                        </Alert>
+                    )}
                     <Form onSubmit={handleUpdateCompany}>
                         <Row>
                             <Col md={6}>
@@ -243,6 +272,36 @@ const AdminCompaniesPage = () => {
                                         value={editPhone}
                                         onChange={(e) => setEditPhone(e.target.value)}
                                         className="rounded-3"
+                                    />
+                                </Form.Group>
+                            </Col>
+                        </Row>
+
+                        <Row className="mb-3">
+                            <Col md={4}>
+                                <Form.Group>
+                                    <Form.Label className="small fw-bold">Plan</Form.Label>
+                                    <Form.Select value={editPlan} onChange={(e) => setEditPlan(e.target.value)} className="rounded-3">
+                                        <option value="BASIC">Básico (1 Caja)</option>
+                                        <option value="MEDIUM">Medium (3 Cajas)</option>
+                                        <option value="PREMIUM">Premium (5 Cajas)</option>
+                                    </Form.Select>
+                                </Form.Group>
+                            </Col>
+                            <Col md={4}>
+                                <Form.Group>
+                                    <Form.Label className="small fw-bold">Cajas Extra (+)</Form.Label>
+                                    <Form.Control type="number" min="0" value={editExtraRegisters} onChange={(e) => setEditExtraRegisters(e.target.value)} className="rounded-3" />
+                                </Form.Group>
+                            </Col>
+                            <Col md={4} className="d-flex align-items-end">
+                                <Form.Group className="mb-2">
+                                    <Form.Check 
+                                        type="switch" 
+                                        id="billing-switch" 
+                                        label={<span className="small fw-bold ms-1">Facturación Elec.</span>}
+                                        checked={editHasBilling} 
+                                        onChange={(e) => setEditHasBilling(e.target.checked)} 
                                     />
                                 </Form.Group>
                             </Col>

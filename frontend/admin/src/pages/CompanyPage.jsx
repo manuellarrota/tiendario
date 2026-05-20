@@ -16,18 +16,70 @@ const CompanyPage = () => {
     const [editing, setEditing] = useState(false);
     const [editForm, setEditForm] = useState({});
     const [saveSuccess, setSaveSuccess] = useState('');
+    const [submitSuccess, setSubmitSuccess] = useState(false);
+    const [selectedPlan, setSelectedPlan] = useState('BASIC');
+    const [billingCycle, setBillingCycle] = useState('MONTHLY');
+
+    const PLAN_PRICES = {
+        BASIC:   { MONTHLY: 19.99,  ANNUAL: 199.99 },
+        MEDIUM:  { MONTHLY: 29.99,  ANNUAL: 299.99 },
+        PREMIUM: { MONTHLY: 49.99,  ANNUAL: 499.99 },
+    };
+
+    const PLAN_INFO = {
+        BASIC:   { label: 'Básico',   registers: 1, features: ['1 caja registradora', 'Ventas presenciales', 'Inventario básico', 'Reportes de ventas'] },
+        MEDIUM:  { label: 'Medium',   registers: 3, features: ['Hasta 3 cajas registradoras', 'Todo lo del plan Básico', 'Gestión de compras', 'Reportes avanzados'] },
+        PREMIUM: { label: 'Premium',  registers: 5, features: ['Hasta 5 cajas registradoras', 'Todo lo del plan Medium', 'Ventas en marketplace', 'Soporte prioritario'] },
+    };
+
+    const calculateAmount = (plan, cycle) => {
+        const base = PLAN_PRICES[plan]?.[cycle] || 19.99;
+        const extras = (company?.extraRegisters || 0) * (cycle === 'MONTHLY' ? 10 : 100);
+        const billing = company?.hasElectronicBilling ? (cycle === 'MONTHLY' ? 10 : 100) : 0;
+        return (base + extras + billing).toFixed(2);
+    };
+
+    const openPlanModal = (plan) => {
+        setSelectedPlan(plan);
+        setPaymentForm(prev => ({
+            ...prev,
+            targetPlan: plan,
+            billingCycle: billingCycle,
+            amount: calculateAmount(plan, billingCycle)
+        }));
+        setSubmitSuccess(false);
+        setShowModal(true);
+    };
 
     // Form states
     const [paymentForm, setPaymentForm] = useState({
         amount: '',
         paymentMethod: 'Zelle',
         reference: '',
-        notes: ''
+        notes: '',
+        targetPlan: 'BASIC',
+        billingCycle: 'MONTHLY'
     });
 
     useEffect(() => {
         loadData();
     }, []);
+
+    useEffect(() => {
+        if (company?.subscriptionPlan) {
+            setSelectedPlan(company.subscriptionPlan);
+        }
+    }, [company]);
+
+    useEffect(() => {
+        setPaymentForm(prev => ({
+            ...prev,
+            targetPlan: selectedPlan,
+            billingCycle: billingCycle,
+            amount: company ? calculateAmount(selectedPlan, billingCycle) : prev.amount
+        }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedPlan, billingCycle, company]);
 
     const loadData = async () => {
         setLoading(true);
@@ -105,23 +157,24 @@ const CompanyPage = () => {
         setSubmitting(true);
         try {
             await PaymentService.submitPayment(paymentForm);
-            setShowModal(false);
-            setPaymentForm({ amount: '', paymentMethod: 'Zelle', reference: '', notes: '' });
+            setSubmitSuccess(true);
+            setPaymentForm({ amount: '', paymentMethod: 'Zelle', reference: '', notes: '', targetPlan: 'BASIC', billingCycle: 'MONTHLY' });
             loadData();
-            alert("Pago enviado correctamente. El equipo de Nugar lo revisará pronto.");
+            setTimeout(() => setShowModal(false), 3000);
         } catch (err) {
             console.error("Error submitting payment", err);
-            alert("Error al enviar el pago. Intenta de nuevo.");
+            setError("Error al enviar el comprobante. Intenta de nuevo.");
         } finally {
             setSubmitting(false);
         }
     };
 
-    const getStatusBadge = (status) => {
+    const getStatusBadge = (status, plan) => {
+        const planName = plan === 'PREMIUM' ? 'Premium' : plan === 'MEDIUM' ? 'Medium' : 'Básico';
         switch (status) {
-            case 'TRIAL': return <Badge bg="warning" text="dark">Prueba (Funcionalidad Completa)</Badge>;
-            case 'PAID': return <Badge bg="success">Membresía Premium Activa</Badge>;
-            case 'PAST_DUE': return <Badge bg="danger">Suscripción Vencida (Solo Lectura)</Badge>;
+            case 'TRIAL': return <Badge bg="warning" text="dark">Prueba {planName}</Badge>;
+            case 'PAID': return <Badge bg="success">Membresía {planName} Activa</Badge>;
+            case 'PAST_DUE': return <Badge bg="danger">Suscripción {planName} Vencida (Solo Lectura)</Badge>;
             case 'SUSPENDED': return <Badge bg="dark">Cuenta Suspendida</Badge>;
             default: return <Badge bg="secondary">{status}</Badge>;
         }
@@ -353,49 +406,106 @@ const CompanyPage = () => {
                                         <>
                                             <hr className="my-4" />
                                             <h5 className="fw-bold mb-3">Estado de Suscripción</h5>
-                                            <div className="mb-4">
-                                                {getStatusBadge(company?.subscriptionStatus)}
+                                            <div className="mb-3">
+                                                {getStatusBadge(company?.subscriptionStatus, company?.subscriptionPlan)}
                                             </div>
-
                                             {company?.subscriptionEndDate && (
-                                                <div className="mb-3 p-3 bg-light rounded-3">
+                                                <div className="mb-3 p-2 bg-light rounded-3">
                                                     <label className="text-muted small d-block">VENCIMIENTO</label>
-                                                    <span className="fw-bold">
-                                                        {new Date(company.subscriptionEndDate).toLocaleDateString()}
-                                                    </span>
+                                                    <span className="fw-bold">{new Date(company.subscriptionEndDate).toLocaleDateString()}</span>
                                                 </div>
                                             )}
-
-                                            {company?.subscriptionStatus !== 'PAID' && (
-                                                <Button
-                                                    variant="primary"
-                                                    className="w-100 py-3 rounded-pill fw-bold"
-                                                    onClick={() => setShowModal(true)}
-                                                >
-                                                    <FaCrown className="me-2" /> Subir a Premium
-                                                </Button>
+                                            {company?.extraRegisters > 0 && (
+                                                <div className="mb-3 p-2 bg-light rounded-3 border-start border-primary border-3">
+                                                    <label className="text-muted small d-block">CAJAS EXTRA</label>
+                                                    <span className="fw-bold text-primary">+{company.extraRegisters} {company.extraRegisters === 1 ? 'Caja' : 'Cajas'}</span>
+                                                </div>
                                             )}
                                         </>
                                     )}
                                 </Card.Body>
                             </Card>
-
-                            <Card className="border-0 shadow-sm rounded-4 bg-primary text-white">
-                                <Card.Body className="p-4">
-                                    <h5 className="fw-bold mb-3 d-flex align-items-center">
-                                        <FaInfoCircle className="me-2" /> ¿Por qué Premium?
-                                    </h5>
-                                    <ul className="list-unstyled mb-0">
-                                        <li className="mb-2 small"><FaCheckCircle className="me-2 text-info" /> Ventas en marketplace habilitadas</li>
-                                        <li className="mb-2 small"><FaCheckCircle className="me-2 text-info" /> Gestión de pedidos online</li>
-                                        <li className="mb-2 small"><FaCheckCircle className="me-2 text-info" /> Reportes avanzados de ventas</li>
-                                        <li className="small"><FaCheckCircle className="me-2 text-info" /> Soporte prioritario</li>
-                                    </ul>
-                                </Card.Body>
-                            </Card>
                         </Col>
 
                         <Col lg={8}>
+                            {/* Plan selector cards */}
+                            <Card className="border-0 shadow-sm rounded-4 mb-4">
+                                <Card.Header className="bg-white border-0 py-3 px-4 d-flex justify-content-between align-items-center">
+                                    <h5 className="mb-0 fw-bold d-flex align-items-center">
+                                        <FaCrown className="me-2 text-warning" /> Planes de Membresía
+                                    </h5>
+                                    <div className="d-flex align-items-center gap-2">
+                                        <small className="text-muted">Ciclo:</small>
+                                        <div className="btn-group btn-group-sm">
+                                            <button
+                                                type="button"
+                                                className={`btn btn-${billingCycle === 'MONTHLY' ? 'primary' : 'outline-secondary'}`}
+                                                onClick={() => setBillingCycle('MONTHLY')}
+                                            >Mensual</button>
+                                            <button
+                                                type="button"
+                                                className={`btn btn-${billingCycle === 'ANNUAL' ? 'primary' : 'outline-secondary'}`}
+                                                onClick={() => setBillingCycle('ANNUAL')}
+                                            >Anual <Badge bg="success" style={{fontSize:'0.6rem'}}>-16%</Badge></button>
+                                        </div>
+                                    </div>
+                                </Card.Header>
+                                <Card.Body className="p-4">
+                                    <Row className="g-3">
+                                        {Object.entries(PLAN_INFO).map(([planKey, info]) => {
+                                            const isCurrent = company?.subscriptionPlan === planKey && company?.subscriptionStatus === 'PAID';
+                                            const isSelected = selectedPlan === planKey;
+                                            return (
+                                                <Col md={4} key={planKey}>
+                                                    <div
+                                                        onClick={() => setSelectedPlan(planKey)}
+                                                        style={{
+                                                            cursor: 'pointer',
+                                                            border: isSelected ? '2px solid #0d6efd' : '2px solid #dee2e6',
+                                                            borderRadius: '12px',
+                                                            padding: '1.25rem',
+                                                            background: isCurrent ? '#f0f7ff' : isSelected ? '#f8f9ff' : '#fff',
+                                                            transition: 'all 0.2s',
+                                                            position: 'relative'
+                                                        }}
+                                                    >
+                                                        {isCurrent && (
+                                                            <Badge bg="success" className="position-absolute" style={{top:'10px',right:'10px',fontSize:'0.65rem'}}>
+                                                                ✓ Activo
+                                                            </Badge>
+                                                        )}
+                                                        <div className="fw-bold fs-6 mb-1">{info.label}</div>
+                                                        <div className="mb-2">
+                                                            <span className="fs-4 fw-bold text-primary">${PLAN_PRICES[planKey][billingCycle]}</span>
+                                                            <small className="text-muted">/{billingCycle === 'MONTHLY' ? 'mes' : 'año'}</small>
+                                                        </div>
+                                                        <ul className="list-unstyled mb-0" style={{fontSize:'0.8rem'}}>
+                                                            {info.features.map((f, i) => (
+                                                                <li key={i} className="text-muted mb-1">
+                                                                    <FaCheckCircle className="me-1 text-success" style={{fontSize:'0.7rem'}} />{f}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
+                                                </Col>
+                                            );
+                                        })}
+                                    </Row>
+                                    <div className="mt-4">
+                                        <Button
+                                            variant={company?.subscriptionStatus === 'PAID' && company?.subscriptionPlan === selectedPlan ? 'outline-success' : 'primary'}
+                                            className="w-100 py-3 rounded-pill fw-bold"
+                                            onClick={() => openPlanModal(selectedPlan)}
+                                        >
+                                            {company?.subscriptionStatus === 'PAID' && company?.subscriptionPlan === selectedPlan
+                                                ? <><FaCheckCircle className="me-2" /> Renovar Plan {PLAN_INFO[selectedPlan]?.label}</>
+                                                : <><FaCrown className="me-2" /> Contratar Plan {PLAN_INFO[selectedPlan]?.label} — ${calculateAmount(selectedPlan, billingCycle)}</>}
+                                        </Button>
+                                    </div>
+                                </Card.Body>
+                            </Card>
+
+                            {/* Payment history */}
                             <Card className="border-0 shadow-sm rounded-4 mb-4">
                                 <Card.Header className="bg-white border-0 py-3 px-4">
                                     <h5 className="mb-0 fw-bold d-flex align-items-center">
@@ -407,8 +517,8 @@ const CompanyPage = () => {
                                         <thead className="bg-light">
                                             <tr>
                                                 <th className="ps-4">Fecha</th>
+                                                <th>Plan</th>
                                                 <th>Método</th>
-                                                <th>Referencia</th>
                                                 <th>Monto</th>
                                                 <th>Estado</th>
                                             </tr>
@@ -416,11 +526,9 @@ const CompanyPage = () => {
                                         <tbody>
                                             {payments.length > 0 ? payments.map((p) => (
                                                 <tr key={p.id}>
-                                                    <td className="ps-4">
-                                                        {new Date(p.createdAt).toLocaleDateString()}
-                                                    </td>
+                                                    <td className="ps-4">{new Date(p.createdAt).toLocaleDateString()}</td>
+                                                    <td><Badge bg="light" text="dark" className="border small">{p.targetPlan || 'N/A'}</Badge></td>
                                                     <td>{p.paymentMethod}</td>
-                                                    <td><code className="bg-light text-dark px-2 rounded small">{p.reference}</code></td>
                                                     <td className="fw-bold">${p.amount}</td>
                                                     <td>{getPaymentStatusBadge(p.status)}</td>
                                                 </tr>
@@ -439,84 +547,110 @@ const CompanyPage = () => {
                     </Row>
 
                     {/* Modal para reportar pago */}
-                    <Modal show={showModal} onHide={() => setShowModal(false)} centered scrollable size="lg">
+                    <Modal show={showModal} onHide={() => { setShowModal(false); setSubmitSuccess(false); }} centered scrollable size="lg">
                         <Modal.Header closeButton className="border-0 pb-0">
-                            <Modal.Title className="fw-bold">Reportar Pago de Membresía</Modal.Title>
+                            <Modal.Title className="fw-bold">
+                                Reportar Pago — Plan {PLAN_INFO[paymentForm.targetPlan]?.label || 'Básico'}
+                            </Modal.Title>
                         </Modal.Header>
                         <Modal.Body className="p-4">
-                            <Alert variant="info" className="border-0 shadow-sm rounded-3">
-                                <h6 className="fw-bold"><FaInfoCircle className="me-2" /> Datos de Transferencia:</h6>
-                                <ul className="mb-0 small">
-                                    <li><strong>Zelle:</strong> pagos@nugar.com (Antigravity Inc)</li>
-                                    <li><strong>Binance Pay ID:</strong> 12345678</li>
-                                    <li><strong>Pago Móvil:</strong> 0102 - 0412-0000000 - V-12345678</li>
-                                </ul>
-                            </Alert>
+                            {submitSuccess ? (
+                                <Alert variant="success" className="rounded-3 text-center py-4">
+                                    <FaCheckCircle className="mb-2" style={{ fontSize: '2rem' }} />
+                                    <h5 className="fw-bold mb-1">¡Comprobante enviado!</h5>
+                                    <p className="mb-0 small">El equipo de Nugar lo revisará pronto y activará tu membresía.</p>
+                                </Alert>
+                            ) : (
+                                <>
+                                    <div className="p-3 rounded-3 mb-3" style={{ background: '#f0f7ff', border: '1px solid #cce5ff' }}>
+                                        <div className="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <div className="text-muted small">PLAN SELECCIONADO</div>
+                                                <div className="fw-bold fs-6">{PLAN_INFO[paymentForm.targetPlan]?.label} — {paymentForm.billingCycle === 'MONTHLY' ? 'Mensual' : 'Anual'}</div>
+                                            </div>
+                                            <div className="text-end">
+                                                <div className="text-muted small">MONTO A PAGAR</div>
+                                                <div className="fw-bold fs-4 text-primary">${paymentForm.amount}</div>
+                                            </div>
+                                        </div>
+                                    </div>
 
-                            <Form onSubmit={handleSubmitPayment}>
-                                <Row>
-                                    <Col md={6}>
+                                    <Alert variant="info" className="border-0 shadow-sm rounded-3">
+                                        <h6 className="fw-bold"><FaInfoCircle className="me-2" /> Datos de Transferencia:</h6>
+                                        <ul className="mb-0 small">
+                                            <li><strong>Zelle:</strong> pagos@nugar.com (Antigravity Inc)</li>
+                                            <li><strong>Binance Pay ID:</strong> 12345678</li>
+                                            <li><strong>Pago Móvil:</strong> 0102 - 0412-0000000 - V-12345678</li>
+                                        </ul>
+                                    </Alert>
+
+                                    <Form onSubmit={handleSubmitPayment}>
+                                        <Row>
+                                            <Col md={6}>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label className="small fw-bold text-muted">MONTO PAGADO (USD)</Form.Label>
+                                                    <Form.Control
+                                                        type="number"
+                                                        onFocus={(e) => e.target.select()}
+                                                        name="amount"
+                                                        value={paymentForm.amount}
+                                                        onChange={handleInputChange}
+                                                        step="0.01"
+                                                        required
+                                                        className="py-2"
+                                                    />
+                                                </Form.Group>
+                                            </Col>
+                                            <Col md={6}>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label className="small fw-bold text-muted">MÉTODO DE PAGO</Form.Label>
+                                                    <Form.Select
+                                                        name="paymentMethod"
+                                                        value={paymentForm.paymentMethod}
+                                                        onChange={handleInputChange}
+                                                        className="py-2"
+                                                    >
+                                                        <option value="Zelle">Zelle</option>
+                                                        <option value="Binance">Binance USDT</option>
+                                                        <option value="Pago Móvil">Pago Móvil (VES)</option>
+                                                        <option value="PayPal">PayPal</option>
+                                                    </Form.Select>
+                                                </Form.Group>
+                                            </Col>
+                                        </Row>
                                         <Form.Group className="mb-3">
-                                            <Form.Label className="small fw-bold text-muted">MONTO PAGADO (USD)</Form.Label>
+                                            <Form.Label className="small fw-bold text-muted">REFERENCIA / NRO COMPROBANTE</Form.Label>
                                             <Form.Control
-                                                type="number" onFocus={(e) => e.target.select()}
-                                                name="amount"
-                                                value={paymentForm.amount}
+                                                type="text"
+                                                name="reference"
+                                                value={paymentForm.reference}
                                                 onChange={handleInputChange}
-                                                placeholder="Ej: 15.00"
+                                                placeholder="Pegue aquí el ID o referencia de la transacción"
                                                 required
                                                 className="py-2"
                                             />
                                         </Form.Group>
-                                    </Col>
-                                    <Col md={6}>
                                         <Form.Group className="mb-3">
-                                            <Form.Label className="small fw-bold text-muted">MÉTODO DE PAGO</Form.Label>
-                                            <Form.Select
-                                                name="paymentMethod"
-                                                value={paymentForm.paymentMethod}
+                                            <Form.Label className="small fw-bold text-muted">NOTAS ADICIONALES (OPCIONAL)</Form.Label>
+                                            <Form.Control
+                                                as="textarea"
+                                                rows={2}
+                                                name="notes"
+                                                value={paymentForm.notes}
                                                 onChange={handleInputChange}
+                                                placeholder="Algún detalle adicional sobre tu pago"
                                                 className="py-2"
-                                            >
-                                                <option value="Zelle">Zelle</option>
-                                                <option value="Binance">Binance USDT</option>
-                                                <option value="Pago Móvil">Pago Móvil (VES)</option>
-                                                <option value="PayPal">PayPal</option>
-                                            </Form.Select>
+                                            />
                                         </Form.Group>
-                                    </Col>
-                                </Row>
-                                <Form.Group className="mb-3">
-                                    <Form.Label className="small fw-bold text-muted">REFERENCIA / NRO COMPROBANTE</Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        name="reference"
-                                        value={paymentForm.reference}
-                                        onChange={handleInputChange}
-                                        placeholder="Pegue aquí el ID o referencia de la transacción"
-                                        required
-                                        className="py-2"
-                                    />
-                                </Form.Group>
-                                <Form.Group className="mb-3">
-                                    <Form.Label className="small fw-bold text-muted">NOTAS ADICIONALES (OPCIONAL)</Form.Label>
-                                    <Form.Control
-                                        as="textarea"
-                                        rows={2}
-                                        name="notes"
-                                        value={paymentForm.notes}
-                                        onChange={handleInputChange}
-                                        placeholder="Algún detalle adicional sobre tu pago"
-                                        className="py-2"
-                                    />
-                                </Form.Group>
 
-                                <div className="d-grid mt-4">
-                                    <Button variant="primary" type="submit" size="lg" className="rounded-pill fw-bold py-3" disabled={submitting}>
-                                        {submitting ? <Spinner size="sm" animation="border" /> : <><FaFileUpload className="me-2" /> Enviar Comprobante</>}
-                                    </Button>
-                                </div>
-                            </Form>
+                                        <div className="d-grid mt-4">
+                                            <Button variant="primary" type="submit" size="lg" className="rounded-pill fw-bold py-3" disabled={submitting}>
+                                                {submitting ? <Spinner size="sm" animation="border" /> : <><FaFileUpload className="me-2" /> Enviar Comprobante de Pago</>}
+                                            </Button>
+                                        </div>
+                                    </Form>
+                                </>
+                            )}
                         </Modal.Body>
                     </Modal>
                 </Container>

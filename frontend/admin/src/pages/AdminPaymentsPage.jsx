@@ -123,6 +123,7 @@ const AdminPaymentsPage = () => {
                                     <tr>
                                         <th className="ps-4">ID</th>
                                         <th>Empresa</th>
+                                        <th>Plan</th>
                                         <th>Monto</th>
                                         <th>Referencia</th>
                                         <th>Fecha</th>
@@ -140,8 +141,20 @@ const AdminPaymentsPage = () => {
                                             </td>
                                             <td className="fw-bold text-success">${p.amount}</td>
                                             <td>
+                                                {p.targetPlan && (
+                                                    <Badge bg={p.targetPlan === 'PREMIUM' ? 'warning' : p.targetPlan === 'MEDIUM' ? 'primary' : 'secondary'} text={p.targetPlan === 'PREMIUM' ? 'dark' : undefined} className="me-1">
+                                                        {p.targetPlan === 'BASIC' ? 'Básico' : p.targetPlan === 'MEDIUM' ? 'Medium' : 'Premium'}
+                                                    </Badge>
+                                                )}
+                                            </td>
+                                            <td>
                                                 <div className="small font-monospace">{p.paymentMethod}</div>
                                                 <div className="small text-muted">{p.reference}</div>
+                                                {p.billingCycle === 'ANNUAL' ? (
+                                                    <Badge bg="success" className="mt-1" style={{ fontSize: '0.65rem' }}>Anual</Badge>
+                                                ) : (
+                                                    <Badge bg="info" className="mt-1" style={{ fontSize: '0.65rem' }}>Mensual</Badge>
+                                                )}
                                             </td>
                                             <td className="small">
                                                 {new Date(p.createdAt).toLocaleString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
@@ -225,6 +238,8 @@ const AdminPaymentsPage = () => {
                                     <p><strong>ID:</strong> #{detailsPayment.id}</p>
                                     <p><strong>Empresa:</strong> {detailsPayment.company?.name}</p>
                                     <p><strong>Monto:</strong> ${detailsPayment.amount}</p>
+                                    <p><strong>Plan:</strong> {detailsPayment.targetPlan === 'BASIC' ? '🥉 Básico' : detailsPayment.targetPlan === 'MEDIUM' ? '🥈 Medium' : detailsPayment.targetPlan === 'PREMIUM' ? '🥇 Premium' : 'No especificado'}</p>
+                                    <p><strong>Ciclo:</strong> {detailsPayment.billingCycle === 'ANNUAL' ? 'Anual (365 días)' : 'Mensual (30 días)'}</p>
                                     <p><strong>Método:</strong> {detailsPayment.paymentMethod}</p>
                                     <p><strong>Referencia:</strong> {detailsPayment.reference}</p>
                                     <p><strong>Fecha:</strong> {new Date(detailsPayment.createdAt).toLocaleString()}</p>

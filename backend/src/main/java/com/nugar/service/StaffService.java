@@ -44,6 +44,16 @@ public class StaffService {
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new RuntimeException("Error: Empresa no encontrada."));
 
+        // Count only cashiers — the Manager (owner) does NOT consume a register slot
+        long currentCashierCount = userRepository.countByCompanyIdAndRole(companyId, Role.ROLE_CASHIER);
+        int planLimit = company.getSubscriptionPlan() != null ? company.getSubscriptionPlan().getDefaultRegisterLimit() : 1;
+        int extraLimit = company.getExtraRegisters() != null ? company.getExtraRegisters() : 0;
+        int totalLimit = planLimit + extraLimit;
+
+        if (currentCashierCount >= totalLimit) {
+            throw new RuntimeException("Error: Límite de " + totalLimit + " caja(s) alcanzado para tu plan. Adquiere cajas adicionales o mejora tu plan.");
+        }
+
         User cashier = new User();
         cashier.setUsername(username);
         cashier.setEmail(email);

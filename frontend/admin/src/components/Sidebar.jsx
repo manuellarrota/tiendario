@@ -139,7 +139,7 @@ const Sidebar = () => {
                                         <span className="premium-badge-v1 bg-dark text-white">Super Admin</span>
                                     ) : (
                                         <Badge bg={user?.subscriptionStatus === 'PAID' ? 'success' : 'warning'} className="rounded-pill px-2 py-1" style={{ fontSize: '0.6rem', letterSpacing: '0.5px' }}>
-                                            {user?.subscriptionStatus === 'PAID' ? 'PRO' : 'PRUEBA'}
+                                            {user?.subscriptionStatus === 'PAID' ? (user?.subscriptionPlan === 'PREMIUM' ? 'PREMIUM' : user?.subscriptionPlan === 'MEDIUM' ? 'MEDIUM' : 'PRO') : 'PRUEBA'}
                                         </Badge>
                                     )}
                                     <small className="fw-bold text-dark text-truncate" style={{ maxWidth: '120px' }}>
@@ -152,7 +152,7 @@ const Sidebar = () => {
                         {collapsed && (
                             <div className="mt-3 border-top pt-3 text-center">
                                 <small className="fw-bold text-uppercase" style={{ fontSize: '0.6rem' }}>
-                                    {isSuperAdmin ? 'SA' : (user?.subscriptionStatus === 'PAID' ? 'PRO' : 'TRL')}
+                                    {isSuperAdmin ? 'SA' : (user?.subscriptionStatus === 'PAID' ? (user?.subscriptionPlan === 'PREMIUM' ? 'PRM' : user?.subscriptionPlan === 'MEDIUM' ? 'MED' : 'PRO') : 'TRL')}
                                 </small>
                             </div>
                         )}
@@ -162,15 +162,15 @@ const Sidebar = () => {
 
                         {isSuperAdmin ? (
                             <>
-                                <NavItem to="/admin/onboarding" icon={FaRocket}       label="Registrar Tienda"    description="Wizard paso a paso para registrar un nuevo cliente."       collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/dashboard"        icon={FaChartLine}    label="Métricas Globales"   description="Visualiza el estado de todo el ecosistema Nugar."       collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/admin/companies"  icon={FaStore}        label="Gestión de Empresas" description="Administra los comercios y sus suscripciones."              collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/admin/catalog"    icon={FaBox}          label="Catálogo Global"     description="Gestiona los registros maestros de productos unificados."   collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/admin/onboarding" icon={FaRocket} label="Registrar Tienda" description="Wizard paso a paso para registrar un nuevo cliente." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/dashboard" icon={FaChartLine} label="Métricas Globales" description="Visualiza el estado de todo el ecosistema Nugar." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/admin/companies" icon={FaStore} label="Gestión de Empresas" description="Administra los comercios y sus suscripciones." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/admin/catalog" icon={FaBox} label="Catálogo Global" description="Gestiona los registros maestros de productos unificados." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/admin/catalog-suggestions" icon={FaBox} label="Sugerencias Catálogo" description="Aprueba o rechaza nuevas imágenes y detalles de productos." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/admin/categories" icon={FaTags}         label="Gestión Categorías"   description="Panel maestro para crear, editar y moderar categorías."      collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/admin/payments"   icon={FaMoneyBillWave} label="Validación de Pagos" description="Aprueba o rechaza los reportes de pago de los usuarios."  collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/admin/users"      icon={FaUsers}        label="Gestión de Usuarios" description="Control total sobre los accesos de usuarios al sistema."    collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/admin/config"     icon={FaCog}          label="Configuración SaaS"  description="Ajusta precios, planes y mantenimiento del sistema."        collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/admin/categories" icon={FaTags} label="Gestión Categorías" description="Panel maestro para crear, editar y moderar categorías." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/admin/payments" icon={FaMoneyBillWave} label="Validación de Pagos" description="Aprueba o rechaza los reportes de pago de los usuarios." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/admin/users" icon={FaUsers} label="Gestión de Usuarios" description="Control total sobre los accesos de usuarios al sistema." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/admin/config" icon={FaCog} label="Configuración SaaS" description="Ajusta precios, planes y mantenimiento del sistema." collapsed={collapsed} setIsOpen={setIsOpen} />
                             </>
                         ) : (
                             <>
@@ -179,31 +179,31 @@ const Sidebar = () => {
 
                                 {/* ── OPERACIÓN ───────────── */}
                                 <NavGroup label="🟢 Operación" collapsed={collapsed} />
-                                <NavItem to="/pos"           icon={FaShoppingBag}  label="Punto de Venta"    description="Realiza ventas rápidas en mostrador y genera tickets."      collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/pos" icon={FaShoppingBag} label="Punto de Venta" description="Realiza ventas rápidas en mostrador y genera tickets." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 {(user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
                                     <>
-                                        <NavItem to="/daily-closing" icon={FaCashRegister}  label="Control de Caja"   description="Arqueo diario y balance de ingresos en efectivo/digital."  collapsed={collapsed} setIsOpen={setIsOpen} />
-                                        <NavItem to="/shifts/history"     icon={FaHistory}      label="Auditoría de Cajas"   description="Revisa y verifica los reportes de turno de tus cajeros."  collapsed={collapsed} setIsOpen={setIsOpen} />
-                                        <NavItem to="/inventory"     icon={FaBox}           label="Inventario"        description="Controla stocks, precios, imágenes y exportación."         collapsed={collapsed} setIsOpen={setIsOpen} />
+                                        <NavItem to="/daily-closing" icon={FaCashRegister} label="Control de Caja" description="Arqueo diario y balance de ingresos en efectivo/digital." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                        <NavItem to="/shifts/history" icon={FaHistory} label="Auditoría de Cajas" description="Revisa y verifica los reportes de turno de tus cajeros." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                        <NavItem to="/inventory" icon={FaBox} label="Inventario" description="Controla stocks, precios, imágenes y exportación." collapsed={collapsed} setIsOpen={setIsOpen} />
                                     </>
                                 )}
-                                <NavItem to="/notifications"     icon={FaBell}    label="Notificaciones"       badge={unreadCount} description="Novedades, pedidos nuevos y alertas de sistema." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/notifications" icon={FaBell} label="Notificaciones" badge={unreadCount} description="Novedades, pedidos nuevos y alertas de sistema." collapsed={collapsed} setIsOpen={setIsOpen} />
 
                                 {/* ── COMERCIAL ───────────── */}
                                 {(user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
                                     <>
                                         <NavGroup label="📦 Comercial" collapsed={collapsed} />
-                                        <NavItem to="/purchases/new" icon={FaTruck}  label="Comprar Mercancía" description="Registra compras a proveedores y suma al stock."     collapsed={collapsed} setIsOpen={setIsOpen} />
-                                        <NavItem to="/suppliers"     icon={FaUsers}  label="Proveedores"       description="Guarda los datos de contacto de quienes te surten." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                        <NavItem to="/purchases/new" icon={FaTruck} label="Comprar Mercancía" description="Registra compras a proveedores y suma al stock." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                        <NavItem to="/suppliers" icon={FaUsers} label="Proveedores" description="Guarda los datos de contacto de quienes te surten." collapsed={collapsed} setIsOpen={setIsOpen} />
                                     </>
                                 )}
-                                <NavItem to="/customers"     icon={FaUsers}  label="Clientes"          description="Directorio y base de datos de tus clientes."        collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/customers" icon={FaUsers} label="Clientes" description="Directorio y base de datos de tus clientes." collapsed={collapsed} setIsOpen={setIsOpen} />
 
                                 {/* ── SEGUIMIENTO ─────────── */}
                                 <NavGroup label="📊 Seguimiento" collapsed={collapsed} />
-                                <NavItem to="/sales/history"     icon={FaHistory} label="Historial de Ventas"  description="Monitorea el estado de tus ventas y pedidos pendientes." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/sales/history" icon={FaHistory} label="Historial de Ventas" description="Monitorea el estado de tus ventas y pedidos pendientes." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 {(user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
-                                    <NavItem to="/purchases/history" icon={FaHistory} label="Historial de Compras" description="Revisa cuándo y a cuánto compraste tus productos."        collapsed={collapsed} setIsOpen={setIsOpen} />
+                                    <NavItem to="/purchases/history" icon={FaHistory} label="Historial de Compras" description="Revisa cuándo y a cuánto compraste tus productos." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 )}
 
                                 {/* ── ANÁLISIS ────────────── */}
@@ -218,13 +218,13 @@ const Sidebar = () => {
                                 {(user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
                                     <>
                                         <NavGroup label="⚙️ Configuración" collapsed={collapsed} />
-                                        <NavItem to="/categories" icon={FaTags} label="Categorías"       description="Mira las categorías globales y sugiere nuevas para el catálogo." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                        <NavItem to="/categories" icon={FaTags} label="Categorías" description="Mira las categorías globales y sugiere nuevas para el catálogo." collapsed={collapsed} setIsOpen={setIsOpen} />
                                     </>
                                 )}
                                 {(user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
                                     <>
-                                        <NavItem to="/staff"      icon={FaUserTie} label="Mis Empleados" description="Administra cajeros y accesos de personal." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                        <NavItem to="/company"    icon={FaCog}  label="Ajustes de Tienda" description="Configura los detalles de tu negocio."                        collapsed={collapsed} setIsOpen={setIsOpen} />
+                                        <NavItem to="/staff" icon={FaUserTie} label="Mis Empleados" description="Administra cajeros y accesos de personal." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                        <NavItem to="/company" icon={FaCog} label="Ajustes de Tienda" description="Configura los detalles de tu negocio." collapsed={collapsed} setIsOpen={setIsOpen} />
                                     </>
                                 )}
                             </>

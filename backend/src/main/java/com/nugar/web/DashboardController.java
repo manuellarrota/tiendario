@@ -51,6 +51,9 @@ public class DashboardController {
                 if (company != null) {
                         summary.put("subscriptionStatus", company.getSubscriptionStatus());
                         summary.put("subscriptionEndDate", company.getSubscriptionEndDate());
+                        summary.put("subscriptionPlan", company.getSubscriptionPlan());
+                        summary.put("extraRegisters", company.getExtraRegisters());
+                        summary.put("hasElectronicBilling", Boolean.TRUE.equals(company.getHasElectronicBilling()));
                 }
 
                 // 1. Total Products

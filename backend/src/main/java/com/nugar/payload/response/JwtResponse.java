@@ -12,6 +12,7 @@ public class JwtResponse {
     private List<String> roles;
     private Long companyId;
     private String subscriptionStatus;
+    private String subscriptionPlan;
     private String email;
     private String name;
     private String phone;
@@ -19,13 +20,14 @@ public class JwtResponse {
     private String address;
 
     public JwtResponse(String accessToken, Long id, String username, List<String> roles, Long companyId,
-            String subscriptionStatus, String email, String name, String phone, String cedula, String address) {
+            String subscriptionStatus, String subscriptionPlan, String email, String name, String phone, String cedula, String address) {
         this.token = accessToken;
         this.id = id;
         this.username = username;
         this.roles = roles;
         this.companyId = companyId;
         this.subscriptionStatus = subscriptionStatus;
+        this.subscriptionPlan = subscriptionPlan;
         this.email = email;
         this.name = name;
         this.phone = phone;

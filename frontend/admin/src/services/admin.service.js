@@ -17,9 +17,9 @@ const getAllCompanies = () => {
     });
 };
 
-const updateCompanySubscription = (id, status) => {
+const updateCompanySubscription = (id, data) => {
     const user = AuthService.getCurrentUser();
-    return axios.put(API_URL + `companies/${id}/subscription`, { status }, {
+    return axios.put(API_URL + `companies/${id}/subscription`, data, {
         headers: { Authorization: 'Bearer ' + user.token }
     });
 };

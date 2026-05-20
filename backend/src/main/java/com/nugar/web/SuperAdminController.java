@@ -156,23 +156,28 @@ public class SuperAdminController {
         @PutMapping("/companies/{id}/subscription")
         @PreAuthorize("hasRole('ADMIN')")
         public ResponseEntity<?> updateCompanySubscription(@PathVariable Long id,
-                        @RequestBody Map<String, String> request) {
+                        @RequestBody Map<String, Object> request) {
                 Company company = companyRepository.findById(id)
                                 .orElseThrow(() -> new RuntimeException("Company not found"));
 
-                String newStatus = request.get("status");
-                if (newStatus != null) {
-                        try {
-                                company.setSubscriptionStatus(SubscriptionStatus.valueOf(newStatus));
-                                companyRepository.save(company);
-                                log.info("[SUSCRIPCIÓN ACTUALIZADA] Estado: {} | Empresa: {} (ID: {})", 
-                                        newStatus, company.getName(), company.getId());
-                                return ResponseEntity.ok(new MessageResponse("Subscription updated successfully!"));
-                        } catch (IllegalArgumentException e) {
-                                return ResponseEntity.badRequest().body(new MessageResponse("Invalid subscription status"));
-                        }
+                String newStatus = (String) request.get("status");
+                String newPlan = (String) request.get("plan");
+                Boolean hasElectronicBilling = (Boolean) request.get("hasElectronicBilling");
+                Integer extraRegisters = request.get("extraRegisters") != null ? Integer.valueOf(request.get("extraRegisters").toString()) : 0;
+
+                try {
+                        if (newStatus != null) company.setSubscriptionStatus(SubscriptionStatus.valueOf(newStatus));
+                        if (newPlan != null) company.setSubscriptionPlan(SubscriptionPlan.valueOf(newPlan));
+                        if (hasElectronicBilling != null) company.setHasElectronicBilling(hasElectronicBilling);
+                        company.setExtraRegisters(extraRegisters);
+                        
+                        companyRepository.save(company);
+                        log.info("[SUSCRIPCIÓN ACTUALIZADA] Estado: {} | Plan: {} | Cajas Extra: {} | Empresa: {} (ID: {})", 
+                                newStatus, newPlan, extraRegisters, company.getName(), company.getId());
+                        return ResponseEntity.ok(new MessageResponse("Subscription updated successfully!"));
+                } catch (IllegalArgumentException e) {
+                        return ResponseEntity.badRequest().body(new MessageResponse("Invalid subscription status or plan"));
                 }
-                return ResponseEntity.badRequest().body(new MessageResponse("Status is required"));
         }
 
         @GetMapping("/users")

@@ -25,7 +25,7 @@ const LandingPage = () => {
     const [regMessage, setRegMessage] = useState("");
     const [regSuccessful, setRegSuccessful] = useState(false);
     const [regPhone, setRegPhone] = useState("");
-    const [regPlan, setRegPlan] = useState("free");
+    const [regPlan, setRegPlan] = useState("basic");
     const [regPosition, setRegPosition] = useState(null);
     const [regAddress, setRegAddress] = useState("");
     const [regLoading, setRegLoading] = useState(false);
@@ -144,7 +144,7 @@ const LandingPage = () => {
         const lat = regPosition ? regPosition.lat : 0;
         const lng = regPosition ? regPosition.lng : 0;
 
-        AuthService.register(regUsername, regEmail, regPassword, "manager", regCompanyName, regPhone, lat, lng, regAddress).then(
+        AuthService.register(regUsername, regEmail, regPassword, "manager", regCompanyName, regPhone, lat, lng, regAddress, null, null, regPlan.toUpperCase()).then(
             () => {
                 setRegMessage("✅ ¡Registro exitoso! Por favor, revisa tu correo electrónico para activar tu cuenta antes de iniciar sesión.");
                 setRegSuccessful(true);
@@ -168,7 +168,7 @@ const LandingPage = () => {
         );
     };
 
-    const openRegister = (planType = "free") => {
+    const openRegister = (planType = "basic") => {
         setRegPlan(planType);
         setShowRegisterModal(true);
         // Give the modal time to fully render before Leaflet calculates map dimensions
@@ -254,7 +254,7 @@ const LandingPage = () => {
                             Punto de venta, control de inventario y presencia automática en el marketplace local — todo desde un solo panel.
                         </p>
                         <div className="d-flex gap-3 reveal-up delay-2">
-                            <Button onClick={() => openRegister('free')} className="btn btn-primary btn-lg px-4 py-3 shadow-lg">
+                            <Button onClick={() => openRegister('basic')} className="btn btn-primary btn-lg px-4 py-3 shadow-lg">
                                 Crear mi Tienda Gratis
                             </Button>
                             <Button
@@ -338,61 +338,89 @@ const LandingPage = () => {
 
                 <Row className="justify-content-center g-4 align-items-stretch">
 
-                    {/* Free Trial Plan */}
-                    <Col md={5} lg={4}>
+                    {/* Basic Plan */}
+                    <Col md={4} lg={4}>
                         <div className="glass-panel p-5 h-100 d-flex flex-column card-hover bg-white">
                             <div className="mb-4">
                                 <span className="badge bg-light text-secondary rounded-pill px-3 py-2">Para empezar</span>
                             </div>
-                            <h3 className="mb-1 text-dark" style={{ background: 'none', WebkitTextFillColor: 'initial' }}>Gratis</h3>
+                            <h3 className="mb-1 text-dark" style={{ background: 'none', WebkitTextFillColor: 'initial' }}>Básico</h3>
                             <div className="d-flex align-items-baseline mb-1">
-                                <span className="display-4 fw-bold text-dark">$0</span>
-                                <span className="text-secondary ms-2">/ 1 mes</span>
+                                <span className="display-4 fw-bold text-dark">{billingAnnual ? '$199.99' : '$19.99'}</span>
+                                <span className="text-secondary ms-2">{billingAnnual ? '/ año' : '/ mes'}</span>
                             </div>
-                            <p className="text-muted small mb-4">Prueba todo Nugar sin compromiso durante 30 días.</p>
+                            {billingAnnual ? (
+                                <p className="text-success small fw-bold mb-4">Ahorras ~$30 vs. pago mensual</p>
+                            ) : (
+                                <p className="text-muted small mb-4">Ideal para emprendedores solos.</p>
+                            )}
                             <ul className="list-unstyled flex-grow-1 text-secondary">
-                                <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Acceso completo por 30 días</li>
+                                <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Límite: 1 Caja / Usuario</li>
                                 <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> POS, inventario y ventas</li>
                                 <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Presencia en Marketplace</li>
-                                <li className="mb-3 d-flex align-items-center gap-2 text-muted"><FaTimes className="text-danger flex-shrink-0" /> Sin tarjeta de crédito requerida</li>
+                                <li className="mb-3 d-flex align-items-center gap-2 text-muted" style={{ opacity: 0.7 }}><FaCheck className="text-secondary flex-shrink-0" /> Facturación Electrónica (Próximamente) +$10</li>
                             </ul>
-                            <Button onClick={() => openRegister('free')} variant="outline-primary" className="w-100 mt-3 rounded-pill">
-                                Comenzar Ahora Gratis
+                            <Button onClick={() => openRegister('basic')} variant="outline-primary" className="w-100 mt-3 rounded-pill">
+                                Comenzar Básico
+                            </Button>
+                        </div>
+                    </Col>
+
+                    {/* Medium Plan */}
+                    <Col md={4} lg={4}>
+                        <div className="glass-panel p-5 h-100 d-flex flex-column card-hover position-relative overflow-hidden border border-primary border-opacity-50 bg-white shadow-lg" style={{ transform: 'scale(1.05)', zIndex: 10 }}>
+                            <div className="position-absolute top-0 end-0 bg-primary text-white px-3 py-1 rounded-bottom-start fw-bold small">
+                                MÁS POPULAR
+                            </div>
+                            <div className="mb-4">
+                                <span className="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">Crecimiento</span>
+                            </div>
+                            <h3 className="mb-1 text-dark" style={{ background: 'none', WebkitTextFillColor: 'initial' }}>Medium</h3>
+                            <div className="d-flex align-items-baseline mb-1">
+                                <span className="display-4 fw-bold text-dark">{billingAnnual ? '$299.99' : '$29.99'}</span>
+                                <span className="text-secondary ms-2">{billingAnnual ? '/ año' : '/ mes'}</span>
+                            </div>
+                            {billingAnnual ? (
+                                <p className="text-success small fw-bold mb-4">Ahorras ~$60 vs. pago mensual</p>
+                            ) : (
+                                <p className="text-dark small mb-4 fw-bold">Ideal para tiendas con turnos o empleados.</p>
+                            )}
+                            <ul className="list-unstyled flex-grow-1 text-secondary">
+                                <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Límite: Hasta 3 Cajas / Usuarios</li>
+                                <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Turnos y auditoría de cajas</li>
+                                <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Métricas y Reportes avanzados</li>
+                                <li className="mb-3 d-flex align-items-center gap-2 text-muted" style={{ opacity: 0.7 }}><FaCheck className="text-secondary flex-shrink-0" /> Facturación Electrónica (Próximamente) +$10</li>
+                            </ul>
+                            <Button onClick={() => openRegister('medium')} className="btn btn-primary w-100 mt-3 rounded-pill shadow-lg fw-bold">
+                                Obtener Medium
                             </Button>
                         </div>
                     </Col>
 
                     {/* Premium Plan */}
-                    <Col md={5} lg={4}>
-                        <div className="glass-panel p-5 h-100 d-flex flex-column card-hover position-relative overflow-hidden border border-primary border-opacity-25 bg-white">
-                            <div className="position-absolute top-0 end-0 bg-primary text-white px-3 py-1 rounded-bottom-start fw-bold small">
-                                POPULAR
-                            </div>
+                    <Col md={4} lg={4}>
+                        <div className="glass-panel p-5 h-100 d-flex flex-column card-hover position-relative overflow-hidden border border-light bg-white">
                             <div className="mb-4">
-                                <span className="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">Profesional</span>
+                                <span className="badge bg-dark text-white rounded-pill px-3 py-2">Negocios Consolidados</span>
                             </div>
                             <h3 className="mb-1 text-dark" style={{ background: 'none', WebkitTextFillColor: 'initial' }}>Premium</h3>
                             <div className="d-flex align-items-baseline mb-1">
-                                <span className="display-4 fw-bold text-dark">
-                                    {billingAnnual ? '$200' : '$20'}
-                                </span>
-                                <span className="text-secondary ms-2">
-                                    {billingAnnual ? '/año' : '/mes'}
-                                </span>
+                                <span className="display-4 fw-bold text-dark">{billingAnnual ? '$499.99' : '$49.99'}</span>
+                                <span className="text-secondary ms-2">{billingAnnual ? '/ año' : '/ mes'}</span>
                             </div>
-                            {billingAnnual
-                                ? <p className="text-success small fw-bold mb-4">Ahorras $40 vs. pago mensual</p>
-                                : <p className="text-muted small mb-4">Después del primer mes gratuito.</p>
-                            }
+                            {billingAnnual ? (
+                                <p className="text-success small fw-bold mb-4">Ahorras ~$100 vs. pago mensual</p>
+                            ) : (
+                                <p className="text-muted small mb-4">Para tiendas con alto volumen de ventas.</p>
+                            )}
                             <ul className="list-unstyled flex-grow-1 text-secondary">
-                                <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Punto de Venta (POS) completo</li>
-                                <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Control de Ventas e Inventario</li>
-                                <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Métricas Financieras en tiempo real</li>
-                                <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Reportes de Ventas avanzados</li>
-                                <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Presencia Destacada en Marketplace</li>
+                                <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Límite: Hasta 5 Cajas / Usuarios</li>
+                                <li className="mb-3 d-flex align-items-center gap-2 fw-bold text-dark"><FaRocket className="text-primary flex-shrink-0" /> Expansión: +$10/mes por cada caja extra</li>
+                                <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Soporte Prioritario 24/7</li>
+                                <li className="mb-3 d-flex align-items-center gap-2 text-muted" style={{ opacity: 0.7 }}><FaCheck className="text-secondary flex-shrink-0" /> Facturación Electrónica (Próximamente) +$10</li>
                             </ul>
-                            <Button onClick={() => openRegister('premium')} className="btn btn-primary w-100 mt-3 rounded-pill shadow-lg">
-                                {billingAnnual ? 'Obtener Premium Anual' : 'Obtener Premium'}
+                            <Button onClick={() => openRegister('premium')} variant="outline-dark" className="w-100 mt-3 rounded-pill fw-bold">
+                                Obtener Premium
                             </Button>
                         </div>
                     </Col>
@@ -410,7 +438,7 @@ const LandingPage = () => {
                 <div className="modal-dialog modal-dialog-centered">
                     <div className="modal-content rounded-4 border-0 shadow-lg">
                         <div className="modal-header border-0 pb-0">
-                            <h5 className="modal-title fw-bold">Crear Tienda — Plan {regPlan.toUpperCase()}</h5>
+                            <h5 className="modal-title fw-bold">Crear Tienda — Plan {regPlan === 'basic' ? 'Básico' : regPlan === 'medium' ? 'Medium' : regPlan === 'premium' ? 'Premium' : 'Básico'}</h5>
                             <button type="button" className="btn-close" onClick={() => setShowRegisterModal(false)}></button>
                         </div>
                         <div className="modal-body p-4">
@@ -492,9 +520,9 @@ const LandingPage = () => {
 
                                 <Form.Group className="mb-4">
                                     <Form.Label>Punto en el Mapa (Ubicación GPS)</Form.Label>
-                                    <StoreLocationMap 
-                                        address={regAddress} 
-                                        onLocationDetected={setRegPosition} 
+                                    <StoreLocationMap
+                                        address={regAddress}
+                                        onLocationDetected={setRegPosition}
                                     />
                                 </Form.Group>
 

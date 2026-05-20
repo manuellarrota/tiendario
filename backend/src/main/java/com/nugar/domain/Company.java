@@ -19,6 +19,12 @@ public class Company {
     @Enumerated(EnumType.STRING)
     private SubscriptionStatus subscriptionStatus;
 
+    @Enumerated(EnumType.STRING)
+    private SubscriptionPlan subscriptionPlan = SubscriptionPlan.BASIC;
+
+    private Boolean hasElectronicBilling = false;
+    private Integer extraRegisters = 0;
+
     private LocalDateTime trialStartDate;
     private LocalDateTime subscriptionEndDate;
 

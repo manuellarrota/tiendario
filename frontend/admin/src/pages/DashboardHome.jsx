@@ -17,10 +17,12 @@ const DashboardHome = () => {
     const [processingPayment, setProcessingPayment] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentForm, setPaymentForm] = useState({
-        amount: '20.00',
+        amount: '0.00',
         paymentMethod: 'Pago Móvil / Transferencia',
         reference: '',
-        notes: ''
+        notes: '',
+        billingCycle: 'MONTHLY',
+        targetPlan: 'BASIC'
     });
     const [paymentStatus, setPaymentStatus] = useState({ loading: false, success: false, error: '' });
     const [chartData, setChartData] = useState([]);
@@ -98,7 +100,7 @@ const DashboardHome = () => {
     useEffect(() => {
         loadData();
 
-        // 30 Seconds Polling for live updates
+        // 30 Seconds Polling for live dashboard updates only (data, no subscription check)
         const interval = setInterval(() => {
             loadData(true); // silent refresh
         }, 30000);
@@ -118,6 +120,20 @@ const DashboardHome = () => {
             window.location.href = '/pos';
         }
     }, [user, isSuperAdmin]);
+
+    const calculateAmount = (cycle, plan) => {
+        const effectivePlan = plan || paymentForm?.targetPlan || summary?.subscriptionPlan || 'BASIC';
+        let basePrice = 0;
+        if (effectivePlan === 'BASIC') basePrice = cycle === 'MONTHLY' ? 19.99 : 199.99;
+        else if (effectivePlan === 'MEDIUM') basePrice = cycle === 'MONTHLY' ? 29.99 : 299.99;
+        else if (effectivePlan === 'PREMIUM') basePrice = cycle === 'MONTHLY' ? 49.99 : 499.99;
+        else basePrice = cycle === 'MONTHLY' ? 19.99 : 199.99;
+
+        const extras = (summary?.extraRegisters || 0) * (cycle === 'MONTHLY' ? 10 : 100);
+        const eBilling = summary?.hasElectronicBilling ? (cycle === 'MONTHLY' ? 10 : 100) : 0;
+
+        return (basePrice + extras + eBilling).toFixed(2);
+    };
 
     const handleSubscriptionChange = (type) => {
         if (type === 'upgrade' || type === 'trial') {
@@ -139,6 +155,8 @@ const DashboardHome = () => {
                 }
             );
         } else if (type === 'manual') {
+            const currentPlan = summary?.subscriptionPlan || 'BASIC';
+            setPaymentForm({ ...paymentForm, targetPlan: currentPlan, amount: calculateAmount('MONTHLY', currentPlan), billingCycle: 'MONTHLY' });
             setShowPaymentModal(true);
         }
     };
@@ -764,15 +782,60 @@ const DashboardHome = () => {
                                 {paymentStatus.error && <Alert variant="danger" className="py-2 small">{paymentStatus.error}</Alert>}
 
                                 <Form.Group className="mb-3">
+                                    <Form.Label className="small fw-bold">Plan a Contratar / Renovar</Form.Label>
+                                    <Form.Select
+                                        className="py-2 rounded-3"
+                                        value={paymentForm.targetPlan}
+                                        onChange={(e) => {
+                                            const newPlan = e.target.value;
+                                            setPaymentForm({ ...paymentForm, targetPlan: newPlan, amount: calculateAmount(paymentForm.billingCycle, newPlan) });
+                                        }}
+                                    >
+                                        <option value="BASIC">🥉 Plan Básico — 1 Caja</option>
+                                        <option value="MEDIUM">🥈 Plan Medium — 3 Cajas</option>
+                                        <option value="PREMIUM">🥇 Plan Premium — 5 Cajas</option>
+                                    </Form.Select>
+                                </Form.Group>
+
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="small fw-bold">Ciclo de Facturación</Form.Label>
+                                    <div className="d-flex gap-3">
+                                        <Form.Check
+                                            type="radio"
+                                            id="cycle-monthly"
+                                            label="Mensual"
+                                            name="billingCycle"
+                                            checked={paymentForm.billingCycle === 'MONTHLY'}
+                                            onChange={() => {
+                                                setPaymentForm({ ...paymentForm, billingCycle: 'MONTHLY', amount: calculateAmount('MONTHLY', paymentForm.targetPlan) });
+                                            }}
+                                        />
+                                        <Form.Check
+                                            type="radio"
+                                            id="cycle-annual"
+                                            label={<span>Anual <Badge bg="success" className="ms-1">Ahorras 17%</Badge></span>}
+                                            name="billingCycle"
+                                            checked={paymentForm.billingCycle === 'ANNUAL'}
+                                            onChange={() => {
+                                                setPaymentForm({ ...paymentForm, billingCycle: 'ANNUAL', amount: calculateAmount('ANNUAL', paymentForm.targetPlan) });
+                                            }}
+                                        />
+                                    </div>
+                                </Form.Group>
+
+                                <Form.Group className="mb-3">
                                     <Form.Label className="small fw-bold">Monto Pagado ($)</Form.Label>
                                     <Form.Control
                                         type="number" onFocus={(e) => e.target.select()}
                                         step="0.01"
-                                        className="py-2 rounded-3"
+                                        className="py-2 rounded-3 text-success fw-bold"
                                         value={paymentForm.amount}
                                         onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
                                         required
                                     />
+                                    <Form.Text className="text-muted small">
+                                        Este es el monto exacto basado en tu Plan {summary?.subscriptionPlan || 'Básico'}, cajas extra y facturación.
+                                    </Form.Text>
                                 </Form.Group>
                                 <Form.Group className="mb-3">
                                     <Form.Label className="small fw-bold">Método de Pago</Form.Label>

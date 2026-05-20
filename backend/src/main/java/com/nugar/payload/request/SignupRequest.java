@@ -18,4 +18,5 @@ public class SignupRequest {
     private String address;
     private String fullName;
     private String cedula;
+    private String plan;
 }

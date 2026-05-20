@@ -3,9 +3,9 @@ version: '3.8'
 services:
   db:
     image: postgres:13-alpine
-    container_name: tiendario-db
+    container_name: nugar-db
     environment:
-      POSTGRES_DB: tiendario
+      POSTGRES_DB: nugar
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
     ports:
@@ -13,14 +13,14 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U user -d tiendario" ]
+      test: [ "CMD-SHELL", "pg_isready -U user -d nugar" ]
       interval: 10s
       timeout: 5s
       retries: 5
 
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:7.17.10
-    container_name: tiendario-es
+    container_name: nugar-es
     environment:
       - discovery.type=single-node
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
@@ -39,11 +39,11 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: tiendario-backend
+    container_name: nugar-backend
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/tiendario
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/nugar
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
       SPRING_DATASOURCE_USERNAME: user
       SPRING_DATASOURCE_PASSWORD: password
@@ -59,7 +59,7 @@ services:
     build:
       context: ./frontend/admin
       dockerfile: Dockerfile
-    container_name: tiendario-frontend-admin
+    container_name: nugar-frontend-admin
     ports:
       - "8081:80"
     depends_on:
@@ -69,7 +69,7 @@ services:
     build:
       context: ./frontend/market
       dockerfile: Dockerfile
-    container_name: tiendario-frontend-market
+    container_name: nugar-frontend-market
     ports:
       - "8082:80"
     depends_on:

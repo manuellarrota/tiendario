@@ -4,6 +4,7 @@ import com.nugar.domain.Company;
 import com.nugar.domain.SubscriptionPayment;
 import com.nugar.domain.PaymentStatus;
 import com.nugar.domain.SubscriptionStatus;
+import com.nugar.domain.SubscriptionPlan;
 import com.nugar.repository.CompanyRepository;
 import com.nugar.repository.SubscriptionPaymentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,12 +49,23 @@ public class SubscriptionService {
         Company company = payment.getCompany();
         company.setSubscriptionStatus(SubscriptionStatus.PAID);
 
-        // Extend subscription by 30 days
+        // Update the subscription plan if the payment specifies a target plan
+        if (payment.getTargetPlan() != null && !payment.getTargetPlan().isBlank()) {
+            try {
+                company.setSubscriptionPlan(SubscriptionPlan.valueOf(payment.getTargetPlan().toUpperCase()));
+            } catch (IllegalArgumentException ignored) {
+                // Keep existing plan if targetPlan is not a valid enum value
+            }
+        }
+
+        // Extend subscription based on billing cycle
+        int daysToAdd = "ANNUAL".equalsIgnoreCase(payment.getBillingCycle()) ? 365 : 30;
+
         LocalDateTime currentEnd = company.getSubscriptionEndDate();
         if (currentEnd == null || currentEnd.isBefore(LocalDateTime.now())) {
-            company.setSubscriptionEndDate(LocalDateTime.now().plusDays(30));
+            company.setSubscriptionEndDate(LocalDateTime.now().plusDays(daysToAdd));
         } else {
-            company.setSubscriptionEndDate(currentEnd.plusDays(30));
+            company.setSubscriptionEndDate(currentEnd.plusDays(daysToAdd));
         }
 
         companyRepository.save(company);

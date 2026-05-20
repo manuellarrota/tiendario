@@ -24,6 +24,8 @@ public class SubscriptionPayment {
     private String reference;
     private String proofImageUrl;
     private String notes;
+    private String billingCycle; // "MONTHLY" or "ANNUAL"
+    private String targetPlan;   // "BASIC", "MEDIUM" or "PREMIUM" — the plan being paid for
 
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;

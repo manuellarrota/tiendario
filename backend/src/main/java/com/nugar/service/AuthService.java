@@ -3,6 +3,7 @@ package com.nugar.service;
 import com.nugar.domain.Company;
 import com.nugar.domain.Role;
 import com.nugar.domain.SubscriptionStatus;
+import com.nugar.domain.SubscriptionPlan;
 import com.nugar.domain.User;
 import com.nugar.payload.request.SignupRequest;
 import com.nugar.repository.CompanyRepository;
@@ -83,8 +84,20 @@ public class AuthService {
             Company company = new Company();
             company.setName(signUpRequest.getCompanyName());
             company.setSubscriptionStatus(SubscriptionStatus.TRIAL);
+            
+            // Assign specific plan if provided (basic, medium, premium)
+            if (signUpRequest.getPlan() != null && !signUpRequest.getPlan().isEmpty()) {
+                try {
+                    company.setSubscriptionPlan(SubscriptionPlan.valueOf(signUpRequest.getPlan().toUpperCase()));
+                } catch (IllegalArgumentException e) {
+                    company.setSubscriptionPlan(SubscriptionPlan.BASIC); // Default fallback
+                }
+            } else {
+                company.setSubscriptionPlan(SubscriptionPlan.BASIC);
+            }
+
             company.setTrialStartDate(java.time.LocalDateTime.now());
-            company.setSubscriptionEndDate(java.time.LocalDateTime.now().plusDays(15));
+            company.setSubscriptionEndDate(java.time.LocalDateTime.now().plusDays(30));
             // Default location if missing (or could be 0.0)
             company.setLatitude(signUpRequest.getLatitude() != null ? signUpRequest.getLatitude() : 0.0);
             company.setLongitude(signUpRequest.getLongitude() != null ? signUpRequest.getLongitude() : 0.0);

@@ -116,6 +116,11 @@ public class AuthController {
                                                                         .getSubscriptionStatus()
                                                                         .toString()
                                                         : "TRIAL",
+                                        userDetails.getCompanyId() != null
+                                                        ? companyRepository.findById(userDetails.getCompanyId()).get()
+                                                                        .getSubscriptionPlan()
+                                                                        .toString()
+                                                        : "BASIC",
                                         userDetails.getEmail(),
                                         userDetails.getFullName(),
                                         userDetails.getPhone(),
@@ -133,6 +138,35 @@ public class AuthController {
                         return ResponseEntity.status(401)
                                         .body(new MessageResponse("Error: Usuario o contraseña incorrectos."));
                 }
+        }
+
+        /**
+         * Endpoint para refrescar el estado de suscripción sin hacer logout.
+         * El frontend lo llama periódicamente para detectar cuando el SuperAdmin aprueba un pago.
+         */
+        @GetMapping("/me")
+        @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+        public ResponseEntity<?> getMe() {
+                UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext()
+                                .getAuthentication().getPrincipal();
+
+                String subscriptionStatus = "TRIAL";
+                String subscriptionPlan = "BASIC";
+                java.util.Map<String, Object> response = new java.util.HashMap<>();
+                
+                if (userDetails.getCompanyId() != null) {
+                        companyRepository.findById(userDetails.getCompanyId()).ifPresent(c -> {
+                                String status = c.getSubscriptionStatus() != null ? c.getSubscriptionStatus().toString() : "TRIAL";
+                                String plan = c.getSubscriptionPlan() != null ? c.getSubscriptionPlan().toString() : "BASIC";
+                                response.put("subscriptionStatus", status);
+                                response.put("subscriptionPlan", plan);
+                        });
+                }
+
+                response.put("id", userDetails.getId());
+                response.putIfAbsent("subscriptionStatus", subscriptionStatus);
+                response.putIfAbsent("subscriptionPlan", subscriptionPlan);
+                return ResponseEntity.ok(response);
         }
 
         @GetMapping("/verify")

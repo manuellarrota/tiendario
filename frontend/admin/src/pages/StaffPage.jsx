@@ -56,7 +56,17 @@ const StaffPage = () => {
                 setCreating(false);
             })
             .catch(err => {
-                setFormError(err.response?.data?.message || "Error al crear cajero.");
+                const msg = err.response?.data?.message || "Error al crear cajero.";
+                if (msg.includes("Límite")) {
+                    setFormError(
+                        <div className="d-flex flex-column text-start">
+                            <span className="fw-bold mb-2">⚠️ {msg}</span>
+                            <span className="small text-dark">Para solicitar un aumento de límite, reporta tu pago (Transferencia/PagoMóvil) en la sección Configuración.</span>
+                        </div>
+                    );
+                } else {
+                    setFormError(msg);
+                }
                 setCreating(false);
             });
     };
