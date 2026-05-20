@@ -210,13 +210,14 @@ public class MyDataInitializer implements CommandLineRunner {
             GlobalConfig config = new GlobalConfig();
             globalConfigRepository.save(config);
             System.err.println("✓ Created default GlobalConfig.");
-            
-            // Trigger first rate update
-            try {
-                exchangeRateService.updateRates();
-            } catch (Exception e) {
-                System.err.println("Warning: Could not fetch initial rates during seeding: " + e.getMessage());
-            }
+        }
+        
+        // Trigger rate update on every startup
+        try {
+            exchangeRateService.updateRates();
+            System.err.println("✓ Exchange rates updated on startup.");
+        } catch (Exception e) {
+            System.err.println("Warning: Could not fetch initial rates on startup: " + e.getMessage());
         }
     }
 

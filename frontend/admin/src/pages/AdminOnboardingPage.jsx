@@ -510,12 +510,12 @@ export default function AdminOnboardingPage() {
                                                             value={p.sku} onChange={e => updateProduct(i, 'sku', e.target.value)} />
                                                     </td>
                                                     <td style={{ width: 100 }}>
-                                                        <Form.Control size="sm" type="number" className="rounded-3"
+                                                        <Form.Control size="sm" type="number" onFocus={(e) => e.target.select()} className="rounded-3"
                                                             placeholder="0.00" min="0" step="0.01"
                                                             value={p.price} onChange={e => updateProduct(i, 'price', e.target.value)} />
                                                     </td>
                                                     <td style={{ width: 90 }}>
-                                                        <Form.Control size="sm" type="number" className="rounded-3"
+                                                        <Form.Control size="sm" type="number" onFocus={(e) => e.target.select()} className="rounded-3"
                                                             placeholder="0" min="0"
                                                             value={p.stock} onChange={e => updateProduct(i, 'stock', e.target.value)} />
                                                     </td>

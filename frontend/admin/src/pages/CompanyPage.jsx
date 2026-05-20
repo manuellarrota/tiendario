@@ -280,7 +280,7 @@ const CompanyPage = () => {
                                                             <FaMapMarkerAlt className="me-1" /> LATITUD
                                                         </Form.Label>
                                                         <Form.Control
-                                                            type="number"
+                                                            type="number" onFocus={(e) => e.target.select()}
                                                             step="any"
                                                             name="latitude"
                                                             value={editForm.latitude}
@@ -294,7 +294,7 @@ const CompanyPage = () => {
                                                     <Form.Group className="mb-3">
                                                         <Form.Label className="text-muted small d-block">LONGITUD</Form.Label>
                                                         <Form.Control
-                                                            type="number"
+                                                            type="number" onFocus={(e) => e.target.select()}
                                                             step="any"
                                                             name="longitude"
                                                             value={editForm.longitude}
@@ -459,7 +459,7 @@ const CompanyPage = () => {
                                         <Form.Group className="mb-3">
                                             <Form.Label className="small fw-bold text-muted">MONTO PAGADO (USD)</Form.Label>
                                             <Form.Control
-                                                type="number"
+                                                type="number" onFocus={(e) => e.target.select()}
                                                 name="amount"
                                                 value={paymentForm.amount}
                                                 onChange={handleInputChange}

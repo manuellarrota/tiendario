@@ -766,7 +766,7 @@ const DashboardHome = () => {
                                 <Form.Group className="mb-3">
                                     <Form.Label className="small fw-bold">Monto Pagado ($)</Form.Label>
                                     <Form.Control
-                                        type="number"
+                                        type="number" onFocus={(e) => e.target.select()}
                                         step="0.01"
                                         className="py-2 rounded-3"
                                         value={paymentForm.amount}

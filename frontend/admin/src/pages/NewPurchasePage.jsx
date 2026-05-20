@@ -542,7 +542,7 @@ const NewPurchasePage = () => {
                                 <Col xs={12}>
                                     <Form.Group className="mb-2">
                                         <Form.Label>Cantidad</Form.Label>
-                                        <Form.Control type="number" min="1" value={quantity} onChange={e => setQuantity(e.target.value)} />
+                                        <Form.Control type="number" onFocus={(e) => e.target.select()} min="1" value={quantity} onChange={e => setQuantity(e.target.value)} />
                                     </Form.Group>
                                 </Col>
                                 <Col xs={12}>
@@ -550,7 +550,7 @@ const NewPurchasePage = () => {
                                         <Form.Label>Costo por Unidad ({purchaseCurrency})</Form.Label>
                                         <InputGroup>
                                             <InputGroup.Text>{selectedCurrencyData.symbol}</InputGroup.Text>
-                                            <Form.Control type="number" value={unitCost} onChange={e => setUnitCost(e.target.value)} placeholder="0.00" />
+                                            <Form.Control type="number" onFocus={(e) => e.target.select()} value={unitCost} onChange={e => setUnitCost(e.target.value)} placeholder="0.00" />
                                         </InputGroup>
                                         {purchaseCurrency !== baseCurrencyCode && unitCost && (
                                             <Form.Text className="text-primary fw-bold">
@@ -752,13 +752,13 @@ const NewPurchasePage = () => {
                             <div className="col-md-4">
                                 <Form.Group className="mb-3">
                                     <Form.Label>Costo de Compra ($)</Form.Label>
-                                    <Form.Control type="number" step="0.01" value={prodCostPrice} onChange={(e) => setProdCostPrice(e.target.value)} min="0" placeholder="0.00" />
+                                    <Form.Control type="number" onFocus={(e) => e.target.select()} step="0.01" value={prodCostPrice} onChange={(e) => setProdCostPrice(e.target.value)} min="0" placeholder="0.00" />
                                 </Form.Group>
                             </div>
                             <div className="col-md-4">
                                 <Form.Group className="mb-3">
                                     <Form.Label>Precio de Venta ($) <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control type="number" step="0.01" required value={prodPrice} onChange={(e) => setProdPrice(e.target.value)} min="0" />
+                                    <Form.Control type="number" onFocus={(e) => e.target.select()} step="0.01" required value={prodPrice} onChange={(e) => setProdPrice(e.target.value)} min="0" />
                                 </Form.Group>
                             </div>
                             <div className="col-md-4">
@@ -779,7 +779,7 @@ const NewPurchasePage = () => {
                             <div className="col-md-12">
                                 <Form.Group className="mb-3">
                                     <Form.Label>Stock Inicial</Form.Label>
-                                    <Form.Control type="number" required value={prodStock} onChange={(e) => setProdStock(e.target.value)} min="0" placeholder="0" />
+                                    <Form.Control type="number" onFocus={(e) => e.target.select()} required value={prodStock} onChange={(e) => setProdStock(e.target.value)} min="0" placeholder="0" />
                                 </Form.Group>
                             </div>
 

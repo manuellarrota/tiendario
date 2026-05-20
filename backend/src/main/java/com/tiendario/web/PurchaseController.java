@@ -8,6 +8,7 @@ import com.tiendario.repository.CompanyRepository;
 import com.tiendario.repository.ProductRepository;
 import com.tiendario.repository.PurchaseRepository;
 import com.tiendario.repository.SupplierRepository;
+import com.tiendario.repository.InventoryBatchRepository;
 import com.tiendario.security.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -38,6 +39,9 @@ public class PurchaseController {
 
     @Autowired
     SupplierRepository supplierRepository;
+
+    @Autowired
+    InventoryBatchRepository inventoryBatchRepository;
 
     @GetMapping
     @PreAuthorize("hasRole('MANAGER')")
@@ -98,6 +102,9 @@ public class PurchaseController {
                     .orElseThrow(() -> new RuntimeException("Supplier not found")));
         }
 
+        // Save purchase first to have an ID for InventoryBatches
+        purchase = purchaseRepository.save(purchase);
+
         // Process items
         for (com.tiendario.payload.request.PurchaseRequest.PurchaseItemRequest itemRequest : request.getItems()) {
             // Fetch product
@@ -121,8 +128,19 @@ public class PurchaseController {
             // Update product stock and cost
             // Safely handle null stock (products created without initial stock)
             int currentStock = product.getStock() != null ? product.getStock() : 0;
+            
+            // Calculate Weighted Average Cost
+            java.math.BigDecimal currentTotalValue = (product.getCostPrice() != null ? product.getCostPrice() : java.math.BigDecimal.ZERO)
+                    .multiply(java.math.BigDecimal.valueOf(currentStock));
+            java.math.BigDecimal newPurchaseValue = item.getUnitCostInBaseCurrency()
+                    .multiply(java.math.BigDecimal.valueOf(itemRequest.getQuantity()));
+            java.math.BigDecimal totalStock = java.math.BigDecimal.valueOf(currentStock + itemRequest.getQuantity());
+
+            java.math.BigDecimal newAverageCost = currentTotalValue.add(newPurchaseValue)
+                    .divide(totalStock, 4, java.math.RoundingMode.HALF_UP);
+
             product.setStock(currentStock + itemRequest.getQuantity());
-            product.setCostPrice(item.getUnitCostInBaseCurrency());
+            product.setCostPrice(newAverageCost);
             productRepository.save(product);
 
             // Add item to purchase
@@ -130,6 +148,16 @@ public class PurchaseController {
                 purchase.setItems(new java.util.ArrayList<>());
             }
             purchase.getItems().add(item);
+            
+            // Create Inventory Batch
+            com.tiendario.domain.InventoryBatch batch = new com.tiendario.domain.InventoryBatch();
+            batch.setProduct(product);
+            batch.setPurchase(purchase);
+            batch.setInitialQuantity(itemRequest.getQuantity());
+            batch.setCurrentQuantity(itemRequest.getQuantity());
+            batch.setUnitCost(item.getUnitCostInBaseCurrency());
+            batch.setCreatedAt(LocalDateTime.now());
+            inventoryBatchRepository.save(batch);
         }
 
         purchaseRepository.save(purchase);

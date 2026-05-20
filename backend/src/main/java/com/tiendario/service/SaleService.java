@@ -7,6 +7,7 @@ import com.tiendario.repository.ProductRepository;
 import com.tiendario.repository.SaleRepository;
 import com.tiendario.repository.UserRepository;
 import com.tiendario.repository.ShiftRepository;
+import com.tiendario.repository.InventoryBatchRepository;
 import com.tiendario.security.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -34,6 +35,7 @@ public class SaleService {
     private final EmailService emailService;
 
     private final ShiftRepository shiftRepository;
+    private final InventoryBatchRepository inventoryBatchRepository;
 
     @Autowired
     public SaleService(SaleRepository saleRepository,
@@ -41,13 +43,15 @@ public class SaleService {
             CompanyRepository companyRepository,
             UserRepository userRepository,
             EmailService emailService,
-            ShiftRepository shiftRepository) {
+            ShiftRepository shiftRepository,
+            InventoryBatchRepository inventoryBatchRepository) {
         this.saleRepository = saleRepository;
         this.productRepository = productRepository;
         this.companyRepository = companyRepository;
         this.userRepository = userRepository;
         this.emailService = emailService;
         this.shiftRepository = shiftRepository;
+        this.inventoryBatchRepository = inventoryBatchRepository;
     }
 
     public List<Sale> getCompanySales(UserDetailsImpl userDetails) {
@@ -173,6 +177,24 @@ public class SaleService {
             // Update Stock
             product.setStock(product.getStock() - item.getQuantity());
             productRepository.save(product);
+
+            // FIFO Batch Reduction
+            int quantityToReduce = item.getQuantity();
+            List<com.tiendario.domain.InventoryBatch> batches = inventoryBatchRepository
+                    .findByProductIdAndCurrentQuantityGreaterThanOrderByCreatedAtAsc(product.getId(), 0);
+            for (com.tiendario.domain.InventoryBatch batch : batches) {
+                if (quantityToReduce <= 0) break;
+                
+                int batchQty = batch.getCurrentQuantity();
+                if (batchQty <= quantityToReduce) {
+                    batch.setCurrentQuantity(0);
+                    quantityToReduce -= batchQty;
+                } else {
+                    batch.setCurrentQuantity(batchQty - quantityToReduce);
+                    quantityToReduce = 0;
+                }
+                inventoryBatchRepository.save(batch);
+            }
 
             // Force server-side calculation of pricing (Zero-Trust to frontend)
             item.setProduct(product);

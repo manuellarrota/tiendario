@@ -57,6 +57,9 @@ public class PublicController {
     @Autowired
     CategoryRepository categoryRepository;
 
+    @Autowired
+    InventoryBatchRepository inventoryBatchRepository;
+
     @GetMapping("/products")
     public ResponseEntity<Map<String, Object>> getAllProducts(
             @RequestParam(defaultValue = "0") int page,
@@ -337,6 +340,24 @@ public class PublicController {
 
         product.setStock(product.getStock() - request.getQuantity());
         productRepository.save(product);
+
+        // FIFO Batch Reduction
+        int quantityToReduce = request.getQuantity();
+        List<com.tiendario.domain.InventoryBatch> batches = inventoryBatchRepository
+                .findByProductIdAndCurrentQuantityGreaterThanOrderByCreatedAtAsc(product.getId(), 0);
+        for (com.tiendario.domain.InventoryBatch batch : batches) {
+            if (quantityToReduce <= 0) break;
+            
+            int batchQty = batch.getCurrentQuantity();
+            if (batchQty <= quantityToReduce) {
+                batch.setCurrentQuantity(0);
+                quantityToReduce -= batchQty;
+            } else {
+                batch.setCurrentQuantity(batchQty - quantityToReduce);
+                quantityToReduce = 0;
+            }
+            inventoryBatchRepository.save(batch);
+        }
 
         saleRepository.save(sale);
 

@@ -265,6 +265,14 @@ const POSPage = () => {
     };
 
     const updateCartQuantity = (productId, newQuantity) => {
+        if (newQuantity === "") {
+            setCart(cart.map(item =>
+                item.product.id === productId
+                    ? { ...item, quantity: "", subtotal: "0.00" }
+                    : item
+            ));
+            return;
+        }
         if (newQuantity < 1) return;
         const product = products.find(p => p.id === productId);
         if (newQuantity > (product?.stock || 0)) {
@@ -543,14 +551,23 @@ const POSPage = () => {
                                             <div style={{ width: '15%' }} className="d-flex flex-column align-items-center">
                                                 <div className="d-flex gap-2 align-items-center">
                                                     <Form.Control
-                                                        type="number"
+                                                        type="number" onFocus={(e) => e.target.select()}
                                                         size="sm"
                                                         className="text-center fw-bold border shadow-sm mx-1 no-spinner"
                                                         style={{ width: '80px', borderRadius: '8px' }}
                                                         value={item.quantity}
                                                         onChange={(e) => {
-                                                            const val = parseInt(e.target.value, 10);
-                                                            if (!isNaN(val)) updateCartQuantity(item.product.id, val);
+                                                            if (e.target.value === "") {
+                                                                updateCartQuantity(item.product.id, "");
+                                                            } else {
+                                                                const val = parseInt(e.target.value, 10);
+                                                                if (!isNaN(val)) updateCartQuantity(item.product.id, val);
+                                                            }
+                                                        }}
+                                                        onBlur={() => {
+                                                            if (item.quantity === "" || item.quantity < 1) {
+                                                                updateCartQuantity(item.product.id, 1);
+                                                            }
                                                         }}
                                                         min="1"
                                                     />
@@ -657,7 +674,7 @@ const POSPage = () => {
                 <Modal show={showQuantityModal} onHide={() => setShowQuantityModal(false)} centered>
                     <Modal.Header closeButton><Modal.Title>Cantidad</Modal.Title></Modal.Header>
                     <Modal.Body>
-                        <Form.Control type="number" value={inputQuantity} onChange={e => setInputQuantity(e.target.value)} autoFocus onKeyPress={e => e.key === 'Enter' && confirmAddToCart()} />
+                        <Form.Control type="number" onFocus={(e) => e.target.select()} value={inputQuantity} onChange={e => setInputQuantity(e.target.value)} autoFocus onKeyPress={e => e.key === 'Enter' && confirmAddToCart()} />
                     </Modal.Body>
                     <Modal.Footer><Button variant="primary" onClick={confirmAddToCart}>Agregar</Button></Modal.Footer>
                 </Modal>
@@ -746,7 +763,7 @@ const POSPage = () => {
                                         </Col>
                                         <Col xs={8}>
                                             <Form.Control 
-                                                type="number"
+                                                type="number" onFocus={(e) => e.target.select()}
                                                 placeholder="Monto"
                                                 className="border-0 bg-transparent fw-bold fs-5 text-end"
                                                 value={tempPayment.amount}
@@ -858,7 +875,7 @@ const POSPage = () => {
                             </Col>
                             <Col md={5}>
                                 <Form.Label className="small fw-bold">Monto Efectivo</Form.Label>
-                                <Form.Control type="number" min="0" step="0.01" value={tempOpeningDeclaration.amount} onChange={e => setTempOpeningDeclaration({...tempOpeningDeclaration, amount: e.target.value})} placeholder="Ej: 50.00" />
+                                <Form.Control type="number" onFocus={(e) => e.target.select()} min="0" step="0.01" value={tempOpeningDeclaration.amount} onChange={e => setTempOpeningDeclaration({...tempOpeningDeclaration, amount: e.target.value})} placeholder="Ej: 50.00" />
                             </Col>
                             <Col md={2}>
                                 <Button variant="primary" className="w-100" onClick={addOpeningDeclaration}><FaPlus /></Button>
@@ -931,7 +948,7 @@ const POSPage = () => {
                             </Col>
                             <Col md={4}>
                                 <Form.Label className="small fw-bold">Monto</Form.Label>
-                                <Form.Control type="number" min="0" step="0.01" value={tempDeclaration.amount} onChange={e => setTempDeclaration({...tempDeclaration, amount: e.target.value})} placeholder="Ej: 150.00" />
+                                <Form.Control type="number" onFocus={(e) => e.target.select()} min="0" step="0.01" value={tempDeclaration.amount} onChange={e => setTempDeclaration({...tempDeclaration, amount: e.target.value})} placeholder="Ej: 150.00" />
                             </Col>
                             <Col md={2}>
                                 <Button variant="primary" className="w-100" onClick={addDeclaration}><FaPlus /></Button>

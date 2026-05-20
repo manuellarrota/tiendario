@@ -748,13 +748,13 @@ const InventoryPage = () => {
                             <div className="col-md-4">
                                 <Form.Group className="mb-3">
                                     <Form.Label>Costo de Adquisición ($) <small className="text-muted">(Privado)</small></Form.Label>
-                                    <Form.Control type="number" step="0.01" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} min="0" placeholder="0.00" />
+                                    <Form.Control type="number" onFocus={(e) => e.target.select()} step="0.01" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} min="0" placeholder="0.00" />
                                 </Form.Group>
                             </div>
                             <div className="col-md-4">
                                 <Form.Group className="mb-3">
                                     <Form.Label>Precio de Venta ($) <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control type="number" step="0.01" required value={price} onChange={(e) => setPrice(e.target.value)} min="0" placeholder="0.00" />
+                                    <Form.Control type="number" onFocus={(e) => e.target.select()} step="0.01" required value={price} onChange={(e) => setPrice(e.target.value)} min="0" placeholder="0.00" />
                                 </Form.Group>
                             </div>
                             <div className="col-md-4">
@@ -775,7 +775,7 @@ const InventoryPage = () => {
                             <div className="col-md-4">
                                 <Form.Group className="mb-3">
                                     <Form.Label>Stock Inicial</Form.Label>
-                                    <Form.Control type="number" required value={stock} onChange={(e) => setStock(e.target.value)} min="0" placeholder="Cantidad actual" />
+                                    <Form.Control type="number" onFocus={(e) => e.target.select()} required value={stock} onChange={(e) => setStock(e.target.value)} min="0" placeholder="Cantidad actual" />
                                 </Form.Group>
                             </div>
 
