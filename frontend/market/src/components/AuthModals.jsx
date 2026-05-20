@@ -60,7 +60,7 @@ export const RegisterModal = ({
             <Modal.Title className="fw-bold">Crear Cuenta</Modal.Title>
         </Modal.Header>
         <Modal.Body className="p-4">
-            <p className="text-secondary small mb-4">Únete a Tiendario y disfruta de una experiencia de compra unificada.</p>
+            <p className="text-secondary small mb-4">Únete a Nugar y disfruta de una experiencia de compra unificada.</p>
             {registerMessage && <Alert variant={registerSuccess ? "success" : "danger"} className="py-2 small">{registerMessage}</Alert>}
             <Form onSubmit={onRegister}>
                 <Form.Group className="mb-3">

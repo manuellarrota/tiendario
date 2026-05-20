@@ -1,9 +1,9 @@
 {
-    "family": "tiendario-backend-task",
+    "family": "nugar-backend-task",
     "containerDefinitions": [
         {
-            "name": "tiendario-backend",
-            "image": "<AWS_ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/tiendario-backend:latest",
+            "name": "nugar-backend",
+            "image": "<AWS_ACCOUNT_ID>.dkr.ecr.<REGION>.amazonaws.com/nugar-backend:latest",
             "cpu": 512,
             "memory": 1024,
             "essential": true,
@@ -17,7 +17,7 @@
             "environment": [
                 {
                     "name": "SPRING_DATASOURCE_URL",
-                    "value": "jdbc:postgresql://<RDS_ENDPOINT>:5432/tiendario"
+                    "value": "jdbc:postgresql://<RDS_ENDPOINT>:5432/nugar"
                 },
                 {
                     "name": "SPRING_DATASOURCE_USERNAME",
@@ -39,7 +39,7 @@
             "logConfiguration": {
                 "logDriver": "awslogs",
                 "options": {
-                    "awslogs-group": "/ecs/tiendario-backend",
+                    "awslogs-group": "/ecs/nugar-backend",
                     "awslogs-region": "<REGION>",
                     "awslogs-stream-prefix": "ecs"
                 }

@@ -4,11 +4,11 @@
 
   <!-- Landing principal — máxima prioridad -->
   <url>
-    <loc>https://tiendario.com/</loc>
+    <loc>https://nugar.com/</loc>
     <lastmod>2026-03-25</lastmod>
     <changefreq>monthly</changefreq>
     <priority>1.0</priority>
-    <xhtml:link rel="alternate" hreflang="es" href="https://tiendario.com/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://nugar.com/" />
   </url>
 
 </urlset>

@@ -1,5 +1,5 @@
 /**
- * Script de Pruebas Completas - Tiendario
+ * Script de Pruebas Completas - Nugar
  * Verifica todas las funcionalidades del sistema
  */
 
@@ -572,7 +572,7 @@ async function testDashboardAndReports() {
 async function runAllTests() {
     console.clear();
     log('\n' + '='.repeat(60), 'cyan');
-    log('🚀 INICIANDO PRUEBAS COMPLETAS DEL SISTEMA TIENDARIO', 'cyan');
+    log('🚀 INICIANDO PRUEBAS COMPLETAS DEL SISTEMA NUGAR', 'cyan');
     log('='.repeat(60) + '\n', 'cyan');
 
     const results = {

@@ -1,6 +1,6 @@
-# 💰 Estimación de Costos AWS para Tiendario
+# 💰 Estimación de Costos AWS para Nugar
 
-Este documento detalla los costos mensuales estimados para desplegar Tiendario en Amazon Web Services (Región `us-east-1`).
+Este documento detalla los costos mensuales estimados para desplegar Nugar en Amazon Web Services (Región `us-east-1`).
 
 ---
 

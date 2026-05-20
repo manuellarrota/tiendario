@@ -13,12 +13,12 @@ Sigue estos pasos en orden para dejar tu infraestructura lista y conectada.
 
 ### 2. ECR (Registry de Docker)
 - [ ] Ir a **Elastic Container Registry**.
-- [ ] Crear repositorio privado: `tiendario-backend`.
-- [ ] Copiar la **URI** (Ej: `123456789.dkr.ecr.us-east-1.amazonaws.com/tiendario-backend`).
+- [ ] Crear repositorio privado: `nugar-backend`.
+- [ ] Copiar la **URI** (Ej: `123456789.dkr.ecr.us-east-1.amazonaws.com/nugar-backend`).
 
 ### 3. S3 (Hosting Frontend)
-- [ ] Crear Bucket: `tiendario-frontend-admin-prod` (Desactivar "Block Public Access" si no usas CloudFront OAI).
-- [ ] Crear Bucket: `tiendario-frontend-market-prod`.
+- [ ] Crear Bucket: `nugar-frontend-admin-prod` (Desactivar "Block Public Access" si no usas CloudFront OAI).
+- [ ] Crear Bucket: `nugar-frontend-market-prod`.
 - [ ] Activar "Static Website Hosting" en ambos buckets.
 
 ### 4. RDS (Base de Datos)
@@ -40,9 +40,9 @@ Ve a tu repositorio en GitHub -> **Settings** -> **Secrets and variables** -> **
 |-------------------|-------|
 | `AWS_ACCESS_KEY_ID` | Tu clave de IAM (Paso 1) |
 | `AWS_SECRET_ACCESS_KEY` | Tu secreto de IAM (Paso 1) |
-| `ECR_REPOSITORY` | `tiendario-backend` |
-| `ECS_CLUSTER` | Nombre de tu cluster ECS (Ej: `tiendario-cluster`) |
-| `ECS_SERVICE` | Nombre de tu servicio ECS (Ej: `tiendario-service`) |
+| `ECR_REPOSITORY` | `nugar-backend` |
+| `ECS_CLUSTER` | Nombre de tu cluster ECS (Ej: `nugar-cluster`) |
+| `ECS_SERVICE` | Nombre de tu servicio ECS (Ej: `nugar-service`) |
 
 ---
 

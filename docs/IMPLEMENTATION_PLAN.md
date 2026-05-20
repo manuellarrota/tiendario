@@ -1,4 +1,4 @@
-# Plan de Implementación — Tiendario
+# Plan de Implementación — Nugar
 
 Estado actual del desarrollo y hoja de ruta.
 

@@ -51,8 +51,8 @@ async function run() {
 
     // 1. Crear y verificar usuarios Manager
     const users = [
-        { username: "manager_pro", password: "manager123", email: "pro@tiendario.com", companyName: "Tienda Demo Premium", role: ["manager"] },
-        { username: "manager_free", password: "manager123", email: "free@tiendario.com", companyName: "Tienda Egar", role: ["manager"] }
+        { username: "manager_pro", password: "manager123", email: "pro@nugar.com", companyName: "Tienda Demo Premium", role: ["manager"] },
+        { username: "manager_free", password: "manager123", email: "free@nugar.com", companyName: "Tienda Egar", role: ["manager"] }
     ];
 
     for (const u of users) {

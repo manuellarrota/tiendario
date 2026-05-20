@@ -1,0 +1,335 @@
+package com.nugar.web;
+
+import com.nugar.domain.User;
+import com.nugar.payload.request.LoginRequest;
+import com.nugar.payload.request.SignupRequest;
+import com.nugar.payload.response.JwtResponse;
+import com.nugar.payload.response.MessageResponse;
+import com.nugar.repository.CompanyRepository;
+import com.nugar.repository.UserRepository;
+import com.nugar.security.JwtUtils;
+import com.nugar.security.LoginRateLimiter;
+import com.nugar.security.UserDetailsImpl;
+import com.nugar.service.AuthService;
+import com.nugar.service.EmailService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.*;
+
+import javax.servlet.http.HttpServletRequest;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@RestController
+@RequestMapping("/api/auth")
+public class AuthController {
+
+        private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
+        private final AuthenticationManager authenticationManager;
+        private final UserRepository userRepository;
+        private final CompanyRepository companyRepository;
+        private final JwtUtils jwtUtils;
+        private final AuthService authService;
+        private final LoginRateLimiter rateLimiter;
+        private final EmailService emailService;
+        private final PasswordEncoder passwordEncoder;
+
+        @org.springframework.beans.factory.annotation.Value("${app.frontend.url:http://localhost:8081}")
+        private String frontendUrl;
+
+        @Autowired
+        public AuthController(AuthenticationManager authenticationManager,
+                        UserRepository userRepository,
+                        CompanyRepository companyRepository,
+                        JwtUtils jwtUtils,
+                        AuthService authService,
+                        LoginRateLimiter rateLimiter,
+                        PasswordEncoder passwordEncoder,
+                        EmailService emailService) {
+                this.authenticationManager = authenticationManager;
+                this.userRepository = userRepository;
+                this.companyRepository = companyRepository;
+                this.jwtUtils = jwtUtils;
+                this.authService = authService;
+                this.rateLimiter = rateLimiter;
+                this.passwordEncoder = passwordEncoder;
+                this.emailService = emailService;
+        }
+
+        @PostMapping("/signin")
+        public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest,
+                        HttpServletRequest request) {
+                String clientIp = getClientIp(request);
+
+                // Rate limiting check
+                if (!rateLimiter.isAllowed(clientIp)) {
+                        long remaining = rateLimiter.getBlockSecondsRemaining(clientIp);
+                        logger.warn("Rate limit exceeded for IP: {} (Username: {})", clientIp, loginRequest.getUsername());
+                        return ResponseEntity.status(429)
+                                        .body(new MessageResponse(
+                                                        "Demasiados intentos de inicio de sesión. Intenta de nuevo en "
+                                                                        + remaining + " segundos."));
+                }
+
+                try {
+                        Authentication authentication = authenticationManager.authenticate(
+                                        new UsernamePasswordAuthenticationToken(loginRequest.getUsername(),
+                                                        loginRequest.getPassword()));
+
+                        SecurityContextHolder.getContext().setAuthentication(authentication);
+                        String jwt = jwtUtils.generateJwtToken(authentication);
+
+                        UserDetailsImpl userDetails = (UserDetailsImpl) authentication.getPrincipal();
+                        List<String> roles = userDetails.getAuthorities().stream()
+                                        .map(item -> item.getAuthority())
+                                        .collect(Collectors.toList());
+
+                        // Clear rate limit on successful login
+                        rateLimiter.recordSuccess(clientIp);
+                        
+                        String companyName = userDetails.getCompanyId() != null 
+                            ? companyRepository.findById(userDetails.getCompanyId()).map(c -> c.getName()).orElse("N/A")
+                            : "ADMIN/NO_COMPANY";
+
+                        logger.info("🔑 [LOGIN] Persona: '{}' | Usuario: '{}' | Empresa: '{}' | IP: {} | Roles: {}", 
+                                userDetails.getFullName(), userDetails.getUsername(), companyName, clientIp, roles);
+
+                        return ResponseEntity.ok(new JwtResponse(jwt,
+                                        userDetails.getId(),
+                                        userDetails.getUsername(),
+                                        roles,
+                                        userDetails.getCompanyId(),
+                                        userDetails.getCompanyId() != null
+                                                        ? companyRepository.findById(userDetails.getCompanyId()).get()
+                                                                        .getSubscriptionStatus()
+                                                                        .toString()
+                                                        : "TRIAL",
+                                        userDetails.getEmail(),
+                                        userDetails.getFullName(),
+                                        userDetails.getPhone(),
+                                        userDetails.getCedula(),
+                                        userDetails.getAddress()));
+                } catch (DisabledException e) {
+                        logger.warn("Login failed: User '{}' is disabled", loginRequest.getUsername());
+                        rateLimiter.recordFailedAttempt(clientIp);
+                        return ResponseEntity.status(401)
+                                        .body(new MessageResponse(
+                                                        "Error: Cuenta inactiva. Active su cuenta usando el link generado."));
+                } catch (BadCredentialsException e) {
+                        logger.warn("Login failed: Bad credentials for user '{}'", loginRequest.getUsername());
+                        rateLimiter.recordFailedAttempt(clientIp);
+                        return ResponseEntity.status(401)
+                                        .body(new MessageResponse("Error: Usuario o contraseña incorrectos."));
+                }
+        }
+
+        @GetMapping("/verify")
+        @org.springframework.transaction.annotation.Transactional
+        public ResponseEntity<?> verifyUser(@RequestParam("code") String code) {
+                logger.debug("Attempting to verify user with code: {}", code);
+                User user = userRepository.findByVerificationCode(code)
+                                .orElse(null);
+        
+                if (user == null) {
+                        logger.error("Verification failed: code '{}' not found in database", code);
+                        return ResponseEntity.status(org.springframework.http.HttpStatus.FOUND)
+                                        .location(java.net.URI.create(frontendUrl
+                                                        + "/?verified=error&message=Invalid+verification+code"))
+                                        .build();
+                }
+        
+                logger.info("Verifying and enabling user: {} (ID: {})", user.getUsername(), user.getId());
+                user.setEnabled(true);
+                user.setVerificationCode(null);
+                userRepository.save(user);
+                userRepository.flush(); // Force immediate persistence before redirect logic
+                logger.debug("User {} successfully enabled in database", user.getUsername());
+
+                // Auto-login logic
+                UserDetailsImpl userDetails = UserDetailsImpl.build(user);
+                Authentication authentication = new UsernamePasswordAuthenticationToken(
+                                userDetails, null, userDetails.getAuthorities());
+                SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                String jwt = jwtUtils.generateJwtToken(authentication);
+                String roles = userDetails.getAuthorities().stream()
+                                .map(item -> item.getAuthority())
+                                .collect(java.util.stream.Collectors.joining(","));
+
+                // Redirect with payload for frontend auto-login
+                String subscriptionStatus = (user.getCompany() != null)
+                                ? user.getCompany().getSubscriptionStatus().toString()
+                                : "TRIAL";
+                java.util.function.Function<String, String> enc = v -> {
+                    try { return java.net.URLEncoder.encode(v != null ? v : "", "UTF-8"); }
+                    catch (Exception e) { return ""; }
+                };
+                return ResponseEntity.status(org.springframework.http.HttpStatus.FOUND)
+                                .location(java.net.URI.create(frontendUrl + "/?verified=true&token=" + enc.apply(jwt) +
+                                                "&username=" + enc.apply(user.getUsername()) +
+                                                "&roles=" + enc.apply(roles) +
+                                                "&id=" + user.getId() +
+                                                "&name=" + enc.apply(user.getFullName()) +
+                                                "&phone=" + enc.apply(user.getPhone()) +
+                                                "&cedula=" + enc.apply(user.getCedula()) +
+                                                "&address=" + enc.apply(user.getAddress()) +
+                                                "&companyId="
+                                                + (user.getCompany() != null ? user.getCompany().getId() : "") +
+                                                "&subscriptionStatus=" + enc.apply(subscriptionStatus)))
+                                .build();
+        }
+
+        @PostMapping("/signup")
+        public ResponseEntity<?> registerUser(@RequestBody SignupRequest signUpRequest, HttpServletRequest request) {
+                try {
+                        String baseUrl = getBaseUrl(request);
+                        logger.info("Registering new user: {} (Email: {}) from {}", signUpRequest.getUsername(), signUpRequest.getEmail(), baseUrl);
+                        User user = authService.registerUser(signUpRequest, baseUrl);
+                        if (!user.isEnabled()) {
+                                logger.info("User registered successfully but pending email verification: {}", user.getUsername());
+                                return ResponseEntity.ok(
+                                                new MessageResponse(
+                                                                "Registro exitoso. Revisa tu correo electrónico para activar tu cuenta antes de iniciar sesión."));
+                        } else {
+                                logger.info("User registered and enabled immediately: {}", user.getUsername());
+                                return ResponseEntity.ok(new MessageResponse("Registro exitoso."));
+                        }
+                } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                        // Catch DB-level constraint violations (e.g. duplicate email/username at INSERT time)
+                        String cause = e.getMostSpecificCause().getMessage().toLowerCase();
+                        String friendlyMsg;
+                        if (cause.contains("email")) {
+                                logger.warn("Signup DB constraint: Email '{}' already exists", signUpRequest.getEmail());
+                                friendlyMsg = "Error: ¡El correo electrónico ya está en uso! Por favor usa otro correo.";
+                        } else if (cause.contains("username") || cause.contains("users(username)")) {
+                                logger.warn("Signup DB constraint: Username '{}' already exists", signUpRequest.getUsername());
+                                friendlyMsg = "Error: ¡El nombre de usuario ya está en uso! Por favor elige otro.";
+                        } else {
+                                logger.error("Signup DB constraint violation for {}: {}", signUpRequest.getUsername(), cause);
+                                friendlyMsg = "Error: Ya existe una cuenta con esos datos. Por favor verifica el correo y usuario.";
+                        }
+                        return ResponseEntity.badRequest().body(new MessageResponse(friendlyMsg));
+                } catch (RuntimeException e) {
+                        String msg = e.getMessage();
+                        if (msg.contains("usuario ya está en uso")) {
+                                logger.warn("Signup conflict: Username '{}' already exists", signUpRequest.getUsername());
+                        } else if (msg.contains("correo electrónico ya está en uso")) {
+                                logger.warn("Signup conflict: Email '{}' already exists", signUpRequest.getEmail());
+                        } else {
+                                logger.error("Registration failed for {}: {}", signUpRequest.getUsername(), msg);
+                        }
+                        return ResponseEntity.badRequest().body(new MessageResponse(msg));
+                }
+        }
+
+        @PostMapping("/forgot-password")
+        public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> request, HttpServletRequest httpRequest) {
+                String identifier = request.get("email"); // Can be email or username
+                if (identifier == null || identifier.isBlank()) {
+                        return ResponseEntity.badRequest()
+                                        .body(new MessageResponse("Debes proporcionar un email o nombre de usuario."));
+                }
+                
+                String origin = httpRequest.getHeader("Origin");
+                if (origin == null || origin.isBlank()) {
+                    origin = frontendUrl; // Fallback
+                }
+
+                // Try to find by email first, then by username
+                User user = userRepository.findByEmail(identifier)
+                                .orElseGet(() -> userRepository.findByUsername(identifier).orElse(null));
+
+                // Always return success to prevent user enumeration attacks
+                if (user == null) {
+                        return ResponseEntity.ok(new MessageResponse(
+                                        "Si el email/usuario existe, recibirás instrucciones para restablecer tu contraseña."));
+                }
+
+                // Generate reset token (valid for 30 minutes)
+                String token = UUID.randomUUID().toString();
+                user.setResetToken(token);
+                user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(30));
+                userRepository.save(user);
+
+                // Send password reset email (falls back to file if SMTP is unavailable)
+                emailService.sendPasswordResetEmail(
+                                user.getEmail() != null ? user.getEmail() : identifier,
+                                user.getUsername(),
+                                token,
+                                origin);
+
+                return ResponseEntity.ok(new MessageResponse(
+                                "Si el email/usuario existe, recibirás instrucciones para restablecer tu contraseña."));
+        }
+
+        @PostMapping("/reset-password")
+        public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request, javax.servlet.http.HttpServletRequest httpRequest) {
+                String token = request.get("token");
+                String newPassword = request.get("newPassword");
+
+                if (token == null || newPassword == null || newPassword.length() < 6) {
+                        return ResponseEntity.badRequest()
+                                        .body(new MessageResponse(
+                                                        "Token inválido o contraseña muy corta (mínimo 6 caracteres)."));
+                }
+
+                User user = userRepository.findByResetToken(token).orElse(null);
+                if (user == null) {
+                        return ResponseEntity.badRequest()
+                                        .body(new MessageResponse("El enlace de restablecimiento es inválido."));
+                }
+
+                if (user.getResetTokenExpiry() == null || LocalDateTime.now().isAfter(user.getResetTokenExpiry())) {
+                        user.setResetToken(null);
+                        user.setResetTokenExpiry(null);
+                        userRepository.save(user);
+                        return ResponseEntity.badRequest()
+                                        .body(new MessageResponse(
+                                                        "El enlace de restablecimiento ha expirado. Solicita uno nuevo."));
+                }
+
+                // Update password and clear token
+                user.setPassword(passwordEncoder.encode(newPassword));
+                user.setResetToken(null);
+                user.setResetTokenExpiry(null);
+                userRepository.save(user);
+
+                logger.info("[PASSWORD RESET] Contraseña restablecida para el usuario: {} | IP: {}", 
+                        user.getUsername(), getClientIp(httpRequest));
+
+                return ResponseEntity.ok(
+                                new MessageResponse("Contraseña restablecida exitosamente. Ya puedes iniciar sesión."));
+        }
+
+        private String getClientIp(HttpServletRequest request) {
+                String xForwardedFor = request.getHeader("X-Forwarded-For");
+                if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
+                        return xForwardedFor.split(",")[0].trim();
+                }
+                return request.getRemoteAddr();
+        }
+
+        private String getBaseUrl(HttpServletRequest request) {
+                String scheme = request.getScheme();
+                String serverName = request.getServerName();
+                int serverPort = request.getServerPort();
+                
+                // If it's a standard port, don't include it
+                if (("http".equals(scheme) && serverPort == 80) || ("https".equals(scheme) && serverPort == 443)) {
+                        return scheme + "://" + serverName;
+                }
+                return scheme + "://" + serverName + ":" + serverPort;
+        }
+}

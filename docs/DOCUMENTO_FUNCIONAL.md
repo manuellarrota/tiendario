@@ -1,13 +1,13 @@
-# 📄 Documento Funcional: Tiendario Platform
+# 📄 Documento Funcional: Nugar Platform
 > **El motor híbrido que potencia el comercio local.**
 
-Tiendario no es solo un software de inventario; es un **ecosistema digital 360°** diseñado para cerrar la brecha entre el mostrador físico de una tienda y el mercado digital global. Permite a los comerciantes gestionar su día a día con la eficiencia de una multinacional, mientras exponen sus productos a miles de clientes en un Marketplace compartido.
+Nugar no es solo un software de inventario; es un **ecosistema digital 360°** diseñado para cerrar la brecha entre el mostrador físico de una tienda y el mercado digital global. Permite a los comerciantes gestionar su día a día con la eficiencia de una multinacional, mientras exponen sus productos a miles de clientes en un Marketplace compartido.
 
 ---
 
-## 🎯 ¿Qué es Tiendario y para qué sirve?
+## 🎯 ¿Qué es Nugar y para qué sirve?
 
-Tiendario resuelve tres problemas críticos del comerciante local:
+Nugar resuelve tres problemas críticos del comerciante local:
 1.  **Desorden Operativo**: Centraliza ventas, stock y costos en una interfaz ultra-rápida.
 2.  **Invisibilidad Digital**: Sincroniza el inventario local con un Marketplace global de forma automática.
 3.  **Falta de Fidelización**: Ofrece herramientas profesionales (puntos, emails branded) que antes solo estaban al alcance de grandes cadenas.
@@ -42,13 +42,13 @@ Tiendario resuelve tres problemas críticos del comerciante local:
 - **Campana de Notificaciones**: Alertas internas en el panel para ventas, mensajes o eventos importantes.
 
 ### ⭐ Fidelización y Geolocalización
-- **Puntos Tiendario**: Sistema automático donde cada compra genera valor para el cliente, incentivando el retorno a las tiendas locales.
+- **Puntos Nugar**: Sistema automático donde cada compra genera valor para el cliente, incentivando el retorno a las tiendas locales.
 - **Tiendas Cercanas**: El marketplace utiliza geolocalización (Lat/Lon) para sugerir comercios al cliente basados en su ubicación actual.
 
 ---
 
 ## 🛡️ 2. Transparencia y Confianza Legal
-Tiendario integra un centro legal dinámico que protege tanto al comerciante como al usuario final, incluyendo:
+Nugar integra un centro legal dinámico que protege tanto al comerciante como al usuario final, incluyendo:
 - **Términos de Servicio** detallados para el modelo Marketplace.
 - **Políticas de Privacidad** alineadas con el manejo responsable de datos.
 
@@ -67,4 +67,4 @@ El sistema gestiona automáticamente el acceso basado en la salud financiera de 
 - **Mobile First**: Totalmente responsivo. Gestiona tu tienda desde un celular o una tablet con la misma potencia que una PC.
 
 ---
-*Tiendario: Empoderando el comercio que hace latir a la ciudad. Antigravity © 2026*
+*Nugar: Empoderando el comercio que hace latir a la ciudad. Antigravity © 2026*

@@ -1,8 +1,8 @@
-# Tiendario
+# Nugar
 
 **SaaS de Gestión de Inventario, Punto de Venta y Marketplace para Comercios Locales**
 
-Tiendario combina un **Panel Administrativo** completo (inventario, POS, compras, reportes) con un **Marketplace Público** sincronizado en tiempo real, bajo un modelo de suscripción multitenancy.
+Nugar combina un **Panel Administrativo** completo (inventario, POS, compras, reportes) con un **Marketplace Público** sincronizado en tiempo real, bajo un modelo de suscripción multitenancy.
 
 ---
 
@@ -21,9 +21,9 @@ Tiendario combina un **Panel Administrativo** completo (inventario, POS, compras
 ## Arquitectura
 
 ```
-tiendario/
+nugar/
 ├── backend/                        # API REST (Spring Boot + Maven)
-│   └── src/main/java/com/tiendario/
+│   └── src/main/java/com/nugar/
 │       ├── domain/                 # Entidades JPA
 │       ├── repository/             # Spring Data JPA + Elasticsearch
 │       ├── service/                # Lógica de negocio
@@ -137,7 +137,7 @@ npm run dev
 
 ## Modelo de Suscripción
 
-Tiendario opera con **dos planes** y un período de prueba integrado. No existe un plan intermedio — el modelo es intencionalmente simple.
+Nugar opera con **dos planes** y un período de prueba integrado. No existe un plan intermedio — el modelo es intencionalmente simple.
 
 ### Planes
 

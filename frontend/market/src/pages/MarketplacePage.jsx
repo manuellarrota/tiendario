@@ -34,11 +34,11 @@ const MarketplacePage = () => {
     const [userPoints, setUserPoints] = useState(0);
     const [showLoyaltyModal, setShowLoyaltyModal] = useState(false);
     const [cart, setCart] = useState(() => {
-        const saved = localStorage.getItem('tiendario_cart');
+        const saved = localStorage.getItem('nugar_cart');
         return saved ? JSON.parse(saved) : [];
     });
     useEffect(() => {
-        localStorage.setItem('tiendario_cart', JSON.stringify(cart));
+        localStorage.setItem('nugar_cart', JSON.stringify(cart));
     }, [cart]);
 
     const [showCartModal, setShowCartModal] = useState(false);
@@ -127,14 +127,14 @@ const MarketplacePage = () => {
 
     // SEO: Dynamic Titles and Descriptions
     useEffect(() => {
-        let title = "Tiendario - Encuentre y compre productos locales";
-        let description = "Localice y compre productos en tiendas de su zona. Tiendario conecta inventarios locales para que encuentre lo que necesita cerca de ti.";
+        let title = "Nugar - Encuentre y compre productos locales";
+        let description = "Localice y compre productos en tiendas de su zona. Nugar conecta inventarios locales para que encuentre lo que necesita cerca de ti.";
 
         if (selectedCategory !== 'all') {
-            title = `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} cerca de mí - Tiendario`;
+            title = `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} cerca de mí - Nugar`;
             description = `Busque y compre ${selectedCategory} en tiendas locales. Encuentre los mejores precios y stock disponible cerca de su ubicación.`;
         } else if (searchQuery) {
-            title = `Buscando "${searchQuery}" en tiendas locales - Tiendario`;
+            title = `Buscando "${searchQuery}" en tiendas locales - Nugar`;
             description = `Resultados para "${searchQuery}" en su zona. Encuentre dónde comprarlo al mejor precio cerca de usted.`;
         }
 
@@ -812,7 +812,7 @@ const MarketplacePage = () => {
                                                 <>
                                                     <h3 className="fw-bold text-dark mb-3">¡El mercado se está preparando!</h3>
                                                     <p className="text-muted mb-4 px-md-4">
-                                                        Las tiendas locales apenas se están uniendo a Tiendario. Muy pronto encontrarás el mejor catálogo de productos aquí. 
+                                                        Las tiendas locales apenas se están uniendo a Nugar. Muy pronto encontrarás el mejor catálogo de productos aquí. 
                                                     </p>
                                                     <div className="p-3 bg-light rounded-3 d-inline-block">
                                                         <span className="small text-muted fw-bold d-block mb-1">¿Eres comerciante?</span>
@@ -951,7 +951,7 @@ const MarketplacePage = () => {
                                             </Col>
                                         </Row>
 
-                                        <h6 className="fw-bold mb-3 small text-uppercase text-muted" style={{ letterSpacing: '1px' }}>Experiencias Tiendario</h6>
+                                        <h6 className="fw-bold mb-3 small text-uppercase text-muted" style={{ letterSpacing: '1px' }}>Experiencias Nugar</h6>
                                         <div className="bg-light p-3 rounded-4 mb-2 shadow-sm border-0">
                                             <div className="d-flex gap-1 text-warning mb-1" style={{ fontSize: '0.7rem' }}><FaStar /><FaStar /><FaStar /><FaStar /><FaStar /></div>
                                             <small className="d-block text-dark fw-bold" style={{ fontSize: '0.75rem' }}>"Excelente atención y despacho súper rápido en SC."</small>
@@ -1082,7 +1082,7 @@ const MarketplacePage = () => {
             {/* Loyalty Program Modal */}
             <Modal show={showLoyaltyModal} onHide={() => setShowLoyaltyModal(false)} centered size="lg">
                 <Modal.Header closeButton className="border-0">
-                    <Modal.Title className="fw-bold">Programa de Lealtad Tiendario 🎈</Modal.Title>
+                    <Modal.Title className="fw-bold">Programa de Lealtad Nugar 🎈</Modal.Title>
                 </Modal.Header>
                 <Modal.Body className="p-4">
                     <div className="text-center mb-4">
@@ -1259,7 +1259,7 @@ const MarketplacePage = () => {
                 <div className="container">
                     <div className="row align-items-center">
                         <div className="col-md-6 text-center text-md-start mb-3 mb-md-0">
-                            <span className="fw-bold">Tiendario</span>
+                            <span className="fw-bold">Nugar</span>
                             <span className="text-white-50 ms-2">© {new Date().getFullYear()} Antigravity Inc.</span>
                         </div>
                         <div className="col-md-6 text-center text-md-end">

@@ -39,10 +39,10 @@ async function run() {
     console.log("👑 Creando/Verificando Super Admin...");
 
     const adminUser = {
-        username: "admin@tiendario.com",
+        username: "admin@nugar.com",
         password: "admin123",
-        companyName: "Tiendario HQ",
-        email: "admin@tiendario.com"
+        companyName: "Nugar HQ",
+        email: "admin@nugar.com"
     };
 
     // 1. Intentar Login
@@ -68,7 +68,7 @@ async function run() {
     }
 
     console.log("⚠️ NOTA: El usuario ha sido creado/verificado. Ahora debes ejecutar el comando SQL para darle rol ADMIN.");
-    console.log("   docker exec -i tiendario-db psql -U user -d tiendario -c \"UPDATE users SET roles = 'ROLE_ADMIN' WHERE username = 'admin@tiendario.com';\"");
+    console.log("   docker exec -i nugar-db psql -U user -d nugar -c \"UPDATE users SET roles = 'ROLE_ADMIN' WHERE username = 'admin@nugar.com';\"");
 }
 
 run();

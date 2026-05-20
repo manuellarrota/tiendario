@@ -1,9 +1,9 @@
-# Plan de Pruebas E2E - Tiendario
+# Plan de Pruebas E2E - Nugar
 
 ## Información General
 - **Fecha**: 2026-02-02
 - **Versión**: 1.0
-- **Aplicación**: Tiendario - Sistema de Gestión de Inventario Multi-Tenant
+- **Aplicación**: Nugar - Sistema de Gestión de Inventario Multi-Tenant
 
 ---
 
@@ -44,7 +44,7 @@ Manager (Plan FREE — en realidad PAID, se puede cambiar desde SuperAdmin):
 Cliente:
   Usuario: cliente
   Contraseña: cliente123
-  Email: cliente@tiendario.com
+  Email: cliente@nugar.com
 ```
 
 ---
@@ -293,7 +293,7 @@ Cliente:
 
 ## 🟢 ESTADO DE EJECUCIÓN (A marzo de 2026)
 
-Este plan de pruebas E2E ha sido ejecutado iterativamente hasta cubrir satisfactoriamente todos los flujos principales de Tiendario, obteniendo una gran estabilidad sistémica. A continuación un resumen de las campañas de test ejecutadas con éxito:
+Este plan de pruebas E2E ha sido ejecutado iterativamente hasta cubrir satisfactoriamente todos los flujos principales de Nugar, obteniendo una gran estabilidad sistémica. A continuación un resumen de las campañas de test ejecutadas con éxito:
 
 - **Autenticación y Seguridad (MÓDULO 1 y Backend)**: Implementados parches para evitar vulnerabilidades. Restricciones server-side y cálculo de precios reconfigurados exitosamente. Interfaces limpieladas sin modal-drills o rutas desfasadas como `/login`.
 - **Managers, Pedidos y Super Admin (MÓDULOS 2, 3 y 4)**: Creados, testeados y verificados. Verificada la funcionalidad manual de activación de suscripciones tras finalizada la expiración de la licencia (Super Admin valida vouchers y Manager recibe permisos Premium de vuelta).

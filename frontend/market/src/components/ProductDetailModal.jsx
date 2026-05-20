@@ -37,7 +37,7 @@ const ProductDetailModal = ({
             "@context": "https://schema.org/",
             "@type": "Product",
             "name": selectedProduct.name,
-            "description": selectedProduct.description || `Comprar ${selectedProduct.name} en tiendas locales con Tiendario.`,
+            "description": selectedProduct.description || `Comprar ${selectedProduct.name} en tiendas locales con Nugar.`,
             "image": [getFullImageUrl(selectedProduct.imageUrl, selectedProduct.category, selectedProduct.name)],
             "brand": {
                 "@type": "Brand",
@@ -226,7 +226,7 @@ const ProductDetailModal = ({
                                 ))}
                                 {sellers.length === 0 && <div className="text-center py-4 text-muted small">Buscando las mejores ofertas...</div>}
                             </div>
-                            <div className="mt-3 small text-muted opacity-75">* Las tiendas verificadas permiten reservar productos y acumular puntos Tiendario.</div>
+                            <div className="mt-3 small text-muted opacity-75">* Las tiendas verificadas permiten reservar productos y acumular puntos Nugar.</div>
                         </div>
                     </Col>
                 </Row>

@@ -42,7 +42,7 @@ const DemoMarketPreview = ({ show, onHide }) => {
                             <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white" style={{ width: 32, height: 32 }}>
                                 <FaStore size={14} />
                             </div>
-                            <span className="text-white fw-bold fs-5">Tiendario</span>
+                            <span className="text-white fw-bold fs-5">Nugar</span>
                             <Badge bg="primary" pill className="ms-1">Marketplace</Badge>
                         </div>
                         <div className="d-flex align-items-center gap-3">
@@ -86,7 +86,7 @@ const DemoMarketPreview = ({ show, onHide }) => {
                         {/* Info banner */}
                         <div className="alert alert-primary border-0 rounded-3 mb-4 py-2 px-3 small d-flex align-items-center gap-2">
                             <span>🌐</span>
-                            <span>Así es como <strong>tus clientes</strong> verán tu tienda en el Marketplace de Tiendario.</span>
+                            <span>Así es como <strong>tus clientes</strong> verán tu tienda en el Marketplace de Nugar.</span>
                         </div>
 
                         {/* Product Grid */}

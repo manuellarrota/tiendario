@@ -1,6 +1,6 @@
 const { test, expect } = require('@playwright/test');
 
-test.describe('Tiendario E2E Flow', () => {
+test.describe('Nugar E2E Flow', () => {
     const uniqueId = Date.now();
     const storeName = `Test Store ${uniqueId}`;
     const username = `manager_${uniqueId}`;

@@ -1,6 +1,6 @@
 # ☁️ Guía de Despliegue en AWS
 
-Esta guía detalla la arquitectura recomendada y los pasos para desplegar **Tiendario** en Amazon Web Services (AWS) para un entorno de producción escalable y seguro.
+Esta guía detalla la arquitectura recomendada y los pasos para desplegar **Nugar** en Amazon Web Services (AWS) para un entorno de producción escalable y seguro.
 
 ---
 
@@ -16,7 +16,7 @@ Para un sistema SaaS moderno, recomendamos una arquitectura "Serverless / Manage
 2.  **Backend (API)**:
     -   **Servicio**: **Amazon ECS (Fargate)**.
     -   **Beneficios**: Serverless (sin gestión de servidores), escalado automático por CPU/RAM, despliegue estandarizado con Docker.
-    -   **Artefactos**: Imagen Docker (`tiendario-backend`) en AWS ECR.
+    -   **Artefactos**: Imagen Docker (`nugar-backend`) en AWS ECR.
 
 3.  **Base de Datos**:
     -   **Servicio**: Amazon RDS para PostgreSQL.
@@ -35,7 +35,7 @@ Configura estas variables en tu 'Task Definition' de ECS (o usa AWS Secrets Mana
 | Variable | Descripción | Ejemplo / Valor |
 |----------|-------------|-----------------|
 | `SERVER_PORT` | Puerto de la aplicación | `8080` |
-| `SPRING_DATASOURCE_URL` | URL JDBC de RDS | `jdbc:postgresql://<rds-endpoint>:5432/tiendario` |
+| `SPRING_DATASOURCE_URL` | URL JDBC de RDS | `jdbc:postgresql://<rds-endpoint>:5432/nugar` |
 | `SPRING_DATASOURCE_USERNAME` | Usuario maestro RDS | `admin` |
 | `SPRING_DATASOURCE_PASSWORD` | Contraseña RDS | `******` |
 | `SPRING_ELASTICSEARCH_URIS` | URL de OpenSearch | `https://<opensearch-endpoint>` |
@@ -55,8 +55,8 @@ Configura estas variables en tu 'Task Definition' de ECS (o usa AWS Secrets Mana
 1.  **RDS**: Crear instancia PostgreSQL (versión 13+). Asegurar que el *Security Group* permita tráfico desde el entorno del Backend.
 2.  **OpenSearch**: Crear dominio (T2.small para pruebas, instancias dedicadas para prod).
 3.  **S3 Buckets**: Crear 2 buckets públicos (o privados con OAI para CloudFront):
-    -   `tiendario-frontend-admin`
-    -   `tiendario-frontend-market`
+    -   `nugar-frontend-admin`
+    -   `nugar-frontend-market`
 
 ### 2. Despliegue del Backend
 
@@ -65,12 +65,12 @@ Recomendamos usar **Docker** para garantizar consistencia.
 1.  **Construir imagen**:
     ```bash
     cd backend
-    docker build -t tiendario-backend:latest .
+    docker build -t nugar-backend:latest .
     ```
 2.  **Subir a ECR (Elastic Container Registry)**:
     ```bash
     aws ecr get-login-password | docker login ...
-    docker tag tiendario-backend:latest <aws-account-id>.dkr.ecr.<region>.amazonaws.com/tiendario-backend:latest
+    docker tag nugar-backend:latest <aws-account-id>.dkr.ecr.<region>.amazonaws.com/nugar-backend:latest
     docker push ...
     ```
 3.  **Amazon ECS (Fargate)**:
@@ -88,7 +88,7 @@ Recomendamos usar **Docker** para garantizar consistencia.
     npm install
     npm run build
     # Subir contenido de dist/ a S3
-    aws s3 sync dist/ s3://tiendario-frontend-market
+    aws s3 sync dist/ s3://nugar-frontend-market
     ```
 
 2.  **Admin Panel**:
@@ -98,7 +98,7 @@ Recomendamos usar **Docker** para garantizar consistencia.
     npm install
     npm run build
     # Subir a S3
-    aws s3 sync dist/ s3://tiendario-frontend-admin
+    aws s3 sync dist/ s3://nugar-frontend-admin
     ```
 
 ### 4. Configuración Final (CloudFront + SSL)

@@ -8,11 +8,11 @@
 		<version>2.7.18</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.tiendario</groupId>
+	<groupId>com.nugar</groupId>
 	<artifactId>backend</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>tiendario-backend</name>
-	<description>Backend for Tiendario</description>
+	<name>nugar-backend</name>
+	<description>Backend for Nugar</description>
 	<properties>
 		<java.version>11</java.version>
 	</properties>
@@ -106,7 +106,7 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
-					<mainClass>com.tiendario.TiendarioApplication</mainClass>
+					<mainClass>com.nugar.NugarApplication</mainClass>
 					<excludes>
 						<exclude>
 							<groupId>org.projectlombok</groupId>

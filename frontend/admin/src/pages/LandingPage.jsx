@@ -231,7 +231,7 @@ const LandingPage = () => {
                     <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white" style={{ width: '40px', height: '40px', boxShadow: '0 4px 12px rgba(0, 123, 255, 0.3)' }}>
                         <FaStore size={20} />
                     </div>
-                    <h4 className="m-0 fw-bold text-dark" style={{ letterSpacing: '-0.5px' }}>Tiendario</h4>
+                    <h4 className="m-0 fw-bold text-dark" style={{ letterSpacing: '-0.5px' }}>Nugar</h4>
                     <Badge pill bg="primary" className="ms-2 px-3 py-2 d-none d-md-block" style={{ backgroundColor: '#007bff !important', fontWeight: '600' }}>
                         Sistema POS + Marketplace Local
                     </Badge>
@@ -270,7 +270,7 @@ const LandingPage = () => {
                     {/* Hero stats panel — replaces redundant login card */}
                     <Col lg={5} className="mt-5 mt-lg-0 reveal-up delay-3">
                         <div className="glass-panel p-5 border-0 shadow-xl bg-white" style={{ borderRadius: '32px' }}>
-                            <p className="text-secondary small fw-bold text-uppercase mb-4" style={{ letterSpacing: '1px' }}>¿Qué incluye Tiendario?</p>
+                            <p className="text-secondary small fw-bold text-uppercase mb-4" style={{ letterSpacing: '1px' }}>¿Qué incluye Nugar?</p>
                             <div className="d-flex flex-column gap-3">
                                 {[
                                     { icon: <FaBolt className="text-primary" />, text: "Punto de venta (POS) para cobros rápidos" },
@@ -299,8 +299,8 @@ const LandingPage = () => {
             <Container id="mockup" className="text-center mb-5 pb-5">
                 <div className="mx-auto shadow-2xl rounded-4 overflow-hidden border border-light" style={{ maxWidth: '1000px', transform: 'perspective(1000px) rotateX(2deg)', boxShadow: '0 50px 100px -20px rgba(0,0,0,0.2)' }}>
                     <img
-                        src="/tiendario_dashboard_mockup_1773425385989.png"
-                        alt="Tiendario Dashboard"
+                        src="/nugar_dashboard_mockup_1773425385989.png"
+                        alt="Nugar Dashboard"
                         className="img-fluid"
                         onError={(e) => {
                             e.target.onerror = null;
@@ -349,7 +349,7 @@ const LandingPage = () => {
                                 <span className="display-4 fw-bold text-dark">$0</span>
                                 <span className="text-secondary ms-2">/ 1 mes</span>
                             </div>
-                            <p className="text-muted small mb-4">Prueba todo Tiendario sin compromiso durante 30 días.</p>
+                            <p className="text-muted small mb-4">Prueba todo Nugar sin compromiso durante 30 días.</p>
                             <ul className="list-unstyled flex-grow-1 text-secondary">
                                 <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Acceso completo por 30 días</li>
                                 <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> POS, inventario y ventas</li>
@@ -401,7 +401,7 @@ const LandingPage = () => {
             </Container>
 
             <div className="py-5 text-center text-secondary small">
-                &copy; 2026 Tiendario Inc. Hecho con ❤️ para emprendedores.
+                &copy; 2026 Nugar Inc. Hecho con ❤️ para emprendedores.
             </div>
 
 

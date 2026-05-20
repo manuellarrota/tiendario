@@ -29,7 +29,7 @@ Para que GitHub pueda desplegar, necesita un usuario con permisos.
 3.  **Engine options**: PostgreSQL (Versión 13 o superior).
 4.  **Templates**: Free tier (o Production si tienes presupuesto).
 5.  **Settings**:
-    -   Identifier: `tiendario-db-prod`.
+    -   Identifier: `nugar-db-prod`.
     -   Master username: `postgres` (o el que prefieras).
     -   Master password: `(Genera una contraseña fuerte)`.
 6.  **Instance configuration**: `db.t3.micro` (Económico).
@@ -37,7 +37,7 @@ Para que GitHub pueda desplegar, necesita un usuario con permisos.
     -   Public access: **No** (Recomendado para seguridad).
     -   VPC Security Group: Crea uno nuevo llamado `rds-private-group`.
 8.  **Create database**.
-9.  ⏳ Espera unos minutos y copia el **Endpoint** (ej: `tiendario-db.cx7...amazon.com`).
+9.  ⏳ Espera unos minutos y copia el **Endpoint** (ej: `nugar-db.cx7...amazon.com`).
 
 ---
 
@@ -47,24 +47,24 @@ Para que GitHub pueda desplegar, necesita un usuario con permisos.
 1.  Ve a **Elastic Container Registry**.
 2.  **Create repository**.
 3.  Visibility settings: **Private**.
-4.  Repository name: `tiendario-backend`.
+4.  Repository name: `nugar-backend`.
 5.  **Create repository**. 
 6.  Copia la **URI** del repositorio.
 
 ### 3.2 Crear Cluster ECS
 1.  Ve a **Elastic Container Service** > **Clusters**.
 2.  **Create Cluster**.
-3.  Name: `tiendario-cluster`.
+3.  Name: `nugar-cluster`.
 4.  Infrastructure: **AWS Fargate (Serverless)**.
 5.  **Create**.
 
 ### 3.3 Definir la Tarea (Task Definition)
 Esto le dice a AWS cómo correr tu Docker.
 1.  Ve a **Task Definitions** > **Create new Task Definition**.
-2.  Family name: `tiendario-task`.
+2.  Family name: `nugar-task`.
 3.  **Infrastructure**: Fargate.
 4.  **Container - 1**:
-    -   Name: `tiendario-container`.
+    -   Name: `nugar-container`.
     -   Image URI: `(Pega la URI de ECR creada en 3.1):latest`.
     -   Container Port: `8080`.
 5.  **Environment variables** (Aquí va la configuración):
@@ -77,19 +77,19 @@ Esto le dice a AWS cómo correr tu Docker.
 
 ### 3.4 Crear el Servicio y Load Balancer
 Esto expone tu API a internet.
-1.  Entra al Cluster `tiendario-cluster` > Pestaña **Services** > **Create**.
+1.  Entra al Cluster `nugar-cluster` > Pestaña **Services** > **Create**.
 2.  Compute options: **Launch type** (Fargate).
-3.  Task definition: Family `tiendario-task`.
-4.  Service name: `tiendario-service`.
+3.  Task definition: Family `nugar-task`.
+4.  Service name: `nugar-service`.
 5.  **Networking**:
     -   Security Group: Crea uno nuevo. Agrega regla Inbound: `HTTP (80)` desde `Anywhere (0.0.0.0/0)`.
 6.  **Load Balancing** (IMPORTANTE):
     -   Load balancer type: **Application Load Balancer**.
-    -   Load balancer name: `tiendario-alb`.
+    -   Load balancer name: `nugar-alb`.
     -   Listener: Port 80 (HTTP).
     -   Target group: Create new specific target group.
 7.  **Create**.
-8.  Copia el **DNS name** del Load Balancer creado (ej: `tiendario-alb-123.us-east-1.elb.amazonaws.com`). Esta será tu `VITE_API_URL`.
+8.  Copia el **DNS name** del Load Balancer creado (ej: `nugar-alb-123.us-east-1.elb.amazonaws.com`). Esta será tu `VITE_API_URL`.
 
 ---
 
@@ -97,9 +97,9 @@ Esto expone tu API a internet.
 
 ### 4.1 Crear Buckets S3
 1.  Ve a **S3** > **Create bucket**.
-2.  Nombre: `tiendario-frontend-market-prod` (Debe ser único en el mundo).
+2.  Nombre: `nugar-frontend-market-prod` (Debe ser único en el mundo).
 3.  Configuración: Bloquear acceso público (Déjalo activado si usas CloudFront OAI, o desactívalo si quieres hosting web rápido y simple).
-4.  Repite para `tiendario-frontend-admin-prod`.
+4.  Repite para `nugar-frontend-admin-prod`.
 
 ### 4.2 Distribuir con CloudFront (CDN)
 1.  Ve a **CloudFront** > **Create distribution**.
@@ -123,8 +123,8 @@ Por último, ve a tu repositorio GitHub para conectar todo.
 2.  Crea los secrets con la información recolectada:
     -   `AWS_ACCESS_KEY_ID` (Del paso 1.1)
     -   `AWS_SECRET_ACCESS_KEY` (Del paso 1.1)
-    -   `ECR_REPOSITORY` = `tiendario-backend`
-    -   `ECS_CLUSTER` = `tiendario-cluster`
-    -   `ECS_SERVICE` = `tiendario-service`
+    -   `ECR_REPOSITORY` = `nugar-backend`
+    -   `ECS_CLUSTER` = `nugar-cluster`
+    -   `ECS_SERVICE` = `nugar-service`
 
 ¡Listo! La próxima vez que hagas push a `master`, GitHub Actions construirá el código y lo enviará a esta infraestructura.

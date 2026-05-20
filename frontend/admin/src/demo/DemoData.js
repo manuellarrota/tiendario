@@ -1,5 +1,5 @@
 /**
- * DEMO DATA — Tiendario Demo Mode
+ * DEMO DATA — Nugar Demo Mode
  * Datos ficticios para la demo interactiva. No tocan el backend.
  * Tienda demo: "Ferretería Central" — San Cristóbal, Táchira.
  */

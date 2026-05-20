@@ -108,7 +108,7 @@ const CompanyPage = () => {
             setShowModal(false);
             setPaymentForm({ amount: '', paymentMethod: 'Zelle', reference: '', notes: '' });
             loadData();
-            alert("Pago enviado correctamente. El equipo de Tiendario lo revisará pronto.");
+            alert("Pago enviado correctamente. El equipo de Nugar lo revisará pronto.");
         } catch (err) {
             console.error("Error submitting payment", err);
             alert("Error al enviar el pago. Intenta de nuevo.");
@@ -447,7 +447,7 @@ const CompanyPage = () => {
                             <Alert variant="info" className="border-0 shadow-sm rounded-3">
                                 <h6 className="fw-bold"><FaInfoCircle className="me-2" /> Datos de Transferencia:</h6>
                                 <ul className="mb-0 small">
-                                    <li><strong>Zelle:</strong> pagos@tiendario.com (Antigravity Inc)</li>
+                                    <li><strong>Zelle:</strong> pagos@nugar.com (Antigravity Inc)</li>
                                     <li><strong>Binance Pay ID:</strong> 12345678</li>
                                     <li><strong>Pago Móvil:</strong> 0102 - 0412-0000000 - V-12345678</li>
                                 </ul>

@@ -737,7 +737,7 @@ const DashboardHome = () => {
 
                         {!isSuperAdmin && isPremium && (
                             <div className="mt-5 text-center opacity-25">
-                                <small className="text-muted">Tiendario SaaS - Versión Enterprise</small>
+                                <small className="text-muted">Nugar SaaS - Versión Enterprise</small>
                             </div>
                         )}
                     </>

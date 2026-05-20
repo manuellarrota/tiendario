@@ -35,7 +35,7 @@ const MarketplaceNavbar = ({ onLoginClick, onRegisterClick }) => {
                         <FaStore size={16} />
                     </div>
                     <span className="text-dark fw-800 fs-4" style={{ letterSpacing: '-0.5px' }}>
-                        Tiendario <span className="text-secondary">Market</span>
+                        Nugar <span className="text-secondary">Market</span>
                     </span>
                 </Navbar.Brand>
 
@@ -69,7 +69,7 @@ const MarketplaceNavbar = ({ onLoginClick, onRegisterClick }) => {
 
                                     <Dropdown.Menu className="border-0 shadow-lg rounded-4 p-2 mt-2" style={{ minWidth: '220px' }}>
                                         <div className="px-3 py-2 mb-2 bg-light rounded-3 text-center">
-                                            <small className="text-muted d-block text-uppercase fw-bold" style={{ fontSize: '0.65rem' }}>Puntos Tiendario</small>
+                                            <small className="text-muted d-block text-uppercase fw-bold" style={{ fontSize: '0.65rem' }}>Puntos Nugar</small>
                                             <span className="h5 fw-bold text-primary mb-0">⭐ {user.points || 0} pts</span>
                                         </div>
                                         <Dropdown.Item as={Link} to={isDashboard ? "/" : "/dashboard"} className="rounded-3 py-2 fw-500 d-md-none">

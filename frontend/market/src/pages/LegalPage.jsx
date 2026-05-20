@@ -42,13 +42,13 @@ const TermsContent = () => (
         <h2 className="fw-bold mb-4">Términos y Condiciones de Uso</h2>
 
         <Section title="1. Aceptación de los Términos">
-            Al acceder y utilizar la plataforma Tiendario ("la Plataforma"), usted acepta estar sujeto a estos
+            Al acceder y utilizar la plataforma Nugar ("la Plataforma"), usted acepta estar sujeto a estos
             Términos de Servicio. Si no está de acuerdo con alguna parte de estos términos, no deberá utilizar
             la Plataforma.
         </Section>
 
         <Section title="2. Descripción del Servicio">
-            Tiendario es un marketplace digital que conecta vendedores locales con compradores en la región de
+            Nugar es un marketplace digital que conecta vendedores locales con compradores en la región de
             San Cristóbal, Táchira, Venezuela. La Plataforma ofrece:
             <ul className="mt-2">
                 <li>Catálogo digital de productos de múltiples tiendas.</li>
@@ -63,7 +63,7 @@ const TermsContent = () => (
                 <li>Los usuarios deben proporcionar información veraz al registrarse.</li>
                 <li>Cada usuario es responsable de mantener la confidencialidad de sus credenciales.</li>
                 <li>La creación de cuentas falsas o múltiples está prohibida.</li>
-                <li>Tiendario se reserva el derecho de suspender cuentas que violen estos términos.</li>
+                <li>Nugar se reserva el derecho de suspender cuentas que violen estos términos.</li>
             </ul>
         </Section>
 
@@ -78,10 +78,10 @@ const TermsContent = () => (
 
         <Section title="5. Compras y Pagos">
             <ul>
-                <li>Tiendario actúa como intermediario entre compradores y vendedores.</li>
+                <li>Nugar actúa como intermediario entre compradores y vendedores.</li>
                 <li>Los pagos se coordinan directamente con cada tienda en la modalidad Click & Collect.</li>
                 <li>Los precios publicados son establecidos por cada vendedor individual.</li>
-                <li>Tiendario no es responsable por disputas de precios entre compradores y vendedores.</li>
+                <li>Nugar no es responsable por disputas de precios entre compradores y vendedores.</li>
             </ul>
         </Section>
 
@@ -102,7 +102,7 @@ const TermsContent = () => (
         </Section>
 
         <Section title="8. Limitación de Responsabilidad">
-            Tiendario no será responsable por:
+            Nugar no será responsable por:
             <ul className="mt-2">
                 <li>Daños indirectos, incidentales o consecuentes.</li>
                 <li>La calidad de productos vendidos por terceros en la Plataforma.</li>
@@ -112,7 +112,7 @@ const TermsContent = () => (
         </Section>
 
         <Section title="9. Modificaciones">
-            Tiendario se reserva el derecho de modificar estos términos en cualquier momento. Los cambios
+            Nugar se reserva el derecho de modificar estos términos en cualquier momento. Los cambios
             significativos serán comunicados a los usuarios registrados. El uso continuado de la Plataforma
             después de los cambios constituye la aceptación de los nuevos términos.
         </Section>
@@ -120,7 +120,7 @@ const TermsContent = () => (
         <Section title="10. Contacto">
             Para consultas relacionadas con estos términos, puede contactarnos a través de:
             <div className="bg-light p-3 rounded-3 mt-2">
-                <strong>Email:</strong> legal@tiendario.com<br />
+                <strong>Email:</strong> legal@nugar.com<br />
                 <strong>Ubicación:</strong> San Cristóbal, Táchira, Venezuela
             </div>
         </Section>
@@ -209,7 +209,7 @@ const PrivacyContent = () => (
         <Section title="10. Contacto">
             Para ejercer sus derechos o realizar consultas sobre privacidad:
             <div className="bg-light p-3 rounded-3 mt-2">
-                <strong>Email:</strong> privacidad@tiendario.com<br />
+                <strong>Email:</strong> privacidad@nugar.com<br />
                 <strong>Ubicación:</strong> San Cristóbal, Táchira, Venezuela
             </div>
         </Section>

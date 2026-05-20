@@ -1,5 +1,5 @@
 /**
- * Tiendario — Stress Test Suite
+ * Nugar — Stress Test Suite
  * 
  * Cubre:
  *  1. Auth      — Login bajo carga concurrente
@@ -122,7 +122,7 @@ function printStats(name, results, totalTime) {
 // ═══════════════════════════════════════════════════════════════════════════
 async function main() {
   log(`\n${C.bold}${C.blue}╔══════════════════════════════════════════════════╗`);
-  log(`║       TIENDARIO — STRESS TEST SUITE             ║`);
+  log(`║       NUGAR — STRESS TEST SUITE             ║`);
   log(`╚══════════════════════════════════════════════════╝${C.reset}`);
   log(`  Target: ${BASE_URL}  |  ${new Date().toLocaleTimeString()}\n`);
 

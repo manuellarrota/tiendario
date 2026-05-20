@@ -123,7 +123,7 @@ const Sidebar = () => {
                                 <div className="logo-icon">
                                     <FaStore size={22} />
                                 </div>
-                                {!collapsed && <span>Tiendario</span>}
+                                {!collapsed && <span>Nugar</span>}
                             </Link>
 
                             {/* Mobile Close Button */}
@@ -163,7 +163,7 @@ const Sidebar = () => {
                         {isSuperAdmin ? (
                             <>
                                 <NavItem to="/admin/onboarding" icon={FaRocket}       label="Registrar Tienda"    description="Wizard paso a paso para registrar un nuevo cliente."       collapsed={collapsed} setIsOpen={setIsOpen} />
-                                <NavItem to="/dashboard"        icon={FaChartLine}    label="Métricas Globales"   description="Visualiza el estado de todo el ecosistema Tiendario."       collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/dashboard"        icon={FaChartLine}    label="Métricas Globales"   description="Visualiza el estado de todo el ecosistema Nugar."       collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/admin/companies"  icon={FaStore}        label="Gestión de Empresas" description="Administra los comercios y sus suscripciones."              collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/admin/catalog"    icon={FaBox}          label="Catálogo Global"     description="Gestiona los registros maestros de productos unificados."   collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/admin/catalog-suggestions" icon={FaBox} label="Sugerencias Catálogo" description="Aprueba o rechaza nuevas imágenes y detalles de productos." collapsed={collapsed} setIsOpen={setIsOpen} />

@@ -1,5 +1,5 @@
 /**
- * Tiendario — Supermarket Enterprise Stress Test
+ * Nugar — Supermarket Enterprise Stress Test
  * 
  * Simula el escenario de negocio de múltiples supermercados (Tenants)
  * funcionando simultáneamente sobre la misma base de datos (PostgreSQL).
@@ -61,7 +61,7 @@ function request(method, path, body = null, token = null) {
 
 // ─── MAIN ──────────────────────────────────────────────────────────────────
 async function runTest() {
-  section('TIENDARIO — ENTERPRISE STRESS TEST (POSTGRESQL)');
+  section('NUGAR — ENTERPRISE STRESS TEST (POSTGRESQL)');
   log(`  Simulando ${CONFIG.numStores} supermercados independientes...\n`);
 
   // 1. LOGIN ADMIN

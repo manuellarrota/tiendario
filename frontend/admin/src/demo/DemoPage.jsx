@@ -16,7 +16,7 @@ import DemoMarketPreview from './DemoMarketPreview';
 import { useNavigate } from 'react-router-dom';
 
 /**
- * DemoPage — Modo demo interactivo de Tiendario.
+ * DemoPage — Modo demo interactivo de Nugar.
  * Ruta pública /demo — sin autenticación.
  * Muestra Dashboard, POS e Inventario con datos ficticios.
  * Incluye acceso a vitrina del Marketplace embebida.

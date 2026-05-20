@@ -1,4 +1,4 @@
-# Guía Técnica — Tiendario
+# Guía Técnica — Nugar
 
 Arquitectura, decisiones de diseño y flujos críticos del sistema.
 
@@ -6,7 +6,7 @@ Arquitectura, decisiones de diseño y flujos críticos del sistema.
 
 ## 1. Arquitectura General
 
-Tiendario sigue una arquitectura **Cliente-Servidor desacoplada**:
+Nugar sigue una arquitectura **Cliente-Servidor desacoplada**:
 
 - **Backend**: API REST stateless en Spring Boot. Emite y valida JWT.
 - **Frontend Admin**: SPA React para managers — inventario, POS, compras, reportes.
@@ -20,7 +20,7 @@ Tiendario sigue una arquitectura **Cliente-Servidor desacoplada**:
 
 ### Estructura de paquetes
 ```
-com.tiendario/
+com.nugar/
 ├── domain/         # Entidades JPA (@Entity)
 ├── repository/     # Spring Data JPA + Search repos
 ├── service/        # Lógica de negocio
