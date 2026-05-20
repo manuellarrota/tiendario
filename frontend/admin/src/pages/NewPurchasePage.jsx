@@ -767,6 +767,11 @@ const NewPurchasePage = () => {
                                     <div className="d-flex align-items-center h-100 pb-1">
                                         <Badge bg={(prodPrice - prodCostPrice) > 0 ? "success" : "danger"} className="p-2 w-100 fs-6 shadow-sm">
                                             ${(prodPrice - prodCostPrice || 0).toFixed(2)}
+                                            {prodCostPrice > 0 && (
+                                                <small className="ms-2 opacity-75">
+                                                    ({(((prodPrice - prodCostPrice) / prodCostPrice) * 100).toFixed(1)}%)
+                                                </small>
+                                            )}
                                         </Badge>
                                     </div>
                                 </Form.Group>

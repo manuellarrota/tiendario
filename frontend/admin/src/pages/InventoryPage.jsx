@@ -763,6 +763,11 @@ const InventoryPage = () => {
                                     <div className="d-flex align-items-center h-100 pb-1">
                                         <Badge bg={(price - costPrice) > 0 ? "success" : "danger"} className="p-2 w-100 fs-6 shadow-sm">
                                             ${(price - costPrice || 0).toFixed(2)}
+                                            {costPrice > 0 && (
+                                                <small className="ms-2 opacity-75">
+                                                    ({(((price - costPrice) / costPrice) * 100).toFixed(1)}%)
+                                                </small>
+                                            )}
                                         </Badge>
                                     </div>
                                 </Form.Group>
