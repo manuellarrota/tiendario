@@ -260,7 +260,7 @@ const SupplierPage = () => {
                 </div>
             </Container>
 
-            <Modal show={showModal} onHide={() => { setShowModal(false); resetForm(); }} centered>
+            <Modal scrollable show={showModal} onHide={() => { setShowModal(false); resetForm(); }} centered>
                 <Modal.Header closeButton className="border-0">
                     <Modal.Title className="fw-bold text-dark">{editingSupplier ? 'Editar Proveedor' : 'Nuevo Proveedor'}</Modal.Title>
                 </Modal.Header>

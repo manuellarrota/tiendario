@@ -10,7 +10,7 @@ Nugar combina un **Panel Administrativo** completo (inventario, POS, compras, re
 
 | Capa | Tecnología |
 |---|---|
-| Backend | Java 11 · Spring Boot 2.7 · Spring Security · JWT |
+| Backend | Java 21 · Spring Boot 3.2.4 · Spring Security · JWT |
 | Base de datos | PostgreSQL (relacional) · Elasticsearch (búsqueda full-text) |
 | Frontend Admin | React 19 · Bootstrap 5 · Vite · PWA |
 | Frontend Market | React 19 · CSS Modules · Vite |
@@ -56,7 +56,7 @@ nugar/
 ## Cómo Levantar el Entorno
 
 ### Requisitos
-- Java 11+ (JDK)
+- Java 21+ (JDK)
 - Node.js 18+
 - Docker (para PostgreSQL + Elasticsearch)
 

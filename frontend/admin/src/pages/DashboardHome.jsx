@@ -763,7 +763,7 @@ const DashboardHome = () => {
 
 
                 {/* Manual Payment Modal */}
-                <Modal show={showPaymentModal} onHide={() => setShowPaymentModal(false)} centered className="rounded-4 overflow-hidden">
+                <Modal scrollable show={showPaymentModal} onHide={() => setShowPaymentModal(false)} centered className="rounded-4 overflow-hidden">
                     <Modal.Header closeButton className="border-0 pb-0">
                         <Modal.Title className="fw-bold">Informar Pago de Suscripción</Modal.Title>
                     </Modal.Header>

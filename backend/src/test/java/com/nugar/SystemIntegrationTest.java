@@ -163,6 +163,7 @@ public class SystemIntegrationTest {
         order.setCustomerName("Buyer Paid");
         order.setCustomerAddress("Address");
         order.setCustomerPhone("111");
+        order.setCustomerCedula("V-99999999");
 
         mockMvc.perform(post("/api/public/order")
                 .contentType(MediaType.APPLICATION_JSON)

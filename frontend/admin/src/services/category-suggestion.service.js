@@ -1,7 +1,7 @@
 import axios from "axios";
 import AuthService from "./auth.service";
 
-const API_URL = import.meta.env.VITE_API_URL + "/category-suggestions/";
+const API_URL = import.meta.env.VITE_API_URL + "/category-suggestions";
 
 const getAuthHeader = () => {
     const user = AuthService.getCurrentUser();
@@ -21,15 +21,15 @@ const getAll = () => {
 };
 
 const approve = (id) => {
-    return axios.put(API_URL + id + '/approve', {}, { headers: getAuthHeader() });
+    return axios.put(API_URL + "/" + id + '/approve', {}, { headers: getAuthHeader() });
 };
 
 const reject = (id) => {
-    return axios.put(API_URL + id + '/reject', {}, { headers: getAuthHeader() });
+    return axios.put(API_URL + "/" + id + '/reject', {}, { headers: getAuthHeader() });
 };
 
 const merge = (id, targetCategoryId) => {
-    return axios.put(API_URL + id + '/merge', { targetCategoryId }, { headers: getAuthHeader() });
+    return axios.put(API_URL + "/" + id + '/merge', { targetCategoryId }, { headers: getAuthHeader() });
 };
 
 const CategorySuggestionService = {

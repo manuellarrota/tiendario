@@ -3,8 +3,8 @@ package com.nugar.domain;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
-import javax.persistence.*;
-import javax.persistence.Index;
+import jakarta.persistence.*;
+import jakarta.persistence.Index;
 import java.math.BigDecimal;
 import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.data.elasticsearch.annotations.Field;

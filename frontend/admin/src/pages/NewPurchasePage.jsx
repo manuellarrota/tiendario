@@ -378,7 +378,7 @@ const NewPurchasePage = () => {
                     </Button>
                 </div>
 
-                {message && <Alert variant={message.includes("✅") ? "success" : message.includes("❌") ? "danger" : "info"}>{message}</Alert>}
+                {message && !showSupplierModal && !showProductModal && <Alert variant={message.includes("✅") ? "success" : message.includes("❌") ? "danger" : "info"} className="mb-4 shadow-sm border-0">{message}</Alert>}
 
                 <Row>
                     <Col md={8}>
@@ -615,13 +615,14 @@ const NewPurchasePage = () => {
             </Container>
 
             {/* New Supplier Modal */}
-            <Modal show={showSupplierModal} onHide={() => setShowSupplierModal(false)} centered>
+            <Modal scrollable show={showSupplierModal} onHide={() => setShowSupplierModal(false)} centered>
                 <Modal.Header closeButton className="border-0">
                     <Modal.Title className="fw-bold text-dark">
                         <FaTruck className="me-2" />Nuevo Proveedor
                     </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
+                    {message && showSupplierModal && <Alert variant={message.includes("✅") ? "success" : message.includes("❌") ? "danger" : "info"} className="mb-4 shadow-sm border-0">{message}</Alert>}
                     <Form onSubmit={handleCreateSupplier}>
                         <Form.Group className="mb-3">
                             <Form.Label>Nombre Empresa / Razón Social *</Form.Label>
@@ -679,11 +680,12 @@ const NewPurchasePage = () => {
             </Modal>
 
             {/* New Product Modal */}
-            <Modal show={showProductModal} onHide={() => { setShowProductModal(false); resetProductForm(); }} centered scrollable size="lg">
+            <Modal scrollable show={showProductModal} onHide={() => { setShowProductModal(false); resetProductForm(); }} centered scrollable size="lg">
                 <Modal.Header closeButton className="border-0">
                     <Modal.Title className="fw-bold text-dark">Nuevo Producto</Modal.Title>
                 </Modal.Header>
                 <Modal.Body className="p-4">
+                    {message && showProductModal && <Alert variant={message.includes("✅") ? "success" : message.includes("❌") ? "danger" : "info"} className="mb-4 shadow-sm border-0">{message}</Alert>}
                     <Form onSubmit={handleCreateProduct}>
                         <div className="row g-3">
                             {/* Basic Info */}

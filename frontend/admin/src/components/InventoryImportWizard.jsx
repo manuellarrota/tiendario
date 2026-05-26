@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, Button, Form, Spinner, Row, Col, Alert, Badge, Table, ProgressBar } from 'react-bootstrap';
-import { FaCloudUploadAlt, FaCheckCircle, FaExclamationTriangle, FaInfoCircle, FaCog, FaFileExcel } from 'react-icons/fa';
+import { FaCloudUploadAlt, FaCheckCircle, FaExclamationTriangle, FaInfoCircle, FaCog, FaFileCsv } from 'react-icons/fa';
 import InventoryService from '../services/inventory.service';
 
 const InventoryImportWizard = ({ show, onHide }) => {
@@ -60,7 +60,7 @@ const InventoryImportWizard = ({ show, onHide }) => {
 
     const handleUpload = async () => {
         if (!file) {
-            setError("Por favor, selecciona un archivo Excel primero.");
+            setError("Por favor, selecciona un archivo CSV primero.");
             return;
         }
         setError(null);
@@ -120,7 +120,7 @@ const InventoryImportWizard = ({ show, onHide }) => {
     );
 
     return (
-        <Modal show={show} onHide={step === 4 || loading ? null : handleClose} size="lg" backdrop="static" centered>
+        <Modal scrollable show={show} onHide={step === 4 || loading ? null : handleClose} size="lg" backdrop="static" centered>
             <Modal.Header closeButton={step !== 4 && !loading}>
                 <Modal.Title className="fw-bold d-flex align-items-center gap-2">
                     <FaCloudUploadAlt className="text-primary" /> Importación Masiva de Inventario
@@ -134,10 +134,10 @@ const InventoryImportWizard = ({ show, onHide }) => {
                 {step === 1 && (
                     <div className="text-center py-5">
                         <div className="mb-4 text-muted">
-                            <FaFileExcel size={48} className="text-success mb-3" /><br/>
-                            Sube tu archivo Excel (.xlsx o .xls) con tu inventario.
+                            <FaFileCsv size={48} className="text-success mb-3" /><br/>
+                            Sube tu archivo CSV (.csv) con tu inventario.
                         </div>
-                        <input type="file" accept=".xlsx, .xls" className="form-control mb-3" onChange={handleFileChange} />
+                        <input type="file" accept=".csv" className="form-control mb-3" onChange={handleFileChange} />
                         <Button onClick={handleUpload} disabled={!file || loading} className="px-4 py-2 rounded-pill shadow-sm">
                             {loading ? <Spinner size="sm" /> : "Analizar Archivo"}
                         </Button>
@@ -155,7 +155,7 @@ const InventoryImportWizard = ({ show, onHide }) => {
                                     <Form.Check type="radio" checked={mode === 'ANEXAR'} readOnly />
                                     <span className="fw-bold">Anexar Stock</span>
                                 </div>
-                                <p className="text-muted small ms-4 mb-0 mt-1">Suma el stock del Excel al stock existente. Actualiza el resto de la información (precios, nombre) si se proporcionan.</p>
+                                <p className="text-muted small ms-4 mb-0 mt-1">Suma el stock del CSV al stock existente. Actualiza el resto de la información (precios, nombre) si se proporcionan.</p>
                             </label>
 
                             <label className={`border p-3 rounded cursor-pointer ${mode === 'ACTUALIZAR' ? 'border-primary bg-primary bg-opacity-10' : ''}`} onClick={() => setMode('ACTUALIZAR')}>
@@ -163,7 +163,7 @@ const InventoryImportWizard = ({ show, onHide }) => {
                                     <Form.Check type="radio" checked={mode === 'ACTUALIZAR'} readOnly />
                                     <span className="fw-bold">Sobrescribir (Actualizar)</span>
                                 </div>
-                                <p className="text-muted small ms-4 mb-0 mt-1">Reemplaza el stock actual y demás campos mapeados con los valores exactos del Excel. Productos nuevos se crean.</p>
+                                <p className="text-muted small ms-4 mb-0 mt-1">Reemplaza el stock actual y demás campos mapeados con los valores exactos del CSV. Productos nuevos se crean.</p>
                             </label>
 
                             <label className={`border p-3 rounded cursor-pointer ${mode === 'SOLO_STOCK' ? 'border-primary bg-primary bg-opacity-10' : ''}`} onClick={() => setMode('SOLO_STOCK')}>
@@ -171,7 +171,7 @@ const InventoryImportWizard = ({ show, onHide }) => {
                                     <Form.Check type="radio" checked={mode === 'SOLO_STOCK'} readOnly />
                                     <span className="fw-bold">Actualizar Solo Stock</span>
                                 </div>
-                                <p className="text-muted small ms-4 mb-0 mt-1">Ignora nombres, precios o categorías. Solo ajusta el stock actual a lo que diga el Excel. Ignora SKUs que no existan.</p>
+                                <p className="text-muted small ms-4 mb-0 mt-1">Ignora nombres, precios o categorías. Solo ajusta el stock actual a lo que diga el CSV. Ignora SKUs que no existan.</p>
                             </label>
                         </div>
 

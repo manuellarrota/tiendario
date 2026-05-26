@@ -1,7 +1,7 @@
 import axios from "axios";
 import AuthService from "./auth.service";
 
-const API_URL = import.meta.env.VITE_API_URL + "/products/";
+const API_URL = import.meta.env.VITE_API_URL + "/products";
 
 const getAuthHeader = () => {
     const user = AuthService.getCurrentUser();
@@ -32,22 +32,22 @@ const create = (data) => {
 };
 
 const remove = (id) => {
-    return axios.delete(API_URL + id, { headers: getAuthHeader() });
+    return axios.delete(API_URL + "/" + id, { headers: getAuthHeader() });
 };
 
 const update = (id, data) => {
-    return axios.put(API_URL + id, data, { headers: getAuthHeader() });
+    return axios.put(API_URL + "/" + id, data, { headers: getAuthHeader() });
 };
 
 const getSuggestedSku = (name, category, variant, brand) => {
-    return axios.get(API_URL + "suggest-sku", {
+    return axios.get(API_URL + "/suggest-sku", {
         params: { name, category, variant, brand },
         headers: getAuthHeader()
     });
 };
 
 const searchCatalog = (query) => {
-    return axios.get(API_URL + "catalog-search", {
+    return axios.get(API_URL + "/catalog-search", {
         params: { q: query },
         headers: getAuthHeader()
     });
@@ -56,7 +56,7 @@ const searchCatalog = (query) => {
 const uploadImage = (file) => {
     const formData = new FormData();
     formData.append("file", file);
-    return axios.post(API_URL + "upload", formData, {
+    return axios.post(API_URL + "/upload", formData, {
         headers: {
             ...getAuthHeader(),
             "Content-Type": "multipart/form-data"
@@ -65,7 +65,7 @@ const uploadImage = (file) => {
 };
 
 const findByBarcode = (barcode) => {
-    return axios.get(API_URL + `by-barcode/${encodeURIComponent(barcode)}`, {
+    return axios.get(API_URL + `/by-barcode/${encodeURIComponent(barcode)}`, {
         headers: getAuthHeader()
     });
 };

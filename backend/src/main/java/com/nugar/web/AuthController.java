@@ -25,7 +25,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -314,7 +314,7 @@ public class AuthController {
         }
 
         @PostMapping("/reset-password")
-        public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request, javax.servlet.http.HttpServletRequest httpRequest) {
+        public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> request, jakarta.servlet.http.HttpServletRequest httpRequest) {
                 String token = request.get("token");
                 String newPassword = request.get("newPassword");
 

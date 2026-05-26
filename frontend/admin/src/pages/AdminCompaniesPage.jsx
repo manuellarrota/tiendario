@@ -240,7 +240,7 @@ const AdminCompaniesPage = () => {
             </Container>
 
             {/* Edit Company Modal */}
-            <Modal show={showEditModal} onHide={() => setShowEditModal(false)} size="lg" centered>
+            <Modal scrollable show={showEditModal} onHide={() => setShowEditModal(false)} size="lg" centered>
                 <Modal.Header closeButton className="border-0">
                     <Modal.Title className="fw-bold">Editar Datos de Tienda</Modal.Title>
                 </Modal.Header>

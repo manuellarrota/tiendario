@@ -87,6 +87,7 @@ public class CustomerControllerTest {
         newCustomer.setName("Jane Smith");
         newCustomer.setEmail("jane@example.com");
         newCustomer.setPhone("555-5678");
+        newCustomer.setCedula("V-12345678");
 
         mockMvc.perform(post("/api/customers")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -106,7 +107,7 @@ public class CustomerControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(newCustomer)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message", containsString("already registered")));
+                .andExpect(jsonPath("$.message", containsString("cédula")));
     }
 
     @Test

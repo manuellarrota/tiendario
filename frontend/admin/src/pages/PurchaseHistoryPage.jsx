@@ -309,8 +309,7 @@ const PurchaseHistoryPage = () => {
                 </Container>
 
                 {/* Modern Detail Modal */}
-                <Modal 
-                    show={showDetail} 
+                <Modal scrollable show={showDetail} 
                     onHide={() => setShowDetail(false)} 
                     size="lg" 
                     centered

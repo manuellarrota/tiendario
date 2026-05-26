@@ -19,7 +19,7 @@ public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
 
     @Query("SELECT p FROM Purchase p LEFT JOIN p.supplier s " +
            "WHERE p.company.id = :companyId " +
-           "AND (CAST(:searchTerm AS string) IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(p.invoiceNumber) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) " +
+           "AND (CAST(:searchTerm AS string) IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', CAST(:searchTerm AS string), '%')) OR LOWER(p.invoiceNumber) LIKE LOWER(CONCAT('%', CAST(:searchTerm AS string), '%'))) " +
            "AND (CAST(:dateFrom AS string) IS NULL OR p.date >= :dateFrom) " +
            "AND (CAST(:dateTo AS string) IS NULL OR p.date <= :dateTo) " +
            "AND (:paymentMethod IS NULL OR p.paymentMethod = :paymentMethod) " +

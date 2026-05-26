@@ -108,8 +108,8 @@ const CategoriesPage = () => {
                         </Button>
                     </div>
 
-                    {message && (
-                        <Alert variant={message.includes('✅') ? 'success' : 'danger'}>
+                    {message && !showModal && (
+                        <Alert variant={message.includes('✅') ? 'success' : 'danger'} className="mb-4 shadow-sm border-0">
                             {message}
                         </Alert>
                     )}
@@ -195,13 +195,18 @@ const CategoriesPage = () => {
                 </Container>
 
                 {/* Suggest Category Modal */}
-                <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+                <Modal scrollable show={showModal} onHide={() => setShowModal(false)} centered>
                     <Modal.Header closeButton className="border-0">
                         <Modal.Title className="fw-bold text-dark">
                             <FaTags className="me-2" />{isSuperAdmin ? 'Nueva Categoría Global' : 'Sugerir Categoría'}
                         </Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
+                        {message && showModal && (
+                            <Alert variant={message.includes('✅') ? 'success' : 'danger'} className="mb-4 shadow-sm border-0">
+                                {message}
+                            </Alert>
+                        )}
                         {!isSuperAdmin && (
                             <Alert variant="info" className="small">
                                 Esta categoría será sugerida a nivel global. Podrás usarla en tu inventario de inmediato mientras un administrador la procesa.

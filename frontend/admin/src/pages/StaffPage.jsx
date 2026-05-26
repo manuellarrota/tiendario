@@ -163,7 +163,7 @@ const StaffPage = () => {
                 </Container>
             </div>
 
-            <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+            <Modal scrollable show={showModal} onHide={() => setShowModal(false)} centered>
                 <Modal.Header closeButton>
                     <Modal.Title className="fw-bold">Crear Nuevo Cajero</Modal.Title>
                 </Modal.Header>

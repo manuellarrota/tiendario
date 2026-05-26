@@ -371,7 +371,7 @@ const AdminCategorySuggestionsPage = () => {
             </Container>
 
             {/* Merge Modal */}
-            <Modal show={showMergeModal} onHide={() => setShowMergeModal(false)} centered className="border-0">
+            <Modal scrollable show={showMergeModal} onHide={() => setShowMergeModal(false)} centered className="border-0">
                 <Modal.Header closeButton className="border-0 bg-light-soft">
                     <Modal.Title className="fw-bold h5 mt-2">Fusionar Categoría</Modal.Title>
                 </Modal.Header>
@@ -411,7 +411,7 @@ const AdminCategorySuggestionsPage = () => {
             </Modal>
 
             {/* Create Category Modal */}
-            <Modal show={showCreateModal} onHide={() => setShowCreateModal(false)} centered>
+            <Modal scrollable show={showCreateModal} onHide={() => setShowCreateModal(false)} centered>
                 <Modal.Header closeButton className="border-0">
                     <Modal.Title className="fw-bold">Nueva Categoría Maestro</Modal.Title>
                 </Modal.Header>
@@ -452,7 +452,7 @@ const AdminCategorySuggestionsPage = () => {
             </Modal>
 
             {/* Edit Category Modal */}
-            <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered>
+            <Modal scrollable show={showEditModal} onHide={() => setShowEditModal(false)} centered>
                 <Modal.Header closeButton className="border-0">
                     <Modal.Title className="fw-bold">Editar Categoría Maestro</Modal.Title>
                 </Modal.Header>

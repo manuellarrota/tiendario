@@ -169,7 +169,7 @@ const NotificationsPage = () => {
             </div>
 
             {/* Modal de Detalle de Venta */}
-            <Modal show={showSaleModal} onHide={() => setShowSaleModal(false)} size="lg" centered scrollable className="rounded-4 overflow-hidden">
+            <Modal scrollable show={showSaleModal} onHide={() => setShowSaleModal(false)} size="lg" centered scrollable className="rounded-4 overflow-hidden">
                 <Modal.Header closeButton>
                     <Modal.Title className="fw-bold">Gestión de Pedido #{selectedSale?.id}</Modal.Title>
                 </Modal.Header>
@@ -243,7 +243,7 @@ const NotificationsPage = () => {
             </Modal>
 
             {/* Confirm Payment Modal */}
-            <Modal show={showPaymentModal} onHide={() => setShowPaymentModal(false)} centered>
+            <Modal scrollable show={showPaymentModal} onHide={() => setShowPaymentModal(false)} centered>
                 <Modal.Header closeButton>
                     <Modal.Title className="fw-bold">Confirmar Pago</Modal.Title>
                 </Modal.Header>

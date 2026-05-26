@@ -551,7 +551,7 @@ const LandingPage = () => {
             </div>
 
             {/* Forgot Password Modal */}
-            <Modal show={showForgotModal} onHide={() => setShowForgotModal(false)} centered>
+            <Modal scrollable show={showForgotModal} onHide={() => setShowForgotModal(false)} centered>
                 <Modal.Header closeButton className="border-0 pb-0">
                     <Modal.Title className="fw-bold"><FaEnvelope className="me-2 text-primary" />Recuperar Contraseña</Modal.Title>
                 </Modal.Header>
@@ -589,7 +589,7 @@ const LandingPage = () => {
             </Modal>
 
             {/* Reset Password Modal */}
-            <Modal show={showResetModal} onHide={() => setShowResetModal(false)} centered>
+            <Modal scrollable show={showResetModal} onHide={() => setShowResetModal(false)} centered>
                 <Modal.Header closeButton className="border-0 pb-0">
                     <Modal.Title className="fw-bold"><FaLock className="me-2 text-primary" />Nueva Contraseña</Modal.Title>
                 </Modal.Header>
@@ -636,7 +636,7 @@ const LandingPage = () => {
             </Modal>
 
             {/* Login Modal */}
-            <Modal show={showLoginModal} onHide={() => setShowLoginModal(false)} centered className="modal-premium">
+            <Modal scrollable show={showLoginModal} onHide={() => setShowLoginModal(false)} centered className="modal-premium">
                 <Modal.Header closeButton className="border-0 pb-0">
                     <Modal.Title className="fw-bold">Acceso Vendedores</Modal.Title>
                 </Modal.Header>

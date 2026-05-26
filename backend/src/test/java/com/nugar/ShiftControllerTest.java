@@ -2,6 +2,7 @@ package com.nugar;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nugar.domain.*;
+import com.nugar.repository.CashRegisterRepository;
 import com.nugar.repository.CompanyRepository;
 import com.nugar.repository.ShiftRepository;
 import com.nugar.repository.UserRepository;
@@ -44,10 +45,14 @@ public class ShiftControllerTest {
     private CompanyRepository companyRepository;
 
     @Autowired
+    private CashRegisterRepository cashRegisterRepository;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
     private User testUser;
     private Company testCompany;
+    private CashRegister testCashRegister;
 
     @BeforeEach
     void setUp() {
@@ -64,6 +69,13 @@ public class ShiftControllerTest {
         testUser.setRole(Role.ROLE_CASHIER);
         testUser.setCompany(testCompany);
         testUser = userRepository.save(testUser);
+
+        // Create a cash register for the company
+        testCashRegister = new CashRegister();
+        testCashRegister.setName("Caja Principal");
+        testCashRegister.setCompany(testCompany);
+        testCashRegister.setStatus(CashRegisterStatus.CLOSED);
+        testCashRegister = cashRegisterRepository.save(testCashRegister);
 
         setupSecurityContext(testUser, "ROLE_CASHIER");
     }
@@ -87,6 +99,7 @@ public class ShiftControllerTest {
     void openShift_ShouldSucceed() throws Exception {
         Map<String, Object> payload = new HashMap<>();
         payload.put("initialCash", 100.0);
+        payload.put("cashRegisterId", testCashRegister.getId());
 
         mockMvc.perform(post("/api/shifts/open")
                 .contentType(MediaType.APPLICATION_JSON)

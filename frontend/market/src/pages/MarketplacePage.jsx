@@ -922,7 +922,7 @@ const MarketplacePage = () => {
             </div>
 
             {/* Store Detail Modal (Map & Reviews) */}
-            <Modal show={showStoreModal} onHide={() => setShowStoreModal(false)} size="lg" centered className="modal-premium">
+            <Modal scrollable show={showStoreModal} onHide={() => setShowStoreModal(false)} size="lg" centered className="modal-premium">
                 <Modal.Body className="p-0 overflow-hidden rounded-4">
                     <div className="position-relative">
                         <Button variant="light" className="position-absolute top-0 end-0 m-3 rounded-circle shadow-sm"
@@ -1042,7 +1042,7 @@ const MarketplacePage = () => {
             </Modal>
 
             {/* Exhibition Mode Modal */}
-            <Modal show={showExhibitionModal} onHide={() => setShowExhibitionModal(false)} centered className="modal-premium">
+            <Modal scrollable show={showExhibitionModal} onHide={() => setShowExhibitionModal(false)} centered className="modal-premium">
                 <Modal.Body className="p-5 text-center">
                     <div className="mb-4 d-inline-block p-4 rounded-circle bg-light shadow-sm">
                         <FaInfoCircle size={50} className="text-primary" />
@@ -1080,7 +1080,7 @@ const MarketplacePage = () => {
 
 
             {/* Loyalty Program Modal */}
-            <Modal show={showLoyaltyModal} onHide={() => setShowLoyaltyModal(false)} centered size="lg">
+            <Modal scrollable show={showLoyaltyModal} onHide={() => setShowLoyaltyModal(false)} centered size="lg">
                 <Modal.Header closeButton className="border-0">
                     <Modal.Title className="fw-bold">Programa de Lealtad Nugar 🎈</Modal.Title>
                 </Modal.Header>
@@ -1132,7 +1132,7 @@ const MarketplacePage = () => {
             </Modal>
 
             {/* Order Confirmation Modal (Click & Collect) */}
-            <Modal show={showOrderConfirmation} onHide={() => setShowOrderConfirmation(false)} size="lg" centered className="modal-premium">
+            <Modal scrollable show={showOrderConfirmation} onHide={() => setShowOrderConfirmation(false)} size="lg" centered className="modal-premium">
                 <Modal.Body className="p-0 overflow-hidden rounded-4">
                     <div className="bg-success text-white p-4 text-center">
                         <div className="display-4 mb-2">✅</div>

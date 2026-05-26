@@ -179,7 +179,7 @@ const AdminCatalogPage = () => {
                 </Container>
             </div>
 
-            <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered>
+            <Modal scrollable show={showEditModal} onHide={() => setShowEditModal(false)} centered>
                 <Modal.Header closeButton className="border-0 shadow-sm">
                     <Modal.Title className="fw-bold">Editar Registro Maestro</Modal.Title>
                 </Modal.Header>

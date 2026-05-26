@@ -128,8 +128,8 @@ const CustomersPage = () => {
                         </Button>
                     </div>
 
-                    {message && (
-                        <Alert variant={message.includes('✅') ? 'success' : 'danger'}>
+                    {message && !showModal && (
+                        <Alert variant={message.includes('✅') ? 'success' : 'danger'} className="mb-4 shadow-sm border-0">
                             {message}
                         </Alert>
                     )}
@@ -237,7 +237,7 @@ const CustomersPage = () => {
                 </Container>
 
                 {/* Create/Edit Customer Modal */}
-                <Modal show={showModal} onHide={resetForm} centered>
+                <Modal scrollable show={showModal} onHide={resetForm} centered>
                     <Modal.Header closeButton className="border-0">
                         <Modal.Title className="fw-bold text-dark">
                             <FaUsers className="me-2" />
@@ -245,6 +245,11 @@ const CustomersPage = () => {
                         </Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
+                        {message && showModal && (
+                            <Alert variant={message.includes('✅') ? 'success' : 'danger'} className="mb-4 shadow-sm border-0">
+                                {message}
+                            </Alert>
+                        )}
                         <Form onSubmit={handleCreate}>
                             <Form.Group className="mb-3">
                                 <Form.Label>Nombre *</Form.Label>

@@ -1,9 +1,9 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL + "/auth/";
+const API_URL = import.meta.env.VITE_API_URL + "/auth";
 
 const register = (username, email, password, role, companyName, phoneNumber, latitude, longitude, address, fullName, cedula, plan) => {
-    return axios.post(API_URL + "signup", {
+    return axios.post(API_URL + "/signup", {
         username,
         email,
         password,
@@ -21,7 +21,7 @@ const register = (username, email, password, role, companyName, phoneNumber, lat
 
 const login = (username, password, rememberMe) => {
     return axios
-        .post(API_URL + "signin", {
+        .post(API_URL + "/signin", {
             username,
             password,
         })
@@ -53,7 +53,7 @@ const refreshSubscriptionStatus = () => {
     const user = getCurrentUser();
     if (!user || !user.token) return Promise.resolve(null);
 
-    return axios.get(API_URL + "me", {
+    return axios.get(API_URL + "/me", {
         headers: { Authorization: "Bearer " + user.token }
     }).then((response) => {
         const freshStatus = response.data.subscriptionStatus;

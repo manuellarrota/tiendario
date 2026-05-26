@@ -547,7 +547,7 @@ const CompanyPage = () => {
                     </Row>
 
                     {/* Modal para reportar pago */}
-                    <Modal show={showModal} onHide={() => { setShowModal(false); setSubmitSuccess(false); }} centered scrollable size="lg">
+                    <Modal scrollable show={showModal} onHide={() => { setShowModal(false); setSubmitSuccess(false); }} centered scrollable size="lg">
                         <Modal.Header closeButton className="border-0 pb-0">
                             <Modal.Title className="fw-bold">
                                 Reportar Pago — Plan {PLAN_INFO[paymentForm.targetPlan]?.label || 'Básico'}

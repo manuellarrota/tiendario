@@ -1,7 +1,7 @@
 import axios from "axios";
 import AuthService from "./auth.service";
 
-const API_URL = import.meta.env.VITE_API_URL + "/suppliers/";
+const API_URL = import.meta.env.VITE_API_URL + "/suppliers";
 
 const getAuthHeader = () => {
     const user = AuthService.getCurrentUser();
@@ -21,7 +21,7 @@ const create = (data) => {
 };
 
 const update = (id, data) => {
-    return axios.put(API_URL + id, data, { headers: getAuthHeader() });
+    return axios.put(API_URL + "/" + id, data, { headers: getAuthHeader() });
 };
 
 const SupplierService = {

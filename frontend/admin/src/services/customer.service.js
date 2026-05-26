@@ -1,7 +1,7 @@
 import axios from "axios";
 import AuthService from "./auth.service";
 
-const API_URL = import.meta.env.VITE_API_URL + "/customers/";
+const API_URL = import.meta.env.VITE_API_URL + "/customers";
 
 const getAuthHeader = () => {
     const user = AuthService.getCurrentUser();
@@ -21,11 +21,11 @@ const create = (data) => {
 };
 
 const update = (id, data) => {
-    return axios.put(API_URL + id, data, { headers: getAuthHeader() });
+    return axios.put(API_URL + "/" + id, data, { headers: getAuthHeader() });
 };
 
 const deleteCustomer = (id) => {
-    return axios.delete(API_URL + id, { headers: getAuthHeader() });
+    return axios.delete(API_URL + "/" + id, { headers: getAuthHeader() });
 };
 
 const CustomerService = {

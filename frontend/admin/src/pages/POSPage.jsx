@@ -688,7 +688,7 @@ const POSPage = () => {
                      </div>
                 )}
 
-                <Modal show={showQuantityModal} onHide={() => setShowQuantityModal(false)} centered>
+                <Modal scrollable show={showQuantityModal} onHide={() => setShowQuantityModal(false)} centered>
                     <Modal.Header closeButton><Modal.Title>Cantidad</Modal.Title></Modal.Header>
                     <Modal.Body>
                         <Form.Control type="number" onFocus={(e) => e.target.select()} value={inputQuantity} onChange={e => setInputQuantity(e.target.value)} autoFocus onKeyPress={e => e.key === 'Enter' && confirmAddToCart()} />
@@ -696,7 +696,7 @@ const POSPage = () => {
                     <Modal.Footer><Button variant="primary" onClick={confirmAddToCart}>Agregar</Button></Modal.Footer>
                 </Modal>
 
-                    <Modal show={showNewCustomerModal} onHide={() => setShowNewCustomerModal(false)} centered>
+                    <Modal scrollable show={showNewCustomerModal} onHide={() => setShowNewCustomerModal(false)} centered>
                     <Modal.Header closeButton><Modal.Title>Nuevo Cliente</Modal.Title></Modal.Header>
                     <Form onSubmit={handleNewCustomerSubmit}>
                         <Modal.Body>
@@ -711,8 +711,7 @@ const POSPage = () => {
                 </Modal>
 
                 {/* Payment Modal Refactored */}
-                <Modal 
-                    show={showPaymentModal} 
+                <Modal scrollable show={showPaymentModal} 
                     onHide={() => setShowPaymentModal(false)} 
                     centered 
                     size="lg"
@@ -875,7 +874,7 @@ const POSPage = () => {
                 </Modal>
 
                 {/* MODALES DE TURNO */}
-                <Modal show={showShiftOpeningModal} backdrop="static" keyboard={false} centered>
+                <Modal scrollable show={showShiftOpeningModal} backdrop="static" keyboard={false} centered>
                     <Modal.Header className="border-0 pb-0">
                         <Modal.Title className="fw-black fs-3">Apertura de Caja</Modal.Title>
                     </Modal.Header>
@@ -937,7 +936,7 @@ const POSPage = () => {
                     </Modal.Body>
                 </Modal>
 
-                <Modal show={showShiftClosingModal} onHide={() => setShowShiftClosingModal(false)} centered scrollable size="lg">
+                <Modal scrollable show={showShiftClosingModal} onHide={() => setShowShiftClosingModal(false)} centered scrollable size="lg">
                     <Modal.Header closeButton>
                         <Modal.Title className="fw-bold">Cierre de Caja (Arqueo)</Modal.Title>
                     </Modal.Header>

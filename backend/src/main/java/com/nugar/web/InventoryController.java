@@ -66,13 +66,13 @@ public class InventoryController {
 
         @PostMapping("/import")
         @PreAuthorize("hasRole('MANAGER')")
-        public ResponseEntity<List<String>> importExcel(@RequestParam("file") MultipartFile file) throws IOException {
+        public ResponseEntity<List<String>> importCsv(@RequestParam("file") MultipartFile file) throws IOException {
                 UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                                 .getPrincipal();
                 org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(InventoryController.class);
                 logger.info("📥 [IMPORTAR] Usuario {} inició importación de inventario desde {}", 
                     userDetails.getUsername(), file.getOriginalFilename());
-                List<String> logs = inventoryService.importFromExcel(file, userDetails.getCompanyId());
+                List<String> logs = inventoryService.importFromCsv(file, userDetails.getCompanyId());
                 return ResponseEntity.ok(logs);
         }
 
@@ -119,15 +119,14 @@ public class InventoryController {
         @GetMapping("/template")
         @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
         public ResponseEntity<Resource> getTemplate() throws IOException {
-                ByteArrayInputStream in = inventoryService.generateExcelTemplate();
+                ByteArrayInputStream in = inventoryService.generateCsvTemplate();
 
                 HttpHeaders headers = new HttpHeaders();
-                headers.add("Content-Disposition", "attachment; filename=formato_carga_inventario.xlsx");
+                headers.add("Content-Disposition", "attachment; filename=formato_carga_inventario.csv");
 
                 return ResponseEntity.ok()
                                 .headers(headers)
-                                .contentType(MediaType.parseMediaType(
-                                                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                                .contentType(MediaType.parseMediaType("text/csv"))
                                 .body(new InputStreamResource(in));
         }
 }

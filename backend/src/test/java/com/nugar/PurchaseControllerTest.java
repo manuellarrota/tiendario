@@ -26,6 +26,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -55,6 +58,9 @@ public class PurchaseControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     private Company testCompany;
     private Product testProduct;
@@ -106,7 +112,7 @@ public class PurchaseControllerTest {
     void getPurchases_ShouldReturnList() throws Exception {
         mockMvc.perform(get("/api/purchases"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", isA(List.class)));
+                .andExpect(jsonPath("$.content", isA(List.class)));
     }
 
     @Test
@@ -141,6 +147,7 @@ public class PurchaseControllerTest {
     @Test
     void createPurchase_ShouldUpdateCostPrice() throws Exception {
         PurchaseRequest request = new PurchaseRequest();
+        request.setSupplierId(testSupplier.getId());
         request.setTotal(new BigDecimal("600.00"));
 
         List<PurchaseRequest.PurchaseItemRequest> items = new ArrayList<>();
@@ -157,10 +164,17 @@ public class PurchaseControllerTest {
                 .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk());
 
-        // Verify cost price was updated
+        // Clear first-level JPA cache so findById fetches from DB (not stale cache)
+        entityManager.clear();
         Product updatedProduct = productRepository.findById(testProduct.getId()).orElse(null);
         assert updatedProduct != null;
-        assert updatedProduct.getCostPrice().compareTo(new BigDecimal("60.00")) == 0;
+        // The controller uses Weighted Average Cost (CPP):
+        // (70.00 * 50 + 60.00 * 10) / 60 = $68.3333 — NOT a direct replacement
+        java.math.BigDecimal expectedCpp = new java.math.BigDecimal("70.00").multiply(java.math.BigDecimal.valueOf(50))
+                .add(new java.math.BigDecimal("60.00").multiply(java.math.BigDecimal.valueOf(10)))
+                .divide(java.math.BigDecimal.valueOf(60), 4, java.math.RoundingMode.HALF_UP);
+        assert updatedProduct.getCostPrice().compareTo(expectedCpp) == 0 :
+                "Expected CPP=" + expectedCpp + " but got=" + updatedProduct.getCostPrice();
     }
 
     @Test

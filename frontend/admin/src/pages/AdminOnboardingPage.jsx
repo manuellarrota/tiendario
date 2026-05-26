@@ -475,9 +475,9 @@ export default function AdminOnboardingPage() {
                                         </Button>
                                         <div className="position-relative">
                                             <Button variant="success" size="sm" className="rounded-pill px-3 fw-bold bg-success text-white border-0 shadow-sm" style={{ pointerEvents: 'none' }}>
-                                                <FaBoxOpen className="me-1" /> Importar Excel
+                                                <FaBoxOpen className="me-1" /> Importar CSV
                                             </Button>
-                                            <input type="file" accept=".xlsx, .xls" onChange={handleExcelUpload}
+                                            <input type="file" accept=".csv" onChange={handleExcelUpload}
                                                 style={{ opacity: 0, position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', cursor: 'pointer' }}
                                             />
                                         </div>

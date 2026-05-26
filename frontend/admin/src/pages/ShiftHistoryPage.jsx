@@ -100,7 +100,7 @@ const ShiftHistoryPage = () => {
                     </Card.Body>
                 </Card>
 
-                <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" centered scrollable>
+                <Modal scrollable show={showModal} onHide={() => setShowModal(false)} size="lg" centered scrollable>
                     {selectedShift && (
                         <>
                             <Modal.Header closeButton className="border-0 bg-light">

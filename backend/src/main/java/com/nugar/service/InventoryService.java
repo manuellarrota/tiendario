@@ -18,6 +18,16 @@ import com.nugar.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+import org.apache.commons.csv.CSVPrinter;
+import java.io.FileReader;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
+import java.io.Reader;
+import java.io.Writer;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -47,8 +57,8 @@ public class InventoryService {
 
             // Header
             Row headerRow = sheet.createRow(0);
-            String[] columns = { "SKU (Obligatorio)", "Nombre", "Categoría", "Presentación/Variante", "Precio Venta", "Precio Costo",
-                    "Stock Actual", "Stock Mínimo", "Descripción" };
+            String[] columns = { "SKU (Obligatorio)", "Nombre", "CategorÃ­a", "PresentaciÃ³n/Variante", "Precio Venta", "Precio Costo",
+                    "Stock Actual", "Stock MÃ­nimo", "DescripciÃ³n" };
             for (int i = 0; i < columns.length; i++) {
                 Cell cell = headerRow.createCell(i);
                 cell.setCellValue(columns[i]);
@@ -109,7 +119,7 @@ public class InventoryService {
             table.setWidthPercentage(100);
             table.setWidths(new float[] { 3, 4, 3, 2, 2, 2 });
 
-            String[] headers = { "SKU", "Producto", "Categoría", "Stock", "Precio", "Costo" };
+            String[] headers = { "SKU", "Producto", "CategorÃ­a", "Stock", "Precio", "Costo" };
             for (String header : headers) {
                 PdfPCell cell = new PdfPCell(new Phrase(header, FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10)));
                 cell.setBackgroundColor(java.awt.Color.LIGHT_GRAY);
@@ -135,17 +145,17 @@ public class InventoryService {
         return new ByteArrayInputStream(out.toByteArray());
     }
 
-    public List<String> importFromExcel(MultipartFile file, Long companyId) throws IOException {
+    public List<String> importFromCsv(MultipartFile file, Long companyId) throws IOException {
         List<String> logs = new ArrayList<>();
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new RuntimeException("Company not found"));
 
-        try (Workbook workbook = new XSSFWorkbook(file.getInputStream())) {
-            Sheet sheet = workbook.getSheetAt(0);
-            Iterator<Row> rows = sheet.iterator();
+        try (Reader reader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
+             CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT)) {
+            Iterator<CSVRecord> rows = csvParser.iterator();
 
             if (!rows.hasNext()) {
-                logs.add("Archivo vacío.");
+                logs.add("Archivo vacÃ­o.");
                 return logs;
             }
 
@@ -153,21 +163,23 @@ public class InventoryService {
             rows.next();
 
             int count = 0;
+            long rowNum = 1;
             while (rows.hasNext()) {
-                Row currentRow = rows.next();
+                CSVRecord currentRow = rows.next();
+                rowNum++;
                 try {
-                    String sku = getCellValueAsString(currentRow.getCell(0));
+                    String sku = getCsvValueAsString(currentRow, 0);
                     if (sku == null || sku.isEmpty())
                         continue;
 
-                    String name = getCellValueAsString(currentRow.getCell(1));
-                    String category = getCellValueAsString(currentRow.getCell(2));
-                    String variant = getCellValueAsString(currentRow.getCell(3));
-                    BigDecimal price = getCellValueAsBigDecimal(currentRow.getCell(4));
-                    BigDecimal costPrice = getCellValueAsBigDecimal(currentRow.getCell(5));
-                    Integer stock = getCellValueAsInteger(currentRow.getCell(6));
-                    Integer minStock = getCellValueAsInteger(currentRow.getCell(7));
-                    String description = getCellValueAsString(currentRow.getCell(8));
+                    String name = getCsvValueAsString(currentRow, 1);
+                    String category = getCsvValueAsString(currentRow, 2);
+                    String variant = getCsvValueAsString(currentRow, 3);
+                    BigDecimal price = getCsvValueAsBigDecimal(currentRow, 4);
+                    BigDecimal costPrice = getCsvValueAsBigDecimal(currentRow, 5);
+                    Integer stock = getCsvValueAsInteger(currentRow, 6);
+                    Integer minStock = getCsvValueAsInteger(currentRow, 7);
+                    String description = getCsvValueAsString(currentRow, 8);
 
                     Product product = productRepository.findBySkuAndCompanyId(sku, companyId).orElse(new Product());
                     product.setSku(sku);
@@ -185,37 +197,38 @@ public class InventoryService {
                     productIndexService.indexProduct(saved);
                     count++;
                 } catch (Exception e) {
-                    logs.add("Error en fila " + (currentRow.getRowNum() + 1) + ": " + e.getMessage());
+                    logs.add("Error en fila " + rowNum + ": " + e.getMessage());
                 }
             }
-            logs.add("Importación completada: " + count + " productos procesados.");
-            org.slf4j.LoggerFactory.getLogger(InventoryService.class).info("[IMPORT_EXCEL] Empresa ID: {} | Productos procesados: {}", companyId, count);
+            logs.add("ImportaciÃ³n completada: " + count + " productos procesados.");
+            org.slf4j.LoggerFactory.getLogger(InventoryService.class).info("[IMPORT_CSV] Empresa ID: {} | Productos procesados: {}", companyId, count);
         }
         return logs;
     }
 
     public List<String> uploadAndGetHeaders(MultipartFile file, String fileId) throws IOException {
-        File tempFile = new File(System.getProperty("java.io.tmpdir"), fileId + ".xlsx");
+        File tempFile = new File(System.getProperty("java.io.tmpdir"), fileId + ".csv");
         file.transferTo(tempFile);
         
         List<String> headers = new ArrayList<>();
-        try (Workbook workbook = new XSSFWorkbook(tempFile)) {
-            Sheet sheet = workbook.getSheetAt(0);
-            Row headerRow = sheet.getRow(0);
-            if (headerRow != null) {
-                for (Cell cell : headerRow) {
-                    headers.add(getCellValueAsString(cell));
+        try (Reader reader = new FileReader(tempFile, StandardCharsets.UTF_8);
+             CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT)) {
+            Iterator<CSVRecord> iterator = csvParser.iterator();
+            if (iterator.hasNext()) {
+                CSVRecord headerRecord = iterator.next();
+                for (int i = 0; i < headerRecord.size(); i++) {
+                    headers.add(headerRecord.get(i));
                 }
             }
-        } catch (org.apache.poi.openxml4j.exceptions.InvalidFormatException e) {
-            throw new IOException("Formato de Excel inválido", e);
+        } catch (Exception e) {
+            throw new IOException("Formato de CSV invÃ¡lido", e);
         }
 
         return headers;
     }
 
     public com.nugar.payload.response.ImportPreviewResponse generatePreview(com.nugar.payload.request.ImportSettingsRequest settings, Long companyId) throws IOException {
-        File tempFile = new File(System.getProperty("java.io.tmpdir"), settings.getFileId() + ".xlsx");
+        File tempFile = new File(System.getProperty("java.io.tmpdir"), settings.getFileId() + ".csv");
         if (!tempFile.exists()) throw new RuntimeException("Archivo temporal no encontrado.");
 
         com.nugar.payload.response.ImportPreviewResponse response = new com.nugar.payload.response.ImportPreviewResponse();
@@ -224,19 +237,22 @@ public class InventoryService {
         List<Map<String, String>> sampleConflicts = new ArrayList<>();
         int newCount = 0, modCount = 0, conflictCount = 0, dupCount = 0;
 
-        try (Workbook workbook = new XSSFWorkbook(tempFile)) {
-            Sheet sheet = workbook.getSheetAt(0);
-            Iterator<Row> rows = sheet.iterator();
+        try (Reader reader = new FileReader(tempFile, StandardCharsets.UTF_8);
+             CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT)) {
+            Iterator<CSVRecord> rows = csvParser.iterator();
             if (rows.hasNext()) rows.next(); // skip header
 
+            long rowNum = 1;
             while (rows.hasNext()) {
-                Row row = rows.next();
+                CSVRecord row = rows.next();
+                rowNum++;
                 try {
                     Map<String, Integer> map = settings.getColumnMapping();
-                    String sku = map.containsKey("sku") && map.get("sku") != null ? getCellValueAsString(row.getCell(map.get("sku"))) : null;
+                    String sku = map.containsKey("sku") ? getCsvValueAsString(row, map.get("sku")) : null;
                     if (sku == null || sku.trim().isEmpty()) continue;
                     
-                    String name = map.containsKey("name") && map.get("name") != null ? getCellValueAsString(row.getCell(map.get("name"))) : "";
+                    String name = map.containsKey("name") ? getCsvValueAsString(row, map.get("name")) : "";
+                    if (name == null) name = "";
                     
                     java.util.Optional<Product> existingOpt = productRepository.findBySkuAndCompanyId(sku, companyId);
                     
@@ -254,12 +270,12 @@ public class InventoryService {
                 } catch (Exception e) {
                     conflictCount++;
                     Map<String, String> err = new java.util.HashMap<>();
-                    err.put("error", "Fila " + (row.getRowNum() + 1) + ": " + e.getMessage());
+                    err.put("error", "Fila " + rowNum + ": " + e.getMessage());
                     if (sampleConflicts.size() < 5) sampleConflicts.add(err);
                 }
             }
-        } catch (org.apache.poi.openxml4j.exceptions.InvalidFormatException e) {
-            throw new IOException("Formato de Excel inválido", e);
+        } catch (Exception e) {
+            throw new IOException("Formato de CSV invÃ¡lido", e);
         }
 
         response.setTotalRows(newCount + modCount + conflictCount + dupCount);
@@ -275,7 +291,7 @@ public class InventoryService {
 
     @org.springframework.scheduling.annotation.Async
     public void executeImportAsync(com.nugar.payload.request.ImportSettingsRequest settings, Long companyId) {
-        File tempFile = new File(System.getProperty("java.io.tmpdir"), settings.getFileId() + ".xlsx");
+        File tempFile = new File(System.getProperty("java.io.tmpdir"), settings.getFileId() + ".csv");
         if (!tempFile.exists()) return;
 
         Company company = companyRepository.findById(companyId).orElse(null);
@@ -283,32 +299,32 @@ public class InventoryService {
 
         boolean soloStock = "SOLO_STOCK".equalsIgnoreCase(settings.getMode());
 
-        try (Workbook workbook = new XSSFWorkbook(tempFile)) {
-            Sheet sheet = workbook.getSheetAt(0);
-            Iterator<Row> rows = sheet.iterator();
+        try (Reader reader = new FileReader(tempFile, StandardCharsets.UTF_8);
+             CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT)) {
+            Iterator<CSVRecord> rows = csvParser.iterator();
             if (rows.hasNext()) rows.next(); // skip header
 
             int count = 0;
             while (rows.hasNext()) {
-                Row row = rows.next();
+                CSVRecord row = rows.next();
                 try {
                     Map<String, Integer> map = settings.getColumnMapping();
-                    String sku = map.containsKey("sku") && map.get("sku") != null ? getCellValueAsString(row.getCell(map.get("sku"))) : null;
+                    String sku = map.containsKey("sku") ? getCsvValueAsString(row, map.get("sku")) : null;
                     if (sku == null || sku.trim().isEmpty()) continue;
 
                     Product product = productRepository.findBySkuAndCompanyId(sku, companyId).orElse(new Product());
                     
                     if (!soloStock) {
-                        if (map.containsKey("name") && map.get("name") != null) product.setName(getCellValueAsString(row.getCell(map.get("name"))));
-                        if (map.containsKey("category") && map.get("category") != null) product.setCategory(getCellValueAsString(row.getCell(map.get("category"))));
-                        if (map.containsKey("price") && map.get("price") != null) product.setPrice(getCellValueAsBigDecimal(row.getCell(map.get("price"))));
-                        if (map.containsKey("costPrice") && map.get("costPrice") != null) product.setCostPrice(getCellValueAsBigDecimal(row.getCell(map.get("costPrice"))));
-                        if (map.containsKey("variant") && map.get("variant") != null) product.setVariant(getCellValueAsString(row.getCell(map.get("variant"))));
-                        if (map.containsKey("minStock") && map.get("minStock") != null) product.setMinStock(getCellValueAsInteger(row.getCell(map.get("minStock"))));
-                        if (map.containsKey("description") && map.get("description") != null) product.setDescription(getCellValueAsString(row.getCell(map.get("description"))));
+                        if (map.containsKey("name")) product.setName(getCsvValueAsString(row, map.get("name")));
+                        if (map.containsKey("category")) product.setCategory(getCsvValueAsString(row, map.get("category")));
+                        if (map.containsKey("price")) product.setPrice(getCsvValueAsBigDecimal(row, map.get("price")));
+                        if (map.containsKey("costPrice")) product.setCostPrice(getCsvValueAsBigDecimal(row, map.get("costPrice")));
+                        if (map.containsKey("variant")) product.setVariant(getCsvValueAsString(row, map.get("variant")));
+                        if (map.containsKey("minStock")) product.setMinStock(getCsvValueAsInteger(row, map.get("minStock")));
+                        if (map.containsKey("description")) product.setDescription(getCsvValueAsString(row, map.get("description")));
                     }
-                    if (map.containsKey("stock") && map.get("stock") != null) {
-                        Integer st = getCellValueAsInteger(row.getCell(map.get("stock")));
+                    if (map.containsKey("stock")) {
+                        Integer st = getCsvValueAsInteger(row, map.get("stock"));
                         if ("ANEXAR".equalsIgnoreCase(settings.getMode()) && product.getStock() != null) {
                             product.setStock(product.getStock() + st);
                         } else {
@@ -332,82 +348,82 @@ public class InventoryService {
         }
     }
 
-    public ByteArrayInputStream generateExcelTemplate() throws IOException {
-        String[] columns = { "SKU (Obligatorio)", "Nombre", "Categoría", "Presentación/Variante", "Precio Venta",
-                "Precio Costo", "Stock Actual", "Stock Mínimo", "Descripción" };
+    public ByteArrayInputStream generateCsvTemplate() throws IOException {
+        String[] columns = { "SKU (Obligatorio)", "Nombre", "CategorÃ­a", "PresentaciÃ³n/Variante", "Precio Venta",
+                "Precio Costo", "Stock Actual", "Stock MÃ­nimo", "DescripciÃ³n" };
 
-        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
-            Sheet sheet = workbook.createSheet("Importar Productos");
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream();
+             Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
+             CSVPrinter printer = new CSVPrinter(writer, CSVFormat.DEFAULT)) {
+            
+            // For Excel compatibility, output UTF-8 BOM
+            out.write(239);
+            out.write(187);
+            out.write(191);
 
             // Row 0: Headers
-            Row headerRow = sheet.createRow(0);
-            for (int i = 0; i < columns.length; i++) {
-                Cell cell = headerRow.createCell(i);
-                cell.setCellValue(columns[i]);
-            }
+            printer.printRecord((Object[]) columns);
 
             // Row 1: Example Data
-            Row exampleRow = sheet.createRow(1);
-            exampleRow.createCell(0).setCellValue("PROD-001");
-            exampleRow.createCell(1).setCellValue("Producto de Ejemplo");
-            exampleRow.createCell(2).setCellValue("General");
-            exampleRow.createCell(3).setCellValue("Única");
-            exampleRow.createCell(4).setCellValue(1500.0);
-            exampleRow.createCell(5).setCellValue(1000.0);
-            exampleRow.createCell(6).setCellValue(10);
-            exampleRow.createCell(7).setCellValue(2);
-            exampleRow.createCell(8).setCellValue("Breve descripción del producto");
+            printer.printRecord(
+                "PROD-001",
+                "Producto de Ejemplo",
+                "General",
+                "Ãšnica",
+                "1500.0",
+                "1000.0",
+                "10",
+                "2",
+                "Breve descripciÃ³n del producto"
+            );
 
-            // Auto-size columns
-            for (int i = 0; i < columns.length; i++) {
-                sheet.autoSizeColumn(i);
-            }
-
-            workbook.write(out);
+            printer.flush();
             return new ByteArrayInputStream(out.toByteArray());
         }
     }
 
-    private String getCellValueAsString(Cell cell) {
-        if (cell == null)
-            return null;
-        switch (cell.getCellType()) {
-            case STRING:
-                return cell.getStringCellValue();
-            case NUMERIC:
-                return String.valueOf((long) cell.getNumericCellValue());
-            default:
-                return null;
-        }
+    private String getCsvValueAsString(CSVRecord record, Integer index) {
+        if (index == null || index < 0 || index >= record.size()) return null;
+        return sanitizeString(record.get(index));
     }
 
-    private BigDecimal getCellValueAsBigDecimal(Cell cell) {
-        if (cell == null)
+    private BigDecimal getCsvValueAsBigDecimal(CSVRecord record, Integer index) {
+        if (index == null || index < 0 || index >= record.size()) return BigDecimal.ZERO;
+        String val = record.get(index);
+        if (val == null || val.trim().isEmpty()) return BigDecimal.ZERO;
+        try {
+            return new BigDecimal(val.trim());
+        } catch (Exception e) {
             return BigDecimal.ZERO;
-        if (cell.getCellType() == CellType.NUMERIC)
-            return BigDecimal.valueOf(cell.getNumericCellValue());
-        if (cell.getCellType() == CellType.STRING) {
-            try {
-                return new BigDecimal(cell.getStringCellValue());
-            } catch (Exception e) {
-                return BigDecimal.ZERO;
-            }
         }
-        return BigDecimal.ZERO;
     }
 
-    private Integer getCellValueAsInteger(Cell cell) {
-        if (cell == null)
+    private Integer getCsvValueAsInteger(CSVRecord record, Integer index) {
+        if (index == null || index < 0 || index >= record.size()) return 0;
+        String val = record.get(index);
+        if (val == null || val.trim().isEmpty()) return 0;
+        try {
+            return Integer.parseInt(val.trim());
+        } catch (Exception e) {
             return 0;
-        if (cell.getCellType() == CellType.NUMERIC)
-            return (int) cell.getNumericCellValue();
-        if (cell.getCellType() == CellType.STRING) {
-            try {
-                return Integer.parseInt(cell.getStringCellValue());
-            } catch (Exception e) {
-                return 0;
+        }
+    }
+
+    private String sanitizeString(String input) {
+        if (input == null) return null;
+        String sanitized = input.trim();
+        // Remove simple HTML tags
+        sanitized = sanitized.replaceAll("<[^>]*>", "");
+        // Prevent formula injection
+        if (sanitized.startsWith("=") || sanitized.startsWith("@") || sanitized.startsWith("+") || sanitized.startsWith("-")) {
+            // For numbers, + and - might be valid, but this method is primarily for strings.
+            // If it's a number being processed as string, it will be stripped.
+            // Let's be careful. Actually, + and - are only dangerous if Excel evaluates them.
+            // Let's strip only = and @ for strings to be safe without breaking negative text.
+            if (sanitized.startsWith("=") || sanitized.startsWith("@")) {
+                sanitized = sanitized.substring(1).trim();
             }
         }
-        return 0;
+        return sanitized.isEmpty() ? null : sanitized;
     }
 }

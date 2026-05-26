@@ -388,7 +388,7 @@ const InventoryPage = () => {
                                     </Button>
                                 </OverlayTrigger>
 
-                                <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Sube un archivo Excel para cargar productos masivamente")}>
+                                <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Sube un archivo CSV para cargar productos masivamente")}>
                                     <Button variant="outline-primary" className="px-3 shadow-sm d-flex align-items-center gap-2" onClick={() => setShowImportWizard(true)}>
                                         <FaUpload /> Importar Wizard
                                     </Button>
@@ -588,7 +588,7 @@ const InventoryPage = () => {
             </Container>
 
             {/* Create/Edit Modal */}
-            <Modal show={showModal} onHide={() => { setShowModal(false); setEditingProduct(null); }} centered scrollable size="lg">
+            <Modal scrollable show={showModal} onHide={() => { setShowModal(false); setEditingProduct(null); }} centered scrollable size="lg">
                 <Modal.Header closeButton className="border-0">
                     <Modal.Title className="fw-bold text-dark">{editingProduct ? 'Editar Producto' : 'Nuevo Producto'}</Modal.Title>
                 </Modal.Header>
@@ -839,7 +839,7 @@ const InventoryPage = () => {
             </Modal>
 
             {/* Suggest Category Modal */}
-            <Modal show={showSuggestModal} onHide={() => setShowSuggestModal(false)} centered>
+            <Modal scrollable show={showSuggestModal} onHide={() => setShowSuggestModal(false)} centered>
                 <Modal.Header closeButton className="border-0">
                     <Modal.Title className="fw-bold text-dark"><FaBoxOpen className="me-2" />Sugerir Categoría</Modal.Title>
                 </Modal.Header>

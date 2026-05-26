@@ -48,7 +48,7 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
     Page<Object[]> findTopSellingProductsByCompany(Long companyId, org.springframework.data.domain.Pageable pageable);
 
     @Query("SELECT s FROM Sale s WHERE s.company.id = :companyId " +
-            "AND (CAST(:customerName AS string) IS NULL OR LOWER(s.customerName) LIKE LOWER(CONCAT('%', :customerName, '%')) OR LOWER(s.customerCedula) LIKE LOWER(CONCAT('%', :customerName, '%'))) " +
+            "AND (CAST(:customerName AS string) IS NULL OR LOWER(s.customerName) LIKE LOWER(CONCAT('%', CAST(:customerName AS string), '%')) OR LOWER(s.customerCedula) LIKE LOWER(CONCAT('%', CAST(:customerName AS string), '%'))) " +
             "AND (CAST(:dateFrom AS string) IS NULL OR s.date >= :dateFrom) " +
             "AND (CAST(:dateTo AS string) IS NULL OR s.date <= :dateTo) " +
             "AND (:paymentMethod IS NULL OR s.paymentMethod = :paymentMethod) " +

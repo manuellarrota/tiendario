@@ -202,7 +202,7 @@ const AdminPaymentsPage = () => {
                         </Card.Body>
                     </Card>
 
-                    <Modal show={showRejectModal} onHide={() => setShowRejectModal(false)} centered>
+                    <Modal scrollable show={showRejectModal} onHide={() => setShowRejectModal(false)} centered>
                         <Modal.Header closeButton className="border-0">
                             <Modal.Title className="fw-bold text-danger">Rechazar Pago</Modal.Title>
                         </Modal.Header>
@@ -228,7 +228,7 @@ const AdminPaymentsPage = () => {
                     </Modal>
 
                     {/* Details Modal */}
-                    <Modal show={showDetailsModal} onHide={() => setShowDetailsModal(false)} centered>
+                    <Modal scrollable show={showDetailsModal} onHide={() => setShowDetailsModal(false)} centered>
                         <Modal.Header closeButton className="border-0">
                             <Modal.Title className="fw-bold">Detalles del Pago</Modal.Title>
                         </Modal.Header>

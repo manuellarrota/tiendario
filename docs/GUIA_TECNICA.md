@@ -8,7 +8,7 @@ Arquitectura, decisiones de diseño y flujos críticos del sistema.
 
 Nugar sigue una arquitectura **Cliente-Servidor desacoplada**:
 
-- **Backend**: API REST stateless en Spring Boot. Emite y valida JWT.
+- **Backend**: API REST stateless en Spring Boot 3.2.4 (Java 21). Utiliza Virtual Threads habilitados en Tomcat para manejar alta concurrencia con bajo consumo de memoria. Emite y valida JWT.
 - **Frontend Admin**: SPA React para managers — inventario, POS, compras, reportes.
 - **Frontend Market**: SPA React para clientes — marketplace, carrito, pedidos.
 - **PostgreSQL**: Persistencia relacional (usuarios, ventas, inventario, suscripciones).

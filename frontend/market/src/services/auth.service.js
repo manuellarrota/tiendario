@@ -1,9 +1,9 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL + "/auth/";
+const API_URL = import.meta.env.VITE_API_URL + "/auth";
 
 const register = (fullName, email, password, role = 'client', companyName = null, phone = null, cedula = null) => {
-    return axios.post(API_URL + "signup", {
+    return axios.post(API_URL + "/signup", {
         username: email, // Use email as username for clients
         email,
         password,
@@ -16,7 +16,7 @@ const register = (fullName, email, password, role = 'client', companyName = null
 
 const login = (username, password) => {
     return axios
-        .post(API_URL + "signin", {
+        .post(API_URL + "/signin", {
             username,
             password,
         })
