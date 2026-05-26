@@ -94,8 +94,8 @@ public class SaleService {
                 customerName,
                 dateFrom,
                 dateTo,
-                paymentMethod != null ? paymentMethod.name() : null,
-                status != null ? status.name() : null,
+                paymentMethod,
+                status,
                 pageable
         );
     }
@@ -140,9 +140,14 @@ public class SaleService {
         com.nugar.domain.User cashier = userRepository.findById(userDetails.getId()).orElse(null);
         sale.setUser(cashier);
 
-        // Link to active shift
+        // Link to active shift and cash register
         shiftRepository.findByUserIdAndStatus(userDetails.getId(), ShiftStatus.OPEN)
-                .ifPresent(sale::setShift);
+                .ifPresent(shift -> {
+                    sale.setShift(shift);
+                    if (shift.getCashRegister() != null) {
+                        sale.setCashRegister(shift.getCashRegister());
+                    }
+                });
 
         // Payment Method can be null for PENDING orders
         if (com.nugar.domain.SaleStatus.PAID.equals(sale.getStatus()) && sale.getPaymentMethod() == null) {

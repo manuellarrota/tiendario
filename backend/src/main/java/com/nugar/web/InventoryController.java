@@ -16,6 +16,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
+import com.nugar.payload.request.ImportSettingsRequest;
+import com.nugar.payload.response.ImportPreviewResponse;
 
 @RestController
 @RequestMapping("/api/inventory")
@@ -72,6 +74,46 @@ public class InventoryController {
                     userDetails.getUsername(), file.getOriginalFilename());
                 List<String> logs = inventoryService.importFromExcel(file, userDetails.getCompanyId());
                 return ResponseEntity.ok(logs);
+        }
+
+        @PostMapping("/import/upload")
+        @PreAuthorize("hasRole('MANAGER')")
+        public ResponseEntity<?> uploadImportFile(@RequestParam("file") MultipartFile file) {
+            org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(InventoryController.class);
+            try {
+                String fileId = java.util.UUID.randomUUID().toString();
+                logger.info("📥 [IMPORT UPLOAD] Archivo recibido: '{}' | Tamaño: {} bytes",
+                        file.getOriginalFilename(), file.getSize());
+                List<String> headers = inventoryService.uploadAndGetHeaders(file, fileId);
+                java.util.Map<String, Object> response = new java.util.HashMap<>();
+                response.put("fileId", fileId);
+                response.put("headers", headers);
+                logger.info("📥 [IMPORT UPLOAD] Archivo procesado correctamente. Columnas detectadas: {}", headers);
+                return ResponseEntity.ok(response);
+            } catch (IllegalArgumentException e) {
+                logger.warn("⚠️ [IMPORT UPLOAD] Formato inválido: {}", e.getMessage());
+                return ResponseEntity.badRequest().body(java.util.Collections.singletonMap("message", e.getMessage()));
+            } catch (Exception e) {
+                logger.error("❌ [IMPORT UPLOAD] Error procesando archivo '{}': {}", file.getOriginalFilename(), e.getMessage(), e);
+                return ResponseEntity.status(500).body(java.util.Collections.singletonMap("message",
+                        "Error al procesar el archivo: " + e.getMessage()));
+            }
+        }
+
+        @PostMapping("/import/preview")
+        @PreAuthorize("hasRole('MANAGER')")
+        public ResponseEntity<ImportPreviewResponse> getImportPreview(@RequestBody ImportSettingsRequest settings) throws IOException {
+            UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            ImportPreviewResponse preview = inventoryService.generatePreview(settings, userDetails.getCompanyId());
+            return ResponseEntity.ok(preview);
+        }
+
+        @PostMapping("/import/execute")
+        @PreAuthorize("hasRole('MANAGER')")
+        public ResponseEntity<?> executeImport(@RequestBody ImportSettingsRequest settings) {
+            UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            inventoryService.executeImportAsync(settings, userDetails.getCompanyId());
+            return ResponseEntity.ok(java.util.Collections.singletonMap("message", "Importación iniciada en segundo plano."));
         }
 
         @GetMapping("/template")

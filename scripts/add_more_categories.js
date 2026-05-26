@@ -36,7 +36,7 @@ async function doRequest(path, method, data, token = null) {
 async function run() {
     console.log("🚀 Agregando sectores base adicionales...");
     
-    const login = await doRequest('/auth/signin', 'POST', { username: 'manager_pro', password: 'Manager123!' });
+    const login = await doRequest('/auth/signin', 'POST', { username: 'manager_pro@nugar.com', password: 'Manager123!' });
     if (login.status !== 200) {
         console.error("❌ Falló login.");
         return;

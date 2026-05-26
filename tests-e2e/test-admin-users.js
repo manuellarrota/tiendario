@@ -7,7 +7,7 @@ async function testUsers() {
     const page = await context.newPage();
     
     await page.goto('http://localhost:8081/');
-    await page.fill('input[placeholder="Nombre de usuario"]', 'admin');
+    await page.fill('input[placeholder="Nombre de usuario"]', 'admin@nugar.com');
     await page.fill('input[placeholder="••••••••"]', 'Admin123!');
     await page.click('button:has-text("Entrar al Panel")');
     await page.waitForTimeout(5000); // give it time to load the dashboard

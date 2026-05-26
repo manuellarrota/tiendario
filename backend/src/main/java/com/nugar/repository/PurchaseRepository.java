@@ -22,14 +22,14 @@ public interface PurchaseRepository extends JpaRepository<Purchase, Long> {
            "AND (CAST(:searchTerm AS string) IS NULL OR LOWER(s.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR LOWER(p.invoiceNumber) LIKE LOWER(CONCAT('%', :searchTerm, '%'))) " +
            "AND (CAST(:dateFrom AS string) IS NULL OR p.date >= :dateFrom) " +
            "AND (CAST(:dateTo AS string) IS NULL OR p.date <= :dateTo) " +
-           "AND (CAST(:paymentMethod AS string) IS NULL OR p.paymentMethod = :paymentMethod) " +
+           "AND (:paymentMethod IS NULL OR p.paymentMethod = :paymentMethod) " +
            "ORDER BY p.date DESC")
     Page<Purchase> findByFilters(
         @Param("companyId") Long companyId,
         @Param("searchTerm") String searchTerm,
         @Param("dateFrom") LocalDateTime dateFrom,
         @Param("dateTo") LocalDateTime dateTo,
-        @Param("paymentMethod") String paymentMethod,
+        @Param("paymentMethod") com.nugar.domain.PaymentMethod paymentMethod,
         Pageable pageable
     );
 }

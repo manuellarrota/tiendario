@@ -39,6 +39,12 @@ public class ShiftController {
     public ResponseEntity<Shift> openShift(@RequestBody Map<String, Object> payload) {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         
+        Object cashRegisterIdObj = payload.get("cashRegisterId");
+        Long cashRegisterId = null;
+        if (cashRegisterIdObj != null) {
+            cashRegisterId = Long.valueOf(cashRegisterIdObj.toString());
+        }
+
         Object initialCashObj = payload.get("initialCash");
         BigDecimal initialCash = BigDecimal.ZERO;
         if (initialCashObj != null) {
@@ -50,7 +56,7 @@ public class ShiftController {
             openingDeclarations = (List<Map<String, Object>>) payload.get("openingDeclarations");
         }
         
-        Shift openedShift = shiftService.openShift(initialCash, openingDeclarations, userDetails);
+        Shift openedShift = shiftService.openShift(cashRegisterId, initialCash, openingDeclarations, userDetails);
         log.info("[TURNO ABIERTO] Usuario: {} | Caja Inicial: ${} | Empresa ID: {} | Turno ID: {}",
             userDetails.getUsername(), initialCash, userDetails.getCompanyId(), openedShift.getId());
         return ResponseEntity.ok(openedShift);

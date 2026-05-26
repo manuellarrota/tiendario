@@ -5,6 +5,7 @@ import com.nugar.repository.CompanyRepository;
 import com.nugar.repository.SaleRepository;
 import com.nugar.repository.ShiftRepository;
 import com.nugar.repository.UserRepository;
+import com.nugar.repository.CashRegisterRepository;
 import com.nugar.security.UserDetailsImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,9 @@ public class ShiftService {
     private ShiftRepository shiftRepository;
 
     @Autowired
+    private CashRegisterRepository cashRegisterRepository;
+
+    @Autowired
     private SaleRepository saleRepository;
 
     @Autowired
@@ -39,17 +43,32 @@ public class ShiftService {
     }
 
     @Transactional
-    public Shift openShift(BigDecimal initialCash, List<Map<String, Object>> rawOpeningDeclarations, UserDetailsImpl userDetails) {
+    public Shift openShift(Long cashRegisterId, BigDecimal initialCash, List<Map<String, Object>> rawOpeningDeclarations, UserDetailsImpl userDetails) {
+        if (cashRegisterId == null) {
+            throw new IllegalArgumentException("Debe seleccionar una caja para abrir el turno.");
+        }
+
+        CashRegister cashRegister = cashRegisterRepository.findByIdAndCompanyId(cashRegisterId, userDetails.getCompanyId())
+                .orElseThrow(() -> new IllegalArgumentException("La caja seleccionada no existe o no pertenece a esta tienda."));
+
+        if (cashRegister.getStatus() == CashRegisterStatus.OPEN) {
+            throw new IllegalArgumentException("La caja seleccionada ya está en uso por otro empleado.");
+        }
+
         if (shiftRepository.findByUserIdAndStatus(userDetails.getId(), ShiftStatus.OPEN).isPresent()) {
-            throw new RuntimeException("Ya tienes un turno de caja abierto.");
+            throw new IllegalArgumentException("Ya tienes un turno de caja abierto.");
         }
 
         User user = userRepository.findById(userDetails.getId()).orElseThrow();
         Company company = companyRepository.findById(userDetails.getCompanyId()).orElseThrow();
 
+        cashRegister.setStatus(CashRegisterStatus.OPEN);
+        cashRegisterRepository.save(cashRegister);
+
         Shift shift = new Shift();
         shift.setUser(user);
         shift.setCompany(company);
+        shift.setCashRegister(cashRegister);
         shift.setStartTime(LocalDateTime.now());
         shift.setStatus(ShiftStatus.OPEN);
         shift.setInitialCash(initialCash != null ? initialCash : BigDecimal.ZERO);
@@ -111,15 +130,15 @@ public class ShiftService {
                            UserDetailsImpl userDetails) {
         
         Shift shift = shiftRepository.findById(shiftId)
-                .orElseThrow(() -> new RuntimeException("Turno no encontrado."));
+                .orElseThrow(() -> new IllegalArgumentException("Turno no encontrado."));
 
         if (shift.getStatus() != ShiftStatus.OPEN) {
-            throw new RuntimeException("El turno ya está cerrado o verificado.");
+            throw new IllegalArgumentException("El turno ya está cerrado o verificado.");
         }
 
         // Security check
         if (!shift.getUser().getId().equals(userDetails.getId())) {
-             throw new RuntimeException("No puedes cerrar un turno que no te pertenece.");
+             throw new IllegalArgumentException("No puedes cerrar un turno que no te pertenece.");
         }
 
         // Calculate expected values
@@ -231,6 +250,12 @@ public class ShiftService {
 
         shift = shiftRepository.save(shift);
 
+        if (shift.getCashRegister() != null) {
+            CashRegister cr = shift.getCashRegister();
+            cr.setStatus(CashRegisterStatus.CLOSED);
+            cashRegisterRepository.save(cr);
+        }
+
         BigDecimal diffCash = shift.getReportedCash().subtract(shift.getExpectedCash());
         String diffType = diffCash.compareTo(BigDecimal.ZERO) < 0 ? "FALTANTE" : (diffCash.compareTo(BigDecimal.ZERO) > 0 ? "SOBRANTE" : "CUADRE EXACTO");
 
@@ -246,7 +271,7 @@ public class ShiftService {
         
         // Security check - Only Manager or Admin
         if (!userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_MANAGER") || a.getAuthority().equals("ROLE_ADMIN"))) {
-            throw new RuntimeException("Solo un administrador puede verificar los turnos.");
+            throw new IllegalArgumentException("Solo un administrador puede verificar los turnos.");
         }
 
         shift.setStatus(ShiftStatus.VERIFIED);

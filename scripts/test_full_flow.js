@@ -43,7 +43,7 @@ async function put(url, data, token = null) { // Add PUT method
         const PRODUCT_NAME = `Cafe Premium ${Date.now()}`;
 
         // 1. Login Manager 1 (Premium)
-        const user1 = await post(`${BASE_URL}/auth/signin`, { username: 'manager_pro', password: '123456' });
+        const user1 = await post(`${BASE_URL}/auth/signin`, { username: 'manager_pro@nugar.com', password: '123456' });
         log('Manager Pro logueado', 'success');
 
         // 2. Create Product Store 1
@@ -120,7 +120,7 @@ async function put(url, data, token = null) { // Add PUT method
         // Login as the seller
         const sellerUser = targetSeller.companyName.includes('Premium') ? user1 : user2;
         // This logic presumes we know who user1/user2 are. 
-        // user1 (manager_pro) is usually "Tienda Demo Premium".
+        // user1 (manager_pro@nugar.com) is usually "Tienda Demo Premium".
 
         const sales = await get(`${BASE_URL}/sales`, sellerUser.accessToken);
         const mySale = sales.find(s => s.customer && s.customer.email === customerEmail);

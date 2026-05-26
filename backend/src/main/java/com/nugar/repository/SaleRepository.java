@@ -51,16 +51,16 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
             "AND (CAST(:customerName AS string) IS NULL OR LOWER(s.customerName) LIKE LOWER(CONCAT('%', :customerName, '%')) OR LOWER(s.customerCedula) LIKE LOWER(CONCAT('%', :customerName, '%'))) " +
             "AND (CAST(:dateFrom AS string) IS NULL OR s.date >= :dateFrom) " +
             "AND (CAST(:dateTo AS string) IS NULL OR s.date <= :dateTo) " +
-            "AND (CAST(:paymentMethod AS string) IS NULL OR s.paymentMethod = :paymentMethod) " +
-            "AND (CAST(:status AS string) IS NULL OR s.status = :status) " +
+            "AND (:paymentMethod IS NULL OR s.paymentMethod = :paymentMethod) " +
+            "AND (:status IS NULL OR s.status = :status) " +
             "ORDER BY s.date DESC")
     Page<Sale> findByFilters(
             @Param("companyId") Long companyId,
             @Param("customerName") String customerName,
             @Param("dateFrom") LocalDateTime dateFrom,
             @Param("dateTo") LocalDateTime dateTo,
-            @Param("paymentMethod") String paymentMethod,
-            @Param("status") String status,
+            @Param("paymentMethod") com.nugar.domain.PaymentMethod paymentMethod,
+            @Param("status") com.nugar.domain.SaleStatus status,
             Pageable pageable
     );
 

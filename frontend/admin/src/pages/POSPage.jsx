@@ -10,6 +10,7 @@ import AuthService from '../services/auth.service';
 import PublicService from '../services/public.service';
 import CustomerService from '../services/customer.service';
 import ShiftService from '../services/shift.service';
+import CashRegisterService from '../services/cash-register.service';
 
 const POSPage = () => {
     const navigate = useNavigate();
@@ -49,6 +50,8 @@ const POSPage = () => {
     const [currentShift, setCurrentShift] = useState(null);
     const [showShiftOpeningModal, setShowShiftOpeningModal] = useState(false);
     const [showShiftClosingModal, setShowShiftClosingModal] = useState(false);
+    const [cashRegisters, setCashRegisters] = useState([]);
+    const [selectedCashRegister, setSelectedCashRegister] = useState("");
     const [openingDeclarations, setOpeningDeclarations] = useState([]);
     const [tempOpeningDeclaration, setTempOpeningDeclaration] = useState({ amount: "", currencyCode: "USD" });
     const [closingData, setClosingData] = useState({
@@ -333,10 +336,14 @@ const POSPage = () => {
                 if (res.status === 200 && res.data) {
                     setCurrentShift(res.data);
                 } else {
+                    CashRegisterService.getAvailableRegisters().then(r => setCashRegisters(r.data));
                     setShowShiftOpeningModal(true);
                 }
             },
-            () => setShowShiftOpeningModal(true)
+            () => {
+                CashRegisterService.getAvailableRegisters().then(r => setCashRegisters(r.data));
+                setShowShiftOpeningModal(true);
+            }
         );
 
         setTimeout(() => document.querySelector('.pos-search-input')?.focus(), 500);
@@ -349,12 +356,18 @@ const POSPage = () => {
             finalDeclarations.push({ ...tempOpeningDeclaration, id: Date.now() });
         }
 
+        if (!selectedCashRegister) {
+            triggerToast("Por favor, selecciona una caja disponible.", "error");
+            return;
+        }
+
         if (finalDeclarations.length === 0) {
             triggerToast("Por favor, ingresa al menos un monto para el fondo de caja.", "error");
             return;
         }
 
         const payload = {
+            cashRegisterId: selectedCashRegister,
             openingDeclarations: finalDeclarations.map(d => ({
                 method: "CASH",
                 currencyCode: d.currencyCode,
@@ -369,7 +382,10 @@ const POSPage = () => {
             triggerToast("¡Caja abierta exitosamente!");
             setOpeningDeclarations([]);
             setTempOpeningDeclaration({ amount: "", currencyCode: "USD" });
-        }).catch(err => triggerToast("Error al abrir caja", "error"));
+        }).catch(err => {
+            const errorMsg = err.response && err.response.data && err.response.data.message ? err.response.data.message : "Error al abrir caja";
+            triggerToast(errorMsg, "error");
+        });
     };
 
     const addOpeningDeclaration = () => {
@@ -425,6 +441,7 @@ const POSPage = () => {
             triggerToast("Caja cerrada. Gracias por tu jornada.");
             setCurrentShift(null);
             setShowShiftClosingModal(false);
+            CashRegisterService.getAvailableRegisters().then(r => setCashRegisters(r.data));
             setShowShiftOpeningModal(true); // Requiere abrir una nueva si quiere seguir
             // Reset form
             setClosingData({ declarations: [], observation: "" });
@@ -863,8 +880,23 @@ const POSPage = () => {
                         <Modal.Title className="fw-black fs-3">Apertura de Caja</Modal.Title>
                     </Modal.Header>
                     <Modal.Body className="p-4">
-                        <p className="text-muted">Ingresa el monto de efectivo inicial (base o sencillo) que tienes en la gaveta.</p>
+                        <p className="text-muted">Selecciona la caja y el monto de efectivo inicial (base o sencillo) que tienes en la gaveta.</p>
                         
+                        <Row className="mb-4">
+                            <Col md={12}>
+                                <Form.Label className="small fw-bold">Caja Disponible <span className="text-danger">*</span></Form.Label>
+                                <Form.Select value={selectedCashRegister} onChange={e => setSelectedCashRegister(e.target.value)}>
+                                    <option value="">-- Selecciona una caja --</option>
+                                    {cashRegisters.map(cr => (
+                                        <option key={cr.id} value={cr.id}>{cr.name} ({cr.location})</option>
+                                    ))}
+                                </Form.Select>
+                                {cashRegisters.length === 0 && (
+                                    <Form.Text className="text-danger">No hay cajas disponibles o creadas. Crea una desde Configuración.</Form.Text>
+                                )}
+                            </Col>
+                        </Row>
+
                         <Row className="g-2 mb-3 align-items-end">
                             <Col md={5}>
                                 <Form.Label className="small fw-bold">Moneda</Form.Label>
@@ -896,7 +928,7 @@ const POSPage = () => {
                             </ListGroup>
                         )}
 
-                        <Button variant="primary" size="lg" className="w-100 py-3 rounded-4 fw-bold shadow mt-2" onClick={handleOpenShift}>
+                        <Button variant="primary" size="lg" className="w-100 py-3 rounded-4 fw-bold shadow mt-2" onClick={handleOpenShift} disabled={!selectedCashRegister || cashRegisters.length === 0}>
                             ABRIR CAJA Y EMPEZAR
                         </Button>
                         <Button variant="link" className="text-muted w-100 mt-2 text-decoration-none small" onClick={() => navigate('/dashboard')}>

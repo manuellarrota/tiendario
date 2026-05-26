@@ -15,7 +15,7 @@ const http = require('http');
 
 const CONFIG = {
   baseUrl: 'http://localhost:8080',
-  adminUser: 'admin',
+  adminUser: 'admin@nugar.com',
   adminPass: 'admin123',
   numStores: 20,         // Probaremos con 20 primero, luego puedes subir a 100
   productsPerStore: 20,  // Total 1,000 productos

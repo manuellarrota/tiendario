@@ -28,11 +28,11 @@
 ### Credenciales de Prueba (crear durante pruebas)
 ```
 Super Admin:
-  Usuario: admin
+  Usuario: admin@nugar.com
   Contraseña: admin123
 
 Manager (Plan PAID/Premium):
-  Usuario: manager_pro
+  Usuario: manager_pro@nugar.com
   Contraseña: manager123
   Empresa: Tienda Demo Premium
 

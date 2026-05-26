@@ -14,7 +14,7 @@ async function runVisualTests() {
     
     // Login
     await saPage.goto('http://localhost:8081/');
-    await saPage.fill('input[placeholder="Nombre de usuario"]', 'admin');
+    await saPage.fill('input[placeholder="Nombre de usuario"]', 'admin@nugar.com');
     await saPage.fill('input[placeholder="••••••••"]', 'Admin123!');
     await saPage.click('button:has-text("Entrar al Panel")');
     console.log('Login Super Admin exitoso. Esperando Dashboard...');

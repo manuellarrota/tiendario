@@ -28,6 +28,8 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.io.File;
 
 @Service
 @RequiredArgsConstructor
@@ -45,7 +47,7 @@ public class InventoryService {
 
             // Header
             Row headerRow = sheet.createRow(0);
-            String[] columns = { "SKU", "Nombre", "Categoría", "Variante", "Precio Venta", "Precio Costo",
+            String[] columns = { "SKU (Obligatorio)", "Nombre", "Categoría", "Presentación/Variante", "Precio Venta", "Precio Costo",
                     "Stock Actual", "Stock Mínimo", "Descripción" };
             for (int i = 0; i < columns.length; i++) {
                 Cell cell = headerRow.createCell(i);
@@ -71,6 +73,11 @@ public class InventoryService {
                 row.createCell(6).setCellValue(product.getStock() != null ? product.getStock() : 0);
                 row.createCell(7).setCellValue(product.getMinStock() != null ? product.getMinStock() : 0);
                 row.createCell(8).setCellValue(product.getDescription());
+            }
+
+            // Auto-size columns
+            for (int i = 0; i < columns.length; i++) {
+                sheet.autoSizeColumn(i);
             }
 
             workbook.write(out);
@@ -187,6 +194,144 @@ public class InventoryService {
         return logs;
     }
 
+    public List<String> uploadAndGetHeaders(MultipartFile file, String fileId) throws IOException {
+        File tempFile = new File(System.getProperty("java.io.tmpdir"), fileId + ".xlsx");
+        file.transferTo(tempFile);
+        
+        List<String> headers = new ArrayList<>();
+        try (Workbook workbook = new XSSFWorkbook(tempFile)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            Row headerRow = sheet.getRow(0);
+            if (headerRow != null) {
+                for (Cell cell : headerRow) {
+                    headers.add(getCellValueAsString(cell));
+                }
+            }
+        } catch (org.apache.poi.openxml4j.exceptions.InvalidFormatException e) {
+            throw new IOException("Formato de Excel inválido", e);
+        }
+
+        return headers;
+    }
+
+    public com.nugar.payload.response.ImportPreviewResponse generatePreview(com.nugar.payload.request.ImportSettingsRequest settings, Long companyId) throws IOException {
+        File tempFile = new File(System.getProperty("java.io.tmpdir"), settings.getFileId() + ".xlsx");
+        if (!tempFile.exists()) throw new RuntimeException("Archivo temporal no encontrado.");
+
+        com.nugar.payload.response.ImportPreviewResponse response = new com.nugar.payload.response.ImportPreviewResponse();
+        List<Map<String, String>> sampleNew = new ArrayList<>();
+        List<Map<String, String>> sampleModified = new ArrayList<>();
+        List<Map<String, String>> sampleConflicts = new ArrayList<>();
+        int newCount = 0, modCount = 0, conflictCount = 0, dupCount = 0;
+
+        try (Workbook workbook = new XSSFWorkbook(tempFile)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            Iterator<Row> rows = sheet.iterator();
+            if (rows.hasNext()) rows.next(); // skip header
+
+            while (rows.hasNext()) {
+                Row row = rows.next();
+                try {
+                    Map<String, Integer> map = settings.getColumnMapping();
+                    String sku = map.containsKey("sku") && map.get("sku") != null ? getCellValueAsString(row.getCell(map.get("sku"))) : null;
+                    if (sku == null || sku.trim().isEmpty()) continue;
+                    
+                    String name = map.containsKey("name") && map.get("name") != null ? getCellValueAsString(row.getCell(map.get("name"))) : "";
+                    
+                    java.util.Optional<Product> existingOpt = productRepository.findBySkuAndCompanyId(sku, companyId);
+                    
+                    Map<String, String> item = new java.util.HashMap<>();
+                    item.put("sku", sku);
+                    item.put("name", name);
+
+                    if (existingOpt.isPresent()) {
+                        modCount++;
+                        if (sampleModified.size() < 5) sampleModified.add(item);
+                    } else {
+                        newCount++;
+                        if (sampleNew.size() < 5) sampleNew.add(item);
+                    }
+                } catch (Exception e) {
+                    conflictCount++;
+                    Map<String, String> err = new java.util.HashMap<>();
+                    err.put("error", "Fila " + (row.getRowNum() + 1) + ": " + e.getMessage());
+                    if (sampleConflicts.size() < 5) sampleConflicts.add(err);
+                }
+            }
+        } catch (org.apache.poi.openxml4j.exceptions.InvalidFormatException e) {
+            throw new IOException("Formato de Excel inválido", e);
+        }
+
+        response.setTotalRows(newCount + modCount + conflictCount + dupCount);
+        response.setNewProducts(newCount);
+        response.setModifiedProducts(modCount);
+        response.setConflicts(conflictCount);
+        response.setDuplicates(dupCount);
+        response.setSampleNew(sampleNew);
+        response.setSampleModified(sampleModified);
+        response.setSampleConflicts(sampleConflicts);
+        return response;
+    }
+
+    @org.springframework.scheduling.annotation.Async
+    public void executeImportAsync(com.nugar.payload.request.ImportSettingsRequest settings, Long companyId) {
+        File tempFile = new File(System.getProperty("java.io.tmpdir"), settings.getFileId() + ".xlsx");
+        if (!tempFile.exists()) return;
+
+        Company company = companyRepository.findById(companyId).orElse(null);
+        if (company == null) return;
+
+        boolean soloStock = "SOLO_STOCK".equalsIgnoreCase(settings.getMode());
+
+        try (Workbook workbook = new XSSFWorkbook(tempFile)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            Iterator<Row> rows = sheet.iterator();
+            if (rows.hasNext()) rows.next(); // skip header
+
+            int count = 0;
+            while (rows.hasNext()) {
+                Row row = rows.next();
+                try {
+                    Map<String, Integer> map = settings.getColumnMapping();
+                    String sku = map.containsKey("sku") && map.get("sku") != null ? getCellValueAsString(row.getCell(map.get("sku"))) : null;
+                    if (sku == null || sku.trim().isEmpty()) continue;
+
+                    Product product = productRepository.findBySkuAndCompanyId(sku, companyId).orElse(new Product());
+                    
+                    if (!soloStock) {
+                        if (map.containsKey("name") && map.get("name") != null) product.setName(getCellValueAsString(row.getCell(map.get("name"))));
+                        if (map.containsKey("category") && map.get("category") != null) product.setCategory(getCellValueAsString(row.getCell(map.get("category"))));
+                        if (map.containsKey("price") && map.get("price") != null) product.setPrice(getCellValueAsBigDecimal(row.getCell(map.get("price"))));
+                        if (map.containsKey("costPrice") && map.get("costPrice") != null) product.setCostPrice(getCellValueAsBigDecimal(row.getCell(map.get("costPrice"))));
+                        if (map.containsKey("variant") && map.get("variant") != null) product.setVariant(getCellValueAsString(row.getCell(map.get("variant"))));
+                        if (map.containsKey("minStock") && map.get("minStock") != null) product.setMinStock(getCellValueAsInteger(row.getCell(map.get("minStock"))));
+                        if (map.containsKey("description") && map.get("description") != null) product.setDescription(getCellValueAsString(row.getCell(map.get("description"))));
+                    }
+                    if (map.containsKey("stock") && map.get("stock") != null) {
+                        Integer st = getCellValueAsInteger(row.getCell(map.get("stock")));
+                        if ("ANEXAR".equalsIgnoreCase(settings.getMode()) && product.getStock() != null) {
+                            product.setStock(product.getStock() + st);
+                        } else {
+                            product.setStock(st);
+                        }
+                    }
+                    
+                    product.setSku(sku);
+                    product.setCompany(company);
+
+                    Product saved = productRepository.save(product);
+                    productIndexService.indexProduct(saved);
+                    count++;
+                } catch (Exception ignored) { }
+            }
+            org.slf4j.LoggerFactory.getLogger(InventoryService.class).info("[IMPORT_ASYNC] Empresa ID: {} | Productos procesados: {}", companyId, count);
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(InventoryService.class).error("Error en import async", e);
+        } finally {
+            tempFile.delete(); // Clean up
+        }
+    }
+
     public ByteArrayInputStream generateExcelTemplate() throws IOException {
         String[] columns = { "SKU (Obligatorio)", "Nombre", "Categoría", "Presentación/Variante", "Precio Venta",
                 "Precio Costo", "Stock Actual", "Stock Mínimo", "Descripción" };
@@ -212,6 +357,11 @@ public class InventoryService {
             exampleRow.createCell(6).setCellValue(10);
             exampleRow.createCell(7).setCellValue(2);
             exampleRow.createCell(8).setCellValue("Breve descripción del producto");
+
+            // Auto-size columns
+            for (int i = 0; i < columns.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
 
             workbook.write(out);
             return new ByteArrayInputStream(out.toByteArray());

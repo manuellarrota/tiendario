@@ -8,6 +8,7 @@ import CategorySuggestionService from "../services/category-suggestion.service";
 import AuthService from "../services/auth.service";
 import InventoryService from "../services/inventory.service";
 import { FaPlus, FaTrash, FaBoxOpen, FaExclamationTriangle, FaLock, FaImage, FaFileExcel, FaFilePdf, FaUpload, FaSort, FaSortUp, FaSortDown, FaBarcode } from "react-icons/fa";
+import InventoryImportWizard from "../components/InventoryImportWizard";
 
 const InventoryPage = () => {
     // ... (logic remains same)
@@ -15,6 +16,7 @@ const InventoryPage = () => {
     const [categories, setCategories] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
     const [showModal, setShowModal] = useState(false);
+    const [showImportWizard, setShowImportWizard] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
     const [message, setMessage] = useState("");
     const user = AuthService.getCurrentUser();
@@ -27,6 +29,7 @@ const InventoryPage = () => {
     const [sku, setSku] = useState("");
     const [price, setPrice] = useState("");
     const [stock, setStock] = useState("");
+    const [minStock, setMinStock] = useState("5");
     const [category, setCategory] = useState("");
     const [variant, setVariant] = useState("");
     const [brand, setBrand] = useState("");
@@ -182,6 +185,7 @@ const InventoryPage = () => {
         setSku(product.sku);
         setPrice(product.price);
         setStock(product.stock);
+        setMinStock(product.minStock || "5");
         setCategory(product.category || "");
         setVariant(product.variant || "");
         setBrand(product.brand || "");
@@ -216,7 +220,7 @@ const InventoryPage = () => {
             costPrice,
             imageUrl,
             barcode: barcode.trim() || null,
-            minStock: 5
+            minStock: minStock === "" ? 5 : parseInt(minStock)
         };
 
         if (editingProduct) {
@@ -250,7 +254,7 @@ const InventoryPage = () => {
     };
 
     const resetForm = () => {
-        setName(""); setSku(""); setPrice(""); setStock(""); setCategory(""); setVariant(""); setBrand(""); setCostPrice(""); setImageUrl(""); setBarcode("");
+        setName(""); setSku(""); setPrice(""); setStock(""); setCategory(""); setVariant(""); setBrand(""); setCostPrice(""); setImageUrl(""); setBarcode(""); setMinStock("5");
         setEditingProduct(null);
     };
 
@@ -385,10 +389,9 @@ const InventoryPage = () => {
                                 </OverlayTrigger>
 
                                 <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Sube un archivo Excel para cargar productos masivamente")}>
-                                    <label className="btn btn-outline-primary px-3 shadow-sm mb-0 d-flex align-items-center gap-2">
-                                        <FaUpload /> Importar
-                                        <input type="file" hidden accept=".xlsx, .xls" onChange={handleImportExcel} />
-                                    </label>
+                                    <Button variant="outline-primary" className="px-3 shadow-sm d-flex align-items-center gap-2" onClick={() => setShowImportWizard(true)}>
+                                        <FaUpload /> Importar Wizard
+                                    </Button>
                                 </OverlayTrigger>
 
                                 <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Añadir un nuevo producto a tu catálogo")}>
@@ -759,15 +762,13 @@ const InventoryPage = () => {
                             </div>
                             <div className="col-md-4">
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Ganancia Estimada</Form.Label>
+                                    <Form.Label>Ganancia Estimada (%)</Form.Label>
                                     <div className="d-flex align-items-center h-100 pb-1">
-                                        <Badge bg={(price - costPrice) > 0 ? "success" : "danger"} className="p-2 w-100 fs-6 shadow-sm">
+                                        <Badge bg={(price - costPrice) > 0 ? "success" : "secondary"} className="p-2 w-100 fs-6 shadow-sm">
                                             ${(price - costPrice || 0).toFixed(2)}
-                                            {costPrice > 0 && (
-                                                <small className="ms-2 opacity-75">
-                                                    ({(((price - costPrice) / costPrice) * 100).toFixed(1)}%)
-                                                </small>
-                                            )}
+                                            <small className="ms-2 opacity-75">
+                                                ({costPrice > 0 ? (((price - costPrice) / costPrice) * 100).toFixed(1) : (price > 0 ? "100.0" : "0.0")}%)
+                                            </small>
                                         </Badge>
                                     </div>
                                 </Form.Group>
@@ -776,6 +777,12 @@ const InventoryPage = () => {
                                 <Form.Group className="mb-3">
                                     <Form.Label>Stock Inicial</Form.Label>
                                     <Form.Control type="number" onFocus={(e) => e.target.select()} required value={stock} onChange={(e) => setStock(e.target.value)} min="0" placeholder="Cantidad actual" />
+                                </Form.Group>
+                            </div>
+                            <div className="col-md-4">
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Stock Mínimo (Alerta)</Form.Label>
+                                    <Form.Control type="number" onFocus={(e) => e.target.select()} required value={minStock} onChange={(e) => setMinStock(e.target.value)} min="0" placeholder="Ej: 5" />
                                 </Form.Group>
                             </div>
 
@@ -878,6 +885,11 @@ const InventoryPage = () => {
                     </Button>
                 </Modal.Body>
             </Modal>
+            {/* Import Wizard */}
+            <InventoryImportWizard 
+                show={showImportWizard} 
+                onHide={() => { setShowImportWizard(false); loadProducts(); }} 
+            />
         </Layout>
     );
 };

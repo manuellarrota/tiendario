@@ -7,7 +7,7 @@ import axios from 'axios';
 import StoreLocationMap from '../components/StoreLocationMap';
 
 const LandingPage = () => {
-    const [username, setUsername] = useState("");
+    const [loginEmail, setLoginEmail] = useState("");
     const [password, setPassword] = useState("");
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState("");
@@ -19,7 +19,7 @@ const LandingPage = () => {
     // Register Modal State
     const [showRegisterModal, setShowRegisterModal] = useState(false);
     const [regCompanyName, setRegCompanyName] = useState("");
-    const [regUsername, setRegUsername] = useState("");
+
     const [regEmail, setRegEmail] = useState("");
     const [regPassword, setRegPassword] = useState("");
     const [regMessage, setRegMessage] = useState("");
@@ -122,7 +122,7 @@ const LandingPage = () => {
         setMessage("");
         setLoading(true);
 
-        AuthService.login(username, password, true).then(
+        AuthService.login(loginEmail, password, true).then(
             () => {
                 setShowLoginModal(false);
                 navigate("/dashboard");
@@ -144,7 +144,7 @@ const LandingPage = () => {
         const lat = regPosition ? regPosition.lat : 0;
         const lng = regPosition ? regPosition.lng : 0;
 
-        AuthService.register(regUsername, regEmail, regPassword, "manager", regCompanyName, regPhone, lat, lng, regAddress, null, null, regPlan.toUpperCase()).then(
+        AuthService.register(regEmail, regEmail, regPassword, "manager", regCompanyName, regPhone, lat, lng, regAddress, null, null, regPlan.toUpperCase()).then(
             () => {
                 setRegMessage("✅ ¡Registro exitoso! Por favor, revisa tu correo electrónico para activar tu cuenta antes de iniciar sesión.");
                 setRegSuccessful(true);
@@ -166,6 +166,19 @@ const LandingPage = () => {
                 setRegSuccessful(false);
             }
         );
+    };
+
+    const closeRegisterModal = () => {
+        setShowRegisterModal(false);
+        setRegCompanyName("");
+        setRegEmail("");
+        setRegPassword("");
+        setRegPhone("");
+        setRegAddress("");
+        setRegPosition(null);
+        setRegMessage("");
+        setRegSuccessful(false);
+        setRegLoading(false);
     };
 
     const openRegister = (planType = "basic") => {
@@ -439,7 +452,7 @@ const LandingPage = () => {
                     <div className="modal-content rounded-4 border-0 shadow-lg">
                         <div className="modal-header border-0 pb-0">
                             <h5 className="modal-title fw-bold">Crear Tienda — Plan {regPlan === 'basic' ? 'Básico' : regPlan === 'medium' ? 'Medium' : regPlan === 'premium' ? 'Premium' : 'Básico'}</h5>
-                            <button type="button" className="btn-close" onClick={() => setShowRegisterModal(false)}></button>
+                            <button type="button" className="btn-close" onClick={closeRegisterModal}></button>
                         </div>
                         <div className="modal-body p-4">
                             <Form onSubmit={handleRegister}>
@@ -455,17 +468,7 @@ const LandingPage = () => {
                                     />
                                 </Form.Group>
 
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Usuario (Admin)</Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        placeholder="Nombre de usuario"
-                                        value={regUsername}
-                                        onChange={(e) => setRegUsername(e.target.value)}
-                                        required
-                                        className="rounded-3"
-                                    />
-                                </Form.Group>
+
 
                                 <Form.Group className="mb-3">
                                     <Form.Label>Email</Form.Label>
@@ -537,7 +540,7 @@ const LandingPage = () => {
                                         {regLoading ? <Spinner size="sm" animation="border" className="me-2" /> : "Registrar y Comenzar"}
                                     </Button>
                                 ) : (
-                                    <Button variant="secondary" className="w-100 rounded-pill fw-bold" onClick={() => setShowRegisterModal(false)}>
+                                    <Button variant="secondary" className="w-100 rounded-pill fw-bold" onClick={closeRegisterModal}>
                                         Cerrar
                                     </Button>
                                 )}
@@ -641,15 +644,15 @@ const LandingPage = () => {
                     <p className="text-center text-secondary small mb-4">Ingresa para gestionar tu inventario y ventas.</p>
                     <Form onSubmit={handleLogin}>
                         <Form.Group className="mb-3">
-                            <Form.Label className="small fw-bold">Usuario</Form.Label>
+                            <Form.Label className="small fw-bold">Correo electrónico</Form.Label>
                             <div className="position-relative">
-                                <FaUser className="position-absolute text-muted" style={{ top: '12px', left: '15px' }} />
+                                <FaEnvelope className="position-absolute text-muted" style={{ top: '12px', left: '15px' }} />
                                 <Form.Control
-                                    type="text"
+                                    type="email"
                                     className="ps-5 py-2 rounded-3"
-                                    placeholder="Nombre de usuario"
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
+                                    placeholder="tu@email.com"
+                                    value={loginEmail}
+                                    onChange={(e) => setLoginEmail(e.target.value)}
                                     autoComplete="username"
                                     required
                                 />

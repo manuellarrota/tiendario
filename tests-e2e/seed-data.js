@@ -41,8 +41,8 @@ const request = (method, path, body = null, token = null) => {
 async function seed() {
   const ts = Date.now();
   let adminToken = null;
-  const loginRes = await request('POST', '/api/auth/signin', { username: 'admin', password: 'Admin123!' });
-  adminToken = loginRes?.data?.token || (await request('POST', '/api/auth/signin', { username: 'admin', password: 'admin123' }))?.data?.token;
+  const loginRes = await request('POST', '/api/auth/signin', { username: 'admin@nugar.com', password: 'Admin123!' });
+  adminToken = loginRes?.data?.token || (await request('POST', '/api/auth/signin', { username: 'admin@nugar.com', password: 'admin123' }))?.data?.token;
 
   if (!adminToken) {
     console.error('Failed to login');

@@ -15,7 +15,7 @@ const http = require('http');
 const https = require('https');
 
 const BASE_URL = 'http://localhost:8080';
-const ADMIN_USER = 'manager_pro';
+const ADMIN_USER = 'manager_pro@nugar.com';
 const ADMIN_PASS = 'manager123';
 
 // ─── Colores para terminal ─────────────────────────────────────────────────

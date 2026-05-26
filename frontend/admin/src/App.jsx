@@ -4,6 +4,7 @@ import './App.css';
 
 import LandingPage from './pages/LandingPage';
 import DemoPage from './demo/DemoPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import DashboardHome from './pages/DashboardHome';
 import InventoryPage from './pages/InventoryPage';
 import SupplierPage from './pages/SupplierPage';
@@ -45,8 +46,9 @@ function App() {
         <div className="app-container">
           <Routes>
             {/* ── PUBLIC ─────────────────────────────────────── */}
-            <Route path="/"      element={<LandingPage />} />
-            <Route path="/demo" element={<DemoPage />} />
+            <Route path="/"              element={<LandingPage />} />
+            <Route path="/demo"          element={<DemoPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
 
 
             {/* ── AUTHENTICATED (any logged-in manager/admin) ── */}

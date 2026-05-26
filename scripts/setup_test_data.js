@@ -16,7 +16,7 @@ async function setup() {
     });
 
     // 2. Tienda B (Pro por defecto)
-    await createProduct('manager_pro', '123456', {
+    await createProduct('manager_pro@nugar.com', '123456', {
         name: 'Laptop Gamer Unificada',
         sku: 'UNIFY-001',
         price: 1050.00,

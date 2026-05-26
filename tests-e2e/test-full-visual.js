@@ -25,7 +25,7 @@ async function runEndToEnd() {
         const saPage = await saContext.newPage();
         console.log('\n--- 1. Login Super Admin ---');
         await saPage.goto('http://localhost:8081/');
-        await saPage.fill('input[placeholder="Nombre de usuario"]', 'admin');
+        await saPage.fill('input[placeholder="Nombre de usuario"]', 'admin@nugar.com');
         await saPage.fill('input[placeholder="••••••••"]', 'Admin123!');
         await saPage.click('button:has-text("Entrar al Panel")');
         await delay(2000);
@@ -69,9 +69,9 @@ async function runEndToEnd() {
             await delay(3000);
             await mgPage.screenshot({ path: 'tests-e2e/screenshots/2_tienda_verificada.png' });
         } catch(err) {
-            console.log('⚠️ Correo de verificación no capturado en verification_links.txt. Usando tienda previamente sembrada (manager_pro) para continuar el flujo.');
-            usingFallbackStore = true;
-            activeUser = "manager_pro";
+            console.log('⚠️ Correo de verificación no capturado en verification_links.txt. Usando tienda previamente sembrada (manager_pro@nugar.com) para continuar el flujo.');
+            
+            activeUser = "manager_pro@nugar.com";
             activePass = "Manager123!";
             activeStore = "Tienda Demo Premium";
             await mgPage.goto('http://localhost:8081/');

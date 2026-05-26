@@ -12,7 +12,7 @@ Cuentas pre-cargadas para pruebas en desarrollo.
 | Campo | Valor |
 |---|---|
 | URL | http://localhost:8081 |
-| Usuario | `admin` |
+| Usuario | `admin@nugar.com` |
 | Contraseña | `Admin123!` |
 | Acceso | Panel completo + secciones `/admin/*` |
 
@@ -20,7 +20,7 @@ Cuentas pre-cargadas para pruebas en desarrollo.
 
 | Usuario | Contraseña | Tienda | Plan |
 |---|---|---|---|
-| `manager_pro` | `Manager123!` | Tienda Demo Premium | PAID |
+| `manager_pro@nugar.com` | `Manager123!` | Tienda Demo Premium | PAID |
 | `manager_free` | `Manager123!` | Tienda Egar | PAID |
 
 URL de acceso: http://localhost:8081

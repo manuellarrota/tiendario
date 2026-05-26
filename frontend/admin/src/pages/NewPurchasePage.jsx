@@ -8,7 +8,7 @@ import SupplierService from "../services/supplier.service";
 import PurchaseService from "../services/purchase.service";
 import CategoryService from "../services/category.service";
 import PublicService from "../services/public.service";
-import { FaPlus, FaSave, FaTruck, FaBoxOpen, FaImage, FaSearch, FaTimes, FaExchangeAlt, FaTrash } from "react-icons/fa";
+import { FaPlus, FaSave, FaTruck, FaBoxOpen, FaImage, FaSearch, FaTimes, FaExchangeAlt, FaTrash, FaBarcode } from "react-icons/fa";
 
 const NewPurchasePage = () => {
     const [products, setProducts] = useState([]);
@@ -52,7 +52,17 @@ const NewPurchasePage = () => {
     const [prodBrand, setProdBrand] = useState("");
     const [prodCostPrice, setProdCostPrice] = useState("");
     const [prodImageUrl, setProdImageUrl] = useState("");
+    const [prodBarcode, setProdBarcode] = useState("");
+    const [prodMinStock, setProdMinStock] = useState("5");
     const [isGeneratingSku, setIsGeneratingSku] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+
+    // Helper to get full image URL
+    const getFullImageUrl = (path) => {
+        if (!path) return null;
+        if (path.startsWith('http')) return path;
+        return (import.meta.env.VITE_API_URL || '') + path;
+    };
 
     // Predefined global categories
     const globalCategories = ["Ropa", "Tecnología", "Alimentos", "Hogar", "Deportes", "Salud y Belleza", "Juguetes", "Libros"];
@@ -247,7 +257,8 @@ const NewPurchasePage = () => {
             brand: prodBrand,
             costPrice: prodCostPrice,
             imageUrl: prodImageUrl,
-            minStock: 5
+            barcode: prodBarcode.trim() || null,
+            minStock: prodMinStock === "" ? 5 : parseInt(prodMinStock)
         };
 
         ProductService.create(productData).then(
@@ -277,7 +288,7 @@ const NewPurchasePage = () => {
     };
 
     const resetProductForm = () => {
-        setProdName(""); setProdSku(""); setProdPrice(""); setProdStock(""); setProdCategory(""); setProdVariant(""); setProdBrand(""); setProdCostPrice(""); setProdImageUrl("");
+        setProdName(""); setProdSku(""); setProdPrice(""); setProdStock(""); setProdCategory(""); setProdVariant(""); setProdBrand(""); setProdCostPrice(""); setProdImageUrl(""); setProdBarcode(""); setProdMinStock("5");
     };
 
     const handleSavePurchase = () => {
@@ -336,6 +347,25 @@ const NewPurchasePage = () => {
         setShowDropdown(false);
         // Pre-fill cost if available
         if (product.costPrice) setUnitCost(product.costPrice);
+    };
+
+    const handleUploadImage = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        ProductService.uploadImage(file).then(
+            res => {
+                setProdImageUrl(res.data.message); // Should contain path
+                setIsUploading(false);
+            },
+            err => {
+                console.error("Upload failed", err);
+                setMessage("❌ Lo sentimos, no pudimos procesar la imagen.");
+                setIsUploading(false);
+                setTimeout(() => setMessage(""), 3500);
+            }
+        );
     };
 
     return (
@@ -729,81 +759,119 @@ const NewPurchasePage = () => {
                                 </Form.Group>
                             </div>
 
-                            <div className="d-none">
+                            <div className="col-md-6">
                                 <Form.Group className="mb-3">
                                     <Form.Label className="d-flex justify-content-between">
-                                        SKU (Código) <span className="text-danger">*</span>
+                                        SKU (Código Interno) <span className="text-danger">*</span>
                                         {isGeneratingSku && <span className="spinner-border spinner-border-sm text-primary"></span>}
                                     </Form.Label>
                                     <Form.Control
                                         type="text"
+                                        required
                                         value={prodSku}
                                         onChange={(e) => setProdSku(e.target.value)}
                                         placeholder="Generación automática..."
                                     />
+                                    <Form.Text className="text-muted">Generado automáticamente por el sistema.</Form.Text>
+                                </Form.Group>
+                            </div>
+
+                            <div className="col-md-6">
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="d-flex align-items-center gap-2">
+                                        <FaBarcode className="text-secondary" /> Código de Barras
+                                        <small className="text-muted fw-normal">(EAN-13, UPC — Opcional)</small>
+                                    </Form.Label>
+                                    <Form.Control
+                                        type="text"
+                                        value={prodBarcode}
+                                        onChange={(e) => setProdBarcode(e.target.value)}
+                                        placeholder="Escanear o ingresar código del fabricante"
+                                    />
+                                    <Form.Text className="text-muted">Se usa para búsqueda rápida en el POS con lector de barras.</Form.Text>
                                 </Form.Group>
                             </div>
 
                             {/* Inventory & Pricing */}
                             <div className="col-12 mt-4">
-                                <h6 className="text-primary fw-bold mb-3">Precios y Costos</h6>
+                                <h6 className="text-primary fw-bold mb-3">Precios e Inventario</h6>
                             </div>
 
                             <div className="col-md-4">
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Costo de Compra ($)</Form.Label>
+                                    <Form.Label>Costo de Compra ($) <small className="text-muted">(Privado)</small></Form.Label>
                                     <Form.Control type="number" onFocus={(e) => e.target.select()} step="0.01" value={prodCostPrice} onChange={(e) => setProdCostPrice(e.target.value)} min="0" placeholder="0.00" />
                                 </Form.Group>
                             </div>
                             <div className="col-md-4">
                                 <Form.Group className="mb-3">
                                     <Form.Label>Precio de Venta ($) <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control type="number" onFocus={(e) => e.target.select()} step="0.01" required value={prodPrice} onChange={(e) => setProdPrice(e.target.value)} min="0" />
+                                    <Form.Control type="number" onFocus={(e) => e.target.select()} step="0.01" required value={prodPrice} onChange={(e) => setProdPrice(e.target.value)} min="0" placeholder="0.00" />
                                 </Form.Group>
                             </div>
                             <div className="col-md-4">
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Ganancia Estimada</Form.Label>
+                                    <Form.Label>Ganancia Estimada (%)</Form.Label>
                                     <div className="d-flex align-items-center h-100 pb-1">
-                                        <Badge bg={(prodPrice - prodCostPrice) > 0 ? "success" : "danger"} className="p-2 w-100 fs-6 shadow-sm">
+                                        <Badge bg={(prodPrice - prodCostPrice) > 0 ? "success" : "secondary"} className="p-2 w-100 fs-6 shadow-sm">
                                             ${(prodPrice - prodCostPrice || 0).toFixed(2)}
-                                            {prodCostPrice > 0 && (
-                                                <small className="ms-2 opacity-75">
-                                                    ({(((prodPrice - prodCostPrice) / prodCostPrice) * 100).toFixed(1)}%)
-                                                </small>
-                                            )}
+                                            <small className="ms-2 opacity-75">
+                                                ({prodCostPrice > 0 ? (((prodPrice - prodCostPrice) / prodCostPrice) * 100).toFixed(1) : (prodPrice > 0 ? "100.0" : "0.0")}%)
+                                            </small>
                                         </Badge>
                                     </div>
                                 </Form.Group>
                             </div>
-                            <div className="col-md-12">
+                            <div className="col-md-4">
                                 <Form.Group className="mb-3">
                                     <Form.Label>Stock Inicial</Form.Label>
-                                    <Form.Control type="number" onFocus={(e) => e.target.select()} required value={prodStock} onChange={(e) => setProdStock(e.target.value)} min="0" placeholder="0" />
+                                    <Form.Control type="number" onFocus={(e) => e.target.select()} required value={prodStock} onChange={(e) => setProdStock(e.target.value)} min="0" placeholder="Cantidad actual" />
+                                </Form.Group>
+                            </div>
+                            <div className="col-md-4">
+                                <Form.Group className="mb-3">
+                                    <Form.Label>Stock Mínimo (Alerta)</Form.Label>
+                                    <Form.Control type="number" onFocus={(e) => e.target.select()} required value={prodMinStock} onChange={(e) => setProdMinStock(e.target.value)} min="0" placeholder="Ej: 5" />
                                 </Form.Group>
                             </div>
 
                             {/* Media */}
-                            <div className="col-12 mt-4 d-none">
+                            <div className="col-12 mt-4">
                                 <h6 className="text-primary fw-bold mb-3">Multimedia</h6>
                             </div>
 
-                            <div className="col-12 d-none">
+                            <div className="col-12">
                                 <Form.Group className="mb-3">
-                                    <Form.Label>URL de la Imagen <small className="text-muted">(Pega un link de imagen)</small></Form.Label>
-                                    <div className="d-flex gap-3">
-                                        <Form.Control
-                                            type="url"
-                                            value={prodImageUrl}
-                                            onChange={(e) => setProdImageUrl(e.target.value)}
-                                            placeholder="https://ejemplo.com/imagen.jpg"
-                                        />
-                                        {prodImageUrl && (
-                                            <div className="border rounded d-flex align-items-center justify-content-center" style={{ width: 50, height: 38, flexShrink: 0, overflow: 'hidden' }}>
-                                                <img src={prodImageUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => e.target.style.display = 'none'} />
-                                            </div>
-                                        )}
+                                    <Form.Label>Imagen del Producto</Form.Label>
+                                    <div className="d-flex flex-column gap-3">
+                                        {/* File Upload Option */}
+                                        <div className="d-flex align-items-center gap-2">
+                                            <label className={`btn ${isUploading ? 'btn-secondary' : 'btn-outline-primary'} mb-0`}>
+                                                {isUploading ? <span className="spinner-border spinner-border-sm me-2"></span> : <FaImage className="me-2" />}
+                                                {isUploading ? 'Subiendo...' : 'Subir Archivo'}
+                                                <input type="file" hidden accept="image/*" onChange={handleUploadImage} disabled={isUploading} />
+                                            </label>
+                                            <span className="text-muted small">o pega una URL abajo</span>
+                                        </div>
+
+                                        {/* URL Input Option */}
+                                        <div className="d-flex gap-3">
+                                            <Form.Control
+                                                type="text"
+                                                value={prodImageUrl}
+                                                onChange={(e) => setProdImageUrl(e.target.value)}
+                                                placeholder="https://ejemplo.com/imagen.jpg o ruta/interna"
+                                            />
+                                            {prodImageUrl && (
+                                                <div className="border rounded d-flex align-items-center justify-content-center bg-light" style={{ width: 80, height: 45, flexShrink: 0, overflow: 'hidden' }}>
+                                                    <img src={getFullImageUrl(prodImageUrl)} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => e.target.style.display = 'none'} />
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
+                                    <Form.Text className="text-muted">
+                                        Recomendamos usar imágenes cuadradas (1:1) de menos de 2MB.
+                                    </Form.Text>
                                 </Form.Group>
                             </div>
                         </div>

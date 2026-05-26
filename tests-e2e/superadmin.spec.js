@@ -5,7 +5,7 @@ test.describe('SuperAdmin Flow', () => {
     test('SuperAdmin can manage catalog', async ({ page }) => {
         // 1. Login as SuperAdmin
         await page.goto('http://localhost:8081/login');
-        await page.fill('input[placeholder="Nombre de usuario"]', 'admin');
+        await page.fill('input[placeholder="Nombre de usuario"]', 'admin@nugar.com');
         await page.fill('input[placeholder="Contraseña"]', 'admin123');
         await page.click('button:has-text("Ingresar")');
 
@@ -36,7 +36,7 @@ test.describe('SuperAdmin Flow', () => {
 
     test('SuperAdmin can manage companies', async ({ page }) => {
         await page.goto('http://localhost:8081/login');
-        await page.fill('input[placeholder="Nombre de usuario"]', 'admin');
+        await page.fill('input[placeholder="Nombre de usuario"]', 'admin@nugar.com');
         await page.fill('input[placeholder="Contraseña"]', 'admin123');
         await page.click('button:has-text("Ingresar")');
 

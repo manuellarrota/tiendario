@@ -71,7 +71,7 @@ public class PurchaseController {
             (supplier != null && !supplier.isBlank()) ? supplier : null,
             from,
             to,
-            paymentMethod != null ? paymentMethod.name() : null,
+            paymentMethod,
             pageable
         );
     }

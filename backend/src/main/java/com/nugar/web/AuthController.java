@@ -287,6 +287,8 @@ public class AuthController {
 
                 // Always return success to prevent user enumeration attacks
                 if (user == null) {
+                        logger.warn("[FORGOT PASSWORD] Intento fallido. Usuario o correo no encontrado: '{}' | IP: {}", 
+                                        identifier, getClientIp(httpRequest));
                         return ResponseEntity.ok(new MessageResponse(
                                         "Si el email/usuario existe, recibirás instrucciones para restablecer tu contraseña."));
                 }
@@ -297,12 +299,15 @@ public class AuthController {
                 user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(30));
                 userRepository.save(user);
 
-                // Send password reset email (falls back to file if SMTP is unavailable)
+                String targetEmail = user.getEmail() != null ? user.getEmail() : identifier;
                 emailService.sendPasswordResetEmail(
-                                user.getEmail() != null ? user.getEmail() : identifier,
+                                targetEmail,
                                 user.getUsername(),
                                 token,
                                 origin);
+
+                logger.info("[FORGOT PASSWORD] Enlace de recuperación solicitado para el usuario: {} | Correo: {} | IP: {}", 
+                                user.getUsername(), targetEmail, getClientIp(httpRequest));
 
                 return ResponseEntity.ok(new MessageResponse(
                                 "Si el email/usuario existe, recibirás instrucciones para restablecer tu contraseña."));
@@ -340,8 +345,8 @@ public class AuthController {
                 user.setResetTokenExpiry(null);
                 userRepository.save(user);
 
-                logger.info("[PASSWORD RESET] Contraseña restablecida para el usuario: {} | IP: {}", 
-                        user.getUsername(), getClientIp(httpRequest));
+                logger.info("[PASSWORD RESET] Contraseña restablecida para el usuario: {} | Correo: {} | IP: {}", 
+                        user.getUsername(), user.getEmail(), getClientIp(httpRequest));
 
                 return ResponseEntity.ok(
                                 new MessageResponse("Contraseña restablecida exitosamente. Ya puedes iniciar sesión."));

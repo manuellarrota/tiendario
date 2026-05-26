@@ -15,7 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.nugar.repository.CustomerRepository;
 import com.nugar.domain.Customer;
+import com.nugar.service.CashRegisterService;
 import java.util.List;
+import java.util.Set;
 import java.util.Set;
 
 @Service
@@ -26,18 +28,21 @@ public class AuthService {
     private final CustomerRepository customerRepository;
     private final PasswordEncoder encoder;
     private final EmailService emailService;
+    private final CashRegisterService cashRegisterService;
 
     @Autowired
     public AuthService(UserRepository userRepository,
             CompanyRepository companyRepository,
             CustomerRepository customerRepository,
             PasswordEncoder encoder,
-            EmailService emailService) {
+            EmailService emailService,
+            CashRegisterService cashRegisterService) {
         this.userRepository = userRepository;
         this.companyRepository = companyRepository;
         this.customerRepository = customerRepository;
         this.encoder = encoder;
         this.emailService = emailService;
+        this.cashRegisterService = cashRegisterService;
     }
 
     @Transactional
@@ -108,6 +113,7 @@ public class AuthService {
             }
             company.setAddress(signUpRequest.getAddress());
             companyRepository.save(company);
+            cashRegisterService.provisionRegistersForCompany(company);
             user.setCompany(company);
         } else {
             // Default to Client

@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.nugar.service.CashRegisterService;
 import java.time.LocalDateTime;
 
 /**
@@ -33,6 +34,9 @@ public class SubscriptionService {
 
     @Autowired
     private SubscriptionPaymentRepository paymentRepository;
+
+    @Autowired
+    private CashRegisterService cashRegisterService;
 
     @Transactional
     public void approvePayment(Long paymentId) {
@@ -69,6 +73,7 @@ public class SubscriptionService {
         }
 
         companyRepository.save(company);
+        cashRegisterService.provisionRegistersForCompany(company);
     }
 
     @Transactional

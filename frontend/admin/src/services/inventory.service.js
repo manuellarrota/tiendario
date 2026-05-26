@@ -18,14 +18,31 @@ const exportPdf = () => {
 };
 
 const importExcel = (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
+    let formData = new FormData();
+    formData.append("file", file);
     return axios.post(API_URL + '/import', formData, {
+        headers: authHeader(),
+        "Content-Type": "multipart/form-data"
+    });
+};
+
+const uploadImportFile = (file) => {
+    let formData = new FormData();
+    formData.append("file", file);
+    return axios.post(API_URL + '/import/upload', formData, {
         headers: {
             ...authHeader(),
-            'Content-Type': 'multipart/form-data'
+            "Content-Type": "multipart/form-data"
         }
     });
+};
+
+const getImportPreview = (fileId, columnMapping, mode) => {
+    return axios.post(API_URL + '/import/preview', { fileId, columnMapping, mode }, { headers: authHeader() });
+};
+
+const executeImport = (fileId, columnMapping, mode) => {
+    return axios.post(API_URL + '/import/execute', { fileId, columnMapping, mode }, { headers: authHeader() });
 };
 
 const downloadTemplate = () => {
@@ -39,6 +56,9 @@ const InventoryService = {
     exportExcel,
     exportPdf,
     importExcel,
+    uploadImportFile,
+    getImportPreview,
+    executeImport,
     downloadTemplate
 };
 

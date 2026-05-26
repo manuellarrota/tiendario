@@ -54,11 +54,11 @@ public class MyDataInitializer implements CommandLineRunner {
             ensureGlobalConfig();
 
             // 2. Ensure Demo Managers & Customers
-            createSuperAdmin("admin", "Admin123!");
-            createManager("manager_pro",  "Manager123!", "Ferretería Central",    SubscriptionStatus.PAID,  7.789354, -72.219738, "Av. 19 de Abril, San Cristóbal");
-            //createManager("manager_free", "Manager123!", "Minimarket El Rincón",  SubscriptionStatus.TRIAL, 7.792100, -72.215400, "Calle 5, Barrio Obrero, San Cristóbal");
-            //createCashier("cajero_pro",   "Cajero123!",  "Ferretería Central");
-            //reateCustomer("cliente", "Cliente123!");
+            createSuperAdmin("admin@nugar.com", "Admin123!");
+            createManager("manager_pro@nugar.com",  "Manager123!", "Ferretería Central",    SubscriptionStatus.PAID,  7.789354, -72.219738, "Av. 19 de Abril, San Cristóbal");
+            //createManager("manager_free@nugar.com", "Manager123!", "Minimarket El Rincón",  SubscriptionStatus.TRIAL, 7.792100, -72.215400, "Calle 5, Barrio Obrero, San Cristóbal");
+            //createCashier("cajero_pro@nugar.com",   "Cajero123!",  "Ferretería Central");
+            //reateCustomer("cliente@nugar.com", "Cliente123!");
 
 
             // 3. Seed requested categories
@@ -79,7 +79,7 @@ public class MyDataInitializer implements CommandLineRunner {
     }
 
     private void seedManagerProData() {
-        Optional<User> managerOpt = userRepository.findByUsername("manager_pro");
+        Optional<User> managerOpt = userRepository.findByUsername("manager_pro@nugar.com");
         if (managerOpt.isPresent()) {
             User manager = managerOpt.get();
             Company company = manager.getCompany();
@@ -278,7 +278,7 @@ public class MyDataInitializer implements CommandLineRunner {
             user.setPassword(passwordEncoder.encode(password));
             user.setRole(Role.ROLE_ADMIN);
             user.setEnabled(true);
-            user.setEmail(username + "@nugar.com");
+            user.setEmail(username);
             userRepository.save(user);
             System.err.println("✓ Created Super Admin user: " + username);
         }
@@ -306,7 +306,7 @@ public class MyDataInitializer implements CommandLineRunner {
             user.setPassword(passwordEncoder.encode(password));
             user.setRole(Role.ROLE_MANAGER);
             user.setEnabled(true);
-            user.setEmail(username + "@nugar.com");
+            user.setEmail(username);
             user.setCompany(company);
             userRepository.save(user);
             System.err.println("✓ Created Manager user: " + username + " for company: " + companyName);
@@ -320,7 +320,7 @@ public class MyDataInitializer implements CommandLineRunner {
             user.setPassword(passwordEncoder.encode(password));
             user.setRole(Role.ROLE_CLIENT);
             user.setEnabled(true);
-            user.setEmail(username + "@nugar.com");
+            user.setEmail(username);
             user.setPoints(100); // Start with some demo points
             userRepository.save(user);
             System.err.println("✓ Created Customer user: " + username);
@@ -337,7 +337,7 @@ public class MyDataInitializer implements CommandLineRunner {
             user.setPassword(passwordEncoder.encode(password));
             user.setRole(Role.ROLE_CASHIER);
             user.setEnabled(true);
-            user.setEmail(username + "@nugar.com");
+            user.setEmail(username);
             user.setCompany(company);
             userRepository.save(user);
             System.err.println("✓ Created Cashier user: " + username + " for company: " + companyName);

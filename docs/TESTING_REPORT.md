@@ -192,7 +192,7 @@ const handleLogout = () => {
 - **Fecha**: 2026-02-19
 - **Estado**: Funcional (Con observación de UI)
 - **Prueba Realizada**:
-  1. Login como `manager_pro` (Plan Premium).
+  1. Login como `manager_pro@nugar.com` (Plan Premium).
   2. Creación de producto "Auriculares Sony Test".
   3. Compra desde Marketplace (`localhost:8082`) con cuenta de cliente nuevo.
   4. Método de Pago: "Pago en Tienda" (Cash).

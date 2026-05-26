@@ -51,7 +51,7 @@ async function run() {
 
     // 1. Crear y verificar usuarios Manager
     const users = [
-        { username: "manager_pro", password: "manager123", email: "pro@nugar.com", companyName: "Tienda Demo Premium", role: ["manager"] },
+        { username: "manager_pro@nugar.com", password: "manager123", email: "pro@nugar.com", companyName: "Tienda Demo Premium", role: ["manager"] },
         { username: "manager_free", password: "manager123", email: "free@nugar.com", companyName: "Tienda Egar", role: ["manager"] }
     ];
 
@@ -90,8 +90,8 @@ async function run() {
     }
 
     // 2. Login con manager_pro para meter productos
-    process.stdout.write("🔑 Login con manager_pro... ");
-    const login = await doRequest('/auth/signin', 'POST', { username: "manager_pro", password: "manager123" });
+    process.stdout.write("🔑 Login con manager_pro@nugar.com... ");
+    const login = await doRequest('/auth/signin', 'POST', { username: "manager_pro@nugar.com", password: "manager123" });
     if (login.status !== 200) {
         console.log("❌ Falló login. No se pueden crear productos.", login.data);
         return;
@@ -117,7 +117,7 @@ async function run() {
             process.stdout.write("❌ ");
         }
     }
-    console.log("\n\n✨ Entorno listo. Ya puedes usar manager_pro / manager123");
+    console.log("\n\n✨ Entorno listo. Ya puedes usar manager_pro@nugar.com / manager123");
 }
 
 run();

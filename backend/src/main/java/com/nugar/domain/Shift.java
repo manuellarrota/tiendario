@@ -25,6 +25,11 @@ public class Shift {
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private Company company;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cash_register_id")
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
+    private CashRegister cashRegister;
+
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 

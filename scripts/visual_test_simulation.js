@@ -52,8 +52,8 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
         // ---------------------------------------------------------
         // 1. PREPARACIÓN TIENDA 1 (PREMIUM)
         // ---------------------------------------------------------
-        console.log('1. [Tienda 1] Iniciando sesión con manager_pro...');
-        const loginPro = await request('POST', '/auth/signin', { username: 'manager_pro', password: '123456' });
+        console.log('1. [Tienda 1] Iniciando sesión con manager_pro@nugar.com...');
+        const loginPro = await request('POST', '/auth/signin', { username: 'manager_pro@nugar.com', password: '123456' });
         const tokenPro = loginPro.accessToken;
         console.log('   > Login exitoso.');
 

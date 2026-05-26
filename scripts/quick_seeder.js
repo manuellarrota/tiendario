@@ -71,13 +71,13 @@ async function doRequest(path, method, data, token = null) {
 async function run() {
     console.log("🚀 Iniciando Seeder Rápido de Categorías Final...");
     
-    // Attempt login with BOTH known passwords for manager_pro
+    // Attempt login with BOTH known passwords for manager_pro@nugar.com
     const passwords = ['Manager123!', '123456'];
     let token = null;
     
     for (const pwd of passwords) {
         console.log(`🔑 Probando login con contraseña: ${pwd}`);
-        const login = await doRequest('/auth/signin', 'POST', { username: 'manager_pro', password: pwd });
+        const login = await doRequest('/auth/signin', 'POST', { username: 'manager_pro@nugar.com', password: pwd });
         if (login.status === 200) {
             token = login.data.accessToken || login.data.token;
             console.log("✅ Login exitoso!");
@@ -86,7 +86,7 @@ async function run() {
     }
 
     if (!token) {
-        console.error("❌ Fallaron todos los intentos de login para manager_pro.");
+        console.error("❌ Fallaron todos los intentos de login para manager_pro@nugar.com.");
         return;
     }
 

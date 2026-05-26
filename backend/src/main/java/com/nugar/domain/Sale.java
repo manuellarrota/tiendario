@@ -38,6 +38,11 @@ public class Sale {
     private Shift shift;
 
     @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cash_register_id")
+    @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
+    private CashRegister cashRegister;
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private User user;

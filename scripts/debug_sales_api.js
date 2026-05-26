@@ -2,7 +2,7 @@
 const http = require('http');
 
 const postData = JSON.stringify({
-    username: 'manager_pro',
+    username: 'manager_pro@nugar.com',
     password: '123456'
 });
 

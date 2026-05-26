@@ -8,7 +8,7 @@ async function testSuperAdmin() {
     
     // Login
     await page.goto('http://localhost:8081/');
-    await page.fill('input[placeholder="Nombre de usuario"]', 'admin');
+    await page.fill('input[placeholder="Nombre de usuario"]', 'admin@nugar.com');
     await page.fill('input[placeholder="••••••••"]', 'Admin123!');
     await page.click('button:has-text("Entrar al Panel")');
     console.log('Login Super Admin exitoso');

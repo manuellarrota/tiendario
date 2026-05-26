@@ -93,11 +93,11 @@ npm run dev
 
 | Rol | Usuario | Contraseña | Panel |
 |---|---|---|---|
-| **Super Admin** | `admin` | `Admin123!` | [Admin](http://localhost:8081) |
-| **Manager (PAID)** | `manager_pro` | `Manager123!` | [Admin](http://localhost:8081) |
-| **Cajero** | `cajero_pro` | `Cajero123!` | [Admin](http://localhost:8081) |
-| **Manager (FREE)** | `manager_free` | `Manager123!` | [Admin](http://localhost:8081) |
-| **Cliente** | `cliente` | `Cliente123!` | [Market](http://localhost:8082) |
+| **Super Admin** | `admin@nugar.com` | `Admin123!` | [Admin](http://localhost:8081) |
+| **Manager (PAID)** | `manager_pro@nugar.com` | `Manager123!` | [Admin](http://localhost:8081) |
+| **Cajero** | `cajero_pro@nugar.com` | `Cajero123!` | [Admin](http://localhost:8081) |
+| **Manager (FREE)** | `manager_free@nugar.com` | `Manager123!` | [Admin](http://localhost:8081) |
+| **Cliente** | `cliente@nugar.com` | `Cliente123!` | [Market](http://localhost:8082) |
 
 > **Nota:** Las cuentas nuevas registradas desde el formulario quedan **inactivas** hasta que el Super Admin las apruebe, o se valide el link en `backend/verification_links.txt`.
 

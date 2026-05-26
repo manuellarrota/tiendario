@@ -147,21 +147,21 @@ public class EmailService {
         String base = (customBackendUrl != null && !customBackendUrl.isBlank()) ? customBackendUrl : backendUrl;
         String verificationUrl = base + "/api/auth/verify?code=" + code;
         String subject = "✉️ Verifica tu cuenta — Nugar";
-        String html = "<!DOCTYPE html><html><body style='font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;'>"
-                + "<div style='background:linear-gradient(135deg,#059669,#10b981);padding:40px;border-radius:16px;text-align:center;color:white;'>"
+        String html = "<!DOCTYPE html><html><body style='font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background-color:#f1f5f9;'>"
+                + "<div style='background:linear-gradient(135deg,#3b82f6,#6366f1);padding:40px;border-radius:16px 16px 0 0;text-align:center;color:white;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'>"
                 + "<h1 style='margin:0 0 10px;font-size:28px;'>✉️ Verifica tu Cuenta</h1>"
-                + "<p style='opacity:0.9;margin:0;'>Nugar — Tu Marketplace Local</p>"
+                + "<p style='opacity:0.9;margin:0;font-size:16px;'>Nugar — Tu Marketplace Local</p>"
                 + "</div>"
-                + "<div style='padding:30px;background:#fafafa;border-radius:0 0 16px 16px;'>"
-                + "<p>¡Bienvenido a Nugar!</p>"
-                + "<p>Haz clic en el siguiente botón para activar tu cuenta:</p>"
+                + "<div style='padding:30px;background:#ffffff;border-radius:0 0 16px 16px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'>"
+                + "<p style='color:#1e293b;font-size:16px;margin-top:0;'>¡Bienvenido a Nugar!</p>"
+                + "<p style='color:#1e293b;font-size:16px;'>Haz clic en el siguiente botón para activar tu cuenta:</p>"
                 + "<div style='text-align:center;margin:30px 0;'>"
                 + "<a href='" + verificationUrl
-                + "' style='background:#059669;color:white;padding:16px 40px;border-radius:30px;text-decoration:none;font-weight:bold;display:inline-block;font-size:16px;'>Verificar Cuenta</a>"
+                + "' style='background:linear-gradient(135deg,#3b82f6,#6366f1);color:white;padding:16px 40px;border-radius:30px;text-decoration:none;font-weight:bold;display:inline-block;font-size:16px;box-shadow:0 4px 12px rgba(59,130,246,0.3);'>Verificar Cuenta</a>"
                 + "</div>"
-                + "<p style='color:#6b7280;font-size:14px;'>Si no te has registrado, puedes ignorar este correo.</p>"
-                + "<hr style='border:none;border-top:1px solid #e5e7eb;margin:20px 0;'/>"
-                + "<p style='color:#9ca3af;font-size:12px;text-align:center;'>© Nugar — San Cristóbal, Táchira</p>"
+                + "<p style='color:#64748b;font-size:14px;'>Si no te has registrado, puedes ignorar este correo.</p>"
+                + "<hr style='border:none;border-top:1px solid #e2e8f0;margin:20px 0;'/>"
+                + "<p style='color:#94a3b8;font-size:12px;text-align:center;margin-bottom:0;'>© Nugar — San Cristóbal, Táchira</p>"
                 + "</div></body></html>";
 
         sendHtmlMessage(email, subject, html);
@@ -184,89 +184,89 @@ public class EmailService {
     // ─── HTML Templates ───────────────────────────────────────────────
 
     private String buildPasswordResetHtml(String username, String resetLink) {
-        return "<!DOCTYPE html><html><body style='font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;'>"
-                + "<div style='background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:40px;border-radius:16px;text-align:center;color:white;'>"
+        return "<!DOCTYPE html><html><body style='font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background-color:#f1f5f9;'>"
+                + "<div style='background:linear-gradient(135deg,#3b82f6,#6366f1);padding:40px;border-radius:16px 16px 0 0;text-align:center;color:white;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'>"
                 + "<h1 style='margin:0 0 10px;font-size:28px;'>🔐 Restablecer Contraseña</h1>"
-                + "<p style='opacity:0.9;margin:0;'>Nugar — Tu Marketplace Local</p>"
+                + "<p style='opacity:0.9;margin:0;font-size:16px;'>Nugar — Tu Marketplace Local</p>"
                 + "</div>"
-                + "<div style='padding:30px;background:#fafafa;border-radius:0 0 16px 16px;'>"
-                + "<p>Hola <strong>" + username + "</strong>,</p>"
-                + "<p>Recibimos una solicitud para restablecer tu contraseña. Haz clic en el botón para crear una nueva:</p>"
+                + "<div style='padding:30px;background:#ffffff;border-radius:0 0 16px 16px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'>"
+                + "<p style='color:#1e293b;font-size:16px;margin-top:0;'>Hola <strong>" + username + "</strong>,</p>"
+                + "<p style='color:#1e293b;font-size:16px;'>Recibimos una solicitud para restablecer tu contraseña. Haz clic en el botón para crear una nueva:</p>"
                 + "<div style='text-align:center;margin:30px 0;'>"
                 + "<a href='" + resetLink
-                + "' style='background:#6366f1;color:white;padding:16px 40px;border-radius:30px;text-decoration:none;font-weight:bold;display:inline-block;font-size:16px;'>Restablecer Contraseña</a>"
+                + "' style='background:linear-gradient(135deg,#3b82f6,#6366f1);color:white;padding:16px 40px;border-radius:30px;text-decoration:none;font-weight:bold;display:inline-block;font-size:16px;box-shadow:0 4px 12px rgba(59,130,246,0.3);'>Restablecer Contraseña</a>"
                 + "</div>"
-                + "<p style='color:#6b7280;font-size:14px;'>Este enlace expira en <strong>30 minutos</strong>. Si no solicitaste este cambio, puedes ignorar este correo sin problemas.</p>"
-                + "<hr style='border:none;border-top:1px solid #e5e7eb;margin:20px 0;'/>"
-                + "<p style='color:#9ca3af;font-size:12px;text-align:center;'>© Nugar — San Cristóbal, Táchira, Venezuela</p>"
+                + "<p style='color:#64748b;font-size:14px;'>Este enlace expira en <strong>30 minutos</strong>. Si no solicitaste este cambio, puedes ignorar este correo sin problemas.</p>"
+                + "<hr style='border:none;border-top:1px solid #e2e8f0;margin:20px 0;'/>"
+                + "<p style='color:#94a3b8;font-size:12px;text-align:center;margin-bottom:0;'>© Nugar — San Cristóbal, Táchira, Venezuela</p>"
                 + "</div></body></html>";
     }
 
     private String buildStoreCredentialsHtml(String storeName, String username, String password) {
         String adminUrl = frontendUrl + "/admin";
-        return "<!DOCTYPE html><html><body style='font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;'>"
-                + "<div style='background:linear-gradient(135deg,#6366f1,#8b5cf6);padding:40px;border-radius:16px;text-align:center;color:white;'>"
+        return "<!DOCTYPE html><html><body style='font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background-color:#f1f5f9;'>"
+                + "<div style='background:linear-gradient(135deg,#3b82f6,#6366f1);padding:40px;border-radius:16px 16px 0 0;text-align:center;color:white;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'>"
                 + "<h1 style='margin:0 0 10px;font-size:28px;'>🚀 ¡Bienvenido a Nugar!</h1>"
-                + "<p style='opacity:0.9;margin:0;'>Tu tienda " + storeName + " ha sido registrada</p>"
+                + "<p style='opacity:0.9;margin:0;font-size:16px;'>Tu tienda " + storeName + " ha sido registrada</p>"
                 + "</div>"
-                + "<div style='padding:30px;background:#fafafa;border-radius:0 0 16px 16px;'>"
-                + "<p>¡Felicidades! Se ha creado la cuenta de administración para <strong>" + storeName
+                + "<div style='padding:30px;background:#ffffff;border-radius:0 0 16px 16px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'>"
+                + "<p style='color:#1e293b;font-size:16px;margin-top:0;'>¡Felicidades! Se ha creado la cuenta de administración para <strong>" + storeName
                 + "</strong>.</p>"
-                + "<div style='background:white;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin:20px 0;'>"
-                + "<p style='margin:0 0 10px;color:#374151;'><strong>Usuario:</strong> <code style='background:#f3f4f6;padding:2px 6px;border-radius:4px;'>"
+                + "<div style='background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin:20px 0;'>"
+                + "<p style='margin:0 0 10px;color:#1e293b;font-size:15px;'><strong>Usuario:</strong> <code style='background:#e2e8f0;padding:4px 8px;border-radius:6px;color:#3b82f6;font-size:15px;'>"
                 + username + "</code></p>"
-                + "<p style='margin:0;color:#374151;'><strong>Contraseña:</strong> <code style='background:#f3f4f6;padding:2px 6px;border-radius:4px;'>"
+                + "<p style='margin:0;color:#1e293b;font-size:15px;'><strong>Contraseña:</strong> <code style='background:#e2e8f0;padding:4px 8px;border-radius:6px;color:#3b82f6;font-size:15px;'>"
                 + password + "</code></p>"
                 + "</div>"
                 + "<div style='text-align:center;margin:30px 0;'>"
                 + "<a href='" + adminUrl
-                + "' style='background:#6366f1;color:white;padding:16px 40px;border-radius:30px;text-decoration:none;font-weight:bold;display:inline-block;font-size:16px;'>Ingresar al Panel</a>"
+                + "' style='background:linear-gradient(135deg,#3b82f6,#6366f1);color:white;padding:16px 40px;border-radius:30px;text-decoration:none;font-weight:bold;display:inline-block;font-size:16px;box-shadow:0 4px 12px rgba(59,130,246,0.3);'>Ingresar al Panel</a>"
                 + "</div>"
-                + "<p style='color:#6b7280;font-size:14px;'>Te recomendamos cambiar tu contraseña al ingresar por primera vez desde Configuraciones.</p>"
-                + "<hr style='border:none;border-top:1px solid #e5e7eb;margin:20px 0;'/>"
-                + "<p style='color:#9ca3af;font-size:12px;text-align:center;'>© Nugar — Tu Marketplace Local</p>"
+                + "<p style='color:#64748b;font-size:14px;'>Te recomendamos cambiar tu contraseña al ingresar por primera vez desde Configuraciones.</p>"
+                + "<hr style='border:none;border-top:1px solid #e2e8f0;margin:20px 0;'/>"
+                + "<p style='color:#94a3b8;font-size:12px;text-align:center;margin-bottom:0;'>© Nugar — Tu Marketplace Local</p>"
                 + "</div></body></html>";
     }
 
     private String buildNewOrderHtml(String storeName, String customerName,
             String orderSummary, java.math.BigDecimal total) {
-        return "<!DOCTYPE html><html><body style='font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;'>"
-                + "<div style='background:linear-gradient(135deg,#059669,#10b981);padding:40px;border-radius:16px;text-align:center;color:white;'>"
+        return "<!DOCTYPE html><html><body style='font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background-color:#f1f5f9;'>"
+                + "<div style='background:linear-gradient(135deg,#3b82f6,#6366f1);padding:40px;border-radius:16px 16px 0 0;text-align:center;color:white;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'>"
                 + "<h1 style='margin:0 0 10px;font-size:28px;'>🛒 ¡Nueva Orden!</h1>"
-                + "<p style='opacity:0.9;margin:0;'>" + storeName + "</p>"
+                + "<p style='opacity:0.9;margin:0;font-size:16px;'>" + storeName + "</p>"
                 + "</div>"
-                + "<div style='padding:30px;background:#fafafa;border-radius:0 0 16px 16px;'>"
-                + "<p>Un nuevo pedido ha llegado de <strong>" + customerName + "</strong>.</p>"
-                + "<div style='background:white;border:1px solid #e5e7eb;border-radius:12px;padding:20px;margin:20px 0;'>"
-                + "<h3 style='margin:0 0 10px;'>📋 Detalle del Pedido</h3>"
-                + "<p style='white-space:pre-line;color:#374151;'>" + orderSummary + "</p>"
-                + "<hr style='border:none;border-top:1px solid #e5e7eb;'/>"
-                + "<p style='font-size:18px;font-weight:bold;color:#059669;'>Total: $" + (total != null ? total.setScale(2, java.math.RoundingMode.HALF_UP).toString() : "0.00")
+                + "<div style='padding:30px;background:#ffffff;border-radius:0 0 16px 16px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'>"
+                + "<p style='color:#1e293b;font-size:16px;margin-top:0;'>Un nuevo pedido ha llegado de <strong>" + customerName + "</strong>.</p>"
+                + "<div style='background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin:20px 0;'>"
+                + "<h3 style='margin:0 0 10px;color:#1e293b;font-size:18px;'>📋 Detalle del Pedido</h3>"
+                + "<p style='white-space:pre-line;color:#475569;font-size:15px;'>" + orderSummary + "</p>"
+                + "<hr style='border:none;border-top:1px dashed #cbd5e1;margin:15px 0;'/>"
+                + "<p style='font-size:20px;font-weight:900;color:#3b82f6;margin:0;'>Total: $" + (total != null ? total.setScale(2, java.math.RoundingMode.HALF_UP).toString() : "0.00")
                 + "</p>"
                 + "</div>"
-                + "<p style='color:#6b7280;font-size:14px;'>Ingresa al <strong>Panel de Administración</strong> para gestionar esta orden.</p>"
-                + "<hr style='border:none;border-top:1px solid #e5e7eb;margin:20px 0;'/>"
-                + "<p style='color:#9ca3af;font-size:12px;text-align:center;'>© Nugar — Marketplace Local</p>"
+                + "<p style='color:#64748b;font-size:14px;'>Ingresa al <strong>Panel de Administración</strong> para gestionar esta orden.</p>"
+                + "<hr style='border:none;border-top:1px solid #e2e8f0;margin:20px 0;'/>"
+                + "<p style='color:#94a3b8;font-size:12px;text-align:center;margin-bottom:0;'>© Nugar — Marketplace Local</p>"
                 + "</div></body></html>";
     }
 
     private String buildOrderStatusHtml(String customerName, String storeName,
             String statusText, String emoji, String orderId) {
-        return "<!DOCTYPE html><html><body style='font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;'>"
-                + "<div style='background:linear-gradient(135deg,#3b82f6,#6366f1);padding:40px;border-radius:16px;text-align:center;color:white;'>"
+        return "<!DOCTYPE html><html><body style='font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background-color:#f1f5f9;'>"
+                + "<div style='background:linear-gradient(135deg,#3b82f6,#6366f1);padding:40px;border-radius:16px 16px 0 0;text-align:center;color:white;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'>"
                 + "<h1 style='margin:0 0 10px;font-size:28px;'>" + emoji + " Actualización de Pedido</h1>"
-                + "<p style='opacity:0.9;margin:0;'>Pedido #" + orderId + "</p>"
+                + "<p style='opacity:0.9;margin:0;font-size:16px;'>Pedido #" + orderId + "</p>"
                 + "</div>"
-                + "<div style='padding:30px;background:#fafafa;border-radius:0 0 16px 16px;'>"
-                + "<p>Hola <strong>" + customerName + "</strong>,</p>"
-                + "<p>Tu pedido en <strong>" + storeName + "</strong> ha sido actualizado:</p>"
-                + "<div style='text-align:center;margin:20px 0;padding:20px;background:white;border-radius:12px;border:1px solid #e5e7eb;'>"
-                + "<p style='font-size:24px;margin:0 0 5px;'>" + emoji + "</p>"
-                + "<p style='font-size:18px;font-weight:bold;margin:0;color:#374151;'>" + statusText + "</p>"
+                + "<div style='padding:30px;background:#ffffff;border-radius:0 0 16px 16px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'>"
+                + "<p style='color:#1e293b;font-size:16px;margin-top:0;'>Hola <strong>" + customerName + "</strong>,</p>"
+                + "<p style='color:#1e293b;font-size:16px;'>Tu pedido en <strong>" + storeName + "</strong> ha sido actualizado:</p>"
+                + "<div style='text-align:center;margin:20px 0;padding:20px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;'>"
+                + "<p style='font-size:32px;margin:0 0 10px;'>" + emoji + "</p>"
+                + "<p style='font-size:20px;font-weight:800;margin:0;color:#3b82f6;'>" + statusText + "</p>"
                 + "</div>"
-                + "<p style='color:#6b7280;font-size:14px;'>Puedes ver el estado de todos tus pedidos desde tu <strong>Panel de Cliente</strong>.</p>"
-                + "<hr style='border:none;border-top:1px solid #e5e7eb;margin:20px 0;'/>"
-                + "<p style='color:#9ca3af;font-size:12px;text-align:center;'>© Nugar — San Cristóbal, Táchira</p>"
+                + "<p style='color:#64748b;font-size:14px;'>Puedes ver el estado de todos tus pedidos desde tu <strong>Panel de Cliente</strong>.</p>"
+                + "<hr style='border:none;border-top:1px solid #e2e8f0;margin:20px 0;'/>"
+                + "<p style='color:#94a3b8;font-size:12px;text-align:center;margin-bottom:0;'>© Nugar — San Cristóbal, Táchira</p>"
                 + "</div></body></html>";
     }
 
