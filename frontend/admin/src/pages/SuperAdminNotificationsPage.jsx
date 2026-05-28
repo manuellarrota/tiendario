@@ -22,6 +22,11 @@ const SuperAdminNotificationsPage = () => {
     const [rejectReason, setRejectReason] = useState('');
     const [paymentToReject, setPaymentToReject] = useState(null);
     const [paymentDetails, setPaymentDetails] = useState(null);
+    
+    // For Approve Payment
+    const [showApproveModal, setShowApproveModal] = useState(false);
+    const [paymentToApprove, setPaymentToApprove] = useState(null);
+    
     const toast = useToast();
 
     const loadNotifications = () => {
@@ -98,17 +103,21 @@ const SuperAdminNotificationsPage = () => {
         }
     };
 
-    const approvePayment = (id) => {
-        if(window.confirm("¿Seguro que deseas aprobar este pago?")) {
-            AdminService.approvePayment(id).then(
-                () => {
-                    toast.showSuccess("Pago aprobado exitosamente.");
-                    setShowDetailModal(false);
-                    loadNotifications();
-                },
-                () => toast.showError("Error al aprobar pago.")
-            );
-        }
+    const openApproveModal = (id) => {
+        setPaymentToApprove(id);
+        setShowApproveModal(true);
+    };
+
+    const confirmApprovePayment = () => {
+        AdminService.approvePayment(paymentToApprove).then(
+            () => {
+                toast.showSuccess("Pago aprobado exitosamente.");
+                setShowApproveModal(false);
+                setShowDetailModal(false);
+                loadNotifications();
+            },
+            () => toast.showError("Error al aprobar pago.")
+        );
     };
 
     const openRejectModal = (id) => {
@@ -321,7 +330,7 @@ const SuperAdminNotificationsPage = () => {
                                 <div className="mt-4 p-3 border border-success rounded-3 bg-success bg-opacity-10">
                                     <h6 className="fw-bold text-success mb-3">Acciones de Pago</h6>
                                     <div className="d-flex gap-2">
-                                        <Button variant="success" onClick={() => approvePayment(selectedNotif.referenceId)}>
+                                        <Button variant="success" onClick={() => openApproveModal(selectedNotif.referenceId)}>
                                             <FaCheck className="me-2" /> Aprobar Pago
                                         </Button>
                                         <Button variant="danger" onClick={() => openRejectModal(selectedNotif.referenceId)}>
@@ -376,6 +385,22 @@ const SuperAdminNotificationsPage = () => {
                 <Modal.Footer>
                     <Button variant="light" onClick={() => setShowRejectModal(false)}>Cancelar</Button>
                     <Button variant="danger" onClick={confirmRejectPayment}>Confirmar Rechazo</Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Modal para Aprobar Pago */}
+            <Modal show={showApproveModal} onHide={() => setShowApproveModal(false)} centered>
+                <Modal.Header closeButton className="bg-success text-white border-0">
+                    <Modal.Title className="fw-bold"><FaCheck className="me-2" />Aprobar Pago</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="p-4 text-center">
+                    <FaMoneyBillWave className="text-success mb-3" style={{fontSize: '3.5rem'}} />
+                    <h5 className="fw-bold mb-3">¿Estás completamente seguro?</h5>
+                    <p className="text-muted mb-0">Al aprobar este pago, se actualizará el estado de la suscripción de la tienda y se le otorgarán los días y beneficios correspondientes al plan pagado.</p>
+                </Modal.Body>
+                <Modal.Footer className="border-0 justify-content-center pb-4 pt-0 gap-2">
+                    <Button variant="light" className="px-4 rounded-pill fw-bold shadow-sm" onClick={() => setShowApproveModal(false)}>Cancelar</Button>
+                    <Button variant="success" className="px-4 rounded-pill fw-bold shadow-sm" onClick={confirmApprovePayment}>Sí, Aprobar Pago</Button>
                 </Modal.Footer>
             </Modal>
         </div>
