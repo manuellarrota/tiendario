@@ -3,12 +3,14 @@ import { Container, Row, Col, Card, Button, Table, Badge, Modal, Form, Spinner, 
 import { FaUserPlus, FaUserTie, FaToggleOn, FaToggleOff, FaTrash } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import StaffService from '../services/staff.service';
+import { useToast } from '../components/ToastContext';
 
 const StaffPage = () => {
     const [staff, setStaff] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [processing, setProcessing] = useState(null);
+    const toast = useToast();
 
     const [showModal, setShowModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -56,6 +58,7 @@ const StaffPage = () => {
                 setShowModal(false);
                 setFormData({ username: '', email: '', password: '' });
                 setCreating(false);
+                toast.showSuccess("Cajero creado correctamente.");
             })
             .catch(err => {
                 const msg = err.response?.data?.message || "Error al crear cajero.";
@@ -79,10 +82,11 @@ const StaffPage = () => {
             .then(response => {
                 setStaff(staff.map(u => u.id === id ? response.data : u));
                 setProcessing(null);
+                toast.showSuccess("Estado del cajero actualizado.");
             })
             .catch(err => {
                 console.error(err);
-                alert("Error al actualizar el estado del cajero.");
+                toast.showError("Error al actualizar el estado del cajero.");
                 setProcessing(null);
             });
     };

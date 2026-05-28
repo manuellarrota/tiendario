@@ -13,8 +13,9 @@ public class GlobalConfig {
     private Long id;
 
     // Plan settings
-    private Integer freePlanProductLimit = 20;
-    private BigDecimal premiumPlanMonthlyPrice = new BigDecimal("25.00");
+    private BigDecimal basicPlanMonthlyPrice = new BigDecimal("19.99");
+    private BigDecimal mediumPlanMonthlyPrice = new BigDecimal("29.99");
+    private BigDecimal premiumPlanMonthlyPrice = new BigDecimal("49.99"); // Changed to 49.99 to match frontend defaults
     private BigDecimal extraRegisterMonthlyPrice = new BigDecimal("5.00");
     private Integer trialDays = 30;
 

@@ -708,9 +708,17 @@ const POSPage = () => {
                     <Modal.Header closeButton><Modal.Title>Nuevo Cliente</Modal.Title></Modal.Header>
                     <Form onSubmit={handleNewCustomerSubmit}>
                         <Modal.Body>
-                            <Form.Control className="mb-2" required placeholder="Nombre *" value={newCustomer.name} onChange={e => setNewCustomer({ ...newCustomer, name: e.target.value })} />
+                            <Form.Control className="mb-2" required placeholder="Nombre *" value={newCustomer.name} onChange={e => {
+                                if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(e.target.value)) {
+                                    setNewCustomer({ ...newCustomer, name: e.target.value });
+                                }
+                            }} />
                             <Form.Control className="mb-2" required placeholder="Cédula *" value={newCustomer.cedula} onChange={e => setNewCustomer({ ...newCustomer, cedula: e.target.value })} />
-                            <Form.Control className="mb-2" required placeholder="Teléfono *" value={newCustomer.phone} onChange={e => setNewCustomer({ ...newCustomer, phone: e.target.value })} />
+                            <Form.Control className="mb-2" required placeholder="Teléfono (solo números) *" value={newCustomer.phone} onChange={e => {
+                                if (/^[0-9]*$/.test(e.target.value)) {
+                                    setNewCustomer({ ...newCustomer, phone: e.target.value });
+                                }
+                            }} />
                             <Form.Control className="mb-2" type="email" placeholder="Email" value={newCustomer.email} onChange={e => setNewCustomer({ ...newCustomer, email: e.target.value })} />
                             <Form.Control className="mb-2" as="textarea" rows={2} placeholder="Dirección" value={newCustomer.address} onChange={e => setNewCustomer({ ...newCustomer, address: e.target.value })} />
                         </Modal.Body>

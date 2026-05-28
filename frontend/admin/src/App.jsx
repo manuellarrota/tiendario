@@ -29,9 +29,11 @@ import AdminCatalogPage from './pages/AdminCatalogPage';
 import AdminOnboardingPage from './pages/AdminOnboardingPage';
 import AdminCategorySuggestionsPage from './pages/AdminCategorySuggestionsPage';
 import AdminCatalogSuggestionsPage from './pages/AdminCatalogSuggestionsPage';
+import SuperAdminNotificationsPage from './pages/SuperAdminNotificationsPage';
 
 import RequireRole from './components/RequireRole';
 import ErrorBoundary from './components/ErrorBoundary';
+import { ToastProvider } from './components/ToastContext';
 
 // Shorthand guards
 const Auth = ({ children }) => <RequireRole roles={['ROLE_MANAGER', 'ROLE_ADMIN', 'ROLE_CASHIER']}>{children}</RequireRole>;
@@ -41,10 +43,11 @@ const ClientOnly = ({ children }) => <RequireRole roles={['ROLE_CLIENT']}>{child
 
 function App() {
   return (
-    <Router>
-      <ErrorBoundary>
-        <div className="app-container">
-          <Routes>
+    <ToastProvider>
+      <Router>
+        <ErrorBoundary>
+          <div className="app-container">
+            <Routes>
             {/* ── PUBLIC ─────────────────────────────────────── */}
             <Route path="/"              element={<LandingPage />} />
             <Route path="/demo"          element={<DemoPage />} />
@@ -77,6 +80,7 @@ function App() {
             <Route path="/admin/catalog-suggestions" element={<AdminOnly><AdminCatalogSuggestionsPage /></AdminOnly>} />
             <Route path="/admin/categories" element={<AdminOnly><AdminCategorySuggestionsPage /></AdminOnly>} />
             <Route path="/admin/onboarding" element={<AdminOnly><AdminOnboardingPage /></AdminOnly>} />
+            <Route path="/admin/notifications" element={<AdminOnly><SuperAdminNotificationsPage /></AdminOnly>} />
 
             {/* ── CATCH-ALL ──────────────────────────────────── */}
             <Route path="*" element={<Navigate to="/" replace />} />
@@ -84,6 +88,7 @@ function App() {
         </div>
       </ErrorBoundary>
     </Router>
+    </ToastProvider>
   );
 }
 

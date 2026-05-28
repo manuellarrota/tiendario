@@ -33,6 +33,9 @@ public class SubscriptionPaymentController {
     @Autowired
     GlobalConfigRepository globalConfigRepository;
 
+    @Autowired
+    com.nugar.repository.NotificationRepository notificationRepository;
+
     @PostMapping("/submit")
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<?> submitPayment(@RequestBody SubscriptionPayment payment) {
@@ -71,6 +74,16 @@ public class SubscriptionPaymentController {
         payment.setCompany(company);
         payment.setStatus(PaymentStatus.PENDING);
         paymentRepository.save(payment);
+
+        com.nugar.domain.Notification notif = new com.nugar.domain.Notification();
+        notif.setCompany(null); // Global notification for SuperAdmin
+        notif.setType("SUBSCRIPTION_PAYMENT");
+        notif.setTitle("Nuevo Pago Reportado");
+        notif.setMessage("La empresa " + company.getName() + " ha reportado un nuevo pago de $" + payment.getAmount() + ".");
+        notif.setReferenceId(payment.getId());
+        notif.setCreatedAt(LocalDateTime.now());
+        notif.setReadStatus(false);
+        notificationRepository.save(notif);
 
         return ResponseEntity.ok(new MessageResponse("Comprobante de pago enviado correctamente. En revisión."));
     }

@@ -47,7 +47,7 @@ public class DashboardController {
                                 .getPrincipal();
                 Long companyId = userDetails.getCompanyId();
 
-                log.info("[DASHBOARD_LOAD] Usuario: {} | Página: Dashboard Principal", userDetails.getUsername());
+                log.info("[DASHBOARD_LOAD] Usuario: {} | Pagina: Dashboard Principal", userDetails.getUsername());
 
                 Map<String, Object> summary = new HashMap<>();
 

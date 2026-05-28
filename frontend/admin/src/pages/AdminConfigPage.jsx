@@ -7,8 +7,9 @@ import Layout from '../components/Layout';
 
 const AdminConfigPage = () => {
     const [config, setConfig] = useState({
-        freePlanProductLimit: 20,
-        premiumPlanMonthlyPrice: 25.00,
+        basicPlanMonthlyPrice: 19.99,
+        mediumPlanMonthlyPrice: 29.99,
+        premiumPlanMonthlyPrice: 49.99,
         extraRegisterMonthlyPrice: 5.00,
         trialDays: 30,
         maintenanceMode: false,
@@ -62,7 +63,14 @@ const AdminConfigPage = () => {
         setError("");
         setSuccess("");
 
-        const configToSave = { ...config, currencies: JSON.stringify(currencies) };
+        const configToSave = { 
+            ...config, 
+            basicPlanMonthlyPrice: parseFloat(config.basicPlanMonthlyPrice || 19.99).toFixed(2),
+            mediumPlanMonthlyPrice: parseFloat(config.mediumPlanMonthlyPrice || 29.99).toFixed(2),
+            premiumPlanMonthlyPrice: parseFloat(config.premiumPlanMonthlyPrice || 49.99).toFixed(2),
+            extraRegisterMonthlyPrice: parseFloat(config.extraRegisterMonthlyPrice || 5.00).toFixed(2),
+            currencies: JSON.stringify(currencies) 
+        };
 
         AdminService.updatePlatformConfig(configToSave).then(
             () => {
@@ -124,15 +132,36 @@ const AdminConfigPage = () => {
                                     <Row>
                                         <Col md={6}>
                                             <Form.Group className="mb-3">
-                                                <Form.Label className="small fw-bold text-muted">LÍMITE PRODUCTOS (FREE)</Form.Label>
-                                                <Form.Control
-                                                    type="number"
-                                                    name="freePlanProductLimit"
-                                                    value={config.freePlanProductLimit}
-                                                    onChange={handleChange}
-                                                    onFocus={e => e.target.select()}
-                                                    required
-                                                />
+                                                <Form.Label className="small fw-bold text-muted">PRECIO BÁSICO (USD)</Form.Label>
+                                                <InputGroup>
+                                                    <InputGroup.Text>$</InputGroup.Text>
+                                                    <Form.Control
+                                                        type="number"
+                                                        step="0.01"
+                                                        name="basicPlanMonthlyPrice"
+                                                        value={config.basicPlanMonthlyPrice || 19.99}
+                                                        onChange={handleChange}
+                                                        onFocus={e => e.target.select()}
+                                                        required
+                                                    />
+                                                </InputGroup>
+                                            </Form.Group>
+                                        </Col>
+                                        <Col md={6}>
+                                            <Form.Group className="mb-3">
+                                                <Form.Label className="small fw-bold text-muted">PRECIO MEDIUM (USD)</Form.Label>
+                                                <InputGroup>
+                                                    <InputGroup.Text>$</InputGroup.Text>
+                                                    <Form.Control
+                                                        type="number"
+                                                        step="0.01"
+                                                        name="mediumPlanMonthlyPrice"
+                                                        value={config.mediumPlanMonthlyPrice || 29.99}
+                                                        onChange={handleChange}
+                                                        onFocus={e => e.target.select()}
+                                                        required
+                                                    />
+                                                </InputGroup>
                                             </Form.Group>
                                         </Col>
                                         <Col md={6}>
@@ -144,7 +173,7 @@ const AdminConfigPage = () => {
                                                         type="number"
                                                         step="0.01"
                                                         name="premiumPlanMonthlyPrice"
-                                                        value={config.premiumPlanMonthlyPrice}
+                                                        value={config.premiumPlanMonthlyPrice || 49.99}
                                                         onChange={handleChange}
                                                         onFocus={e => e.target.select()}
                                                         required

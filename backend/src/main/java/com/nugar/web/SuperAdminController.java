@@ -21,6 +21,9 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 @RestController
 @RequestMapping("/api/superadmin")
@@ -56,7 +59,16 @@ public class SuperAdminController {
         CatalogProductRepository catalogProductRepository;
 
         @Autowired
+        com.nugar.service.CashRegisterService cashRegisterService;
+
+        @Autowired
         CategoryRepository categoryRepository;
+
+        @Autowired
+        com.nugar.repository.CashRegisterRepository cashRegisterRepository;
+
+        @Autowired
+        NotificationRepository notificationRepository;
 
         @Autowired
         PasswordEncoder passwordEncoder;
@@ -135,6 +147,26 @@ public class SuperAdminController {
                 return ResponseEntity.ok(stats);
         }
 
+        @GetMapping("/companies/{id}/kpis")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<?> getCompanyKpis(@PathVariable Long id) {
+                Map<String, Object> kpis = new HashMap<>();
+
+                long totalSales = saleRepository.countByCompanyIdAndStatus(id, com.nugar.domain.SaleStatus.PAID);
+                java.math.BigDecimal totalRevenue = saleRepository.sumTotalAmountByCompanyIdAndStatus(id, com.nugar.domain.SaleStatus.PAID);
+                long totalProducts = productRepository.countByCompanyId(id);
+                long totalUsers = userRepository.countByCompanyId(id);
+                long totalRegisters = cashRegisterRepository.countByCompanyId(id);
+
+                kpis.put("totalSales", totalSales);
+                kpis.put("totalRevenue", totalRevenue != null ? totalRevenue : java.math.BigDecimal.ZERO);
+                kpis.put("totalProducts", totalProducts);
+                kpis.put("totalUsers", totalUsers);
+                kpis.put("totalRegisters", totalRegisters);
+
+                return ResponseEntity.ok(kpis);
+        }
+
         @GetMapping("/companies")
         @PreAuthorize("hasRole('ADMIN')")
         public ResponseEntity<?> getAllCompanies() {
@@ -172,8 +204,8 @@ public class SuperAdminController {
                         if (newPlan != null) company.setSubscriptionPlan(SubscriptionPlan.valueOf(newPlan));
                         if (hasElectronicBilling != null) company.setHasElectronicBilling(hasElectronicBilling);
                         company.setExtraRegisters(extraRegisters);
-                        
                         companyRepository.save(company);
+                        cashRegisterService.provisionRegistersForCompany(company);
                         log.info("[SUSCRIPCION ACTUALIZADA] Estado: {} | Plan: {} | Cajas Extra: {} | Empresa: {} (ID: {})", 
                                 newStatus, newPlan, extraRegisters, company.getName(), company.getId());
                         return ResponseEntity.ok(new MessageResponse("Subscription updated successfully!"));
@@ -192,6 +224,14 @@ public class SuperAdminController {
         @PreAuthorize("hasRole('ADMIN')")
         public ResponseEntity<?> getAllPayments() {
                 return ResponseEntity.ok(paymentRepository.findAll());
+        }
+
+        @GetMapping("/payments/{id}")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<?> getPaymentById(@PathVariable Long id) {
+                return paymentRepository.findById(id)
+                                .map(ResponseEntity::ok)
+                                .orElse(ResponseEntity.notFound().build());
         }
 
         @PostMapping("/payments/{id}/approve")
@@ -246,8 +286,15 @@ public class SuperAdminController {
                 com.nugar.domain.GlobalConfig current = configRepository.findFirstByOrderByIdAsc()
                                 .orElseGet(() -> new com.nugar.domain.GlobalConfig());
 
-                current.setFreePlanProductLimit(newConfig.getFreePlanProductLimit());
-                current.setPremiumPlanMonthlyPrice(newConfig.getPremiumPlanMonthlyPrice());
+                if (newConfig.getBasicPlanMonthlyPrice() != null) {
+                    current.setBasicPlanMonthlyPrice(newConfig.getBasicPlanMonthlyPrice());
+                }
+                if (newConfig.getMediumPlanMonthlyPrice() != null) {
+                    current.setMediumPlanMonthlyPrice(newConfig.getMediumPlanMonthlyPrice());
+                }
+                if (newConfig.getPremiumPlanMonthlyPrice() != null) {
+                    current.setPremiumPlanMonthlyPrice(newConfig.getPremiumPlanMonthlyPrice());
+                }
                 if (newConfig.getExtraRegisterMonthlyPrice() != null) {
                     current.setExtraRegisterMonthlyPrice(newConfig.getExtraRegisterMonthlyPrice());
                 }
@@ -340,10 +387,18 @@ public class SuperAdminController {
                         }
                         company.setSubscriptionStatus(plan);
                         if (plan == SubscriptionStatus.TRIAL) {
+                                int trialDays = configRepository.findFirstByOrderByIdAsc()
+                                        .map(com.nugar.domain.GlobalConfig::getTrialDays)
+                                        .orElse(30);
                                 company.setTrialStartDate(LocalDateTime.now());
-                                company.setSubscriptionEndDate(LocalDateTime.now().plusDays(30));
+                                company.setSubscriptionEndDate(LocalDateTime.now().plusDays(trialDays));
                         }
+                        
+                        // Default to BASIC plan for new stores
+                        company.setSubscriptionPlan(com.nugar.domain.SubscriptionPlan.BASIC);
+                        
                         companyRepository.save(company);
+                        cashRegisterService.provisionRegistersForCompany(company);
 
                         User user = new User();
                         user.setUsername(username);
@@ -433,5 +488,65 @@ public class SuperAdminController {
                         .map(Category::getName)
                         .distinct()
                         .collect(java.util.stream.Collectors.toList()));
+        }
+
+        @GetMapping("/notifications")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<Page<Notification>> getGlobalNotifications(
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "10") int size,
+                        @RequestParam(required = false) String type,
+                        @RequestParam(required = false) String search,
+                        @RequestParam(required = false) String readStatus) {
+                Pageable pageable = PageRequest.of(page, size, org.springframework.data.domain.Sort.by("createdAt").descending());
+                
+                String typeParam = (type != null && !type.trim().isEmpty()) ? type : null;
+                String searchParam = (search != null && !search.trim().isEmpty()) ? search : null;
+                Boolean statusParam = null;
+                
+                if ("READ".equalsIgnoreCase(readStatus)) {
+                        statusParam = true;
+                } else if ("UNREAD".equalsIgnoreCase(readStatus)) {
+                        statusParam = false;
+                }
+                
+                Page<Notification> result = notificationRepository.searchSuperAdminNotificationsAdvanced(typeParam, searchParam, statusParam, pageable);
+                
+                return ResponseEntity.ok(result);
+        }
+
+        @GetMapping("/notifications/unread-count")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<?> getSuperAdminUnreadCount() {
+                try {
+                        long total = notificationRepository.countByCompanyIsNullAndReadStatusFalse();
+                        java.util.List<Object[]> rawCounts = notificationRepository.countUnreadSuperAdminNotificationsByType();
+                        java.util.Map<String, Long> breakdown = new java.util.HashMap<>();
+                        for(Object[] row : rawCounts) {
+                                String type = row[0] != null ? (String) row[0] : "GENERAL";
+                                Long count = row[1] != null ? ((Number) row[1]).longValue() : 0L;
+                                breakdown.put(type, count);
+                        }
+                        
+                        java.util.Map<String, Object> response = new java.util.HashMap<>();
+                        response.put("total", total);
+                        response.put("breakdown", breakdown);
+                        
+                        return ResponseEntity.ok(response);
+                } catch (Exception e) {
+                        return ResponseEntity.status(500).body(new MessageResponse("Error fetching unread count"));
+                }
+        }
+
+        @PutMapping("/notifications/{id}/read")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<?> markNotificationAsRead(@PathVariable Long id) {
+                Notification notif = notificationRepository.findById(id).orElse(null);
+                if (notif != null && notif.getCompany() == null) {
+                        notif.setReadStatus(true);
+                        notificationRepository.save(notif);
+                        return ResponseEntity.ok(new MessageResponse("Notificacion leida."));
+                }
+                return ResponseEntity.badRequest().body(new MessageResponse("Notificacion no encontrada."));
         }
 }

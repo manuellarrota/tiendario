@@ -3,6 +3,7 @@ import { Container, Card, Row, Col, Badge, Button, Form, Modal, Table, Alert, Sp
 import { FaBuilding, FaCrown, FaCheckCircle, FaExclamationTriangle, FaHistory, FaFileUpload, FaInfoCircle, FaEdit, FaSave, FaTimes, FaPhone, FaMapMarkerAlt, FaImage, FaMoneyBillWave, FaClock, FaSearch, FaFilter } from 'react-icons/fa';
 import CompanyService from '../services/company.service';
 import PaymentService from '../services/payment.service';
+import PublicService from '../services/public.service';
 
 import Sidebar from '../components/Sidebar';
 
@@ -22,6 +23,7 @@ const CompanyPage = () => {
     const [showRemoveRegistersModal, setShowRemoveRegistersModal] = useState(false);
     const [removingRegisters, setRemovingRegisters] = useState(false);
     const [registersToCancel, setRegistersToCancel] = useState(1);
+    const [platformConfig, setPlatformConfig] = useState(null);
 
     // Pagination and Filters for Payments
     const [searchTerm, setSearchTerm] = useState('');
@@ -31,9 +33,9 @@ const CompanyPage = () => {
     const ITEMS_PER_PAGE = 10;
 
     const PLAN_PRICES = {
-        BASIC:   { MONTHLY: 19.99,  ANNUAL: 199.99 },
-        MEDIUM:  { MONTHLY: 29.99,  ANNUAL: 299.99 },
-        PREMIUM: { MONTHLY: 49.99,  ANNUAL: 499.99 },
+        BASIC:   { MONTHLY: platformConfig?.basicPlanMonthlyPrice || 19.99,  ANNUAL: (platformConfig?.basicPlanMonthlyPrice || 19.99) * 10 },
+        MEDIUM:  { MONTHLY: platformConfig?.mediumPlanMonthlyPrice || 29.99,  ANNUAL: (platformConfig?.mediumPlanMonthlyPrice || 29.99) * 10 },
+        PREMIUM: { MONTHLY: platformConfig?.premiumPlanMonthlyPrice || 49.99,  ANNUAL: (platformConfig?.premiumPlanMonthlyPrice || 49.99) * 10 },
     };
 
     const PLAN_INFO = {
@@ -103,12 +105,14 @@ const CompanyPage = () => {
     const loadData = async (showLoading = false) => {
         if (showLoading) setLoading(true);
         try {
-            const [profileRes, paymentsRes] = await Promise.all([
+            const [profileRes, paymentsRes, configRes] = await Promise.all([
                 CompanyService.getProfile(),
-                PaymentService.getMyPayments()
+                PaymentService.getMyPayments(),
+                PublicService.getPlatformConfig()
             ]);
             setCompany(profileRes.data);
             setPayments(paymentsRes.data);
+            setPlatformConfig(configRes.data);
         } catch (err) {
             console.error("Error loading company data", err);
             setError("No se pudieron cargar los datos de la empresa.");
@@ -607,7 +611,7 @@ const CompanyPage = () => {
                                                         )}
                                                         <div className="fw-bold fs-6 mb-1">{info.label}</div>
                                                         <div className="mb-2">
-                                                            <span className="fs-4 fw-bold text-primary">${PLAN_PRICES[planKey][billingCycle]}</span>
+                                                            <span className="fs-4 fw-bold text-primary">${Number(PLAN_PRICES[planKey][billingCycle]).toFixed(2)}</span>
                                                             <small className="text-muted">/{billingCycle === 'MONTHLY' ? 'mes' : 'año'}</small>
                                                         </div>
                                                         <ul className="list-unstyled mb-0" style={{fontSize:'0.8rem'}}>
@@ -806,13 +810,11 @@ const CompanyPage = () => {
                                                     <Form.Label className="small fw-bold text-muted">MONTO PAGADO (USD)</Form.Label>
                                                     <Form.Control
                                                         type="number"
-                                                        onFocus={(e) => e.target.select()}
                                                         name="amount"
                                                         value={paymentForm.amount}
-                                                        onChange={handleInputChange}
                                                         step="0.01"
-                                                        required
-                                                        className="py-2"
+                                                        readOnly
+                                                        className="py-2 bg-light"
                                                     />
                                                 </Form.Group>
                                             </Col>
@@ -976,7 +978,7 @@ const CompanyPage = () => {
 
                                         <div className="d-grid mt-4">
                                             <Button variant="primary" type="submit" size="lg" className="rounded-pill fw-bold py-3" disabled={submitting}>
-                                                {submitting ? <Spinner size="sm" animation="border" /> : <><FaFileUpload className="me-2" /> Enviar Comprobante de Pago</>}
+                                                {submitting ? <Spinner size="sm" animation="border" /> : <><FaFileUpload className="me-2" /> Informar Pago</>}
                                             </Button>
                                         </div>
                                     </Form>

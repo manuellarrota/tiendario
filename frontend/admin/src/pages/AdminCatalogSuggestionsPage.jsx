@@ -3,12 +3,14 @@ import { Container, Card, Button, Badge, Row, Col, Spinner, Alert } from 'react-
 import AdminService from '../services/admin.service';
 import Sidebar from '../components/Sidebar';
 import Layout from '../components/Layout';
+import { useToast } from '../components/ToastContext';
 import { FaCheck, FaTimes, FaImage, FaStore, FaBoxOpen, FaInfoCircle, FaCalendarAlt } from 'react-icons/fa';
 
 const AdminCatalogSuggestionsPage = () => {
     const [suggestions, setSuggestions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [actionId, setActionId] = useState(null);
+    const toast = useToast();
 
     useEffect(() => {
         loadSuggestions();
@@ -23,6 +25,7 @@ const AdminCatalogSuggestionsPage = () => {
             },
             (error) => {
                 console.error("Error loading suggestions", error);
+                toast.showError("Error al cargar las sugerencias");
                 setLoading(false);
             }
         );
@@ -37,7 +40,7 @@ const AdminCatalogSuggestionsPage = () => {
             },
             (error) => {
                 console.error("Error approving suggestion", error);
-                alert("❌ Error al aprobar la sugerencia.");
+                toast.showError("Error al aprobar la sugerencia.");
                 setActionId(null);
             }
         );
@@ -52,7 +55,7 @@ const AdminCatalogSuggestionsPage = () => {
             },
             (error) => {
                 console.error("Error rejecting suggestion", error);
-                alert("❌ Error al rechazar la sugerencia.");
+                toast.showError("Error al rechazar la sugerencia.");
                 setActionId(null);
             }
         );

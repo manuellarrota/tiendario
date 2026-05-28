@@ -68,8 +68,8 @@ public class MyDataInitializer implements CommandLineRunner {
 
             // 2. Ensure Demo Managers & Customers
             createSuperAdmin("admin@nugar.com", "Admin123!");
-            createManager("manager_pro@nugar.com",  "Manager123!", "Ferretería Central",    SubscriptionStatus.PAID,  7.789354, -72.219738, "Av. 19 de Abril, San Cristóbal");
-            //createManager("manager_free@nugar.com", "Manager123!", "Minimarket El Rincón",  SubscriptionStatus.TRIAL, 7.792100, -72.215400, "Calle 5, Barrio Obrero, San Cristóbal");
+            createManager("manager_pro@nugar.com",  "Manager123!", "Ferretería Central",    SubscriptionStatus.PAID,  7.789354, -72.219738, "Av. 19 de Abril, San Cristóbal", null);
+            createManager("manager_free@nugar.com", "Manager123!", "Minimarket El Rincón",  SubscriptionStatus.TRIAL, 7.792100, -72.215400, "Calle 5, Barrio Obrero, San Cristóbal", 8);
             //createCashier("cajero_pro@nugar.com",   "Cajero123!",  "Ferretería Central");
             //reateCustomer("cliente@nugar.com", "Cliente123!");
 
@@ -297,7 +297,7 @@ public class MyDataInitializer implements CommandLineRunner {
         }
     }
 
-    private void createManager(String username, String password, String companyName, SubscriptionStatus status, Double lat, Double lng, String address) {
+    private void createManager(String username, String password, String companyName, SubscriptionStatus status, Double lat, Double lng, String address, Integer trialDaysLeft) {
         if (!userRepository.existsByUsername(username)) {
             Company company = companyRepository.findByName(companyName)
                     .orElseGet(() -> {
@@ -308,6 +308,12 @@ public class MyDataInitializer implements CommandLineRunner {
                         c.setLatitude(lat);
                         c.setLongitude(lng);
                         c.setAddress(address);
+                        
+                        if (status == SubscriptionStatus.TRIAL && trialDaysLeft != null) {
+                            c.setTrialStartDate(java.time.LocalDateTime.now().minusDays(30 - trialDaysLeft));
+                            c.setSubscriptionEndDate(java.time.LocalDateTime.now().plusDays(trialDaysLeft));
+                        }
+                        
                         // Default mock reputation
                         c.setRating(3.5 + (Math.random() * 1.5)); // Random between 3.5 and 5.0
                         c.setRatingCount(5 + (int)(Math.random() * 50));
@@ -358,20 +364,46 @@ public class MyDataInitializer implements CommandLineRunner {
     }
 
     private void seedBaseCategories() {
-        String[] baseCategories = {
-                "Restaurante", "Cafetería", "Panadería", "Pastelería", "Heladería",
-                "Mini market / Bodega", "Supermercado", "Carnicería", "Pescadería",
-                "Frutería / Verdulería", "Farmacia", "Ferretería", "Tienda de ropa",
-                "Zapatería", "Electrónica / celulares", "Tienda de mascotas",
-                "Licorería", "Floristería", "Tienda de regalos / variedades", "Papelería"
+        String[][] baseCategories = {
+                {"Restaurante", "Encuentra los mejores restaurantes locales. Disfruta de comida deliciosa, desde almuerzos ejecutivos hasta cenas gourmet cerca de ti."},
+                {"Cafetería", "Descubre las mejores cafeterías de la zona. Disfruta de un excelente café, postres y desayunos para empezar el día con energía."},
+                {"Panadería", "Pan fresco, cachitos, cruasanes y más. Localiza las mejores panaderías cerca de tu ubicación para tus desayunos y meriendas."},
+                {"Pastelería", "Tortas, dulces y postres para cualquier ocasión. Encuentra pastelerías locales con las mejores creaciones dulces."},
+                {"Heladería", "Refréscate con los mejores helados artesanales y comerciales. Explora las heladerías más cercanas a tu ubicación."},
+                {"Mini market / Bodega", "Compra víveres, snacks, bebidas y artículos de primera necesidad rápidamente en minimarkets y bodegas locales."},
+                {"Supermercado", "Haz tu mercado completo. Encuentra víveres, productos de limpieza, cuidado personal y alimentos frescos al mejor precio."},
+                {"Carnicería", "Carnes frescas, pollo, cerdo y cortes especiales. Encuentra las mejores carnicerías locales con productos de alta calidad."},
+                {"Pescadería", "Pescados y mariscos frescos traídos directamente del mar. Localiza pescaderías cerca de ti con productos frescos y saludables."},
+                {"Frutería / Verdulería", "Frutas y verduras frescas, directamente del campo a tu mesa. Consigue los mejores precios en mercados y fruterías de tu zona."},
+                {"Farmacia", "Medicamentos, productos de cuidado personal y primeros auxilios. Encuentra farmacias locales abiertas y con stock disponible."},
+                {"Ferretería", "Herramientas, materiales de construcción y artículos para reparaciones del hogar. Todo lo que necesitas para tus proyectos de ferretería."},
+                {"Tienda de ropa", "Moda para toda la familia. Descubre tiendas de ropa locales con las últimas tendencias en prendas para damas, caballeros y niños."},
+                {"Zapatería", "Calzado cómodo y a la moda. Encuentra zapatos, deportivos y formales en las mejores zapaterías cercanas a tu ubicación."},
+                {"Electrónica / celulares", "Teléfonos móviles, accesorios, computadoras y gadgets. Explora tiendas de tecnología y electrónica con lo último del mercado."},
+                {"Tienda de mascotas", "Alimento, accesorios y cuidado para tus mascotas. Todo lo que tu perro, gato u otra mascota necesita en tiendas locales."},
+                {"Licorería", "Encuentra tus licores, cervezas y bebidas favoritas para tus celebraciones. Descubre licorerías cercanas con gran variedad."},
+                {"Floristería", "Arreglos florales, ramos y detalles para ocasiones especiales. Encuentra la floristería perfecta cerca de ti para sorprender."},
+                {"Tienda de regalos / variedades", "Regalos, juguetes, papelería y detalles únicos. Explora tiendas de variedades locales con opciones para cualquier evento."},
+                {"Papelería", "Artículos escolares, de oficina y papelería en general. Encuentra cuadernos, lápices y materiales de trabajo cerca de ti."}
         };
 
-        for (String catName : baseCategories) {
-            if (!categoryRepository.findFirstByNameIgnoreCase(catName).isPresent()) {
+        for (String[] catData : baseCategories) {
+            String catName = catData[0];
+            String catDesc = catData[1];
+            Optional<Category> catOpt = categoryRepository.findFirstByNameIgnoreCase(catName);
+            if (!catOpt.isPresent()) {
                 Category cat = new Category();
                 cat.setName(catName);
+                cat.setDescription(catDesc);
                 categoryRepository.save(cat);
                 System.err.println("✓ Created category: " + catName);
+            } else {
+                Category cat = catOpt.get();
+                if (cat.getDescription() == null || cat.getDescription().trim().isEmpty()) {
+                    cat.setDescription(catDesc);
+                    categoryRepository.save(cat);
+                    System.err.println("✓ Updated category description for SEO: " + catName);
+                }
             }
         }
     }

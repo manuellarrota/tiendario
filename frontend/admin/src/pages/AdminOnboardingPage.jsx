@@ -123,12 +123,12 @@ export default function AdminOnboardingPage() {
             const data = XLSX.utils.sheet_to_json(ws);
             if (data && data.length > 0) {
                 const imported = data.map(row => ({
-                    name: row['Nombre'] || '',
-                    sku: row['SKU'] || '',
-                    price: row['Precio'] || '',
-                    stock: row['Cantidad'] || '',
-                    category: row['Categoría'] || '',
-                    costPrice: row['Precio Costo'] || ''
+                    name: row['Nombre'] || row['name'] || '',
+                    sku: row['SKU (Obligatorio)'] || row['SKU'] || row['sku'] || '',
+                    price: row['Precio Venta'] || row['Precio'] || row['price'] || '',
+                    stock: row['Stock Actual'] || row['Cantidad'] || row['stock'] || '',
+                    category: row['Categoría'] || row['category'] || '',
+                    costPrice: row['Precio Costo'] || row['costPrice'] || ''
                 }));
                 // Also auto-add missing categories from Excel to current store categories
                 const newCats = imported.map(i => i.category).filter(c => c && c.trim());
@@ -149,11 +149,21 @@ export default function AdminOnboardingPage() {
 
     const downloadExcelTemplate = () => {
         const ws = XLSX.utils.json_to_sheet([
-            { 'Nombre': 'Ejemplo Producto', 'SKU': 'SKU-001', 'Precio': 100, 'Cantidad': 50, 'Categoría': 'Ropa', 'Precio Costo': 80 }
+            {
+                'SKU (Obligatorio)': 'PROD-001',
+                'Nombre': 'Producto de Ejemplo',
+                'Categoría': 'General',
+                'Presentación/Variante': 'Única',
+                'Precio Venta': 1500.0,
+                'Precio Costo': 1000.0,
+                'Stock Actual': 10,
+                'Stock Mínimo': 2,
+                'Descripción': 'Breve descripción del producto'
+            }
         ]);
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Inventario");
-        XLSX.writeFile(wb, "Formato_Inventario.xlsx");
+        XLSX.utils.book_append_sheet(wb, ws, "Formato de Carga");
+        XLSX.writeFile(wb, "formato_carga_inventario.xlsx");
     };
 
     const handleSaveProducts = async () => {

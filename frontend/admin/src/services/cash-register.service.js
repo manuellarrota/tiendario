@@ -7,8 +7,13 @@ const getAvailableRegisters = () => {
     return axios.get(API_URL + "/available", { headers: authHeader() });
 };
 
+const getAllRegisters = () => {
+    return axios.get(API_URL, { headers: authHeader() });
+};
+
 const CashRegisterService = {
-    getAvailableRegisters
+    getAvailableRegisters,
+    getAllRegisters
 };
 
 export default CashRegisterService;

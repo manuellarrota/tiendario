@@ -31,11 +31,12 @@ public class TrialExpirationService {
     private GlobalConfigRepository globalConfigRepository;
 
     /**
-     * Runs every day at 2:00 AM to check for expired trials.
-     * Also runs 60 seconds after startup for immediate verification.
+     * OBSOLETE: This service logic is now properly handled by ScheduledTasksService.checkExpiredSubscriptions()
+     * which accurately respects the subscriptionEndDate of each company.
+     * The scheduled annotations have been removed to prevent duplicate/faulty expiration logic.
      */
-    @Scheduled(cron = "0 0 2 * * *") // Every day at 2 AM
-    @Scheduled(initialDelay = 60000, fixedDelay = Long.MAX_VALUE) // Once at startup (after 60s)
+    // @Scheduled(cron = "0 0 2 * * *") 
+    // @Scheduled(initialDelay = 60000, fixedDelay = Long.MAX_VALUE) 
     @Transactional
     public void checkExpiredTrials() {
         // No startup log - only log when something actually happens

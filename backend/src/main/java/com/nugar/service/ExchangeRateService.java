@@ -57,7 +57,7 @@ public class ExchangeRateService {
             BigDecimal copRate = fetchCopRate();
 
             if (vesRate == null && copRate == null) {
-                log.warn("[TASAS_CAMBIO] No se pudieron obtener tasas nuevas. Se mantiene la configuración actual.");
+                log.warn("[TASAS_CAMBIO] No se pudieron obtener tasas nuevas. Se mantiene la configuracion actual.");
                 return;
             }
 
@@ -77,7 +77,7 @@ public class ExchangeRateService {
                     copRate != null ? copRate : "sin cambio");
 
         } catch (Exception e) {
-            log.error("[TASAS_CAMBIO] Error crítico en el bot de tasas: {}", e.getMessage(), e);
+            log.error("[TASAS_CAMBIO] Error critico en el bot de tasas: {}", e.getMessage(), e);
         }
     }
 

@@ -8,10 +8,11 @@ import CompanyService from '../services/company.service';
 import PaymentService from '../services/payment.service';
 import AdminService from '../services/admin.service';
 import PublicService from '../services/public.service';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FaRocket, FaGem, FaUsers, FaStore, FaChartLine, FaGlobe, FaReceipt, FaMoneyBillWave, FaClock, FaCheckCircle, FaTimesCircle, FaCog, FaBox, FaCashRegister, FaChevronRight } from 'react-icons/fa';
 
 const DashboardHome = () => {
+    const navigate = useNavigate();
     const user = AuthService.getCurrentUser();
     const [summary, setSummary] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -140,10 +141,10 @@ const DashboardHome = () => {
     const calculateAmount = (cycle, plan) => {
         const effectivePlan = plan || paymentForm?.targetPlan || summary?.subscriptionPlan || 'BASIC';
         let basePrice = 0;
-        if (effectivePlan === 'BASIC') basePrice = cycle === 'MONTHLY' ? 19.99 : 199.99;
-        else if (effectivePlan === 'MEDIUM') basePrice = cycle === 'MONTHLY' ? 29.99 : 299.99;
-        else if (effectivePlan === 'PREMIUM') basePrice = cycle === 'MONTHLY' ? 49.99 : 499.99;
-        else basePrice = cycle === 'MONTHLY' ? 19.99 : 199.99;
+        if (effectivePlan === 'BASIC') basePrice = cycle === 'MONTHLY' ? (platformConfig?.basicPlanMonthlyPrice || 19.99) : ((platformConfig?.basicPlanMonthlyPrice || 19.99) * 10);
+        else if (effectivePlan === 'MEDIUM') basePrice = cycle === 'MONTHLY' ? (platformConfig?.mediumPlanMonthlyPrice || 29.99) : ((platformConfig?.mediumPlanMonthlyPrice || 29.99) * 10);
+        else if (effectivePlan === 'PREMIUM') basePrice = cycle === 'MONTHLY' ? (platformConfig?.premiumPlanMonthlyPrice || 49.99) : ((platformConfig?.premiumPlanMonthlyPrice || 49.99) * 10);
+        else basePrice = cycle === 'MONTHLY' ? (platformConfig?.basicPlanMonthlyPrice || 19.99) : ((platformConfig?.basicPlanMonthlyPrice || 19.99) * 10);
 
         // Extra Registers monthly cost
         const extraPrice = platformConfig?.extraRegisterMonthlyPrice || 5.00;
@@ -279,14 +280,9 @@ const DashboardHome = () => {
                                         variant="primary"
                                         size="lg"
                                         className="rounded-pill px-5 py-3 shadow"
-                                        onClick={() => {
-                                            const pricingSection = document.getElementById('pricing-section');
-                                            if (pricingSection) pricingSection.scrollIntoView({ behavior: 'smooth' });
-                                            else handleSubscriptionChange('upgrade');
-                                        }}
-                                        disabled={processingPayment}
+                                        onClick={() => handleSubscriptionChange('manual')}
                                     >
-                                        {processingPayment ? <><Spinner animation="border" size="sm" className="me-2" /> Procesando...</> : 'Elegir Plan / Regularizar'}
+                                        {processingPayment ? <><Spinner animation="border" size="sm" className="me-2" /> Procesando...</> : 'Suscribirme / Informar Pago'}
                                     </Button>
                                 </div>
                             ) : (
@@ -308,27 +304,14 @@ const DashboardHome = () => {
                                     </div>
                                 </div>
                                 <div className="d-flex gap-2">
-                                    <OverlayTrigger placement="bottom" overlay={(props) => renderTooltip(props, "Informa un pago realizado por transferencia o depósito para activar tu plan.")}>
-                                        <Button
-                                            variant="outline-primary"
-                                            size="sm"
-                                            className="rounded-pill px-3 fw-bold border-2"
-                                            onClick={() => handleSubscriptionChange('manual')}
-                                        >
-                                            Informar Pago
-                                        </Button>
-                                    </OverlayTrigger>
-                                    <OverlayTrigger placement="bottom" overlay={(props) => renderTooltip(props, "Mira nuestros planes y elige el que mejor se adapte a tu negocio.")}>
+                                    <OverlayTrigger placement="bottom" overlay={(props) => renderTooltip(props, "Informa tu pago para activar tu suscripción Pro o elige tu plan ideal.")}>
                                         <Button
                                             variant="primary"
                                             size="sm"
                                             className="rounded-pill px-4 fw-bold shadow-sm"
-                                            onClick={() => {
-                                                const pricingSection = document.getElementById('pricing-section');
-                                                if (pricingSection) pricingSection.scrollIntoView({ behavior: 'smooth' });
-                                            }}
+                                            onClick={() => handleSubscriptionChange('manual')}
                                         >
-                                            Suscribirme Ahora
+                                            Suscribirme / Informar Pago
                                         </Button>
                                     </OverlayTrigger>
                                 </div>
@@ -357,12 +340,14 @@ const DashboardHome = () => {
                                             <Card.Body className="p-4">
                                                 <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Empresas Totales</span>
                                                 <h1 className="display-5 fw-bold text-dark mb-1">{summary?.totalCompanies || 0}</h1>
-                                                <div className="d-flex align-items-center gap-2">
-                                                    <Badge bg="success" className="rounded-pill px-2 py-1">
-                                                        {summary?.conversionRate || 0}% de Pago
-                                                    </Badge>
-                                                    <small className="text-muted fw-medium">Tasa Conversión</small>
-                                                </div>
+                                                <OverlayTrigger placement="bottom" overlay={(props) => renderTooltip(props, "Porcentaje de todas las tiendas registradas que actualmente pagan una membresía Premium.")}>
+                                                    <div className="d-flex align-items-center gap-2" style={{ cursor: 'help' }}>
+                                                        <Badge bg="success" className="rounded-pill px-2 py-1">
+                                                            {summary?.conversionRate || 0}% de Pago
+                                                        </Badge>
+                                                        <small className="text-muted fw-medium">Tasa Conversión</small>
+                                                    </div>
+                                                </OverlayTrigger>
                                             </Card.Body>
                                         </Card>
                                     </OverlayTrigger>
@@ -455,39 +440,41 @@ const DashboardHome = () => {
                             </Row>
                         ) : (user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) ? (
                             <>
-                                <Row className="g-4 mb-4 reveal-up delay-1">
-                                    <Col lg={12}>
-                                        <Card className="glass-card-admin border-0 shadow-sm rounded-4" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)' }}>
-                                            <Card.Body className="p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
-                                                <div className="d-flex align-items-center gap-3">
-                                                    <div className="bg-primary bg-opacity-10 p-3 rounded-circle">
-                                                        <FaCashRegister className="text-primary h4 mb-0" />
+                                {user?.subscriptionStatus === 'PAID' && (
+                                    <Row className="g-4 mb-4 reveal-up delay-1">
+                                        <Col lg={12}>
+                                            <Card className="glass-card-admin border-0 shadow-sm rounded-4" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)' }}>
+                                                <Card.Body className="p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                                                    <div className="d-flex align-items-center gap-3">
+                                                        <div className="bg-primary bg-opacity-10 p-3 rounded-circle">
+                                                            <FaCashRegister className="text-primary h4 mb-0" />
+                                                        </div>
+                                                        <div>
+                                                            <h6 className="fw-bold mb-1 text-dark">Cajas Habilitadas</h6>
+                                                            <p className="text-secondary small mb-0">
+                                                                Tienes <strong>{summary?.extraRegisters || 0}</strong> caja(s) habilitada(s) actualmente.
+                                                                {summary?.nextCycleExtraRegisters != null && (
+                                                                    <><br/><span className="text-danger">Has solicitado reducir a <strong>{summary.nextCycleExtraRegisters}</strong> caja(s) para el próximo ciclo.</span></>
+                                                                )}
+                                                            </p>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <h6 className="fw-bold mb-1 text-dark">Cajas Habilitadas</h6>
-                                                        <p className="text-secondary small mb-0">
-                                                            Tienes <strong>{summary?.extraRegisters || 0}</strong> caja(s) habilitada(s) actualmente.
-                                                            {summary?.nextCycleExtraRegisters != null && (
-                                                                <><br/><span className="text-danger">Has solicitado reducir a <strong>{summary.nextCycleExtraRegisters}</strong> caja(s) para el próximo ciclo.</span></>
-                                                            )}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <Button 
-                                                    variant="primary" 
-                                                    className="rounded-pill shadow-sm px-4 fw-bold"
-                                                    onClick={() => {
-                                                        setExtraForm({ requested: 1, paymentMethod: '', reference: '', banco: '', cedula: '', nombreTitular: '', correoTelefono: '', ordenId: '' });
-                                                        setExtraStatus({ loading: false, success: false, error: '' });
-                                                        setShowExtraModal(true);
-                                                    }}
-                                                >
-                                                    + Solicitar Caja Extra (${(platformConfig?.extraRegisterMonthlyPrice || 5.00).toFixed(2)}/mes)
-                                                </Button>
-                                            </Card.Body>
-                                        </Card>
-                                    </Col>
-                                </Row>
+                                                    <Button 
+                                                        variant="primary" 
+                                                        className="rounded-pill shadow-sm px-4 fw-bold"
+                                                        onClick={() => {
+                                                            setExtraForm({ requested: 1, paymentMethod: '', reference: '', banco: '', cedula: '', nombreTitular: '', correoTelefono: '', ordenId: '' });
+                                                            setExtraStatus({ loading: false, success: false, error: '' });
+                                                            setShowExtraModal(true);
+                                                        }}
+                                                    >
+                                                        + Solicitar Caja Extra (${(platformConfig?.extraRegisterMonthlyPrice || 5.00).toFixed(2)}/mes)
+                                                    </Button>
+                                                </Card.Body>
+                                            </Card>
+                                        </Col>
+                                    </Row>
+                                )}
 
                                 <Row className="g-4 reveal-up delay-2">
                                     <Col lg={3} md={6}>
@@ -770,85 +757,7 @@ const DashboardHome = () => {
                                     </div>
                                 )}
 
-                                {!isPremium && (user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
-                                    <div className="mt-5" id="pricing-section">
-                                        <div className="text-center mb-5">
-                                            <h2 className="fw-bold text-dark">Lleva tu negocio al siguiente nivel</h2>
-                                            <p className="text-secondary lead">Elige el plan que mejor se adapte a tu crecimiento o empieza hoy mismo sin costo.</p>
-                                            <Button
-                                                variant="link"
-                                                className="text-primary fw-bold text-decoration-none p-0 mt-2"
-                                                onClick={() => handleSubscriptionChange('trial')}
-                                                disabled={processingPayment}
-                                            >
-                                                {processingPayment ? <Spinner animation="border" size="sm" /> : '🚀 Iniciar prueba gratuita de 15 días'}
-                                            </Button>
-                                        </div>
-                                        <Row className="justify-content-center g-4">
-                                            <Col lg={4} md={6}>
-                                                <Card className="border-0 shadow-sm rounded-5 h-100 glass-card-admin hover-lift">
-                                                    <Card.Body className="p-5 d-flex flex-column text-center">
-                                                        <div className="mb-3"><Badge bg="secondary" className="rounded-pill px-3 py-2 text-uppercase letter-spacing-1 small">Flexibilidad</Badge></div>
-                                                        <h3 className="fw-bold mb-2">Mensual</h3>
-                                                        <div className="mb-4">
-                                                            <span className="display-4 fw-bold">$20</span>
-                                                            <span className="text-muted">/mes</span>
-                                                        </div>
-                                                        <ul className="list-unstyled text-start mb-5 flex-grow-1">
-                                                            <li className="mb-3"><FaCheckCircle className="text-success me-2" /> Punto de Venta (POS) ilimitado</li>
-                                                            <li className="mb-3"><FaCheckCircle className="text-success me-2" /> Inventario en la nube</li>
-                                                            <li className="mb-3"><FaCheckCircle className="text-success me-2" /> KPIs y Analítica de Ventas</li>
-                                                            <li className="mb-3"><FaCheckCircle className="text-success me-2" /> Visibilidad en Marketplace</li>
-                                                        </ul>
-                                                        <Button
-                                                            variant="outline-primary"
-                                                            size="lg"
-                                                            className="rounded-pill py-3 fw-bold"
-                                                            onClick={() => handleSubscriptionChange('upgrade')}
-                                                            disabled={processingPayment}
-                                                        >
-                                                            Inscribirme ahora
-                                                        </Button>
-                                                    </Card.Body>
-                                                </Card>
-                                            </Col>
 
-                                            <Col lg={4} md={6}>
-                                                <Card className="border-0 shadow-lg rounded-5 h-100 position-relative overflow-hidden" style={{ background: 'var(--primary-gradient)' }}>
-                                                    <div className="position-absolute rotate-45 bg-warning text-dark fw-bold text-center py-2 shadow-sm" style={{ top: '25px', right: '-45px', width: '200px', fontSize: '0.8rem' }}>
-                                                        ¡MÁS POPULAR!
-                                                    </div>
-                                                    <Card.Body className="p-5 d-flex flex-column text-center text-white">
-                                                        <div className="mb-3"><Badge bg="light" className="text-primary rounded-pill px-3 py-2 text-uppercase letter-spacing-1 small">Máximo Ahorro</Badge></div>
-                                                        <h3 className="fw-bold mb-2">Anual</h3>
-                                                        <div className="mb-4">
-                                                            <span className="display-4 fw-bold">$200</span>
-                                                            <span className="opacity-75">/año</span>
-                                                            <div className="badge bg-white bg-opacity-25 rounded-pill mt-2 d-inline-block px-3 py-1">
-                                                                ¡Ahorra $40 (2 Meses Gratis)!
-                                                            </div>
-                                                        </div>
-                                                        <ul className="list-unstyled text-start mb-5 flex-grow-1 opacity-90">
-                                                            <li className="mb-3"><FaCheckCircle className="text-white me-2" /> <strong>Todo el Plan Pro</strong></li>
-                                                            <li className="mb-3"><FaCheckCircle className="text-white me-2" /> Reportes VIP de Rentabilidad</li>
-                                                            <li className="mb-3"><FaCheckCircle className="text-white me-2" /> Soporte prioritario 24/7</li>
-                                                            <li className="mb-3"><FaCheckCircle className="text-white me-2" /> Sin interrupciones por factura</li>
-                                                        </ul>
-                                                        <Button
-                                                            variant="light"
-                                                            size="lg"
-                                                            className="rounded-pill py-3 fw-bold text-primary shadow-lg border-0"
-                                                            onClick={() => handleSubscriptionChange('upgrade')}
-                                                            disabled={processingPayment}
-                                                        >
-                                                            {processingPayment ? <Spinner animation="border" size="sm" /> : 'Activar Plan Anual'}
-                                                        </Button>
-                                                    </Card.Body>
-                                                </Card>
-                                            </Col>
-                                        </Row>
-                                    </div>
-                                )}
                             </>
                         ) : (
                             <Row className="g-4 reveal-up delay-2 justify-content-center">
@@ -921,9 +830,9 @@ const DashboardHome = () => {
                                             setPaymentForm({ ...paymentForm, targetPlan: newPlan, amount: calculateAmount(paymentForm.billingCycle, newPlan) });
                                         }}
                                     >
-                                        <option value="BASIC">🥉 Plan Básico — 1 Caja</option>
-                                        <option value="MEDIUM">🥈 Plan Medium — 3 Cajas</option>
-                                        <option value="PREMIUM">🥇 Plan Premium — 5 Cajas</option>
+                                        <option value="BASIC">🥉 Plan Básico — ${(platformConfig?.basicPlanMonthlyPrice || 19.99).toFixed(2)}/mes</option>
+                                        <option value="MEDIUM">🥈 Plan Medium — ${(platformConfig?.mediumPlanMonthlyPrice || 29.99).toFixed(2)}/mes</option>
+                                        <option value="PREMIUM">🥇 Plan Premium — ${(platformConfig?.premiumPlanMonthlyPrice || 49.99).toFixed(2)}/mes</option>
                                     </Form.Select>
                                 </Form.Group>
 
@@ -956,12 +865,11 @@ const DashboardHome = () => {
                                 <Form.Group className="mb-3">
                                     <Form.Label className="small fw-bold">Monto Pagado ($)</Form.Label>
                                     <Form.Control
-                                        type="number" onFocus={(e) => e.target.select()}
+                                        type="number"
                                         step="0.01"
-                                        className="py-2 rounded-3 text-success fw-bold"
+                                        className="py-2 rounded-3 text-success fw-bold bg-light"
                                         value={paymentForm.amount}
-                                        onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
-                                        required
+                                        readOnly
                                     />
                                     <Form.Text className="text-muted small d-block mt-2">
                                         <strong>Desglose de facturación:</strong><br/>
@@ -971,7 +879,7 @@ const DashboardHome = () => {
                                         )}
                                         <strong>• Total a Pagar: ${paymentForm.amount}</strong>
                                     </Form.Text>
-                                    {(summary?.billedExtraRegisters > 0 && paymentForm.targetPlan === 'BASIC' && (summary.billedExtraRegisters * (platformConfig?.extraRegisterMonthlyPrice || 5) + 19.99) >= 29.99) && (
+                                    {(summary?.billedExtraRegisters > 0 && paymentForm.targetPlan === 'BASIC' && (summary.billedExtraRegisters * (platformConfig?.extraRegisterMonthlyPrice || 5) + (platformConfig?.basicPlanMonthlyPrice || 19.99)) >= (platformConfig?.mediumPlanMonthlyPrice || 29.99)) && (
                                         <Alert variant="warning" className="mt-2 small py-2">
                                             💡 <strong>Sugerencia:</strong> El costo actual (Plan + Cajas) es mayor o igual al Plan Medium. Te sugerimos mejorar tu plan para obtener más beneficios.
                                         </Alert>
@@ -1121,7 +1029,7 @@ const DashboardHome = () => {
                                 </Form.Group>
                                 <div className="d-grid">
                                     <Button variant="primary" type="submit" className="py-2 fw-bold shadow-sm rounded-pill" disabled={paymentStatus.loading}>
-                                        {paymentStatus.loading ? <><Spinner animation="border" size="sm" className="me-2" /> Enviando...</> : 'Enviar Comprobante'}
+                                        {paymentStatus.loading ? <><Spinner animation="border" size="sm" className="me-2" /> Enviando...</> : 'Informar Pago'}
                                     </Button>
                                 </div>
                             </Form>

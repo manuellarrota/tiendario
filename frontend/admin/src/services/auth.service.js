@@ -85,12 +85,24 @@ const refreshSubscriptionStatus = () => {
     }).catch(() => false);
 };
 
+const changePassword = (oldPassword, newPassword) => {
+    const user = getCurrentUser();
+    if (!user || !user.token) return Promise.reject("No user logged in");
+    return axios.post(API_URL + "/change-password", {
+        oldPassword,
+        newPassword
+    }, {
+        headers: { Authorization: "Bearer " + user.token }
+    });
+};
+
 const AuthService = {
     register,
     login,
     logout,
     getCurrentUser,
     refreshSubscriptionStatus,
+    changePassword,
 };
 
 // ─── Interceptor: check subscription on every API response (throttled) ───────

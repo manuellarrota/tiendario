@@ -131,8 +131,14 @@ const MarketplacePage = () => {
         let description = "Localice y compre productos en tiendas de su zona. Nugar conecta inventarios locales para que encuentre lo que necesita cerca de ti.";
 
         if (selectedCategory !== 'all') {
+            const activeCat = categories.find(c => c.name === selectedCategory);
             title = `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} cerca de mí - Nugar`;
-            description = `Busque y compre ${selectedCategory} en tiendas locales. Encuentre los mejores precios y stock disponible cerca de su ubicación.`;
+            
+            if (activeCat && activeCat.description) {
+                description = activeCat.description;
+            } else {
+                description = `Busque y compre ${selectedCategory} en tiendas locales. Encuentre los mejores precios y stock disponible cerca de su ubicación.`;
+            }
         } else if (searchQuery) {
             title = `Buscando "${searchQuery}" en tiendas locales - Nugar`;
             description = `Resultados para "${searchQuery}" en su zona. Encuentre dónde comprarlo al mejor precio cerca de usted.`;
@@ -141,7 +147,7 @@ const MarketplacePage = () => {
         document.title = title;
         const metaDesc = document.querySelector('meta[name="description"]');
         if (metaDesc) metaDesc.setAttribute('content', description);
-    }, [selectedCategory, searchQuery]);
+    }, [selectedCategory, searchQuery, categories]);
 
     const loadCategories = () => {
         SearchService.getCategories().then(
@@ -696,6 +702,11 @@ const MarketplacePage = () => {
                                 <h4 className="fw-bold mb-1 text-dark">
                                     {selectedCategory === 'all' ? 'Novedades de Hoy' : selectedCategory}
                                 </h4>
+                                {selectedCategory !== 'all' && categories.find(c => c.name === selectedCategory)?.description && (
+                                    <p className="text-secondary small mb-1" style={{ maxWidth: '600px' }}>
+                                        {categories.find(c => c.name === selectedCategory).description}
+                                    </p>
+                                )}
                                 <p className="text-muted small mb-0 fw-500">
                                     Mostrando {filteredProducts.length} de {totalItems} resultados en tu área
                                 </p>

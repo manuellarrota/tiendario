@@ -81,4 +81,8 @@ public class CashRegisterService {
     public List<CashRegister> getAvailableRegisters(Long companyId) {
         return cashRegisterRepository.findByCompanyIdAndStatus(companyId, CashRegisterStatus.CLOSED);
     }
+
+    public List<CashRegister> getAllRegisters(Long companyId) {
+        return cashRegisterRepository.findByCompanyIdOrderByIdAsc(companyId);
+    }
 }

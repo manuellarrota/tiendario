@@ -111,7 +111,7 @@ public class CustomerController {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: Customer not found or access denied."));
         }
 
-        log.warn("[CLIENTE ELIMINADO] Eliminado por: {} | Cliente ID: {} | Nombre: {} | Cédula: {} | Teléfono: {} | Empresa ID: {}",
+        log.warn("[CLIENTE ELIMINADO] Eliminado por: {} | Cliente ID: {} | Nombre: {} | Cedula: {} | Telefono: {} | Empresa ID: {}",
             userDetails.getUsername(), id, customer.getName(), customer.getCedula(),
             customer.getPhone(), userDetails.getCompanyId());
         customerRepository.delete(customer);

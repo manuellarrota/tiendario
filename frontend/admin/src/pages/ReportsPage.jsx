@@ -95,11 +95,6 @@ const ReportsPage = () => {
                         <h2 className="display-6 fw-bold mb-0 text-gradient">Reportes e Inteligencia</h2>
                         <p className="text-secondary mb-0">Analiza el rendimiento profundo de tu negocio y productos.</p>
                     </div>
-                    <OverlayTrigger placement="left" overlay={(props) => renderTooltip(props, 'Sincronizar métricas con el estado actual de la base de datos.')}>
-                        <Button variant="outline-primary" className="rounded-pill px-4 shadow-sm" onClick={handleRefresh}>
-                            <FaHistory className="me-2" /> Actualizar Datos
-                        </Button>
-                    </OverlayTrigger>
                 </div>
 
                 {/* KPI Overview */}
@@ -226,7 +221,7 @@ const ReportsPage = () => {
                                 </Table>
 
                                 {/* Pagination Controls */}
-                                {productsTotalPages > 1 && (
+                                {productsTotalPages > 0 && (
                                     <div className="d-flex justify-content-center mt-4">
                                         <Pagination size="sm" className="mb-0 shadow-sm rounded-pill p-1 bg-white">
                                             <Pagination.First disabled={productsPage === 0} onClick={() => setProductsPage(0)} />
@@ -317,7 +312,7 @@ const ReportsPage = () => {
                                     </tbody>
                                 </Table>
 
-                                {salesTotalPages > 1 && (
+                                {salesTotalPages > 0 && (
                                     <div className="d-flex justify-content-center mt-4">
                                         <Pagination size="sm" className="mb-0 shadow-sm rounded-pill p-1 bg-white">
                                             <Pagination.First disabled={salesPage === 0} onClick={() => setSalesPage(0)} />

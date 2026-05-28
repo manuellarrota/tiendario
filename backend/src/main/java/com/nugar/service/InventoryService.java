@@ -348,36 +348,46 @@ public class InventoryService {
         }
     }
 
-    public ByteArrayInputStream generateCsvTemplate() throws IOException {
-        String[] columns = { "SKU (Obligatorio)", "Nombre", "CategorÃ­a", "PresentaciÃ³n/Variante", "Precio Venta",
-                "Precio Costo", "Stock Actual", "Stock MÃ­nimo", "DescripciÃ³n" };
+    public ByteArrayInputStream generateExcelTemplate() throws IOException {
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("Formato de Carga");
 
-        try (ByteArrayOutputStream out = new ByteArrayOutputStream();
-             Writer writer = new OutputStreamWriter(out, StandardCharsets.UTF_8);
-             CSVPrinter printer = new CSVPrinter(writer, CSVFormat.DEFAULT)) {
+            // Header
+            Row headerRow = sheet.createRow(0);
+            String[] columns = { "SKU (Obligatorio)", "Nombre", "Categoría", "Presentación/Variante", "Precio Venta",
+                    "Precio Costo", "Stock Actual", "Stock Mínimo", "Descripción" };
             
-            // For Excel compatibility, output UTF-8 BOM
-            out.write(239);
-            out.write(187);
-            out.write(191);
+            CellStyle headerStyle = workbook.createCellStyle();
+            org.apache.poi.ss.usermodel.Font font = workbook.createFont();
+            font.setBold(true);
+            headerStyle.setFont(font);
+            headerStyle.setFillForegroundColor(IndexedColors.LIGHT_GREEN.getIndex());
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
-            // Row 0: Headers
-            printer.printRecord((Object[]) columns);
+            for (int i = 0; i < columns.length; i++) {
+                Cell cell = headerRow.createCell(i);
+                cell.setCellValue(columns[i]);
+                cell.setCellStyle(headerStyle);
+            }
 
-            // Row 1: Example Data
-            printer.printRecord(
-                "PROD-001",
-                "Producto de Ejemplo",
-                "General",
-                "Ãšnica",
-                "1500.0",
-                "1000.0",
-                "10",
-                "2",
-                "Breve descripciÃ³n del producto"
-            );
+            // Example Data Row
+            Row row = sheet.createRow(1);
+            row.createCell(0).setCellValue("PROD-001");
+            row.createCell(1).setCellValue("Producto de Ejemplo");
+            row.createCell(2).setCellValue("General");
+            row.createCell(3).setCellValue("Única");
+            row.createCell(4).setCellValue(1500.0);
+            row.createCell(5).setCellValue(1000.0);
+            row.createCell(6).setCellValue(10);
+            row.createCell(7).setCellValue(2);
+            row.createCell(8).setCellValue("Breve descripción del producto");
 
-            printer.flush();
+            // Auto-size columns
+            for (int i = 0; i < columns.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+
+            workbook.write(out);
             return new ByteArrayInputStream(out.toByteArray());
         }
     }

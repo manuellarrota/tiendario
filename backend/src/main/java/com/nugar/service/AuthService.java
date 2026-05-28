@@ -29,6 +29,7 @@ public class AuthService {
     private final PasswordEncoder encoder;
     private final EmailService emailService;
     private final CashRegisterService cashRegisterService;
+    private final com.nugar.repository.GlobalConfigRepository globalConfigRepository;
 
     @Autowired
     public AuthService(UserRepository userRepository,
@@ -36,13 +37,15 @@ public class AuthService {
             CustomerRepository customerRepository,
             PasswordEncoder encoder,
             EmailService emailService,
-            CashRegisterService cashRegisterService) {
+            CashRegisterService cashRegisterService,
+            com.nugar.repository.GlobalConfigRepository globalConfigRepository) {
         this.userRepository = userRepository;
         this.companyRepository = companyRepository;
         this.customerRepository = customerRepository;
         this.encoder = encoder;
         this.emailService = emailService;
         this.cashRegisterService = cashRegisterService;
+        this.globalConfigRepository = globalConfigRepository;
     }
 
     @Transactional
@@ -102,8 +105,12 @@ public class AuthService {
                 company.setSubscriptionPlan(SubscriptionPlan.BASIC);
             }
 
+            int trialDays = globalConfigRepository.findFirstByOrderByIdAsc()
+                    .map(com.nugar.domain.GlobalConfig::getTrialDays)
+                    .orElse(30);
+
             company.setTrialStartDate(java.time.LocalDateTime.now());
-            company.setSubscriptionEndDate(java.time.LocalDateTime.now().plusDays(30));
+            company.setSubscriptionEndDate(java.time.LocalDateTime.now().plusDays(trialDays));
             // Default location if missing (or could be 0.0)
             company.setLatitude(signUpRequest.getLatitude() != null ? signUpRequest.getLatitude() : 0.0);
             company.setLongitude(signUpRequest.getLongitude() != null ? signUpRequest.getLongitude() : 0.0);

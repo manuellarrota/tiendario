@@ -13,6 +13,8 @@ const LandingPage = () => {
     const [message, setMessage] = useState("");
     const navigate = useNavigate();
 
+    const [platformConfig, setPlatformConfig] = useState(null);
+
     // Login Modal State
     const [showLoginModal, setShowLoginModal] = useState(false);
 
@@ -114,6 +116,12 @@ const LandingPage = () => {
             window.history.replaceState({}, '', '/');
         }
     }, [searchParams, navigate]);
+
+    useEffect(() => {
+        axios.get(API_URL + '/public/config')
+            .then(res => setPlatformConfig(res.data))
+            .catch(err => console.error("Error fetching config", err));
+    }, [API_URL]);
 
 
 
@@ -359,7 +367,7 @@ const LandingPage = () => {
                             </div>
                             <h3 className="mb-1 text-dark" style={{ background: 'none', WebkitTextFillColor: 'initial' }}>Básico</h3>
                             <div className="d-flex align-items-baseline mb-1">
-                                <span className="display-4 fw-bold text-dark">{billingAnnual ? '$199.99' : '$19.99'}</span>
+                                <span className="display-4 fw-bold text-dark">{billingAnnual ? `$${(platformConfig?.basicPlanMonthlyPrice * 10 || 199.99).toFixed(2)}` : `$${(platformConfig?.basicPlanMonthlyPrice || 19.99).toFixed(2)}`}</span>
                                 <span className="text-secondary ms-2">{billingAnnual ? '/ año' : '/ mes'}</span>
                             </div>
                             {billingAnnual ? (
@@ -390,7 +398,7 @@ const LandingPage = () => {
                             </div>
                             <h3 className="mb-1 text-dark" style={{ background: 'none', WebkitTextFillColor: 'initial' }}>Medium</h3>
                             <div className="d-flex align-items-baseline mb-1">
-                                <span className="display-4 fw-bold text-dark">{billingAnnual ? '$299.99' : '$29.99'}</span>
+                                <span className="display-4 fw-bold text-dark">{billingAnnual ? `$${(platformConfig?.mediumPlanMonthlyPrice * 10 || 299.99).toFixed(2)}` : `$${(platformConfig?.mediumPlanMonthlyPrice || 29.99).toFixed(2)}`}</span>
                                 <span className="text-secondary ms-2">{billingAnnual ? '/ año' : '/ mes'}</span>
                             </div>
                             {billingAnnual ? (
@@ -418,7 +426,7 @@ const LandingPage = () => {
                             </div>
                             <h3 className="mb-1 text-dark" style={{ background: 'none', WebkitTextFillColor: 'initial' }}>Premium</h3>
                             <div className="d-flex align-items-baseline mb-1">
-                                <span className="display-4 fw-bold text-dark">{billingAnnual ? '$499.99' : '$49.99'}</span>
+                                <span className="display-4 fw-bold text-dark">{billingAnnual ? `$${(platformConfig?.premiumPlanMonthlyPrice * 10 || 499.99).toFixed(2)}` : `$${(platformConfig?.premiumPlanMonthlyPrice || 49.99).toFixed(2)}`}</span>
                                 <span className="text-secondary ms-2">{billingAnnual ? '/ año' : '/ mes'}</span>
                             </div>
                             {billingAnnual ? (
@@ -428,7 +436,7 @@ const LandingPage = () => {
                             )}
                             <ul className="list-unstyled flex-grow-1 text-secondary">
                                 <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Límite: Hasta 5 Cajas / Usuarios</li>
-                                <li className="mb-3 d-flex align-items-center gap-2 fw-bold text-dark"><FaRocket className="text-primary flex-shrink-0" /> Expansión: +$10/mes por cada caja extra</li>
+                                <li className="mb-3 d-flex align-items-center gap-2 fw-bold text-dark"><FaRocket className="text-primary flex-shrink-0" /> Expansión: +${(platformConfig?.extraRegisterMonthlyPrice || 5.00).toFixed(0)}/mes por cada caja extra</li>
                                 <li className="mb-3 d-flex align-items-center gap-2"><FaCheck className="text-primary flex-shrink-0" /> Soporte Prioritario 24/7</li>
                                 <li className="mb-3 d-flex align-items-center gap-2 text-muted" style={{ opacity: 0.7 }}><FaCheck className="text-secondary flex-shrink-0" /> Facturación Electrónica (Próximamente) +$10</li>
                             </ul>

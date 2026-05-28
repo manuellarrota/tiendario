@@ -36,6 +36,7 @@ public class SaleController {
     public Page<Sale> getCompanySales(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) Long cashRegisterId,
             @RequestParam(required = false) String customer,
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime dateFrom,
             @RequestParam(required = false) @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE_TIME) java.time.LocalDateTime dateTo,
@@ -46,7 +47,7 @@ public class SaleController {
                 .getPrincipal();
         Pageable pageable = PageRequest.of(page, size, Sort.by("date").descending());
         
-        return saleService.getFilteredSales(userDetails, customer, dateFrom, dateTo, paymentMethod, status, pageable);
+        return saleService.getFilteredSales(userDetails, cashRegisterId, customer, dateFrom, dateTo, paymentMethod, status, pageable);
     }
 
     @GetMapping("/{id}")

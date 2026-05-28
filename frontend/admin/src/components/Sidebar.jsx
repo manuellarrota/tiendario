@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Nav, Badge, Modal, Button } from 'react-bootstrap';
+import { Nav, Badge, Modal, Button, Form, Alert, OverlayTrigger, Tooltip as BsTooltip } from 'react-bootstrap';
 import {
     FaBars, FaTimes, FaChevronLeft, FaChevronRight, FaStore, FaChartLine,
     FaMoneyBillWave, FaUsers, FaCog, FaHome, FaBell, FaShoppingBag,
-    FaCashRegister, FaBox, FaTags, FaHistory, FaTruck, FaSignOutAlt, FaRocket, FaUserTie
+    FaCashRegister, FaBox, FaTags, FaHistory, FaTruck, FaSignOutAlt, FaRocket, FaUserTie, FaKey
 } from 'react-icons/fa';
 import AuthService from '../services/auth.service';
 import NotificationService from '../services/notification.service';
 import ShiftService from '../services/shift.service';
+import AdminService from '../services/admin.service';
 
 const Sidebar = () => {
     const user = AuthService.getCurrentUser();
@@ -17,28 +18,49 @@ const Sidebar = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const [unreadCount, setUnreadCount] = useState(0);
+    const [unreadBreakdown, setUnreadBreakdown] = useState(null);
     const [isOpen, setIsOpen] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [passwordForm, setPasswordForm] = useState({ oldPassword: '', newPassword: '', confirmPassword: '' });
+    const [passwordLoading, setPasswordLoading] = useState(false);
+    const [passwordError, setPasswordError] = useState('');
+    const [passwordSuccess, setPasswordSuccess] = useState('');
 
     // Desktop collapse state
     const [collapsed, setCollapsed] = useState(localStorage.getItem('sidebar_collapsed') === 'true');
 
     useEffect(() => {
         let isMounted = true;
-        if (user && !isSuperAdmin) {
-            NotificationService.getUnreadCount()
-                .then(res => {
-                    if (isMounted && typeof res.data === 'number') {
-                        setUnreadCount(res.data);
-                    }
-                })
-                .catch(err => console.error("Notification Fetch Error:", err));
+        if (user) {
+            if (isSuperAdmin) {
+                AdminService.getAdminUnreadCount()
+                    .then(res => {
+                        if (isMounted) {
+                            if (typeof res.data === 'number') {
+                                setUnreadCount(res.data);
+                            } else if (res.data && res.data.total !== undefined) {
+                                setUnreadCount(res.data.total);
+                                setUnreadBreakdown(res.data.breakdown || {});
+                            }
+                        }
+                    })
+                    .catch(err => console.error("Admin Notification Fetch Error:", err));
+            } else {
+                NotificationService.getUnreadCount()
+                    .then(res => {
+                        if (isMounted && typeof res.data === 'number') {
+                            setUnreadCount(res.data);
+                        }
+                    })
+                    .catch(err => console.error("Notification Fetch Error:", err));
+            }
 
             return () => {
                 isMounted = false;
             };
         }
-    }, [user, isSuperAdmin]);
+    }, [user?.id, isSuperAdmin]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -68,6 +90,29 @@ const Sidebar = () => {
     const executeLogout = () => {
         AuthService.logout();
         window.location.href = '/';
+    };
+
+    const handlePasswordChange = async (e) => {
+        e.preventDefault();
+        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+            setPasswordError("Las contraseñas no coinciden");
+            return;
+        }
+        setPasswordLoading(true);
+        setPasswordError('');
+        try {
+            await AuthService.changePassword(passwordForm.oldPassword, passwordForm.newPassword);
+            setPasswordSuccess("Contraseña actualizada correctamente");
+            setTimeout(() => {
+                setShowPasswordModal(false);
+                setPasswordSuccess('');
+                setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
+            }, 2000);
+        } catch (err) {
+            setPasswordError(err.response?.data?.message || "Error al cambiar la contraseña");
+        } finally {
+            setPasswordLoading(false);
+        }
     };
 
     const toggleSidebar = () => setIsOpen(!isOpen);
@@ -134,7 +179,7 @@ const Sidebar = () => {
                                         <span className="premium-badge-v1 bg-dark text-white">Super Admin</span>
                                     ) : (
                                         <Badge bg={user?.subscriptionStatus === 'PAID' ? 'success' : 'warning'} className="rounded-pill px-2 py-1" style={{ fontSize: '0.6rem', letterSpacing: '0.5px' }}>
-                                            {user?.subscriptionStatus === 'PAID' ? (user?.subscriptionPlan === 'PREMIUM' ? 'PREMIUM' : user?.subscriptionPlan === 'MEDIUM' ? 'MEDIUM' : 'PRO') : 'PRUEBA'}
+                                            {user?.subscriptionStatus === 'PAID' ? (user?.subscriptionPlan === 'PREMIUM' ? 'PREMIUM' : user?.subscriptionPlan === 'MEDIUM' ? 'MEDIO' : 'BÁSICO') : 'PRUEBA'}
                                         </Badge>
                                     )}
                                     <small className="fw-bold text-dark text-truncate" style={{ maxWidth: '120px' }}>
@@ -147,7 +192,7 @@ const Sidebar = () => {
                         {collapsed && (
                             <div className="mt-3 border-top pt-3 text-center">
                                 <small className="fw-bold text-uppercase" style={{ fontSize: '0.6rem' }}>
-                                    {isSuperAdmin ? 'SA' : (user?.subscriptionStatus === 'PAID' ? (user?.subscriptionPlan === 'PREMIUM' ? 'PRM' : user?.subscriptionPlan === 'MEDIUM' ? 'MED' : 'PRO') : 'TRL')}
+                                    {isSuperAdmin ? 'SA' : (user?.subscriptionStatus === 'PAID' ? (user?.subscriptionPlan === 'PREMIUM' ? 'PRM' : user?.subscriptionPlan === 'MEDIUM' ? 'MED' : 'BAS') : 'PRB')}
                                 </small>
                             </div>
                         )}
@@ -160,6 +205,7 @@ const Sidebar = () => {
                                 <NavItem to="/admin/onboarding" icon={FaRocket} label="Registrar Tienda" description="Wizard paso a paso para registrar un nuevo cliente." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/dashboard" icon={FaChartLine} label="Métricas Globales" description="Visualiza el estado de todo el ecosistema Nugar." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/admin/companies" icon={FaStore} label="Gestión de Empresas" description="Administra los comercios y sus suscripciones." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/admin/notifications" icon={FaBell} label="Notificaciones Globales" badge={unreadCount} breakdown={unreadBreakdown} description="Gestión de pagos y alertas de sistema." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/admin/catalog" icon={FaBox} label="Catálogo Global" description="Gestiona los registros maestros de productos unificados." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/admin/catalog-suggestions" icon={FaBox} label="Sugerencias Catálogo" description="Aprueba o rechaza nuevas imágenes y detalles de productos." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/admin/categories" icon={FaTags} label="Gestión Categorías" description="Panel maestro para crear, editar y moderar categorías." collapsed={collapsed} setIsOpen={setIsOpen} />
@@ -226,7 +272,17 @@ const Sidebar = () => {
                         )}
                     </div>
 
-                    <div className="sidebar-footer" style={{ padding: collapsed ? '20px 0' : '20px' }}>
+                    <div className="sidebar-footer d-flex flex-column gap-2" style={{ padding: collapsed ? '20px 0' : '20px' }}>
+                        <button
+                            className={`btn-logout-sidebar ${collapsed ? 'justify-content-center' : ''}`}
+                            style={{ background: 'transparent', color: '#6c757d', border: '1px solid #dee2e6' }}
+                            onClick={() => setShowPasswordModal(true)}
+                            title={collapsed ? 'Cambiar Contraseña' : ''}
+                        >
+                            <FaKey />
+                            {!collapsed && <span>Cambiar Contraseña</span>}
+                        </button>
+
                         <button
                             className={`btn-logout-sidebar ${collapsed ? 'justify-content-center' : ''}`}
                             onClick={handleLogout}
@@ -263,6 +319,51 @@ const Sidebar = () => {
                     </div>
                 </Modal.Body>
             </Modal>
+
+            {/* Change Password Modal */}
+            <Modal show={showPasswordModal} onHide={() => setShowPasswordModal(false)} centered>
+                <Modal.Header closeButton className="border-0">
+                    <Modal.Title className="fw-bold"><FaKey className="me-2 text-primary" /> Cambiar Contraseña</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="px-4 pb-4">
+                    {passwordError && <Alert variant="danger" className="py-2">{passwordError}</Alert>}
+                    {passwordSuccess && <Alert variant="success" className="py-2">{passwordSuccess}</Alert>}
+                    <Form onSubmit={handlePasswordChange}>
+                        <Form.Group className="mb-3">
+                            <Form.Label className="small fw-bold">Contraseña Actual</Form.Label>
+                            <Form.Control
+                                type="password"
+                                required
+                                value={passwordForm.oldPassword}
+                                onChange={(e) => setPasswordForm({ ...passwordForm, oldPassword: e.target.value })}
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label className="small fw-bold">Nueva Contraseña</Form.Label>
+                            <Form.Control
+                                type="password"
+                                required
+                                minLength={6}
+                                value={passwordForm.newPassword}
+                                onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-4">
+                            <Form.Label className="small fw-bold">Confirmar Nueva Contraseña</Form.Label>
+                            <Form.Control
+                                type="password"
+                                required
+                                minLength={6}
+                                value={passwordForm.confirmPassword}
+                                onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                            />
+                        </Form.Group>
+                        <Button variant="primary" type="submit" className="w-100 rounded-pill fw-bold" disabled={passwordLoading}>
+                            {passwordLoading ? 'Cambiando...' : 'Cambiar Contraseña'}
+                        </Button>
+                    </Form>
+                </Modal.Body>
+            </Modal>
         </>
     );
 };
@@ -287,7 +388,7 @@ const NavGroup = ({ label, collapsed }) => {
 };
 
 // ─── NavItem: link with portal tooltip ───────────────────────────────────────
-const NavItem = ({ to, icon: Icon, label, badge, description, collapsed, setIsOpen }) => {
+const NavItem = ({ to, icon: Icon, label, badge, breakdown, description, collapsed, setIsOpen }) => {
     const [tooltipStyle, setTooltipStyle] = useState(null);
     const ref = useRef(null);
     const hoverTimeout = useRef(null);
@@ -326,7 +427,33 @@ const NavItem = ({ to, icon: Icon, label, badge, description, collapsed, setIsOp
                     style={{ marginRight: collapsed ? 0 : '12px', fontSize: collapsed ? '1.2rem' : 'inherit' }}
                 />
                 {!collapsed && <span className="flex-grow-1">{label}</span>}
-                {!collapsed && badge > 0 && <span className="notification-count">{badge}</span>}
+                {!collapsed && badge > 0 && !breakdown && <span className="notification-count">{badge}</span>}
+                {!collapsed && breakdown && Object.keys(breakdown).length > 0 && (
+                    <OverlayTrigger
+                        placement="right"
+                        overlay={
+                            <BsTooltip>
+                                <div className="text-start">
+                                    <div><span className="text-success">●</span> Pagos/Membresías</div>
+                                    <div><span className="text-warning">●</span> Novedades</div>
+                                    <div><span className="text-danger">●</span> Alertas Críticas</div>
+                                </div>
+                            </BsTooltip>
+                        }
+                    >
+                        <div className="d-flex gap-1 align-items-center">
+                            {(breakdown['PAYMENT'] > 0 || breakdown['SUBSCRIPTION_PAYMENT'] > 0) ? (
+                                <Badge bg="success" pill style={{ fontSize: '0.65rem' }}>{(breakdown['PAYMENT'] || 0) + (breakdown['SUBSCRIPTION_PAYMENT'] || 0)}</Badge>
+                            ) : null}
+                            {breakdown['NEWS'] > 0 && (
+                                <Badge bg="warning" text="dark" pill style={{ fontSize: '0.65rem' }}>{breakdown['NEWS']}</Badge>
+                            )}
+                            {breakdown['SYSTEM_ALERT'] > 0 && (
+                                <Badge bg="danger" pill style={{ fontSize: '0.65rem' }}>{breakdown['SYSTEM_ALERT']}</Badge>
+                            )}
+                        </div>
+                    </OverlayTrigger>
+                )}
                 {collapsed && badge > 0 && (
                     <span
                         className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
@@ -354,6 +481,13 @@ const NavItem = ({ to, icon: Icon, label, badge, description, collapsed, setIsOp
                 }}>
                     <div style={{ fontWeight: 700, marginBottom: '2px' }}>{label}</div>
                     <div style={{ opacity: 0.7, fontSize: '0.75rem' }}>{description}</div>
+                    {breakdown && Object.keys(breakdown).length > 0 && (
+                        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px solid rgba(255,255,255,0.1)', fontSize: '0.75rem' }}>
+                            <div className="d-flex align-items-center mb-1"><span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#198754', display: 'inline-block', marginRight: '6px' }}></span> Pagos</div>
+                            <div className="d-flex align-items-center mb-1"><span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#ffc107', display: 'inline-block', marginRight: '6px' }}></span> Novedades</div>
+                            <div className="d-flex align-items-center"><span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#dc3545', display: 'inline-block', marginRight: '6px' }}></span> Alertas Críticas</div>
+                        </div>
+                    )}
                     <div style={{
                         position: 'absolute',
                         left: '-6px',

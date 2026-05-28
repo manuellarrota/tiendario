@@ -4,12 +4,14 @@ import { FaUsers, FaUserShield, FaStore, FaToggleOn, FaToggleOff } from 'react-i
 import AdminService from '../services/admin.service';
 import Sidebar from '../components/Sidebar';
 import Layout from '../components/Layout';
+import { useToast } from '../components/ToastContext';
 
 const AdminUsersPage = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [processing, setProcessing] = useState(null);
+    const toast = useToast();
 
     const loadUsers = () => {
         setLoading(true);
@@ -37,14 +39,13 @@ const AdminUsersPage = () => {
                 setUsers(users.map(u =>
                     u.id === userId ? { ...u, enabled: !u.enabled } : u
                 ));
-                setProcessing(null);
+                toast.showSuccess("Estado del usuario actualizado exitosamente.");
             },
             (error) => {
                 console.error("Error toggling user", error);
-                alert("❌ Error al cambiar el estado del usuario. Intenta de nuevo.");
-                setProcessing(null);
+                toast.showError("Error al cambiar el estado del usuario. Intenta de nuevo.");
             }
-        );
+        ).finally(() => setProcessing(null));
     };
 
     const getRoleBadge = (role) => {

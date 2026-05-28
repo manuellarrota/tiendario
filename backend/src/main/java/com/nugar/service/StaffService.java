@@ -87,7 +87,7 @@ public class StaffService {
         staff.setEnabled(!staff.isEnabled());
         staff = userRepository.save(staff);
 
-        log.warn("[SEGURIDAD/STAFF] Manager: {} | Acción: {} CAJERO | Afectado: {} | Empresa: {}", 
+        log.warn("[SEGURIDAD/STAFF] Manager: {} | Accion: {} CAJERO | Afectado: {} | Empresa: {}", 
             managerUsername, staff.isEnabled() ? "ACTIVAR" : "SUSPENDER", staff.getUsername(), staff.getCompany().getName());
 
         return staff;
@@ -112,7 +112,7 @@ public class StaffService {
         if (hasSales || hasShifts) {
             staff.setEnabled(false);
             userRepository.save(staff);
-            log.warn("[SEGURIDAD/STAFF] Manager: {} | Acción: INTENTO BORRADO DENEGADO (Cajero SUSPENDIDO) | Afectado: {} | Empresa: {}", 
+            log.warn("[SEGURIDAD/STAFF] Manager: {} | Accion: INTENTO BORRADO DENEGADO (Cajero SUSPENDIDO) | Afectado: {} | Empresa: {}", 
                 managerUsername, staff.getUsername(), staff.getCompany().getName());
             throw new RuntimeException("Este cajero ya tiene ventas o turnos registrados. Por seguridad contable no puede ser eliminado permanentemente, pero ha sido suspendido para que no pueda acceder.");
         }

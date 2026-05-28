@@ -59,7 +59,6 @@ const ShiftHistoryPage = () => {
             <div className="flex-grow-1 p-4" style={{ overflowY: 'auto' }}>
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <h2><FaHistory className="me-2 text-primary" /> Auditoría de Cajas (Turnos)</h2>
-                    <Button variant="outline-primary" onClick={fetchShifts}>Actualizar</Button>
                 </div>
 
                 {error && <Alert variant="danger">{error}</Alert>}

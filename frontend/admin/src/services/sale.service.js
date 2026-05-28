@@ -3,7 +3,7 @@ import AuthService from "./auth.service";
 
 const API_URL = import.meta.env.VITE_API_URL + "/sales";
 
-const getSales = (page = 0, size = 10, status = null, customer = '', dateFrom = null, dateTo = null, paymentMethod = null) => {
+const getSales = (page = 0, size = 10, status = null, customer = '', dateFrom = null, dateTo = null, paymentMethod = null, cashRegisterId = null) => {
     const user = AuthService.getCurrentUser();
     const params = { page, size };
     if (status && status !== 'ALL') params.status = status;
@@ -11,6 +11,7 @@ const getSales = (page = 0, size = 10, status = null, customer = '', dateFrom = 
     if (dateFrom) params.dateFrom = dateFrom;
     if (dateTo) params.dateTo = dateTo;
     if (paymentMethod && paymentMethod !== 'ALL') params.paymentMethod = paymentMethod;
+    if (cashRegisterId && cashRegisterId !== 'ALL') params.cashRegisterId = cashRegisterId;
 
     return axios.get(API_URL, {
         params,

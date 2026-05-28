@@ -37,6 +37,9 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
 
     long countByCompanyIdAndStatus(Long companyId, com.nugar.domain.SaleStatus status);
 
+    @Query("SELECT COALESCE(SUM(s.totalAmount), 0) FROM Sale s WHERE s.company.id = :companyId AND s.status = :status")
+    java.math.BigDecimal sumTotalAmountByCompanyIdAndStatus(@Param("companyId") Long companyId, @Param("status") com.nugar.domain.SaleStatus status);
+
     List<Sale> findByCompanyIdAndDateBetween(Long companyId, LocalDateTime start, LocalDateTime end);
 
     @Query(value = "SELECT si.product.name as name, SUM(si.quantity) as totalSold, SUM(si.quantity * si.unitPrice) as totalRevenue " +
@@ -49,6 +52,7 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
 
     @Query("SELECT s FROM Sale s WHERE s.company.id = :companyId " +
             "AND (CAST(:userId AS string) IS NULL OR s.user.id = :userId) " +
+            "AND (CAST(:cashRegisterId AS string) IS NULL OR s.cashRegister.id = :cashRegisterId) " +
             "AND (CAST(:customerName AS string) IS NULL OR LOWER(s.customerName) LIKE LOWER(CONCAT('%', CAST(:customerName AS string), '%')) OR LOWER(s.customerCedula) LIKE LOWER(CONCAT('%', CAST(:customerName AS string), '%'))) " +
             "AND (CAST(:dateFrom AS string) IS NULL OR s.date >= :dateFrom) " +
             "AND (CAST(:dateTo AS string) IS NULL OR s.date <= :dateTo) " +
@@ -58,6 +62,7 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
     Page<Sale> findByFilters(
             @Param("companyId") Long companyId,
             @Param("userId") Long userId,
+            @Param("cashRegisterId") Long cashRegisterId,
             @Param("customerName") String customerName,
             @Param("dateFrom") LocalDateTime dateFrom,
             @Param("dateTo") LocalDateTime dateTo,

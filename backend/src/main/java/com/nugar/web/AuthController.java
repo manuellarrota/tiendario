@@ -306,7 +306,7 @@ public class AuthController {
                                 token,
                                 origin);
 
-                logger.info("[FORGOT PASSWORD] Enlace de recuperación solicitado para el usuario: {} | Correo: {} | IP: {}", 
+                logger.info("[FORGOT PASSWORD] Enlace de recuperacion solicitado para el usuario: {} | Correo: {} | IP: {}", 
                                 user.getUsername(), targetEmail, getClientIp(httpRequest));
 
                 return ResponseEntity.ok(new MessageResponse(
@@ -345,11 +345,45 @@ public class AuthController {
                 user.setResetTokenExpiry(null);
                 userRepository.save(user);
 
-                logger.info("[PASSWORD RESET] Contraseña restablecida para el usuario: {} | Correo: {} | IP: {}", 
+                logger.info("[PASSWORD RESET] Contrasena restablecida para el usuario: {} | Correo: {} | IP: {}", 
                         user.getUsername(), user.getEmail(), getClientIp(httpRequest));
 
                 return ResponseEntity.ok(
                                 new MessageResponse("Contraseña restablecida exitosamente. Ya puedes iniciar sesión."));
+        }
+
+        @PostMapping("/change-password")
+        @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+        public ResponseEntity<?> changePassword(@RequestBody Map<String, String> request, HttpServletRequest httpRequest) {
+                String oldPassword = request.get("oldPassword");
+                String newPassword = request.get("newPassword");
+
+                if (oldPassword == null || newPassword == null || newPassword.length() < 6) {
+                        return ResponseEntity.badRequest()
+                                        .body(new MessageResponse(
+                                                        "Contraseñas inválidas o la nueva contraseña es muy corta (mínimo 6 caracteres)."));
+                }
+
+                UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext()
+                                .getAuthentication().getPrincipal();
+                
+                User user = userRepository.findById(userDetails.getId()).orElse(null);
+                if (user == null) {
+                        return ResponseEntity.badRequest().body(new MessageResponse("Usuario no encontrado."));
+                }
+
+                if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+                        return ResponseEntity.badRequest().body(new MessageResponse("La contraseña actual es incorrecta."));
+                }
+
+                user.setPassword(passwordEncoder.encode(newPassword));
+                userRepository.save(user);
+
+                logger.info("[CHANGE PASSWORD] Contraseña cambiada internamente para el usuario: {} | IP: {}", 
+                        user.getUsername(), getClientIp(httpRequest));
+
+                return ResponseEntity.ok(
+                                new MessageResponse("Contraseña cambiada exitosamente."));
         }
 
         private String getClientIp(HttpServletRequest request) {

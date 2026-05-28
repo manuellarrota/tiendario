@@ -4,6 +4,7 @@ import { FaBell, FaCheck, FaEye, FaUser, FaPhoneAlt, FaMapMarkerAlt, FaClock, Fa
 import Sidebar from '../components/Sidebar';
 import NotificationService from '../services/notification.service';
 import SaleService from '../services/sale.service';
+import { useToast } from '../components/ToastContext';
 
 const NotificationsPage = () => {
     const [notifications, setNotifications] = useState([]);
@@ -13,6 +14,7 @@ const NotificationsPage = () => {
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('CASH');
     const [saleToPay, setSaleToPay] = useState(null);
+    const toast = useToast();
 
     const loadNotifications = () => {
         NotificationService.getNotifications().then(
@@ -48,7 +50,7 @@ const NotificationsPage = () => {
                     }
                 },
                 () => {
-                    alert("❌ Error al cargar los detalles de la venta. El registro podría no estar disponible.");
+                    toast.showError("❌ Error al cargar los detalles de la venta. El registro podría no estar disponible.");
                 }
             );
         } else {
@@ -84,7 +86,7 @@ const NotificationsPage = () => {
                     setSelectedSale(prev => ({ ...prev, status: status, paymentMethod: method || prev.paymentMethod }));
                 }
             },
-            () => alert("❌ Error al intentar actualizar el estado del pedido.")
+            () => toast.showError("❌ Error al intentar actualizar el estado del pedido.")
         );
     };
 

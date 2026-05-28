@@ -8,6 +8,7 @@ import SupplierService from "../services/supplier.service";
 import PurchaseService from "../services/purchase.service";
 import CategoryService from "../services/category.service";
 import PublicService from "../services/public.service";
+import { useToast } from "../components/ToastContext";
 import { FaPlus, FaSave, FaTruck, FaBoxOpen, FaImage, FaSearch, FaTimes, FaExchangeAlt, FaTrash, FaBarcode } from "react-icons/fa";
 
 const NewPurchasePage = () => {
@@ -17,6 +18,7 @@ const NewPurchasePage = () => {
     const [cart, setCart] = useState([]);
     const [selectedSupplier, setSelectedSupplier] = useState("");
     const [message, setMessage] = useState("");
+    const toast = useToast();
 
     const [step, setStep] = useState(1);
     const [invoiceNumber, setInvoiceNumber] = useState("");
@@ -59,6 +61,7 @@ const NewPurchasePage = () => {
     const [prodMinStock, setProdMinStock] = useState("5");
     const [isGeneratingSku, setIsGeneratingSku] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
 
     // Helper to get full image URL
     const getFullImageUrl = (path) => {
@@ -145,8 +148,7 @@ const NewPurchasePage = () => {
 
     const addToCart = () => {
         if (!selectedSupplier) {
-            setMessage("❌ Por favor, selecciona un proveedor antes de agregar productos.");
-            setTimeout(() => setMessage(""), 4000);
+            toast.showError("Por favor, selecciona un proveedor antes de agregar productos.");
             return;
         }
         if (!selectedProduct || !quantity || !unitCost) return;
@@ -233,7 +235,7 @@ const NewPurchasePage = () => {
             address: newSupplierAddress
         }).then(
             (response) => {
-                setMessage("✅ Proveedor creado exitosamente");
+                toast.showSuccess("Proveedor creado exitosamente");
                 setShowSupplierModal(false);
                 setNewSupplierName("");
                 setNewSupplierTaxId("");
@@ -241,14 +243,12 @@ const NewPurchasePage = () => {
                 setNewSupplierPhone("");
                 setNewSupplierAddress("");
                 loadData();
-                setTimeout(() => setMessage(""), 3000);
                 if (response.data && response.data.id) {
                     setSelectedSupplier(response.data.id);
                 }
             },
             () => {
-                setMessage("❌ Error creando proveedor");
-                setTimeout(() => setMessage(""), 3000);
+                toast.showError("Error creando proveedor");
             }
         );
     };
@@ -271,11 +271,10 @@ const NewPurchasePage = () => {
 
         ProductService.create(productData).then(
             (response) => {
-                setMessage("✅ Producto creado exitosamente");
+                toast.showSuccess("Producto creado exitosamente");
                 setShowProductModal(false);
                 resetProductForm();
                 loadData(); // Reload products
-                setTimeout(() => setMessage(""), 3000);
 
                 // Auto-select the new product
                 if (response.data && response.data.id) {
@@ -289,8 +288,7 @@ const NewPurchasePage = () => {
                 }
             },
             (error) => {
-                setMessage("❌ " + (error.translatedMessage || "Error creando producto."));
-                setTimeout(() => setMessage(""), 5000);
+                toast.showError(error.translatedMessage || "Error creando producto.");
             }
         );
     };
@@ -299,10 +297,13 @@ const NewPurchasePage = () => {
         setProdName(""); setProdSku(""); setProdPrice(""); setProdStock(""); setProdCategory(""); setProdVariant(""); setProdBrand(""); setProdCostPrice(""); setProdImageUrl(""); setProdBarcode(""); setProdMinStock("5");
     };
 
-    const handleSavePurchase = () => {
-        if (!selectedSupplier) { alert("❌ Por favor, selecciona un proveedor antes de continuar."); return; }
-        if (cart.length === 0) { alert("❌ El carrito de compra está vacío. Agrega al menos un producto."); return; }
+    const startPurchaseProcess = () => {
+        if (!selectedSupplier) { toast.showError("Por favor, selecciona un proveedor antes de continuar."); return; }
+        if (cart.length === 0) { toast.showError("El carrito de compra está vacío. Agrega al menos un producto."); return; }
+        setShowPaymentModal(true);
+    };
 
+    const handleSavePurchase = () => {
         const totalInCurrency = cart.reduce((acc, item) => acc.plus(new Decimal(item.total)), new Decimal(0)).toDecimalPlaces(2);
         const totalInBase = cart.reduce((acc, item) => acc.plus(new Decimal(item.subtotalInBaseCurrency || item.total)), new Decimal(0)).toDecimalPlaces(2);
 

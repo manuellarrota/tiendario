@@ -267,7 +267,11 @@ const CustomersPage = () => {
                                     type="text"
                                     required
                                     value={name}
-                                    onChange={(e) => setName(e.target.value)}
+                                    onChange={(e) => {
+                                        if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(e.target.value)) {
+                                            setName(e.target.value);
+                                        }
+                                    }}
                                     placeholder="Nombre completo del cliente"
                                 />
                             </Form.Group>
@@ -296,8 +300,12 @@ const CustomersPage = () => {
                                     type="text"
                                     required
                                     value={phone}
-                                    onChange={(e) => setPhone(e.target.value)}
-                                    placeholder="+1 234 567 8900"
+                                    onChange={(e) => {
+                                        if (/^[0-9]*$/.test(e.target.value)) {
+                                            setPhone(e.target.value);
+                                        }
+                                    }}
+                                    placeholder="Solo números"
                                 />
                             </Form.Group>
                             <Form.Group className="mb-3">

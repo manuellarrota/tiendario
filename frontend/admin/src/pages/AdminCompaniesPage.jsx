@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Table, Badge, Button, Card, Spinner, Dropdown, Alert, Form } from 'react-bootstrap';
-import { FaBuilding, FaUsers, FaEdit, FaCheck, FaTimes } from 'react-icons/fa';
+import { FaBuilding, FaUsers, FaEdit, FaCheck, FaTimes, FaEye, FaInfoCircle, FaMapMarkerAlt, FaPhone, FaCalendarAlt, FaShoppingCart, FaMoneyBillWave, FaBox, FaCashRegister, FaChartLine } from 'react-icons/fa';
 import AdminService from '../services/admin.service';
 import Sidebar from '../components/Sidebar';
 import Layout from '../components/Layout';
 import StoreLocationMap from '../components/StoreLocationMap';
 import { Modal, Row, Col } from 'react-bootstrap';
+import { useToast } from '../components/ToastContext';
 
 const AdminCompaniesPage = () => {
     const [companies, setCompanies] = useState([]);
@@ -14,17 +15,26 @@ const AdminCompaniesPage = () => {
     const [updating, setUpdating] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const toast = useToast();
     const ITEMS_PER_PAGE = 10;
 
     // Edit Modal State
     const [showEditModal, setShowEditModal] = useState(false);
     const [selectedCompany, setSelectedCompany] = useState(null);
+
+    // View Modal State
+    const [showViewModal, setShowViewModal] = useState(false);
+    const [viewCompany, setViewCompany] = useState(null);
+    const [companyKpis, setCompanyKpis] = useState(null);
+    const [loadingKpis, setLoadingKpis] = useState(false);
+
     const [editName, setEditName] = useState('');
     const [editPhone, setEditPhone] = useState('');
     const [editDescription, setEditDescription] = useState('');
     const [editAddress, setEditAddress] = useState('');
     const [editPosition, setEditPosition] = useState(null);
     const [editPlan, setEditPlan] = useState('BASIC');
+    const [editStatus, setEditStatus] = useState('TRIAL');
     const [editHasBilling, setEditHasBilling] = useState(false);
     const [editExtraRegisters, setEditExtraRegisters] = useState(0);
     const [saving, setSaving] = useState(false);
@@ -57,10 +67,11 @@ const AdminCompaniesPage = () => {
                     c.id === companyId ? { ...c, subscriptionStatus: newStatus } : c
                 ));
                 setUpdating(null);
+                toast.showSuccess("Estado actualizado exitosamente.");
             },
             (error) => {
                 console.error("Error updating company", error);
-                setError("Error al actualizar el estado de la suscripción.");
+                toast.showError("Error al actualizar el estado de la suscripción.");
                 setUpdating(null);
             }
         );
@@ -74,9 +85,27 @@ const AdminCompaniesPage = () => {
         setEditAddress(company.address || '');
         setEditPosition({ lat: company.latitude, lng: company.longitude });
         setEditPlan(company.subscriptionPlan || 'BASIC');
+        setEditStatus(company.subscriptionStatus || 'TRIAL');
         setEditHasBilling(company.hasElectronicBilling || false);
         setEditExtraRegisters(company.extraRegisters || 0);
         setShowEditModal(true);
+    };
+
+    const handleViewClick = (company) => {
+        setViewCompany(company);
+        setShowViewModal(true);
+        setCompanyKpis(null);
+        setLoadingKpis(true);
+        AdminService.getCompanyKpis(company.id).then(
+            res => {
+                setCompanyKpis(res.data);
+                setLoadingKpis(false);
+            },
+            err => {
+                console.error("Error loading KPIs", err);
+                setLoadingKpis(false);
+            }
+        );
     };
 
     const handleUpdateCompany = (e) => {
@@ -96,28 +125,31 @@ const AdminCompaniesPage = () => {
                 // Update subscription data as well
                 const subData = {
                     plan: editPlan,
+                    status: editStatus,
                     hasElectronicBilling: editHasBilling,
                     extraRegisters: editExtraRegisters
                 };
                 AdminService.updateCompanySubscription(selectedCompany.id, subData).then(
                     () => {
                         setCompanies(companies.map(c =>
-                            c.id === selectedCompany.id ? { ...c, ...data, subscriptionPlan: editPlan, hasElectronicBilling: editHasBilling, extraRegisters: editExtraRegisters } : c
+                            c.id === selectedCompany.id ? { ...c, ...data, subscriptionPlan: editPlan, subscriptionStatus: editStatus, hasElectronicBilling: editHasBilling, extraRegisters: editExtraRegisters } : c
                         ));
                         setShowEditModal(false);
                         setSaveError('');
                         setSaving(false);
+                        toast.showSuccess("Empresa actualizada correctamente.");
                     },
                     (error) => {
                         console.error("Error updating subscription details", error);
                         setSaveError('No se pudo actualizar el plan. Los datos básicos sí fueron guardados.');
                         setSaving(false);
+                        toast.showError("Error al actualizar la suscripción.");
                     }
                 );
             },
             (error) => {
                 console.error("Error updating company", error);
-                alert("❌ Error al actualizar los datos de la empresa.");
+                toast.showError("❌ Error al actualizar los datos de la empresa.");
                 setSaving(false);
             }
         );
@@ -194,26 +226,12 @@ const AdminCompaniesPage = () => {
                                             </td>
                                             <td>
                                                 <div className="d-flex gap-2">
+                                                    <Button variant="outline-info" size="sm" className="rounded-pill" onClick={() => handleViewClick(company)}>
+                                                        <FaEye className="me-1" /> Detalle
+                                                    </Button>
                                                     <Button variant="outline-primary" size="sm" className="rounded-pill" onClick={() => handleEditClick(company)}>
                                                         <FaEdit className="me-1" /> Editar
                                                     </Button>
-                                                    <Dropdown>
-                                                        <Dropdown.Toggle variant="outline-secondary" size="sm" className="rounded-pill" id={`dropdown-${company.id}`} disabled={updating === company.id}>
-                                                            {updating === company.id ? <Spinner size="sm" animation="border" /> : <><FaUsers className="me-1" /> Plan</>}
-                                                        </Dropdown.Toggle>
-
-                                                        <Dropdown.Menu>
-                                                            <Dropdown.Item onClick={() => handleStatusChange(company.id, 'PAID')}>
-                                                                <span className="text-success fw-bold">PREMIUM</span> (Pago activo)
-                                                            </Dropdown.Item>
-                                                            <Dropdown.Item onClick={() => handleStatusChange(company.id, 'TRIAL')}>
-                                                                <span className="text-warning fw-bold">PRUEBA</span> (Onboarding)
-                                                            </Dropdown.Item>
-                                                            <Dropdown.Item onClick={() => handleStatusChange(company.id, 'PAST_DUE')}>
-                                                                <span className="text-danger fw-bold">VENCIDO</span> (Bloqueado)
-                                                            </Dropdown.Item>
-                                                        </Dropdown.Menu>
-                                                    </Dropdown>
                                                 </div>
                                         </td>
                                     </tr>
@@ -280,10 +298,21 @@ const AdminCompaniesPage = () => {
                         <Row className="mb-3">
                             <Col md={4}>
                                 <Form.Group>
+                                    <Form.Label className="small fw-bold">Estado</Form.Label>
+                                    <Form.Select value={editStatus} onChange={(e) => setEditStatus(e.target.value)} className="rounded-3">
+                                        <option value="TRIAL">PRUEBA</option>
+                                        <option value="PAID">ACTIVO (PAGADO)</option>
+                                        <option value="PAST_DUE">VENCIDO</option>
+                                        <option value="SUSPENDED">SUSPENDIDO</option>
+                                    </Form.Select>
+                                </Form.Group>
+                            </Col>
+                            <Col md={4}>
+                                <Form.Group>
                                     <Form.Label className="small fw-bold">Plan</Form.Label>
                                     <Form.Select value={editPlan} onChange={(e) => setEditPlan(e.target.value)} className="rounded-3">
                                         <option value="BASIC">Básico (1 Caja)</option>
-                                        <option value="MEDIUM">Medium (3 Cajas)</option>
+                                        <option value="MEDIUM">Profesional (3 Cajas)</option>
                                         <option value="PREMIUM">Premium (5 Cajas)</option>
                                     </Form.Select>
                                 </Form.Group>
@@ -349,6 +378,141 @@ const AdminCompaniesPage = () => {
                         </div>
                     </Form>
                 </Modal.Body>
+            </Modal>
+
+            {/* View Company Modal */}
+            <Modal scrollable show={showViewModal} onHide={() => setShowViewModal(false)} size="lg" centered>
+                <Modal.Header closeButton className="border-0 bg-light">
+                    <Modal.Title className="fw-bold d-flex align-items-center">
+                        <FaBuilding className="me-2 text-primary" />
+                        Detalles de la Empresa
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="p-4">
+                    {viewCompany && (
+                        <div className="d-flex flex-column gap-4">
+                            <div className="d-flex align-items-center gap-3 border-bottom pb-3">
+                                <div className="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center" style={{ width: '60px', height: '60px', fontSize: '24px' }}>
+                                    {viewCompany.name ? viewCompany.name.charAt(0).toUpperCase() : <FaBuilding />}
+                                </div>
+                                <div>
+                                    <h4 className="mb-0 fw-bold">{viewCompany.name}</h4>
+                                    <small className="text-muted">ID: #{viewCompany.id} {viewCompany.rif ? `| RIF: ${viewCompany.rif}` : ''}</small>
+                                </div>
+                            </div>
+                            
+                            <Row>
+                                <Col md={6}>
+                                    <h6 className="fw-bold text-muted mb-3"><FaInfoCircle className="me-2" />Información General</h6>
+                                    <p className="mb-2"><strong>Descripción:</strong> {viewCompany.description || 'No especificada'}</p>
+                                    <p className="mb-2"><strong><FaPhone className="me-2 text-muted" />Teléfono:</strong> {viewCompany.phoneNumber || 'No especificado'}</p>
+                                    <p className="mb-2"><strong><FaMapMarkerAlt className="me-2 text-muted" />Dirección:</strong> {viewCompany.address || 'No especificada'}</p>
+                                    <p className="mb-0"><strong>Moneda Base:</strong> {viewCompany.baseCurrency || 'USD'} | <strong>Zona Horaria:</strong> {viewCompany.timezone}</p>
+                                </Col>
+                                <Col md={6}>
+                                    <h6 className="fw-bold text-muted mb-3"><FaUsers className="me-2" />Estado y Suscripción</h6>
+                                    <p className="mb-2">
+                                        <strong>Estado:</strong>{' '}
+                                        <Badge bg={viewCompany.subscriptionStatus === 'PAID' ? 'success' : viewCompany.subscriptionStatus === 'TRIAL' ? 'warning' : viewCompany.subscriptionStatus === 'PAST_DUE' ? 'danger' : 'secondary'} className="rounded-pill">
+                                            {viewCompany.subscriptionStatus === 'PAID' ? 'ACTIVO (PAGADO)' : 
+                                             viewCompany.subscriptionStatus === 'TRIAL' ? 'PRUEBA' : 
+                                             viewCompany.subscriptionStatus === 'PAST_DUE' ? 'VENCIDO' : 
+                                             viewCompany.subscriptionStatus === 'SUSPENDED' ? 'SUSPENDIDO' : 
+                                             viewCompany.subscriptionStatus}
+                                        </Badge>
+                                    </p>
+                                    <p className="mb-2"><strong>Plan:</strong> {viewCompany.subscriptionPlan || 'BASIC'}</p>
+                                    <p className="mb-2"><strong>Cajas Extra Facturadas:</strong> {viewCompany.billedExtraRegisters || 0}</p>
+                                    <p className="mb-0"><strong>Facturación Electrónica:</strong> {viewCompany.hasElectronicBilling ? 'Sí' : 'No'}</p>
+                                </Col>
+                            </Row>
+
+                            <Row>
+                                <Col md={12}>
+                                    <h6 className="fw-bold text-muted mb-3"><FaCalendarAlt className="me-2" />Fechas Importantes</h6>
+                                    <div className="d-flex gap-4">
+                                        <div>
+                                            <small className="text-muted d-block">Inicio de Prueba</small>
+                                            <strong>{viewCompany.trialStartDate ? new Date(viewCompany.trialStartDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</strong>
+                                        </div>
+                                        <div>
+                                            <small className="text-muted d-block">Fin de Suscripción/Prueba</small>
+                                            <strong>{viewCompany.subscriptionEndDate ? new Date(viewCompany.subscriptionEndDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : 'N/A'}</strong>
+                                        </div>
+                                    </div>
+                                </Col>
+                            </Row>
+
+                            <hr className="my-2" />
+
+                            <Row>
+                                <Col md={12}>
+                                    <h6 className="fw-bold text-muted mb-3"><FaChartLine className="me-2" />KPIs y Rendimiento</h6>
+                                    {loadingKpis ? (
+                                        <div className="d-flex align-items-center gap-2 text-muted">
+                                            <Spinner animation="border" size="sm" /> <span>Cargando métricas...</span>
+                                        </div>
+                                    ) : companyKpis ? (
+                                        <Row className="g-3">
+                                            <Col md={4} sm={6}>
+                                                <Card className="bg-light border-0 shadow-sm h-100">
+                                                    <Card.Body className="p-3 text-center">
+                                                        <FaShoppingCart className="text-primary mb-2 fs-4" />
+                                                        <h4 className="fw-bold mb-1">{companyKpis.totalSales}</h4>
+                                                        <small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Transacciones Exitosas</small>
+                                                    </Card.Body>
+                                                </Card>
+                                            </Col>
+                                            <Col md={4} sm={6}>
+                                                <Card className="bg-light border-0 shadow-sm h-100">
+                                                    <Card.Body className="p-3 text-center">
+                                                        <FaMoneyBillWave className="text-success mb-2 fs-4" />
+                                                        <h4 className="fw-bold mb-1 text-success">${companyKpis.totalRevenue?.toFixed(2) || '0.00'}</h4>
+                                                        <small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Volumen Ventas (USD)</small>
+                                                    </Card.Body>
+                                                </Card>
+                                            </Col>
+                                            <Col md={4} sm={6}>
+                                                <Card className="bg-light border-0 shadow-sm h-100">
+                                                    <Card.Body className="p-3 text-center">
+                                                        <FaBox className="text-info mb-2 fs-4" />
+                                                        <h4 className="fw-bold mb-1">{companyKpis.totalProducts}</h4>
+                                                        <small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Productos en Catálogo</small>
+                                                    </Card.Body>
+                                                </Card>
+                                            </Col>
+                                            <Col md={6} sm={6}>
+                                                <Card className="bg-light border-0 shadow-sm h-100">
+                                                    <Card.Body className="p-3 text-center">
+                                                        <FaCashRegister className="text-warning mb-2 fs-4" />
+                                                        <h4 className="fw-bold mb-1">{companyKpis.totalRegisters}</h4>
+                                                        <small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Cajas Registradoras</small>
+                                                    </Card.Body>
+                                                </Card>
+                                            </Col>
+                                            <Col md={6} sm={6}>
+                                                <Card className="bg-light border-0 shadow-sm h-100">
+                                                    <Card.Body className="p-3 text-center">
+                                                        <FaUsers className="text-secondary mb-2 fs-4" />
+                                                        <h4 className="fw-bold mb-1">{companyKpis.totalUsers}</h4>
+                                                        <small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Usuarios (Staff)</small>
+                                                    </Card.Body>
+                                                </Card>
+                                            </Col>
+                                        </Row>
+                                    ) : (
+                                        <div className="text-muted small">No se pudieron cargar los KPIs.</div>
+                                    )}
+                                </Col>
+                            </Row>
+                        </div>
+                    )}
+                </Modal.Body>
+                <Modal.Footer className="border-0">
+                    <Button variant="secondary" className="rounded-pill px-4" onClick={() => setShowViewModal(false)}>
+                        Cerrar
+                    </Button>
+                </Modal.Footer>
             </Modal>
         </Layout>
     );

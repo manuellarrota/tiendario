@@ -9,6 +9,7 @@ import AuthService from "../services/auth.service";
 import InventoryService from "../services/inventory.service";
 import { FaPlus, FaTrash, FaBoxOpen, FaExclamationTriangle, FaLock, FaImage, FaFileExcel, FaFilePdf, FaUpload, FaSort, FaSortUp, FaSortDown, FaBarcode } from "react-icons/fa";
 import InventoryImportWizard from "../components/InventoryImportWizard";
+import { useToast } from "../components/ToastContext";
 
 const InventoryPage = () => {
     // ... (logic remains same)
@@ -25,6 +26,7 @@ const InventoryPage = () => {
     const subscriptionStatus = user?.subscriptionStatus || 'TRIAL';
     const isPremium = subscriptionStatus === 'PAID' || subscriptionStatus === 'TRIAL';
     const isBlocked = subscriptionStatus === 'PAST_DUE' || subscriptionStatus === 'SUSPENDED';
+    const toast = useToast();
 
     // Form State
     const [name, setName] = useState("");
@@ -882,13 +884,12 @@ const InventoryPage = () => {
                                 if (!categories.some(c => c.name.toLowerCase() === newName.toLowerCase())) {
                                     setCategories([...categories, { id: 'sug-' + Date.now(), name: newName }]);
                                 }
+                                toast.showSuccess("✅ Sugerencia enviada a revisión. ¡Gracias!");
                                 setShowSuggestModal(false);
-                                setSuggestedCategoryName("");
+                            }).catch(err => {
+                                toast.showError(err.translatedMessage || "Hubo un error al guardar la sugerencia.");
+                            }).finally(() => {
                                 setIsSuggesting(false);
-                                setMessage("¡Sugerencia de categoría añadida y lista para usar!");
-                            }).catch((err) => {
-                                setIsSuggesting(false);
-                                alert(err.translatedMessage || "Hubo un error al guardar la sugerencia.");
                             });
                         }}
                     >

@@ -17,6 +17,13 @@ const getAllCompanies = () => {
     });
 };
 
+const getCompanyKpis = (id) => {
+    const user = AuthService.getCurrentUser();
+    return axios.get(API_URL + `/companies/${id}/kpis`, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
 const updateCompanySubscription = (id, data) => {
     const user = AuthService.getCurrentUser();
     return axios.put(API_URL + `/companies/${id}/subscription`, data, {
@@ -34,6 +41,13 @@ const updateCompany = (id, data) => {
 const getGlobalPayments = () => {
     const user = AuthService.getCurrentUser();
     return axios.get(API_URL + "/payments", {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+const getPaymentById = (id) => {
+    const user = AuthService.getCurrentUser();
+    return axios.get(API_URL + `/payments/${id}`, {
         headers: { Authorization: 'Bearer ' + user.token }
     });
 };
@@ -150,12 +164,39 @@ const rejectCatalogSuggestion = (id) => {
     });
 };
 
+const getSuperAdminNotifications = (page = 0, size = 10, type = '', search = '', readStatus = '') => {
+    const user = AuthService.getCurrentUser();
+    let url = API_URL + `/notifications?page=${page}&size=${size}`;
+    if (type) url += `&type=${type}`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    if (readStatus) url += `&readStatus=${readStatus}`;
+    return axios.get(url, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+const getAdminUnreadCount = () => {
+    const user = AuthService.getCurrentUser();
+    return axios.get(API_URL + `/notifications/unread-count`, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+const markNotificationAsRead = (id) => {
+    const user = AuthService.getCurrentUser();
+    return axios.put(API_URL + `/notifications/${id}/read`, {}, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
 const AdminService = {
     getGlobalStats,
     getAllCompanies,
+    getCompanyKpis,
     updateCompany,
     updateCompanySubscription,
     getGlobalPayments,
+    getPaymentById,
     approvePayment,
     rejectPayment,
     getAllUsers,
@@ -172,6 +213,9 @@ const AdminService = {
     getCatalogSuggestions,
     approveCatalogSuggestion,
     rejectCatalogSuggestion,
+    getSuperAdminNotifications,
+    getAdminUnreadCount,
+    markNotificationAsRead,
 };
 
 export default AdminService;

@@ -25,6 +25,9 @@ public class GlobalExceptionHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    @org.springframework.beans.factory.annotation.Autowired
+    private com.nugar.repository.NotificationRepository notificationRepository;
+
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> handleRuntimeException(RuntimeException ex) {
         // Only log unexpected runtime exceptions at error level
@@ -74,8 +77,24 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
         logger.error("Unhandled exception caught by GlobalExceptionHandler", ex);
+        saveSystemAlert("Error interno crítico", ex.getMessage());
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR,
                 "Error interno del servidor. Por favor contacta soporte.");
+    }
+
+    private void saveSystemAlert(String title, String message) {
+        try {
+            com.nugar.domain.Notification alert = new com.nugar.domain.Notification();
+            alert.setTitle(title);
+            alert.setMessage(message != null ? message : "Error desconocido");
+            alert.setType("SYSTEM_ALERT");
+            alert.setCreatedAt(LocalDateTime.now());
+            alert.setReadStatus(false);
+            alert.setCompany(null); // Global notification
+            notificationRepository.save(alert);
+        } catch (Exception e) {
+            logger.error("Error al guardar la alerta del sistema en BD", e);
+        }
     }
 
     private ResponseEntity<Map<String, Object>> buildResponse(HttpStatus status, String message) {

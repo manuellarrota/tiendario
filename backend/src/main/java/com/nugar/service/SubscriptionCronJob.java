@@ -38,7 +38,7 @@ public class SubscriptionCronJob {
     @Scheduled(cron = "0 5 0 * * ?")
     @Transactional
     public void generateSubscriptionReminders() {
-        log.info("[SUBSCRIPTION_REMINDER] Iniciando escaneo diario de membresías...");
+        log.info("[SUBSCRIPTION_REMINDER] Iniciando escaneo diario de membresias...");
 
         // 7 days from today
         LocalDate targetDate = LocalDate.now().plusDays(7);
@@ -73,7 +73,7 @@ public class SubscriptionCronJob {
             notification.setReadStatus(false);
 
             notificationRepository.save(notification);
-            log.info("[SUBSCRIPTION_REMINDER] Empresa ID: {} | Notificación enviada | Monto: {}", company.getId(), grandTotal);
+            log.info("[SUBSCRIPTION_REMINDER] Empresa ID: {} | Notificacion enviada | Monto: {}", company.getId(), grandTotal);
         }
 
         log.info("[SUBSCRIPTION_REMINDER] Proceso finalizado | Recordatorios enviados: {}", expiringCompanies.size());

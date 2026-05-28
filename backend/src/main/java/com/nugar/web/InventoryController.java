@@ -32,7 +32,7 @@ public class InventoryController {
                 UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                                 .getPrincipal();
                 org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(InventoryController.class);
-                logger.info("📤 [EXPORTAR] Usuario {} está exportando inventario a Excel", userDetails.getUsername());
+                logger.info("📤 [EXPORTAR] Usuario {} esta exportando inventario a Excel", userDetails.getUsername());
                 ByteArrayInputStream in = inventoryService.exportToExcel(userDetails.getCompanyId());
 
                 HttpHeaders headers = new HttpHeaders();
@@ -52,7 +52,7 @@ public class InventoryController {
                 UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                                 .getPrincipal();
                 org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(InventoryController.class);
-                logger.info("📤 [EXPORTAR] Usuario {} está exportando inventario a PDF", userDetails.getUsername());
+                logger.info("📤 [EXPORTAR] Usuario {} esta exportando inventario a PDF", userDetails.getUsername());
                 ByteArrayInputStream in = inventoryService.exportToPdf(userDetails.getCompanyId());
 
                 HttpHeaders headers = new HttpHeaders();
@@ -70,7 +70,7 @@ public class InventoryController {
                 UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                                 .getPrincipal();
                 org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(InventoryController.class);
-                logger.info("📥 [IMPORTAR] Usuario {} inició importación de inventario desde {}", 
+                logger.info("📥 [IMPORTAR] Usuario {} inicio importacion de inventario desde {}", 
                     userDetails.getUsername(), file.getOriginalFilename());
                 List<String> logs = inventoryService.importFromCsv(file, userDetails.getCompanyId());
                 return ResponseEntity.ok(logs);
@@ -82,7 +82,7 @@ public class InventoryController {
             org.slf4j.Logger logger = org.slf4j.LoggerFactory.getLogger(InventoryController.class);
             try {
                 String fileId = java.util.UUID.randomUUID().toString();
-                logger.info("📥 [IMPORT UPLOAD] Archivo recibido: '{}' | Tamaño: {} bytes",
+                logger.info("📥 [IMPORT UPLOAD] Archivo recibido: '{}' | Tamano: {} bytes",
                         file.getOriginalFilename(), file.getSize());
                 List<String> headers = inventoryService.uploadAndGetHeaders(file, fileId);
                 java.util.Map<String, Object> response = new java.util.HashMap<>();
@@ -91,7 +91,7 @@ public class InventoryController {
                 logger.info("📥 [IMPORT UPLOAD] Archivo procesado correctamente. Columnas detectadas: {}", headers);
                 return ResponseEntity.ok(response);
             } catch (IllegalArgumentException e) {
-                logger.warn("⚠️ [IMPORT UPLOAD] Formato inválido: {}", e.getMessage());
+                logger.warn("⚠️ [IMPORT UPLOAD] Formato invalido: {}", e.getMessage());
                 return ResponseEntity.badRequest().body(java.util.Collections.singletonMap("message", e.getMessage()));
             } catch (Exception e) {
                 logger.error("❌ [IMPORT UPLOAD] Error procesando archivo '{}': {}", file.getOriginalFilename(), e.getMessage(), e);
@@ -119,14 +119,14 @@ public class InventoryController {
         @GetMapping("/template")
         @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
         public ResponseEntity<Resource> getTemplate() throws IOException {
-                ByteArrayInputStream in = inventoryService.generateCsvTemplate();
+                ByteArrayInputStream in = inventoryService.generateExcelTemplate();
 
                 HttpHeaders headers = new HttpHeaders();
-                headers.add("Content-Disposition", "attachment; filename=formato_carga_inventario.csv");
+                headers.add("Content-Disposition", "attachment; filename=formato_carga_inventario.xlsx");
 
                 return ResponseEntity.ok()
                                 .headers(headers)
-                                .contentType(MediaType.parseMediaType("text/csv"))
+                                .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
                                 .body(new InputStreamResource(in));
         }
 }

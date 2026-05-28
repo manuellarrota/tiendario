@@ -361,7 +361,7 @@ public class PublicController {
 
         saleRepository.save(sale);
 
-        log.info("[PEDIDO MARKETPLACE] Nuevo pedido ID: {} | Cliente: {} | Cédula: {} | Email: {} | Empresa: {} | Total: ${}", 
+        log.info("[PEDIDO MARKETPLACE] Nuevo pedido ID: {} | Cliente: {} | Cedula: {} | Email: {} | Empresa: {} | Total: ${}", 
                 sale.getId(), request.getCustomerName(), request.getCustomerCedula(), 
                 request.getCustomerEmail(), company.getName(), sale.getTotalAmount());
 
@@ -425,6 +425,9 @@ public class PublicController {
                     map.put("baseCurrencySymbol", config.getBaseCurrencySymbol());
                     map.put("currencies", config.getCurrencies());
                     map.put("extraRegisterMonthlyPrice", config.getExtraRegisterMonthlyPrice() != null ? config.getExtraRegisterMonthlyPrice() : new BigDecimal("5.00"));
+                    map.put("basicPlanMonthlyPrice", config.getBasicPlanMonthlyPrice() != null ? config.getBasicPlanMonthlyPrice() : new BigDecimal("19.99"));
+                    map.put("mediumPlanMonthlyPrice", config.getMediumPlanMonthlyPrice() != null ? config.getMediumPlanMonthlyPrice() : new BigDecimal("29.99"));
+                    map.put("premiumPlanMonthlyPrice", config.getPremiumPlanMonthlyPrice() != null ? config.getPremiumPlanMonthlyPrice() : new BigDecimal("49.99"));
                     return map;
                 })
                 .orElseGet(() -> {
@@ -436,6 +439,9 @@ public class PublicController {
                     map.put("baseCurrencySymbol", "$");
                     map.put("currencies", "[{\"code\":\"COP\",\"symbol\":\"$\",\"name\":\"Peso Colombiano\",\"rate\":4200.00,\"enabled\":true},{\"code\":\"VES\",\"symbol\":\"Bs.\",\"name\":\"Bolívar\",\"rate\":36.50,\"enabled\":true}]");
                     map.put("extraRegisterMonthlyPrice", new BigDecimal("5.00"));
+                    map.put("basicPlanMonthlyPrice", new BigDecimal("19.99"));
+                    map.put("mediumPlanMonthlyPrice", new BigDecimal("29.99"));
+                    map.put("premiumPlanMonthlyPrice", new BigDecimal("49.99"));
                     return map;
                 }));
     }

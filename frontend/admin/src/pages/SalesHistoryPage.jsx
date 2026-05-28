@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Table, Badge, Button, Modal, ListGroup, Form, OverlayTrigger, Tooltip } from 'react-bootstrap';
-import { FaHistory, FaEye, FaCheckCircle, FaClock, FaUser, FaPhoneAlt, FaMapMarkerAlt, FaSearch, FaUndo } from 'react-icons/fa';
+import { FaHistory, FaEye, FaCheckCircle, FaClock, FaUser, FaPhoneAlt, FaMapMarkerAlt, FaSearch, FaUndo, FaCashRegister } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import SaleService from '../services/sale.service';
 import PublicService from '../services/public.service';
+import CashRegisterService from '../services/cash-register.service';
+import { useToast } from '../components/ToastContext';
 
 const SalesHistoryPage = () => {
     const [sales, setSales] = useState([]);
@@ -16,11 +18,14 @@ const SalesHistoryPage = () => {
     const [totalPages, setTotalPages] = useState(0);
     const [totalElements, setTotalElements] = useState(0);
     const [pageSize] = useState(10);
+    const toast = useToast();
 
     const [filterCustomer, setFilterCustomer] = useState('');
     const [filterDateFrom, setFilterDateFrom] = useState('');
     const [filterDateTo, setFilterDateTo] = useState('');
     const [filterPaymentMethod, setFilterPaymentMethod] = useState('ALL');
+    const [filterCashRegister, setFilterCashRegister] = useState('ALL');
+    const [cashRegisters, setCashRegisters] = useState([]);
     const [activeFilters, setActiveFilters] = useState({});
 
     const formatSecondary = (amount) => {
@@ -43,7 +48,8 @@ const SalesHistoryPage = () => {
             activeFilters.customer || '', 
             dFrom, 
             dTo,
-            activeFilters.paymentMethod || 'ALL'
+            activeFilters.paymentMethod || 'ALL',
+            activeFilters.cashRegisterId || 'ALL'
         ).then(
             (response) => {
                 setSales(response.data.content);
@@ -63,6 +69,10 @@ const SalesHistoryPage = () => {
         PublicService.getPlatformConfig().then(
             (res) => setPlatformConfig(res.data),
             (err) => console.error('Error loading config', err)
+        );
+        CashRegisterService.getAllRegisters().then(
+            (res) => setCashRegisters(res.data),
+            (err) => console.error('Error loading registers', err)
         );
     }, [loadSales]);
 
@@ -105,7 +115,7 @@ const SalesHistoryPage = () => {
                 // Reload from server to ensure consistency (silently to avoid disrupt)
                 loadSales(true);
             },
-            () => alert("❌ Hubo un error al intentar actualizar el estado de la venta.")
+            () => toast.showError("Hubo un error al intentar actualizar el estado de la venta.")
         );
     };
 
@@ -153,7 +163,8 @@ const SalesHistoryPage = () => {
             dateFrom: filterDateFrom || undefined,
             dateTo: filterDateTo || undefined,
             status: filterStatus !== 'ALL' ? filterStatus : undefined,
-            paymentMethod: filterPaymentMethod !== 'ALL' ? filterPaymentMethod : undefined
+            paymentMethod: filterPaymentMethod !== 'ALL' ? filterPaymentMethod : undefined,
+            cashRegisterId: filterCashRegister !== 'ALL' ? filterCashRegister : undefined
         });
     };
 
@@ -163,6 +174,7 @@ const SalesHistoryPage = () => {
         setFilterDateTo('');
         setFilterStatus('ALL');
         setFilterPaymentMethod('ALL');
+        setFilterCashRegister('ALL');
         setActiveFilters({});
         setPage(0);
     };
@@ -178,9 +190,6 @@ const SalesHistoryPage = () => {
                         <h2 className="fw-bold mb-0">Historial de Ventas</h2>
                         <p className="text-muted">Administra tus ventas del local y pedidos del Marketplace</p>
                     </div>
-                    <Button variant="primary" onClick={() => loadSales()} className="rounded-pill px-4 shadow-sm">
-                        <FaHistory className="me-2" /> Actualizar Lista
-                    </Button>
                 </div>
 
                 {/* Filter Bar */}
@@ -251,6 +260,19 @@ const SalesHistoryPage = () => {
                                     <option value="MIXED">Mixto</option>
                                 </Form.Select>
                             </Col>
+                            <Col md={3} className="mt-2">
+                                <Form.Label className="small fw-bold text-muted text-uppercase">Caja Registradora</Form.Label>
+                                <Form.Select
+                                    className="rounded-3 border-light bg-light"
+                                    value={filterCashRegister}
+                                    onChange={(e) => setFilterCashRegister(e.target.value)}
+                                >
+                                    <option value="ALL">Todas las Cajas</option>
+                                    {cashRegisters.map(cr => (
+                                        <option key={cr.id} value={cr.id}>{cr.name}</option>
+                                    ))}
+                                </Form.Select>
+                            </Col>
                         </Row>
                     </Card.Body>
                 </Card>
@@ -273,7 +295,12 @@ const SalesHistoryPage = () => {
                                     <tr key={sale.id}>
                                         <td className="px-4">
                                             <div className="fw-bold text-primary">#{sale.id}</div>
-                                            <small className="text-muted">{sale.date ? new Date(sale.date).toLocaleString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}</small>
+                                            <small className="text-muted d-block">{sale.date ? new Date(sale.date).toLocaleString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}</small>
+                                            {sale.cashRegister && (
+                                                <Badge bg="light" text="dark" className="border fw-normal mt-1" style={{ fontSize: '0.7rem' }}>
+                                                    <FaCashRegister className="me-1 text-secondary" /> {sale.cashRegister.name}
+                                                </Badge>
+                                            )}
                                         </td>
                                         <td>
                                             <div className="fw-bold">{sale.customerName || sale.customer?.name || 'Venta Mostrador'}</div>
@@ -372,6 +399,7 @@ const SalesHistoryPage = () => {
                                     <div className="bg-light p-3 rounded-4 mb-4">
                                         <p className="mb-2"><strong>Estado:</strong> {getStatusBadge(selectedSale.status)}</p>
                                         <p className="mb-2"><strong>Fecha:</strong> {selectedSale.date ? new Date(selectedSale.date).toLocaleString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}</p>
+                                        <p className="mb-2"><strong>Caja:</strong> {selectedSale.cashRegister?.name || 'Venta Web / Sin Caja'}</p>
                                         {selectedSale.payments && selectedSale.payments.length > 0 ? (
                                             <>
                                                 <p className="mb-1"><strong>Métodos de Pago:</strong></p>

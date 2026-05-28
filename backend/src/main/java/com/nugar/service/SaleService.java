@@ -78,6 +78,7 @@ public class SaleService {
 
     public Page<Sale> getFilteredSales(
             UserDetailsImpl userDetails,
+            Long cashRegisterId,
             String customerName,
             LocalDateTime dateFrom,
             LocalDateTime dateTo,
@@ -97,6 +98,7 @@ public class SaleService {
         return saleRepository.findByFilters(
                 userDetails.getCompanyId(),
                 filterUserId,
+                cashRegisterId,
                 customerName,
                 dateFrom,
                 dateTo,

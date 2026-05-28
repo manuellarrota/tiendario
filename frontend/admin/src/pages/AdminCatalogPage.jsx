@@ -4,6 +4,7 @@ import { FaBox, FaEdit, FaTrash, FaImage } from 'react-icons/fa';
 import AdminService from '../services/admin.service';
 import Sidebar from '../components/Sidebar';
 import Layout from '../components/Layout';
+import { useToast } from '../components/ToastContext';
 
 const AdminCatalogPage = () => {
     const [catalog, setCatalog] = useState([]);
@@ -15,6 +16,7 @@ const AdminCatalogPage = () => {
     const [itemToDelete, setItemToDelete] = useState(null);
     const [saving, setSaving] = useState(false);
     const [categories, setCategories] = useState([]);
+    const toast = useToast();
 
     // Pagination and search
     const [searchTerm, setSearchTerm] = useState('');
@@ -62,9 +64,10 @@ const AdminCatalogPage = () => {
                 setCatalog(catalog.map(c => c.id === selectedItem.id ? response.data : c));
                 setShowEditModal(false);
                 setSaving(false);
+                toast.showSuccess("Producto actualizado exitosamente.");
             },
             (error) => {
-                alert("❌ Error al actualizar el registro global.");
+                toast.showError("❌ Error al actualizar el registro global.");
                 setSaving(false);
             }
         );
@@ -82,9 +85,10 @@ const AdminCatalogPage = () => {
                 setCatalog(catalog.filter(c => c.id !== itemToDelete.id));
                 setShowDeleteModal(false);
                 setItemToDelete(null);
+                toast.showSuccess("Producto eliminado del catálogo global.");
             },
             (error) => {
-                alert("❌ No se pudo eliminar el registro del catálogo.");
+                toast.showError("❌ No se pudo eliminar el registro del catálogo.");
                 setShowDeleteModal(false);
                 setItemToDelete(null);
             }

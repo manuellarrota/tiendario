@@ -46,7 +46,7 @@ public class ScheduledTasksService {
         log.info("[SUSCRIPCION_CRON] Se encontraron {} empresas con suscripcion vencida. Procesando...", expiredCompanies.size());
 
         for (Company company : expiredCompanies) {
-            log.warn("[SUSCRIPCION_CRON] Suscripción vencida para empresa ID: {} ({}), Venció: {}. Cambiando a PAST_DUE.",
+            log.warn("[SUSCRIPCION_CRON] Suscripcion vencida para empresa ID: {} ({}), Vencio: {}. Cambiando a PAST_DUE.",
                     company.getId(), company.getName(), company.getSubscriptionEndDate());
 
             company.setSubscriptionStatus(SubscriptionStatus.PAST_DUE);
@@ -65,7 +65,7 @@ public class ScheduledTasksService {
     @Scheduled(cron = "0 0 8 * * ?") // Todos los días a las 08:00:00
     @Transactional
     public void sendSubscriptionWarnings() {
-        log.info("[SUSCRIPCION_CRON] Iniciando tarea programada: Alerta de suscripciones por vencer (3 días)...");
+        log.info("[SUSCRIPCION_CRON] Iniciando tarea programada: Alerta de suscripciones por vencer (3 dias)...");
 
         LocalDateTime now = LocalDateTime.now();
         // Queremos las que venzan entre el inicio y el fin del 3er día a partir de hoy
@@ -82,7 +82,7 @@ public class ScheduledTasksService {
                 .toList();
 
         if (expiringCompanies.isEmpty()) {
-            log.info("[SUSCRIPCION_CRON] No hay suscripciones que venzan en 3 días exactos.");
+            log.info("[SUSCRIPCION_CRON] No hay suscripciones que venzan en 3 dias exactos.");
             return;
         }
 
@@ -103,7 +103,7 @@ public class ScheduledTasksService {
                         }
                     });
         }
-        log.info("[SUSCRIPCION_CRON] Tarea de prevención finalizada.");
+        log.info("[SUSCRIPCION_CRON] Tarea de prevencion finalizada.");
     }
 
     /**

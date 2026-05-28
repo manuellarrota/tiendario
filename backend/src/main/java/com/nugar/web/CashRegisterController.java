@@ -27,4 +27,12 @@ public class CashRegisterController {
         List<CashRegister> availableRegisters = cashRegisterService.getAvailableRegisters(userDetails.getCompanyId());
         return ResponseEntity.ok(availableRegisters);
     }
+
+    @GetMapping
+    @PreAuthorize("hasRole('MANAGER') or hasRole('CASHIER') or hasRole('ADMIN')")
+    public ResponseEntity<List<CashRegister>> getAllRegisters() {
+        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        List<CashRegister> registers = cashRegisterService.getAllRegisters(userDetails.getCompanyId());
+        return ResponseEntity.ok(registers);
+    }
 }

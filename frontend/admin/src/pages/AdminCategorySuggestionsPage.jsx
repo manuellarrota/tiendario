@@ -5,6 +5,7 @@ import AdminService from '../services/admin.service';
 import Layout from '../components/Layout';
 import CategorySuggestionService from '../services/category-suggestion.service';
 import CategoryService from '../services/category.service';
+import { useToast } from '../components/ToastContext';
 
 const AdminCategorySuggestionsPage = () => {
     const [suggestions, setSuggestions] = useState([]);
@@ -29,6 +30,7 @@ const AdminCategorySuggestionsPage = () => {
     
     const [processing, setProcessing] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
+    const toast = useToast();
 
     const loadData = () => {
         setLoading(true);
@@ -64,7 +66,7 @@ const AdminCategorySuggestionsPage = () => {
                 setTimeout(() => setMessage(''), 3000);
             },
             (error) => {
-                alert("❌ Error al aprobar.");
+                toast.showError("Error al aprobar.");
                 setProcessing(null);
             }
         );
@@ -80,7 +82,7 @@ const AdminCategorySuggestionsPage = () => {
                 setTimeout(() => setMessage(''), 3000);
             },
             (error) => {
-                alert("❌ Error al rechazar.");
+                toast.showError("Error al rechazar.");
                 setProcessing(null);
             }
         );
@@ -104,7 +106,7 @@ const AdminCategorySuggestionsPage = () => {
                 setTimeout(() => setMessage(''), 3000);
             },
             (error) => {
-                alert("❌ Error al fusionar la sugerencia.");
+                toast.showError("Error al fusionar la sugerencia.");
                 setProcessing(null);
             }
         );
@@ -127,7 +129,7 @@ const AdminCategorySuggestionsPage = () => {
                 setTimeout(() => setMessage(''), 3000);
             },
             (error) => {
-                alert("❌ Error al crear la categoría. Probablemente ya existe.");
+                toast.showError("Error al crear la categoría. Probablemente ya existe.");
                 setProcessing(null);
             }
         );
@@ -148,7 +150,7 @@ const AdminCategorySuggestionsPage = () => {
                 setTimeout(() => setMessage(''), 3000);
             },
             (error) => {
-                alert("❌ Error al actualizar la categoría.");
+                toast.showError("Error al actualizar la categoría.");
                 setProcessing(null);
             }
         );
@@ -173,7 +175,7 @@ const AdminCategorySuggestionsPage = () => {
                 setTimeout(() => setMessage(''), 3000);
             },
             (error) => {
-                alert("❌ No se pudo eliminar la categoría.");
+                toast.showError("No se pudo eliminar la categoría.");
                 setProcessing(null);
                 setShowDeleteModal(false);
                 setCategoryToDelete(null);
