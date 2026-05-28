@@ -21,8 +21,11 @@ public class User {
 
     private String password;
 
+    @ElementCollection(fetch = FetchType.EAGER)
     @Enumerated(EnumType.STRING)
-    private Role role;
+    @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
+    @Column(name = "role")
+    private java.util.Set<Role> roles = new java.util.HashSet<>();
 
     @ManyToOne
     @JoinColumn(name = "company_id")

@@ -66,7 +66,7 @@ public class ShiftControllerTest {
         testUser = new User();
         testUser.setUsername("cashier_test");
         testUser.setPassword("password");
-        testUser.setRole(Role.ROLE_CASHIER);
+        testUser.getRoles().add(Role.ROLE_CASHIER);
         testUser.setCompany(testCompany);
         testUser = userRepository.save(testUser);
 

@@ -12,6 +12,7 @@ public class SignupRequest {
 
     // For MANAGER
     private String companyName;
+    private String rif;
     private Double latitude;
     private Double longitude;
     private String phoneNumber;

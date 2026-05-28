@@ -15,6 +15,7 @@ public class GlobalConfig {
     // Plan settings
     private Integer freePlanProductLimit = 20;
     private BigDecimal premiumPlanMonthlyPrice = new BigDecimal("25.00");
+    private BigDecimal extraRegisterMonthlyPrice = new BigDecimal("5.00");
     private Integer trialDays = 30;
 
     // Marketplace settings

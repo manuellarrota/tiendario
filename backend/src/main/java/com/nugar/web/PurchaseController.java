@@ -95,6 +95,9 @@ public class PurchaseController {
         if (request.getPaymentMethod() != null) {
             purchase.setPaymentMethod(request.getPaymentMethod());
         }
+        if (request.getInvoiceNumber() != null && !request.getInvoiceNumber().isBlank()) {
+            purchase.setInvoiceNumber(request.getInvoiceNumber());
+        }
 
         // Set supplier if provided
         if (request.getSupplierId() != null) {

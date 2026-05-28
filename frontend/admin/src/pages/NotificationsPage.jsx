@@ -169,7 +169,7 @@ const NotificationsPage = () => {
             </div>
 
             {/* Modal de Detalle de Venta */}
-            <Modal scrollable show={showSaleModal} onHide={() => setShowSaleModal(false)} size="lg" centered scrollable className="rounded-4 overflow-hidden">
+            <Modal scrollable show={showSaleModal} onHide={() => setShowSaleModal(false)} size="lg" centered className="rounded-4 overflow-hidden">
                 <Modal.Header closeButton>
                     <Modal.Title className="fw-bold">Gestión de Pedido #{selectedSale?.id}</Modal.Title>
                 </Modal.Header>
@@ -189,7 +189,7 @@ const NotificationsPage = () => {
                                 <div className="bg-light p-3 rounded-4 mb-4">
                                     <p className="mb-2"><strong>Estado Actual:</strong> {getStatusBadge(selectedSale.status)}</p>
                                     <p className="mb-2"><strong>Fecha:</strong> {new Date(selectedSale.date).toLocaleString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}</p>
-                                    <h4 className="fw-bold text-success mb-0 mt-3">Total: ${selectedSale.totalAmount?.toLocaleString()}</h4>
+                                    <h4 className="fw-bold text-success mb-0 mt-3">Total: ${selectedSale.totalAmount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h4>
                                 </div>
                             </Col>
                             <Col md={12}>

@@ -36,7 +36,7 @@ public class ExchangeRateService {
      */
     @Scheduled(cron = "0 0 6 * * *")
     public void scheduleRateUpdate() {
-        log.info("Cron: Iniciando actualización automática de tasas de cambio (6:00 AM)...");
+        log.info("[TASAS DE CAMBIO] Cron 6:00 AM activado. Actualizando...");
         updateRates();
     }
 
@@ -48,7 +48,7 @@ public class ExchangeRateService {
             GlobalConfig config = configRepository.findFirstByOrderByIdAsc()
                     .orElseGet(() -> configRepository.save(new GlobalConfig()));
 
-            log.info("Consultando tasas desde APIs externas...");
+            // Consultando APIs externas (BCV y OpenER)
             
             // 1. Obtener tasa BCV (Bolívares) - promedio es el campo oficial
             BigDecimal vesRate = fetchVesRate();
@@ -57,7 +57,7 @@ public class ExchangeRateService {
             BigDecimal copRate = fetchCopRate();
 
             if (vesRate == null && copRate == null) {
-                log.warn("No se pudieron obtener tasas nuevas. Se mantiene la configuración actual.");
+                log.warn("[TASAS_CAMBIO] No se pudieron obtener tasas nuevas. Se mantiene la configuración actual.");
                 return;
             }
 
@@ -72,12 +72,12 @@ public class ExchangeRateService {
             }
             
             configRepository.save(config);
-            log.info("✓ Proceso completado. Tasas actualizadas -> VES: {}, COP: {}", 
-                    vesRate != null ? vesRate : "No camnbio", 
-                    copRate != null ? copRate : "No cambio");
+            log.info("[TASAS DE CAMBIO] Actualizadas -> VES: {} | COP: {}", 
+                    vesRate != null ? vesRate : "sin cambio", 
+                    copRate != null ? copRate : "sin cambio");
 
         } catch (Exception e) {
-            log.error("Error crítico en el bot de tasas: {}", e.getMessage(), e);
+            log.error("[TASAS_CAMBIO] Error crítico en el bot de tasas: {}", e.getMessage(), e);
         }
     }
 
@@ -89,7 +89,7 @@ public class ExchangeRateService {
                 return new BigDecimal(response.get("promedio").toString());
             }
         } catch (Exception e) {
-            log.error("Error al obtener tasa VES (BCV): {}", e.getMessage());
+            log.error("[TASAS_CAMBIO] Error al obtener tasa VES (BCV): {}", e.getMessage());
         }
         return null;
     }
@@ -105,7 +105,7 @@ public class ExchangeRateService {
                 }
             }
         } catch (Exception e) {
-            log.error("Error al obtener tasa COP: {}", e.getMessage());
+            log.error("[TASAS_CAMBIO] Error al obtener tasa COP: {}", e.getMessage());
         }
         return null;
     }
@@ -135,7 +135,7 @@ public class ExchangeRateService {
             
             return objectMapper.writeValueAsString(currencies);
         } catch (Exception e) {
-            log.error("Error al parsear o escribir JSON de monedas: {}", e.getMessage());
+            log.error("[TASAS_CAMBIO] Error al parsear o escribir JSON de monedas: {}", e.getMessage());
             return currentJson;
         }
     }

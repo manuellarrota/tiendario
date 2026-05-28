@@ -23,10 +23,13 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/api/dashboard")
 public class DashboardController {
+        private static final Logger log = LoggerFactory.getLogger(DashboardController.class);
 
         @Autowired
         ProductRepository productRepository;
@@ -44,7 +47,16 @@ public class DashboardController {
                                 .getPrincipal();
                 Long companyId = userDetails.getCompanyId();
 
+                log.info("[DASHBOARD_LOAD] Usuario: {} | Página: Dashboard Principal", userDetails.getUsername());
+
                 Map<String, Object> summary = new HashMap<>();
+
+                boolean isCashier = userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_CASHIER"));
+                boolean isManagerOrAdmin = userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_MANAGER")) || 
+                                           userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+                boolean isCashierOnly = isCashier && !isManagerOrAdmin;
+
+                summary.put("isCashierOnly", isCashierOnly);
 
                 // 0. Company Info for Subscription Tracking
                 com.nugar.domain.Company company = companyRepository.findById(companyId).orElse(null);
@@ -52,8 +64,27 @@ public class DashboardController {
                         summary.put("subscriptionStatus", company.getSubscriptionStatus());
                         summary.put("subscriptionEndDate", company.getSubscriptionEndDate());
                         summary.put("subscriptionPlan", company.getSubscriptionPlan());
-                        summary.put("extraRegisters", company.getExtraRegisters());
                         summary.put("hasElectronicBilling", Boolean.TRUE.equals(company.getHasElectronicBilling()));
+                        summary.put("extraRegisters", company.getExtraRegisters());
+                        summary.put("billedExtraRegisters", company.getBilledExtraRegisters() != null ? company.getBilledExtraRegisters() : company.getExtraRegisters());
+                        summary.put("nextCycleExtraRegisters", company.getNextCycleExtraRegisters());
+                }
+
+                if (isCashierOnly) {
+                        LocalDateTime startOfDay = LocalDate.now().atStartOfDay();
+                        List<Sale> salesToday = saleRepository.findByCompanyIdAndDateAfter(companyId, startOfDay)
+                                        .stream()
+                                        .filter(s -> s.getUser() != null && s.getUser().getId().equals(userDetails.getId()))
+                                        .collect(java.util.stream.Collectors.toList());
+
+                        BigDecimal revenueToday = salesToday.stream()
+                                        .filter(s -> !com.nugar.domain.SaleStatus.CANCELLED.equals(s.getStatus()))
+                                        .map(Sale::getTotalAmount)
+                                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                        summary.put("revenueToday", revenueToday);
+                        summary.put("salesCountToday", salesToday.size());
+
+                        return ResponseEntity.ok(summary);
                 }
 
                 // 1. Total Products

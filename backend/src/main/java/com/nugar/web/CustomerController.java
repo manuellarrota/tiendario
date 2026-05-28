@@ -69,7 +69,7 @@ public class CustomerController {
         customer.setCompany(companyRepository.findById(userDetails.getCompanyId()).orElse(null));
         Customer savedCustomer = customerRepository.save(customer);
 
-        log.info("[NUEVO CLIENTE] Registrado por: {} | Nombre: {} | Cédula: {} | Teléfono: {} | Email: {} | Empresa ID: {}",
+        log.info("[NUEVO CLIENTE] Registrado por: {} | Nombre: {} | Cedula: {} | Telefono: {} | Email: {} | Empresa ID: {}",
             userDetails.getUsername(), savedCustomer.getName(), savedCustomer.getCedula(),
             savedCustomer.getPhone(), savedCustomer.getEmail(), userDetails.getCompanyId());
 
@@ -94,7 +94,7 @@ public class CustomerController {
         customer.setAddress(customerDetails.getAddress());
 
         customerRepository.save(customer);
-        log.info("[CLIENTE ACTUALIZADO] Modificado por: {} | Cliente ID: {} | Nombre: {} | Cédula: {} | Teléfono: {} | Empresa ID: {}",
+        log.info("[CLIENTE ACTUALIZADO] Modificado por: {} | Cliente ID: {} | Nombre: {} | Cedula: {} | Telefono: {} | Empresa ID: {}",
             userDetails.getUsername(), id, customer.getName(), customer.getCedula(),
             customer.getPhone(), userDetails.getCompanyId());
         return ResponseEntity.ok(new MessageResponse("Customer updated successfully!"));

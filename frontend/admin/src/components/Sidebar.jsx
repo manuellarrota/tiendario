@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom';
 import { NavLink, Link, useNavigate, useLocation } from 'react-router-dom';
-import { Nav, Badge } from 'react-bootstrap';
+import { Nav, Badge, Modal, Button } from 'react-bootstrap';
 import {
     FaBars, FaTimes, FaChevronLeft, FaChevronRight, FaStore, FaChartLine,
     FaMoneyBillWave, FaUsers, FaCog, FaHome, FaBell, FaShoppingBag,
@@ -18,6 +18,7 @@ const Sidebar = () => {
     const location = useLocation();
     const [unreadCount, setUnreadCount] = useState(0);
     const [isOpen, setIsOpen] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     // Desktop collapse state
     const [collapsed, setCollapsed] = useState(localStorage.getItem('sidebar_collapsed') === 'true');
@@ -33,18 +34,8 @@ const Sidebar = () => {
                 })
                 .catch(err => console.error("Notification Fetch Error:", err));
 
-            const interval = setInterval(() => {
-                NotificationService.getUnreadCount()
-                    .then(res => {
-                        if (isMounted && typeof res.data === 'number') {
-                            setUnreadCount(res.data);
-                        }
-                    })
-                    .catch(() => { });
-            }, 30000);
             return () => {
                 isMounted = false;
-                clearInterval(interval);
             };
         }
     }, [user, isSuperAdmin]);
@@ -64,13 +55,17 @@ const Sidebar = () => {
             try {
                 const shiftRes = await ShiftService.getCurrentShift();
                 if (shiftRes.status === 200 && shiftRes.data && shiftRes.data.status === 'OPEN') {
-                    const confirmLeave = window.confirm("⚠️ Tienes un turno de caja en curso bajo tu responsabilidad.\n\nSi cierras sesión ahora, tu caja quedará ABIERTA de forma segura para cuando regreses (ideal para el almuerzo).\n\n¿Deseas salir del sistema temporalmente?");
-                    if (!confirmLeave) return; // Abort logout if they say no
+                    setShowLogoutModal(true);
+                    return;
                 }
             } catch (e) {
                 // Continúa si no hay turno o hay error
             }
         }
+        executeLogout();
+    };
+
+    const executeLogout = () => {
         AuthService.logout();
         window.location.href = '/';
     };
@@ -243,6 +238,31 @@ const Sidebar = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Logout with Open Shift Modal */}
+            <Modal show={showLogoutModal} onHide={() => setShowLogoutModal(false)} centered>
+                <Modal.Body className="text-center p-5">
+                    <div className="mb-4">
+                        <div className="rounded-circle bg-warning bg-opacity-10 d-inline-flex p-4">
+                            <FaCashRegister size={40} className="text-warning" />
+                        </div>
+                    </div>
+                    <h4 className="fw-bold mb-3">⚠️ Turno de Caja Abierto</h4>
+                    <p className="text-secondary mb-4">
+                        Tienes un turno de caja en curso bajo tu responsabilidad.<br/><br/>
+                        Si cierras sesión ahora, tu caja quedará <strong>ABIERTA</strong> de forma segura para cuando regreses (ideal para el almuerzo).<br/><br/>
+                        ¿Deseas salir del sistema temporalmente?
+                    </p>
+                    <div className="d-flex justify-content-center gap-3">
+                        <Button variant="outline-secondary" className="px-4 rounded-pill fw-bold" onClick={() => setShowLogoutModal(false)}>
+                            Cancelar
+                        </Button>
+                        <Button variant="warning" className="px-4 rounded-pill fw-bold text-dark" onClick={executeLogout}>
+                            Sí, Salir Temporalmente
+                        </Button>
+                    </div>
+                </Modal.Body>
+            </Modal>
         </>
     );
 };

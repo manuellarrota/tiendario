@@ -75,7 +75,7 @@ public class CatalogSuggestionController {
         suggestionRepository.save(suggestion);
 
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        log.info("✅ [CATALOGO APROBADO] SuperAdmin '{}' aprobo sugerencia ID: {} de la empresa '{}' para el producto '{}'",
+        log.info("[CATALOGO APROBADO] SuperAdmin '{}' aprobo sugerencia ID: {} de la empresa '{}' para el producto '{}'",
             userDetails.getUsername(), id, suggestion.getCompanyName(), suggestion.getSuggestedName());
 
         return ResponseEntity.ok(new MessageResponse("Sugerencia de catálogo aprobada exitosamente."));
@@ -93,7 +93,7 @@ public class CatalogSuggestionController {
         suggestionRepository.save(suggestion);
 
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        log.info("❌ [CATALOGO RECHAZADO] SuperAdmin '{}' rechazo sugerencia ID: {} de la empresa '{}' para el producto '{}'",
+        log.info("[CATALOGO RECHAZADO] SuperAdmin '{}' rechazo sugerencia ID: {} de la empresa '{}' para el producto '{}'",
             userDetails.getUsername(), id, suggestion.getCompanyName(), suggestion.getSuggestedName());
 
         return ResponseEntity.ok(new MessageResponse("Sugerencia rechazada."));

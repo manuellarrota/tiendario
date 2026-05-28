@@ -10,7 +10,9 @@ const AdminCatalogPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [showEditModal, setShowEditModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedItem, setSelectedItem] = useState(null);
+    const [itemToDelete, setItemToDelete] = useState(null);
     const [saving, setSaving] = useState(false);
     const [categories, setCategories] = useState([]);
 
@@ -68,17 +70,25 @@ const AdminCatalogPage = () => {
         );
     };
 
-    const handleDelete = (id) => {
-        if (window.confirm("¿Seguro que quieres eliminar este producto del catálogo global? Esto no borrará los productos de las tiendas pero romperá la unificación.")) {
-            AdminService.deleteCatalogProduct(id).then(
-                () => {
-                    setCatalog(catalog.filter(c => c.id !== id));
-                },
-                (error) => {
-                    alert("❌ No se pudo eliminar el registro del catálogo.");
-                }
-            );
-        }
+    const confirmDelete = (item) => {
+        setItemToDelete(item);
+        setShowDeleteModal(true);
+    };
+
+    const handleDelete = () => {
+        if (!itemToDelete) return;
+        AdminService.deleteCatalogProduct(itemToDelete.id).then(
+            () => {
+                setCatalog(catalog.filter(c => c.id !== itemToDelete.id));
+                setShowDeleteModal(false);
+                setItemToDelete(null);
+            },
+            (error) => {
+                alert("❌ No se pudo eliminar el registro del catálogo.");
+                setShowDeleteModal(false);
+                setItemToDelete(null);
+            }
+        );
     };
 
     if (loading) {
@@ -151,7 +161,7 @@ const AdminCatalogPage = () => {
                                                 <Button variant="outline-primary" size="sm" className="rounded-pill me-2" onClick={() => handleEdit(item)}>
                                                     <FaEdit /> Editar
                                                 </Button>
-                                                <Button variant="outline-danger" size="sm" className="rounded-pill" onClick={() => handleDelete(item.id)}>
+                                                <Button variant="outline-danger" size="sm" className="rounded-pill" onClick={() => confirmDelete(item)}>
                                                     <FaTrash />
                                                 </Button>
                                             </td>
@@ -248,6 +258,29 @@ const AdminCatalogPage = () => {
                         {saving ? <Spinner size="sm" animation="border" /> : 'Guardar Cambios Globales'}
                     </Button>
                 </Modal.Footer>
+            </Modal>
+
+            {/* Delete Confirmation Modal */}
+            <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+                <Modal.Body className="text-center p-5">
+                    <div className="mb-4">
+                        <div className="rounded-circle bg-danger bg-opacity-10 d-inline-flex p-4">
+                            <FaTrash size={40} className="text-danger" />
+                        </div>
+                    </div>
+                    <h4 className="fw-bold mb-3">¿Eliminar Producto Global?</h4>
+                    <p className="text-secondary mb-4">
+                        ¿Seguro que quieres eliminar <strong>"{itemToDelete?.name}"</strong> del catálogo global? Esto no borrará los productos de las tiendas pero romperá la unificación.
+                    </p>
+                    <div className="d-flex justify-content-center gap-3">
+                        <Button variant="outline-secondary" className="px-4 rounded-pill fw-bold" onClick={() => setShowDeleteModal(false)}>
+                            Cancelar
+                        </Button>
+                        <Button variant="danger" className="px-4 rounded-pill fw-bold" onClick={handleDelete}>
+                            Sí, Eliminar Producto
+                        </Button>
+                    </div>
+                </Modal.Body>
             </Modal>
         </Layout>
     );

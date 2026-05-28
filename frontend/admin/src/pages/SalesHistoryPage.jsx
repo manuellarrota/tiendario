@@ -64,13 +64,6 @@ const SalesHistoryPage = () => {
             (res) => setPlatformConfig(res.data),
             (err) => console.error('Error loading config', err)
         );
-
-        // 30 Seconds Polling for live updates (market orders)
-        const interval = setInterval(() => {
-            loadSales(true); // silent refresh
-        }, 30000);
-
-        return () => clearInterval(interval);
     }, [loadSales]);
 
     const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -138,6 +131,7 @@ const SalesHistoryPage = () => {
             case 'CARD': return 'Tarjeta 💳';
             case 'TRANSFER': return 'Transferencia 🏦';
             case 'MOBILE_PAYMENT': return 'Pago Móvil 📱';
+            case 'MIXED': return 'Mixto 🔀';
             default: return method || 'Pendiente';
         }
     };
@@ -254,6 +248,7 @@ const SalesHistoryPage = () => {
                                     <option value="TRANSFER">Transferencia</option>
                                     <option value="MOBILE_PAYMENT">Pago Móvil</option>
                                     <option value="CARD">Tarjeta</option>
+                                    <option value="MIXED">Mixto</option>
                                 </Form.Select>
                             </Col>
                         </Row>
@@ -289,7 +284,7 @@ const SalesHistoryPage = () => {
                                             {renderPaymentMethods(sale)}
                                         </td>
                                         <td className="text-end fw-bold text-success">
-                                            ${sale.totalAmount ? sale.totalAmount.toLocaleString() : '0'}
+                                            ${sale.totalAmount ? sale.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0'}
                                             {platformConfig?.enableSecondaryCurrency && sale.totalAmount > 0 && (
                                                 <div className="text-muted fw-normal" style={{ fontSize: '0.75rem' }}>{formatSecondary(sale.totalAmount)}</div>
                                             )}
@@ -357,7 +352,7 @@ const SalesHistoryPage = () => {
                 </Card>
 
                 {/* Modal de Detalle */}
-                <Modal scrollable show={showDetail} onHide={() => setShowDetail(false)} size="lg" centered scrollable className="rounded-4 overflow-hidden">
+                <Modal scrollable show={showDetail} onHide={() => setShowDetail(false)} size="lg" centered className="rounded-4 overflow-hidden">
                     <Modal.Header closeButton>
                         <Modal.Title className="fw-bold">Detalle de la Venta #{selectedSale?.id}</Modal.Title>
                     </Modal.Header>
@@ -391,7 +386,7 @@ const SalesHistoryPage = () => {
                                         ) : (
                                             <p className="mb-2"><strong>Método:</strong> {formatPaymentMethod(selectedSale.paymentMethod)}</p>
                                         )}
-                                        <h4 className="fw-bold text-success mb-0 mt-3">Total: ${selectedSale.totalAmount ? selectedSale.totalAmount.toLocaleString() : '0'}</h4>
+                                        <h4 className="fw-bold text-success mb-0 mt-3">Total: ${selectedSale.totalAmount ? selectedSale.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0'}</h4>
                                         {platformConfig?.enableSecondaryCurrency && selectedSale.totalAmount > 0 && (
                                             <h5 className="text-muted mt-1 mb-0">{formatSecondary(selectedSale.totalAmount)}</h5>
                                         )}

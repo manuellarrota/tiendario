@@ -198,7 +198,10 @@ const PurchaseHistoryPage = () => {
                                                 {purchases.map((purchase) => (
                                                     <tr key={purchase.id}>
                                                         <td className="px-4 py-3">
-                                                            <div className="fw-bold text-dark">#{purchase.id}</div>
+                                                            <div className="fw-bold text-dark">
+                                                                #{purchase.id}
+                                                                {purchase.invoiceNumber && <span className="ms-2 badge bg-secondary" style={{fontSize: '0.7rem'}}>Fact: {purchase.invoiceNumber}</span>}
+                                                            </div>
                                                             <div className="text-muted small">
                                                                 {new Date(purchase.date).toLocaleDateString('es-ES', {
                                                                     day: 'numeric', month: 'short', year: 'numeric',
@@ -231,15 +234,15 @@ const PurchaseHistoryPage = () => {
                                                                 {purchase.currencyCode && purchase.currencyCode !== 'USD' ? (
                                                                     <>
                                                                         <span className="text-muted small me-1">{purchase.currencyCode}</span>
-                                                                        {Number(purchase.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                                                        {Number(purchase.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                                     </>
                                                                 ) : (
-                                                                    `$${Number(purchase.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+                                                                    `$${Number(purchase.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                                                                 )}
                                                             </div>
                                                             {purchase.currencyCode && purchase.currencyCode !== 'USD' && (
                                                                 <div className="text-success small">
-                                                                    =${Number(purchase.total / (purchase.exchangeRate || 1)).toLocaleString(undefined, { minimumFractionDigits: 2 })} USD
+                                                                    =${Number(purchase.total / (purchase.exchangeRate || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
                                                                 </div>
                                                             )}
                                                         </td>
@@ -355,7 +358,7 @@ const PurchaseHistoryPage = () => {
                                             
                                             <div className="d-flex align-items-center gap-3 mb-2">
                                                 <h3 className="fw-bold mb-0">
-                                                    {selectedPurchase.currencyCode} {Number(selectedPurchase.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                                    {selectedPurchase.currencyCode} {Number(selectedPurchase.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                 </h3>
                                                 {renderPaymentMethod(selectedPurchase.paymentMethod)}
                                             </div>
@@ -367,8 +370,8 @@ const PurchaseHistoryPage = () => {
                                             <div className="border-top pt-2 border-primary border-opacity-10">
                                                 {selectedPurchase.currencyCode !== 'USD' && (
                                                     <div className="fw-bold small mb-1">
-                                                        Equivalente Base: ${Number(selectedPurchase.total / (selectedPurchase.exchangeRate || 1)).toLocaleString(undefined, { minimumFractionDigits: 2 })} USD
-                                                        <span className="ms-2 opacity-75 fw-normal">(Tasa: {Number(selectedPurchase.exchangeRate || 1).toLocaleString()})</span>
+                                                        Equivalente Base: ${Number(selectedPurchase.total / (selectedPurchase.exchangeRate || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                                                        <span className="ms-2 opacity-75 fw-normal">(Tasa: {Number(selectedPurchase.exchangeRate || 1).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</span>
                                                     </div>
                                                 )}
                                             </div>
@@ -391,20 +394,20 @@ const PurchaseHistoryPage = () => {
                                                         <div>
                                                             <div className="fw-bold text-dark">{item.product?.name || 'Producto'}</div>
                                                             <div className="text-muted small">
-                                                                Costo: <span className="fw-bold text-dark">{Number(item.unitCost || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })} {selectedPurchase.currencyCode}</span>
+                                                                Costo: <span className="fw-bold text-dark">{Number(item.unitCost || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedPurchase.currencyCode}</span>
                                                                 {' '}| Cantidad: {item.quantity}
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <div className="text-end">
                                                         <div className="fw-bold text-dark">
-                                                            {selectedPurchase.currencyCode} {Number(item.quantity * (item.unitCost || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                                            {selectedPurchase.currencyCode} {Number(item.quantity * (item.unitCost || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </div>
                                                         <div className="text-success small fw-bold">
                                                             {selectedPurchase.currencyCode === 'USD' ? (
-                                                                `= $${Number(item.quantity * item.unitCost).toLocaleString(undefined, { minimumFractionDigits: 2 })} USD`
+                                                                `= $${Number(item.quantity * item.unitCost).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
                                                             ) : (
-                                                                `= $${Number((item.unitCost / (selectedPurchase.exchangeRate || 1)) * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2 })} USD`
+                                                                `= $${Number((item.unitCost / (selectedPurchase.exchangeRate || 1)) * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
                                                             )}
                                                         </div>
                                                         <div className="text-muted small">Subtotal Artículos</div>

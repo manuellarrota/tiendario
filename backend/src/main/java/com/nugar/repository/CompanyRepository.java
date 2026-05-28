@@ -12,6 +12,8 @@ import java.util.List;
 public interface CompanyRepository extends JpaRepository<Company, Long> {
     List<Company> findBySubscriptionStatusInAndSubscriptionEndDateBefore(List<SubscriptionStatus> statuses,
             LocalDateTime date);
+            
+    List<Company> findBySubscriptionStatusAndSubscriptionEndDateBetween(SubscriptionStatus status, LocalDateTime start, LocalDateTime end);
 
     List<Company> findByLatitudeBetweenAndLongitudeBetween(double minLat, double maxLat, double minLon, double maxLon);
 

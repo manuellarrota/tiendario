@@ -18,6 +18,9 @@ public class CompanyController {
         @Autowired
         CompanyRepository companyRepository;
 
+        @Autowired
+        com.nugar.service.CashRegisterService cashRegisterService;
+
         @GetMapping("/profile")
         @PreAuthorize("hasRole('MANAGER')")
         public ResponseEntity<?> getCompanyProfile() {
@@ -43,6 +46,9 @@ public class CompanyController {
                 if (profileUpdate.getName() != null && !profileUpdate.getName().isBlank()) {
                         company.setName(profileUpdate.getName());
                 }
+                if (profileUpdate.getRif() != null && !profileUpdate.getRif().isBlank()) {
+                        company.setRif(profileUpdate.getRif());
+                }
                 if (profileUpdate.getDescription() != null) {
                         company.setDescription(profileUpdate.getDescription());
                 }
@@ -67,6 +73,41 @@ public class CompanyController {
 
                 companyRepository.save(company);
                 return ResponseEntity.ok(company);
+        }
+
+        @PostMapping("/add-registers")
+        @PreAuthorize("hasRole('MANAGER')")
+        public ResponseEntity<?> addExtraRegisters(@RequestBody java.util.Map<String, Integer> payload) {
+                UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
+                                .getPrincipal();
+
+                Company company = companyRepository.findById(userDetails.getCompanyId())
+                                .orElseThrow(() -> new RuntimeException("Error: Company not found."));
+
+                // User passes the EXACT number of extra registers they want to have
+                int requestedTotal = payload.getOrDefault("requested", 0);
+                if (requestedTotal < 0) requestedTotal = 0;
+
+                int currentBilled = company.getBilledExtraRegisters() != null ? company.getBilledExtraRegisters() : 0;
+                int currentExtra = company.getExtraRegisters() != null ? company.getExtraRegisters() : 0;
+
+                // Track max boxes used during cycle
+                company.setBilledExtraRegisters(Math.max(currentBilled, Math.max(currentExtra, requestedTotal)));
+                
+                String message = "Cajas actualizadas exitosamente.";
+
+                if (requestedTotal < currentExtra) {
+                        company.setNextCycleExtraRegisters(requestedTotal);
+                        message = "La reducción de cajas se aplicará a partir de tu próximo ciclo de facturación.";
+                } else {
+                        company.setExtraRegisters(requestedTotal);
+                        company.setNextCycleExtraRegisters(null);
+                        cashRegisterService.provisionRegistersForCompany(company);
+                }
+
+                companyRepository.save(company);
+
+                return ResponseEntity.ok(new MessageResponse(message));
         }
 
         @Autowired

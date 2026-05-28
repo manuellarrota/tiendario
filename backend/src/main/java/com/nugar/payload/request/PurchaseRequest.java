@@ -11,6 +11,7 @@ public class PurchaseRequest {
     private String currencyCode = "USD";
     private BigDecimal exchangeRate = BigDecimal.ONE;
     private BigDecimal totalInBaseCurrency;
+    private String invoiceNumber;
     private com.nugar.domain.PaymentMethod paymentMethod;
     private List<PurchaseItemRequest> items;
 

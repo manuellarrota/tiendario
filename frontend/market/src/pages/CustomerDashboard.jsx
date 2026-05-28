@@ -57,13 +57,6 @@ const CustomerDashboard = () => {
         }
 
         loadDashboard(true);
-
-        // Start polling for real-time updates
-        pollRef.current = setInterval(() => loadDashboard(false), POLL_INTERVAL_MS);
-
-        return () => {
-            if (pollRef.current) clearInterval(pollRef.current);
-        };
     }, [navigate]);
 
     const getStatusBadge = (status) => {

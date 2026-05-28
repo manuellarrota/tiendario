@@ -12,6 +12,7 @@ import java.util.Optional;
 public interface CashRegisterRepository extends JpaRepository<CashRegister, Long> {
     List<CashRegister> findByCompanyIdAndStatus(Long companyId, CashRegisterStatus status);
     List<CashRegister> findByCompanyId(Long companyId);
+    List<CashRegister> findByCompanyIdOrderByIdAsc(Long companyId);
     long countByCompanyId(Long companyId);
     Optional<CashRegister> findByIdAndCompanyId(Long id, Long companyId);
 }

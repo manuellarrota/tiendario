@@ -21,6 +21,8 @@ const AdminCategorySuggestionsPage = () => {
     // Direct Category Modals
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showEditModal, setShowEditModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [categoryToDelete, setCategoryToDelete] = useState(null);
     const [newCatName, setNewCatName] = useState('');
     const [newCatDesc, setNewCatDesc] = useState('');
     const [editingCat, setEditingCat] = useState(null);
@@ -152,22 +154,31 @@ const AdminCategorySuggestionsPage = () => {
         );
     };
 
-    const handleDeleteDirect = (id, name) => {
-        if (window.confirm(`¿Seguro que deseas eliminar la categoría "${name}"? Esto afectará a todos los productos que la utilicen.`)) {
-            setProcessing(id);
-            CategoryService.delete(id).then(
-                () => {
-                    setMessage("✅ Categoría eliminada correctamente.");
-                    loadData();
-                    setProcessing(null);
-                    setTimeout(() => setMessage(''), 3000);
-                },
-                (error) => {
-                    alert("❌ No se pudo eliminar la categoría.");
-                    setProcessing(null);
-                }
-            );
-        }
+    const confirmDeleteDirect = (cat) => {
+        setCategoryToDelete(cat);
+        setShowDeleteModal(true);
+    };
+
+    const handleDeleteDirect = () => {
+        if (!categoryToDelete) return;
+        const id = categoryToDelete.id;
+        setProcessing(id);
+        CategoryService.delete(id).then(
+            () => {
+                setMessage("✅ Categoría eliminada correctamente.");
+                loadData();
+                setProcessing(null);
+                setShowDeleteModal(false);
+                setCategoryToDelete(null);
+                setTimeout(() => setMessage(''), 3000);
+            },
+            (error) => {
+                alert("❌ No se pudo eliminar la categoría.");
+                setProcessing(null);
+                setShowDeleteModal(false);
+                setCategoryToDelete(null);
+            }
+        );
     };
 
     const getStatusBadge = (status) => {
@@ -346,7 +357,7 @@ const AdminCategorySuggestionsPage = () => {
                                                                     variant="link" 
                                                                     className="text-danger p-0" 
                                                                     size="sm"
-                                                                    onClick={() => handleDeleteDirect(c.id, c.name)}
+                                                                    onClick={() => confirmDeleteDirect(c)}
                                                                     disabled={processing === c.id}
                                                                 >
                                                                     {processing === c.id ? <Spinner size="sm" animation="border" /> : <FaTrash size={12} />}
@@ -489,6 +500,29 @@ const AdminCategorySuggestionsPage = () => {
                             </Button>
                         </Form>
                     )}
+                </Modal.Body>
+            </Modal>
+
+            {/* Delete Confirmation Modal */}
+            <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+                <Modal.Body className="text-center p-5">
+                    <div className="mb-4">
+                        <div className="rounded-circle bg-danger bg-opacity-10 d-inline-flex p-4">
+                            <FaTrash size={40} className="text-danger" />
+                        </div>
+                    </div>
+                    <h4 className="fw-bold mb-3">¿Eliminar Categoría?</h4>
+                    <p className="text-secondary mb-4">
+                        ¿Seguro que deseas eliminar la categoría <strong>"{categoryToDelete?.name}"</strong>? Esto afectará a todos los productos que la utilicen en las tiendas.
+                    </p>
+                    <div className="d-flex justify-content-center gap-3">
+                        <Button variant="outline-secondary" className="px-4 rounded-pill fw-bold" onClick={() => setShowDeleteModal(false)}>
+                            Cancelar
+                        </Button>
+                        <Button variant="danger" className="px-4 rounded-pill fw-bold" onClick={handleDeleteDirect} disabled={processing === categoryToDelete?.id}>
+                            {processing === categoryToDelete?.id ? <Spinner size="sm" animation="border" /> : 'Sí, Eliminar'}
+                        </Button>
+                    </div>
                 </Modal.Body>
             </Modal>
 

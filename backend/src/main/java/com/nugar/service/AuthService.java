@@ -83,11 +83,12 @@ public class AuthService {
             if (signUpRequest.getCompanyName() == null || signUpRequest.getCompanyName().isEmpty()) {
                 throw new RuntimeException("Error: El nombre de la empresa es obligatorio.");
             }
-            user.setRole(Role.ROLE_MANAGER);
+            user.getRoles().add(Role.ROLE_MANAGER);
 
             // Create Company
             Company company = new Company();
             company.setName(signUpRequest.getCompanyName());
+            company.setRif(signUpRequest.getRif());
             company.setSubscriptionStatus(SubscriptionStatus.TRIAL);
             
             // Assign specific plan if provided (basic, medium, premium)
@@ -117,7 +118,7 @@ public class AuthService {
             user.setCompany(company);
         } else {
             // Default to Client
-            user.setRole(Role.ROLE_CLIENT);
+            user.getRoles().add(Role.ROLE_CLIENT);
             user.setEnabled(true);
         }
 

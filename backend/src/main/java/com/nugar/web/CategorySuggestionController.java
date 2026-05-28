@@ -73,7 +73,7 @@ public class CategorySuggestionController {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: Usuario no encontrado."));
         }
 
-        if (user.getRole().name().equals("ROLE_ADMIN")) {
+        if (user.getRoles().contains(com.nugar.domain.Role.ROLE_ADMIN)) {
             return ResponseEntity.ok(suggestionRepository.findAll());
         } else {
             if (user.getCompany() == null) {

@@ -66,6 +66,19 @@ public class StaffController {
         }
     }
 
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<?> deleteStaff(@PathVariable Long id) {
+        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        
+        try {
+            staffService.deleteCashier(id, userDetails.getCompanyId(), userDetails.getUsername());
+            return ResponseEntity.ok(new MessageResponse("Cajero eliminado exitosamente."));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
+        }
+    }
+
     public static class StaffRequest {
         private String username;
         private String email;

@@ -63,6 +63,10 @@ const POSPage = () => {
         currencyCode: "USD",
         method: "CASH"
     });
+    
+    // Custom Modals State
+    const [showEmptyCartModal, setShowEmptyCartModal] = useState(false);
+    const [showCloseZeroModal, setShowCloseZeroModal] = useState(false);
 
     const barcodeInputRef = useRef(null);
     const barcodeTimerRef = useRef(null);
@@ -422,11 +426,7 @@ const POSPage = () => {
         });
     };
 
-    const handleCloseShift = () => {
-        if (closingData.declarations.length === 0 && !window.confirm("¿Seguro que deseas cerrar la caja en CERO? No has declarado ningún monto.")) {
-            return;
-        }
-
+    const executeCloseShift = () => {
         const payload = {
             declarations: closingData.declarations.map(d => ({
                 method: d.method,
@@ -451,6 +451,14 @@ const POSPage = () => {
         });
     };
 
+    const handleCloseShift = () => {
+        if (closingData.declarations.length === 0) {
+            setShowCloseZeroModal(true);
+            return;
+        }
+        executeCloseShift();
+    };
+
     useEffect(() => {
         const handleKeyPress = (e) => {
             if (e.key === 'F1') { e.preventDefault(); document.querySelector('.pos-search-input')?.focus(); }
@@ -458,7 +466,7 @@ const POSPage = () => {
             else if (e.key === 'F4') { e.preventDefault(); if (cart.length > 0) setShowPaymentModal(true); }
             else if (e.key === 'Escape') {
                 if (showPaymentModal) setShowPaymentModal(false);
-                else if (cart.length > 0 && window.confirm("¿Vaciar carrito?")) setCart([]);
+                else if (cart.length > 0) setShowEmptyCartModal(true);
                 setCustomerSearch(""); setSearchTerm("");
             }
         };
@@ -710,6 +718,50 @@ const POSPage = () => {
                     </Form>
                 </Modal>
 
+                <Modal show={showEmptyCartModal} onHide={() => setShowEmptyCartModal(false)} centered>
+                    <Modal.Body className="text-center p-5">
+                        <div className="mb-4">
+                            <div className="rounded-circle bg-danger bg-opacity-10 d-inline-flex p-4">
+                                <FaTrash size={40} className="text-danger" />
+                            </div>
+                        </div>
+                        <h4 className="fw-bold mb-3">¿Vaciar Carrito?</h4>
+                        <p className="text-secondary mb-4">
+                            Estás a punto de eliminar todos los productos del carrito actual.
+                        </p>
+                        <div className="d-flex justify-content-center gap-3">
+                            <Button variant="outline-secondary" className="px-4 rounded-pill fw-bold" onClick={() => setShowEmptyCartModal(false)}>
+                                Cancelar
+                            </Button>
+                            <Button variant="danger" className="px-4 rounded-pill fw-bold" onClick={() => { setCart([]); setShowEmptyCartModal(false); }}>
+                                Sí, Vaciar
+                            </Button>
+                        </div>
+                    </Modal.Body>
+                </Modal>
+
+                <Modal show={showCloseZeroModal} onHide={() => setShowCloseZeroModal(false)} centered>
+                    <Modal.Body className="text-center p-5">
+                        <div className="mb-4">
+                            <div className="rounded-circle bg-warning bg-opacity-10 d-inline-flex p-4">
+                                <FaExclamationTriangle size={40} className="text-warning" />
+                            </div>
+                        </div>
+                        <h4 className="fw-bold mb-3">¿Cerrar Caja en CERO?</h4>
+                        <p className="text-secondary mb-4">
+                            No has declarado ningún monto. ¿Seguro que deseas cerrar la caja con saldo CERO?
+                        </p>
+                        <div className="d-flex justify-content-center gap-3">
+                            <Button variant="outline-secondary" className="px-4 rounded-pill fw-bold" onClick={() => setShowCloseZeroModal(false)}>
+                                Cancelar
+                            </Button>
+                            <Button variant="warning" className="px-4 rounded-pill fw-bold text-dark" onClick={() => { setShowCloseZeroModal(false); executeCloseShift(); }}>
+                                Sí, Cerrar en Cero
+                            </Button>
+                        </div>
+                    </Modal.Body>
+                </Modal>
+
                 {/* Payment Modal Refactored */}
                 <Modal scrollable show={showPaymentModal} 
                     onHide={() => setShowPaymentModal(false)} 
@@ -887,7 +939,7 @@ const POSPage = () => {
                                 <Form.Select value={selectedCashRegister} onChange={e => setSelectedCashRegister(e.target.value)}>
                                     <option value="">-- Selecciona una caja --</option>
                                     {cashRegisters.map(cr => (
-                                        <option key={cr.id} value={cr.id}>{cr.name} ({cr.location})</option>
+                                        <option key={cr.id} value={cr.id}>{cr.name}</option>
                                     ))}
                                 </Form.Select>
                                 {cashRegisters.length === 0 && (
@@ -919,7 +971,7 @@ const POSPage = () => {
                                     <ListGroup.Item key={dec.id} className="d-flex justify-content-between align-items-center bg-light border-0 mb-1 rounded-3">
                                         <div>
                                             <Badge bg="info" className="me-2">{dec.currencyCode}</Badge>
-                                            <span className="fw-bold">{parseFloat(dec.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                            <span className="fw-bold">{parseFloat(dec.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                         </div>
                                         <Button variant="outline-danger" size="sm" className="border-0" onClick={() => removeOpeningDeclaration(dec.id)}><FaTrash /></Button>
                                     </ListGroup.Item>
@@ -936,7 +988,7 @@ const POSPage = () => {
                     </Modal.Body>
                 </Modal>
 
-                <Modal scrollable show={showShiftClosingModal} onHide={() => setShowShiftClosingModal(false)} centered scrollable size="lg">
+                <Modal scrollable show={showShiftClosingModal} onHide={() => setShowShiftClosingModal(false)} centered size="lg">
                     <Modal.Header closeButton>
                         <Modal.Title className="fw-bold">Cierre de Caja (Arqueo)</Modal.Title>
                     </Modal.Header>
@@ -950,7 +1002,7 @@ const POSPage = () => {
                                 currentShift.declarations.filter(d => d.declarationType === 'OPENING').map(d => (
                                     <div key={d.id} className="d-flex justify-content-between align-items-center border-bottom pb-1 mb-1">
                                         <Badge bg="info">{d.currencyCode}</Badge>
-                                        <span className="fw-black text-primary">{parseFloat(d.declaredAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                        <span className="fw-black text-primary">{parseFloat(d.declaredAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                     </div>
                                 ))
                             ) : (
@@ -992,7 +1044,7 @@ const POSPage = () => {
                                         <div>
                                             <Badge bg="secondary" className="me-2">{dec.method}</Badge>
                                             <Badge bg="info" className="me-2">{dec.currencyCode}</Badge>
-                                            <span className="fw-bold">{parseFloat(dec.amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                            <span className="fw-bold">{parseFloat(dec.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                         </div>
                                         <Button variant="outline-danger" size="sm" className="border-0" onClick={() => removeDeclaration(dec.id)}><FaTrash /></Button>
                                     </ListGroup.Item>

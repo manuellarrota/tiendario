@@ -34,8 +34,9 @@ export default function AdminOnboardingPage() {
     const [createdCompanyId, setCreatedCompanyId] = useState(null);
     const [createdCompanyName, setCreatedCompanyName] = useState('');
 
-    // Step 0 — Datos de Tienda
+    // Step 0 — Empresa
     const [companyName, setCompanyName] = useState('');
+    const [rif, setRif] = useState('');
     const [phone, setPhone] = useState('');
     const [description, setDescription] = useState('');
     const [plan, setPlan] = useState('TRIAL');
@@ -73,7 +74,7 @@ export default function AdminOnboardingPage() {
         setLoading(true);
         try {
             const res = await AdminService.createStore({
-                companyName, username, email, password,
+                companyName, rif, username, email, password,
                 phoneNumber: phone, description,
                 subscriptionStatus: plan,
                 latitude: position?.lat || 0,
@@ -266,14 +267,21 @@ export default function AdminOnboardingPage() {
                                 <p className="text-muted small mb-4">Información general del negocio de tu cliente.</p>
                                 <Form>
                                     <Row className="g-3">
-                                        <Col md={8}>
+                                        <Col md={6}>
                                             <Form.Group>
                                                 <Form.Label className="fw-semibold small">Nombre de la Tienda <span className="text-danger">*</span></Form.Label>
                                                 <Form.Control className="rounded-3" placeholder="Ej: Tienda de María"
                                                     value={companyName} onChange={e => setCompanyName(e.target.value)} required />
                                             </Form.Group>
                                         </Col>
-                                        <Col md={4}>
+                                        <Col md={3}>
+                                            <Form.Group>
+                                                <Form.Label className="fw-semibold small">RIF</Form.Label>
+                                                <Form.Control className="rounded-3" placeholder="J-12345678-9"
+                                                    value={rif} onChange={e => setRif(e.target.value)} />
+                                            </Form.Group>
+                                        </Col>
+                                        <Col md={3}>
                                             <Form.Group>
                                                 <Form.Label className="fw-semibold small">Teléfono</Form.Label>
                                                 <Form.Control className="rounded-3" placeholder="+58 412 1234567"

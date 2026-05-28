@@ -25,7 +25,7 @@ public class Shift {
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private Company company;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "cash_register_id")
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
     private CashRegister cashRegister;

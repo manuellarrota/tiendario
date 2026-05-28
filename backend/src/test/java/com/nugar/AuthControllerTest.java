@@ -62,7 +62,7 @@ public class AuthControllerTest {
         testUser.setUsername("testuser");
         testUser.setEmail("testuser@nugar.com");
         testUser.setPassword(passwordEncoder.encode("password123"));
-        testUser.setRole(Role.ROLE_MANAGER);
+        testUser.getRoles().add(Role.ROLE_MANAGER);
         testUser.setCompany(testCompany);
         testUser = userRepository.save(testUser);
     }
@@ -134,7 +134,7 @@ public class AuthControllerTest {
         // Verify user and company were created
         User newUser = userRepository.findByUsername("newmanager").orElse(null);
         assert newUser != null;
-        assert newUser.getRole() == Role.ROLE_MANAGER;
+        assert newUser.getRoles().contains(Role.ROLE_MANAGER);
         assert newUser.getCompany() != null;
         assert newUser.getCompany().getName().equals("My New Store");
     }

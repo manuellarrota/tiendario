@@ -10,6 +10,8 @@ const CategoriesPage = () => {
     const [categories, setCategories] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
     const [showModal, setShowModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [categoryToDelete, setCategoryToDelete] = useState(null);
     const [message, setMessage] = useState('');
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
@@ -80,20 +82,28 @@ const CategoriesPage = () => {
         }
     };
 
-    const handleDelete = (id) => {
-        if (window.confirm('¿Estás seguro de eliminar esta categoría?')) {
-            CategoryService.delete(id).then(
-                () => {
-                    setMessage('✅ Categoría eliminada');
-                    loadData();
-                    setTimeout(() => setMessage(''), 3000);
-                },
-                () => {
-                    setMessage('❌ Error eliminando categoría');
-                    setTimeout(() => setMessage(''), 3000);
-                }
-            );
-        }
+    const confirmDelete = (cat) => {
+        setCategoryToDelete(cat);
+        setShowDeleteModal(true);
+    };
+
+    const handleDelete = () => {
+        if (!categoryToDelete) return;
+        CategoryService.delete(categoryToDelete.id).then(
+            () => {
+                setMessage('✅ Categoría eliminada');
+                loadData();
+                setShowDeleteModal(false);
+                setCategoryToDelete(null);
+                setTimeout(() => setMessage(''), 3000);
+            },
+            () => {
+                setMessage('❌ Error eliminando categoría');
+                setShowDeleteModal(false);
+                setCategoryToDelete(null);
+                setTimeout(() => setMessage(''), 3000);
+            }
+        );
     };
 
     return (
@@ -147,7 +157,7 @@ const CategoriesPage = () => {
                                                             <Button
                                                                 variant="outline-danger"
                                                                 size="sm"
-                                                                onClick={() => handleDelete(cat.id)}
+                                                                onClick={() => confirmDelete(cat)}
                                                             >
                                                                 <FaTrash />
                                                             </Button>
@@ -243,6 +253,29 @@ const CategoriesPage = () => {
                                 )}
                             </Button>
                         </Form>
+                    </Modal.Body>
+                </Modal>
+
+                {/* Delete Confirmation Modal */}
+                <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+                    <Modal.Body className="text-center p-5">
+                        <div className="mb-4">
+                            <div className="rounded-circle bg-danger bg-opacity-10 d-inline-flex p-4">
+                                <FaTrash size={40} className="text-danger" />
+                            </div>
+                        </div>
+                        <h4 className="fw-bold mb-3">¿Eliminar Categoría?</h4>
+                        <p className="text-secondary mb-4">
+                            Estás a punto de eliminar la categoría <strong>{categoryToDelete?.name}</strong>. Esta acción afectará a todos los productos que la utilicen.
+                        </p>
+                        <div className="d-flex justify-content-center gap-3">
+                            <Button variant="outline-secondary" className="px-4 rounded-pill fw-bold" onClick={() => setShowDeleteModal(false)}>
+                                Cancelar
+                            </Button>
+                            <Button variant="danger" className="px-4 rounded-pill fw-bold" onClick={handleDelete}>
+                                Sí, Eliminar
+                            </Button>
+                        </div>
                     </Modal.Body>
                 </Modal>
             </div>

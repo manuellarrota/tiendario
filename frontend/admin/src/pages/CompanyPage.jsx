@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Card, Row, Col, Badge, Button, Form, Modal, Table, Alert, Spinner } from 'react-bootstrap';
-import { FaBuilding, FaCrown, FaCheckCircle, FaExclamationTriangle, FaHistory, FaFileUpload, FaInfoCircle, FaEdit, FaSave, FaTimes, FaPhone, FaMapMarkerAlt, FaImage, FaMoneyBillWave, FaClock } from 'react-icons/fa';
+import { Container, Card, Row, Col, Badge, Button, Form, Modal, Table, Alert, Spinner, Tabs, Tab } from 'react-bootstrap';
+import { FaBuilding, FaCrown, FaCheckCircle, FaExclamationTriangle, FaHistory, FaFileUpload, FaInfoCircle, FaEdit, FaSave, FaTimes, FaPhone, FaMapMarkerAlt, FaImage, FaMoneyBillWave, FaClock, FaSearch, FaFilter } from 'react-icons/fa';
 import CompanyService from '../services/company.service';
 import PaymentService from '../services/payment.service';
 
@@ -19,6 +19,16 @@ const CompanyPage = () => {
     const [submitSuccess, setSubmitSuccess] = useState(false);
     const [selectedPlan, setSelectedPlan] = useState('BASIC');
     const [billingCycle, setBillingCycle] = useState('MONTHLY');
+    const [showRemoveRegistersModal, setShowRemoveRegistersModal] = useState(false);
+    const [removingRegisters, setRemovingRegisters] = useState(false);
+    const [registersToCancel, setRegistersToCancel] = useState(1);
+
+    // Pagination and Filters for Payments
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterStatus, setFilterStatus] = useState('ALL');
+    const [filterDate, setFilterDate] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
 
     const PLAN_PRICES = {
         BASIC:   { MONTHLY: 19.99,  ANNUAL: 199.99 },
@@ -34,9 +44,13 @@ const CompanyPage = () => {
 
     const calculateAmount = (plan, cycle) => {
         const base = PLAN_PRICES[plan]?.[cycle] || 19.99;
-        const extras = (company?.extraRegisters || 0) * (cycle === 'MONTHLY' ? 10 : 100);
-        const billing = company?.hasElectronicBilling ? (cycle === 'MONTHLY' ? 10 : 100) : 0;
-        return (base + extras + billing).toFixed(2);
+        return base.toFixed(2);
+    };
+
+    const buildBreakdown = (plan, cycle) => {
+        const cycleLabel = cycle === 'MONTHLY' ? 'mensual' : 'anual';
+        const base = PLAN_PRICES[plan]?.[cycle] || 19.99;
+        return { base, total: base.toFixed(2), cycleLabel };
     };
 
     const openPlanModal = (plan) => {
@@ -54,15 +68,20 @@ const CompanyPage = () => {
     // Form states
     const [paymentForm, setPaymentForm] = useState({
         amount: '',
-        paymentMethod: 'Zelle',
+        paymentMethod: 'PAGO_MOVIL',
         reference: '',
+        banco: '',
+        cedula: '',
+        nombreTitular: '',
+        correoTelefono: '',
+        ordenId: '',
         notes: '',
         targetPlan: 'BASIC',
         billingCycle: 'MONTHLY'
     });
 
     useEffect(() => {
-        loadData();
+        loadData(true);
     }, []);
 
     useEffect(() => {
@@ -81,8 +100,8 @@ const CompanyPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedPlan, billingCycle, company]);
 
-    const loadData = async () => {
-        setLoading(true);
+    const loadData = async (showLoading = false) => {
+        if (showLoading) setLoading(true);
         try {
             const [profileRes, paymentsRes] = await Promise.all([
                 CompanyService.getProfile(),
@@ -94,13 +113,14 @@ const CompanyPage = () => {
             console.error("Error loading company data", err);
             setError("No se pudieron cargar los datos de la empresa.");
         } finally {
-            setLoading(false);
+            if (showLoading) setLoading(false);
         }
     };
 
     const startEditing = () => {
         setEditForm({
             name: company?.name || '',
+            rif: company?.rif || '',
             description: company?.description || '',
             phoneNumber: company?.phoneNumber || '',
             imageUrl: company?.imageUrl || '',
@@ -152,20 +172,70 @@ const CompanyPage = () => {
         setPaymentForm(prev => ({ ...prev, [name]: value }));
     };
 
+    const buildReference = () => {
+        const method = paymentForm.paymentMethod;
+        if (method === 'PAGO_MOVIL') return `Banco: ${paymentForm.banco} | Cédula: ${paymentForm.cedula} | Ref: ${paymentForm.reference}`;
+        if (method === 'ZELLE') return `Titular: ${paymentForm.nombreTitular} | Contacto: ${paymentForm.correoTelefono}`;
+        if (method === 'BINANCE') return `Orden ID: ${paymentForm.ordenId} | Titular: ${paymentForm.nombreTitular}`;
+        if (method === 'TRANSFERENCIA') return `Ref: ${paymentForm.reference}`;
+        return 'Efectivo';
+    };
+
     const handleSubmitPayment = async (e) => {
         e.preventDefault();
         setSubmitting(true);
         try {
-            await PaymentService.submitPayment(paymentForm);
+            const payload = {
+                ...paymentForm,
+                amount: parseFloat(paymentForm.amount),
+                reference: buildReference(),
+                paymentType: (company?.extraRegisters > 0) ? 'SUBSCRIPTION_AND_REGISTERS' : 'SUBSCRIPTION'
+            };
+            await PaymentService.submitPayment(payload);
             setSubmitSuccess(true);
-            setPaymentForm({ amount: '', paymentMethod: 'Zelle', reference: '', notes: '', targetPlan: 'BASIC', billingCycle: 'MONTHLY' });
-            loadData();
-            setTimeout(() => setShowModal(false), 3000);
+            setPaymentForm({ amount: '', paymentMethod: 'PAGO_MOVIL', reference: '', banco: '', cedula: '', nombreTitular: '', correoTelefono: '', ordenId: '', notes: '', targetPlan: 'BASIC', billingCycle: 'MONTHLY' });
+            loadData(false);
         } catch (err) {
             console.error("Error submitting payment", err);
             setError("Error al enviar el comprobante. Intenta de nuevo.");
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const handleRemoveRegisters = async () => {
+        setRemovingRegisters(true);
+        try {
+            const newTotal = Math.max(0, (company.extraRegisters || 0) - registersToCancel);
+            await CompanyService.addExtraRegisters(newTotal);
+            setShowRemoveRegistersModal(false);
+            setSaveSuccess('La reducción de cajas ha sido programada para el próximo ciclo.');
+            setTimeout(() => setSaveSuccess(''), 4000);
+            
+            // Optimistic update
+            setCompany(prev => ({ ...prev, nextCycleExtraRegisters: newTotal }));
+            // Background refresh
+            loadData(false);
+        } catch (err) {
+            console.error("Error removing registers", err);
+            setError("Error al cancelar las cajas. Intenta de nuevo.");
+        } finally {
+            setRemovingRegisters(false);
+        }
+    };
+
+    const handleUndoCancelRegisters = async () => {
+        setRemovingRegisters(true);
+        try {
+            await CompanyService.addExtraRegisters(company.extraRegisters);
+            setSaveSuccess('Reducción cancelada. Tus cajas se mantendrán activas.');
+            setTimeout(() => setSaveSuccess(''), 4000);
+            setCompany(prev => ({ ...prev, nextCycleExtraRegisters: null }));
+        } catch (err) {
+            console.error("Error undoing register removal", err);
+            setError("Error al deshacer la reducción. Intenta de nuevo.");
+        } finally {
+            setRemovingRegisters(false);
         }
     };
 
@@ -188,6 +258,29 @@ const CompanyPage = () => {
             default: return <Badge bg="secondary">{status}</Badge>;
         }
     };
+
+    // Reset page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchTerm, filterStatus, filterDate]);
+
+    // Payment Filter Logic
+    const filteredPayments = payments.filter(p => {
+        const matchSearch = searchTerm ? p.reference?.toLowerCase().includes(searchTerm.toLowerCase()) : true;
+        const matchStatus = filterStatus !== 'ALL' ? p.status === filterStatus : true;
+        
+        let matchDate = true;
+        if (filterDate) {
+            const pDate = new Date(p.createdAt).toISOString().split('T')[0];
+            matchDate = pDate === filterDate;
+        }
+
+        return matchSearch && matchStatus && matchDate;
+    }).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+    const totalPages = Math.ceil(filteredPayments.length / ITEMS_PER_PAGE);
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const paginatedPayments = filteredPayments.slice(startIndex, startIndex + ITEMS_PER_PAGE);
 
     if (loading) return (
         <div className="d-flex" style={{ height: '100vh' }}>
@@ -225,9 +318,11 @@ const CompanyPage = () => {
                     {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
                     {saveSuccess && <Alert variant="success" dismissible onClose={() => setSaveSuccess('')}>{saveSuccess}</Alert>}
 
-                    <Row>
-                        <Col lg={4}>
-                            <Card className="border-0 shadow-sm rounded-4 mb-4">
+                    <Tabs defaultActiveKey="ajustes" className="mb-4 modern-tabs">
+                        <Tab eventKey="ajustes" title={<><FaBuilding className="me-2" />Ajustes de Tienda</>}>
+                            <Row className="mt-3">
+                                <Col lg={4}>
+                                    <Card className="border-0 shadow-sm rounded-4 mb-4">
                                 <Card.Body className="p-4">
                                     <h5 className="fw-bold mb-4">Información General</h5>
 
@@ -241,6 +336,17 @@ const CompanyPage = () => {
                                                     value={editForm.name}
                                                     onChange={handleEditChange}
                                                     required
+                                                    className="py-2"
+                                                />
+                                            </Form.Group>
+                                            <Form.Group className="mb-3">
+                                                <Form.Label className="text-muted small d-block">RIF DE EMPRESA</Form.Label>
+                                                <Form.Control
+                                                    type="text"
+                                                    name="rif"
+                                                    value={editForm.rif}
+                                                    onChange={handleEditChange}
+                                                    placeholder="Ej: J-12345678-9"
                                                     className="py-2"
                                                 />
                                             </Form.Group>
@@ -373,6 +479,12 @@ const CompanyPage = () => {
                                                 <label className="text-muted small d-block">NOMBRE COMERCIAL</label>
                                                 <span className="fs-5 fw-bold">{company?.name}</span>
                                             </div>
+                                            {company?.rif && (
+                                                <div className="mb-3">
+                                                    <label className="text-muted small d-block">RIF DE EMPRESA</label>
+                                                    <span className="fw-bold">{company.rif}</span>
+                                                </div>
+                                            )}
                                             {company?.phoneNumber && (
                                                 <div className="mb-3">
                                                     <label className="text-muted small d-block"><FaPhone className="me-1" /> TELÉFONO</label>
@@ -416,9 +528,28 @@ const CompanyPage = () => {
                                                 </div>
                                             )}
                                             {company?.extraRegisters > 0 && (
-                                                <div className="mb-3 p-2 bg-light rounded-3 border-start border-primary border-3">
-                                                    <label className="text-muted small d-block">CAJAS EXTRA</label>
-                                                    <span className="fw-bold text-primary">+{company.extraRegisters} {company.extraRegisters === 1 ? 'Caja' : 'Cajas'}</span>
+                                                <div className="mb-3 p-3 bg-light rounded-3 border-start border-primary border-3 d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <label className="text-muted small d-block">CAJAS EXTRA CONTRATADAS</label>
+                                                        <span className="fw-bold text-primary fs-5">+{company.extraRegisters} {company.extraRegisters === 1 ? 'Caja' : 'Cajas'}</span>
+                                                        {company.nextCycleExtraRegisters != null && (
+                                                            <div className="small text-danger mt-1">
+                                                                <FaInfoCircle className="me-1" />
+                                                                Se reducirán a {company.nextCycleExtraRegisters} en el próximo ciclo
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        {company.nextCycleExtraRegisters != null ? (
+                                                            <Button variant="outline-secondary" size="sm" onClick={handleUndoCancelRegisters} disabled={removingRegisters}>
+                                                                {removingRegisters ? <Spinner size="sm" animation="border" /> : 'Deshacer Reducción'}
+                                                            </Button>
+                                                        ) : (
+                                                            <Button variant="outline-danger" size="sm" onClick={() => { setRegistersToCancel(1); setShowRemoveRegistersModal(true); }}>
+                                                                Cancelar Cajas
+                                                            </Button>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             )}
                                         </>
@@ -505,49 +636,127 @@ const CompanyPage = () => {
                                 </Card.Body>
                             </Card>
 
-                            {/* Payment history */}
-                            <Card className="border-0 shadow-sm rounded-4 mb-4">
-                                <Card.Header className="bg-white border-0 py-3 px-4">
-                                    <h5 className="mb-0 fw-bold d-flex align-items-center">
-                                        <FaHistory className="me-2 text-primary" /> Historial de Pagos
-                                    </h5>
-                                </Card.Header>
-                                <Card.Body className="p-0">
-                                    <Table hover responsive className="mb-0 align-middle">
-                                        <thead className="bg-light">
-                                            <tr>
-                                                <th className="ps-4">Fecha</th>
-                                                <th>Plan</th>
-                                                <th>Método</th>
-                                                <th>Monto</th>
-                                                <th>Estado</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {payments.length > 0 ? payments.map((p) => (
-                                                <tr key={p.id}>
-                                                    <td className="ps-4">{new Date(p.createdAt).toLocaleDateString()}</td>
-                                                    <td><Badge bg="light" text="dark" className="border small">{p.targetPlan || 'N/A'}</Badge></td>
-                                                    <td>{p.paymentMethod}</td>
-                                                    <td className="fw-bold">${p.amount}</td>
-                                                    <td>{getPaymentStatusBadge(p.status)}</td>
-                                                </tr>
-                                            )) : (
-                                                <tr>
-                                                    <td colSpan="5" className="text-center py-5 text-muted">
-                                                        No hay registros de pagos realizados.
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </Table>
-                                </Card.Body>
-                            </Card>
                         </Col>
-                    </Row>
+                            </Row>
+                        </Tab>
+                        <Tab eventKey="historial" title={<><FaHistory className="me-2" />Historial de Pagos</>}>
+                            <div className="mt-3">
+                                <Card className="border-0 shadow-sm rounded-4 mb-4">
+                                    <Card.Body className="p-3">
+                                        <Row className="g-3">
+                                            <Col md={4}>
+                                                <Form.Group>
+                                                    <Form.Label className="small fw-bold text-muted"><FaSearch className="me-1"/> BUSCAR REFERENCIA</Form.Label>
+                                                    <Form.Control
+                                                        type="text"
+                                                        placeholder="Número de referencia..."
+                                                        value={searchTerm}
+                                                        onChange={(e) => setSearchTerm(e.target.value)}
+                                                        className="rounded-pill"
+                                                    />
+                                                </Form.Group>
+                                            </Col>
+                                            <Col md={4}>
+                                                <Form.Group>
+                                                    <Form.Label className="small fw-bold text-muted"><FaFilter className="me-1"/> ESTADO DEL PAGO</Form.Label>
+                                                    <Form.Select 
+                                                        value={filterStatus} 
+                                                        onChange={(e) => setFilterStatus(e.target.value)}
+                                                        className="rounded-pill"
+                                                    >
+                                                        <option value="ALL">Todos los Estados</option>
+                                                        <option value="PENDING">Pendientes</option>
+                                                        <option value="APPROVED">Aprobados</option>
+                                                        <option value="REJECTED">Rechazados</option>
+                                                    </Form.Select>
+                                                </Form.Group>
+                                            </Col>
+                                            <Col md={4}>
+                                                <Form.Group>
+                                                    <Form.Label className="small fw-bold text-muted"><FaFilter className="me-1"/> FECHA DE REGISTRO</Form.Label>
+                                                    <Form.Control
+                                                        type="date"
+                                                        value={filterDate}
+                                                        onChange={(e) => setFilterDate(e.target.value)}
+                                                        className="rounded-pill"
+                                                    />
+                                                </Form.Group>
+                                            </Col>
+                                        </Row>
+                                    </Card.Body>
+                                </Card>
+
+                                <Card className="border-0 shadow-sm rounded-4 mb-4">
+                                    <Card.Body className="p-0">
+                                        <Table hover responsive className="mb-0 align-middle">
+                                            <thead className="bg-light">
+                                                <tr>
+                                                    <th className="ps-4">Fecha</th>
+                                                    <th>Plan / Concepto</th>
+                                                    <th>Método y Detalles</th>
+                                                    <th>Monto</th>
+                                                    <th>Estado</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {paginatedPayments.length > 0 ? paginatedPayments.map((p) => (
+                                                    <tr key={p.id}>
+                                                        <td className="ps-4">{new Date(p.createdAt).toLocaleDateString()}</td>
+                                                        <td>
+                                                            {p.paymentType === 'EXTRA_REGISTER' ? (
+                                                                <Badge bg="info" text="dark" className="border small">+{p.requestedExtraRegisters || 1} Caja(s)</Badge>
+                                                            ) : (
+                                                                <Badge bg="light" text="dark" className="border small">{p.targetPlan || 'N/A'}</Badge>
+                                                            )}
+                                                        </td>
+                                                        <td>
+                                                            <div className="small fw-bold">{p.paymentMethod}</div>
+                                                            <div className="small text-muted mb-1">Ref: {p.reference}</div>
+                                                            {(p.banco || p.cedula || p.nombreTitular || p.correoTelefono || p.ordenId) && (
+                                                                <div className="small text-muted" style={{ fontSize: '0.75rem' }}>
+                                                                    {p.banco && <div>Banco: {p.banco}</div>}
+                                                                    {p.cedula && <div>C.I: {p.cedula}</div>}
+                                                                    {p.nombreTitular && <div>Titular: {p.nombreTitular}</div>}
+                                                                    {p.correoTelefono && <div>Contacto: {p.correoTelefono}</div>}
+                                                                    {p.ordenId && <div>Orden ID: {p.ordenId}</div>}
+                                                                </div>
+                                                            )}
+                                                            {p.notes && (
+                                                                <div className="small mt-1 text-secondary fst-italic" style={{ fontSize: '0.75rem' }}>
+                                                                    Nota: {p.notes}
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                        <td className="fw-bold text-success">${p.amount}</td>
+                                                        <td>{getPaymentStatusBadge(p.status)}</td>
+                                                    </tr>
+                                                )) : (
+                                                    <tr>
+                                                        <td colSpan="5" className="text-center py-5 text-muted">
+                                                            No hay registros de pagos que coincidan con la búsqueda.
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </Table>
+                                        {filteredPayments.length > 0 && (
+                                            <div className="d-flex flex-column flex-md-row justify-content-between align-items-center p-3 border-top gap-3">
+                                                <small className="text-muted">Mostrando {startIndex + 1} a {Math.min(startIndex + ITEMS_PER_PAGE, filteredPayments.length)} de {filteredPayments.length} pagos</small>
+                                                <div className="d-flex gap-2">
+                                                    <Button variant="outline-primary" size="sm" className="rounded-pill px-3" disabled={currentPage === 1} onClick={() => setCurrentPage(prev => prev - 1)}>Anterior</Button>
+                                                    <div className="d-flex align-items-center px-3 bg-light rounded-pill fw-bold text-primary">{currentPage} de {totalPages || 1}</div>
+                                                    <Button variant="outline-primary" size="sm" className="rounded-pill px-3" disabled={currentPage === totalPages || totalPages === 0} onClick={() => setCurrentPage(prev => prev + 1)}>Siguiente</Button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </Card.Body>
+                                </Card>
+                            </div>
+                        </Tab>
+                    </Tabs>
 
                     {/* Modal para reportar pago */}
-                    <Modal scrollable show={showModal} onHide={() => { setShowModal(false); setSubmitSuccess(false); }} centered scrollable size="lg">
+                    <Modal scrollable show={showModal} onHide={() => { setShowModal(false); setSubmitSuccess(false); }} centered size="lg">
                         <Modal.Header closeButton className="border-0 pb-0">
                             <Modal.Title className="fw-bold">
                                 Reportar Pago — Plan {PLAN_INFO[paymentForm.targetPlan]?.label || 'Básico'}
@@ -562,18 +771,24 @@ const CompanyPage = () => {
                                 </Alert>
                             ) : (
                                 <>
-                                    <div className="p-3 rounded-3 mb-3" style={{ background: '#f0f7ff', border: '1px solid #cce5ff' }}>
-                                        <div className="d-flex justify-content-between align-items-center">
-                                            <div>
-                                                <div className="text-muted small">PLAN SELECCIONADO</div>
-                                                <div className="fw-bold fs-6">{PLAN_INFO[paymentForm.targetPlan]?.label} — {paymentForm.billingCycle === 'MONTHLY' ? 'Mensual' : 'Anual'}</div>
+                                    {/* Resumen del plan */}
+                                    {(() => {
+                                        const bd = buildBreakdown(paymentForm.targetPlan, paymentForm.billingCycle);
+                                        return (
+                                            <div className="rounded-3 mb-3 overflow-hidden border">
+                                                <div className="d-flex justify-content-between align-items-center px-4 py-3" style={{ background: '#f0f7ff', borderBottom: '1px solid #cce5ff' }}>
+                                                    <div>
+                                                        <div className="text-muted small">PLAN SELECCIONADO</div>
+                                                        <div className="fw-bold fs-6">{PLAN_INFO[paymentForm.targetPlan]?.label} — {paymentForm.billingCycle === 'MONTHLY' ? 'Mensual' : 'Anual'}</div>
+                                                    </div>
+                                                    <div className="text-end">
+                                                        <div className="text-muted small">MONTO A PAGAR</div>
+                                                        <div className="fw-bold fs-4 text-primary">${bd.total}</div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="text-end">
-                                                <div className="text-muted small">MONTO A PAGAR</div>
-                                                <div className="fw-bold fs-4 text-primary">${paymentForm.amount}</div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                        );
+                                    })()}
 
                                     <Alert variant="info" className="border-0 shadow-sm rounded-3">
                                         <h6 className="fw-bold"><FaInfoCircle className="me-2" /> Datos de Transferencia:</h6>
@@ -607,29 +822,145 @@ const CompanyPage = () => {
                                                     <Form.Select
                                                         name="paymentMethod"
                                                         value={paymentForm.paymentMethod}
-                                                        onChange={handleInputChange}
+                                                        onChange={(e) => setPaymentForm(prev => ({ ...prev, paymentMethod: e.target.value, reference: '', banco: '', cedula: '', nombreTitular: '', correoTelefono: '', ordenId: '' }))}
                                                         className="py-2"
                                                     >
-                                                        <option value="Zelle">Zelle</option>
-                                                        <option value="Binance">Binance USDT</option>
-                                                        <option value="Pago Móvil">Pago Móvil (VES)</option>
-                                                        <option value="PayPal">PayPal</option>
+                                                        <option value="PAGO_MOVIL">📱 Pago Móvil</option>
+                                                        <option value="ZELLE">💵 Zelle</option>
+                                                        <option value="BINANCE">🪙 Binance / Crypto</option>
+                                                        <option value="TRANSFERENCIA">🏦 Transferencia Bancaria</option>
+                                                        <option value="EFECTIVO">💰 Efectivo (Local)</option>
                                                     </Form.Select>
                                                 </Form.Group>
                                             </Col>
                                         </Row>
-                                        <Form.Group className="mb-3">
-                                            <Form.Label className="small fw-bold text-muted">REFERENCIA / NRO COMPROBANTE</Form.Label>
-                                            <Form.Control
-                                                type="text"
-                                                name="reference"
-                                                value={paymentForm.reference}
-                                                onChange={handleInputChange}
-                                                placeholder="Pegue aquí el ID o referencia de la transacción"
-                                                required
-                                                className="py-2"
-                                            />
-                                        </Form.Group>
+
+                                        {(paymentForm.paymentMethod === 'PAGO_MOVIL' || paymentForm.paymentMethod === 'TRANSFERENCIA') && (
+                                            <>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label className="small fw-bold text-muted">BANCO</Form.Label>
+                                                    <Form.Select
+                                                        name="banco"
+                                                        className="py-2"
+                                                        value={paymentForm.banco}
+                                                        onChange={handleInputChange}
+                                                        required
+                                                    >
+                                                        <option value="">-- Seleccionar Banco --</option>
+                                                        <option>Banco de Venezuela</option>
+                                                        <option>Banesco</option>
+                                                        <option>Banco Mercantil</option>
+                                                        <option>Banco Provincial</option>
+                                                        <option>Banco Nacional de Crédito (BNC)</option>
+                                                        <option>Banco Bicentenario</option>
+                                                        <option>Banco del Tesoro</option>
+                                                        <option>Banco Exterior</option>
+                                                        <option>Banplus</option>
+                                                        <option>Bancamiga</option>
+                                                        <option>Banco Plaza</option>
+                                                        <option>Banco Activo</option>
+                                                        <option>Bancaribe</option>
+                                                        <option>Banco Sofitasa</option>
+                                                        <option>Banco Caroní</option>
+                                                        <option>100% Banco</option>
+                                                        <option>Mi Banco</option>
+                                                        <option>Banco de la Fuerza Armada (BANFANB)</option>
+                                                        <option>Banco del Sur</option>
+                                                        <option>Otro</option>
+                                                    </Form.Select>
+                                                </Form.Group>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label className="small fw-bold text-muted">CÉDULA DEL TITULAR</Form.Label>
+                                                    <Form.Control
+                                                        type="text"
+                                                        name="cedula"
+                                                        placeholder="Ej: V-12345678"
+                                                        className="py-2"
+                                                        value={paymentForm.cedula}
+                                                        onChange={handleInputChange}
+                                                        required
+                                                    />
+                                                </Form.Group>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label className="small fw-bold text-muted">NÚMERO DE REFERENCIA</Form.Label>
+                                                    <Form.Control
+                                                        type="text"
+                                                        name="reference"
+                                                        placeholder="Ej: 123456789"
+                                                        className="py-2"
+                                                        value={paymentForm.reference}
+                                                        onChange={handleInputChange}
+                                                        required
+                                                    />
+                                                </Form.Group>
+                                            </>
+                                        )}
+
+                                        {paymentForm.paymentMethod === 'ZELLE' && (
+                                            <>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label className="small fw-bold text-muted">NOMBRE DEL TITULAR DE LA CUENTA</Form.Label>
+                                                    <Form.Control
+                                                        type="text"
+                                                        name="nombreTitular"
+                                                        placeholder="Ej: John Doe"
+                                                        className="py-2"
+                                                        value={paymentForm.nombreTitular}
+                                                        onChange={handleInputChange}
+                                                        required
+                                                    />
+                                                </Form.Group>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label className="small fw-bold text-muted">CORREO O TELÉFONO ZELLE</Form.Label>
+                                                    <Form.Control
+                                                        type="text"
+                                                        name="correoTelefono"
+                                                        placeholder="Ej: john@email.com o +1234567890"
+                                                        className="py-2"
+                                                        value={paymentForm.correoTelefono}
+                                                        onChange={handleInputChange}
+                                                        required
+                                                    />
+                                                </Form.Group>
+                                            </>
+                                        )}
+
+                                        {paymentForm.paymentMethod === 'BINANCE' && (
+                                            <>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label className="small fw-bold text-muted">NÚMERO DE ID DE LA ORDEN</Form.Label>
+                                                    <Form.Control
+                                                        type="text"
+                                                        name="ordenId"
+                                                        placeholder="Ej: 123456789"
+                                                        className="py-2"
+                                                        value={paymentForm.ordenId}
+                                                        onChange={handleInputChange}
+                                                        required
+                                                    />
+                                                </Form.Group>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label className="small fw-bold text-muted">NOMBRE DEL TITULAR DE LA CUENTA</Form.Label>
+                                                    <Form.Control
+                                                        type="text"
+                                                        name="nombreTitular"
+                                                        placeholder="Ej: Juan Pérez"
+                                                        className="py-2"
+                                                        value={paymentForm.nombreTitular}
+                                                        onChange={handleInputChange}
+                                                        required
+                                                    />
+                                                </Form.Group>
+                                            </>
+                                        )}
+
+
+
+                                        {paymentForm.paymentMethod === 'EFECTIVO' && (
+                                            <Alert variant="warning" className="small py-2 border-0">
+                                                📍 Coordina la entrega del efectivo con el administrador de la plataforma.
+                                            </Alert>
+                                        )}
                                         <Form.Group className="mb-3">
                                             <Form.Label className="small fw-bold text-muted">NOTAS ADICIONALES (OPCIONAL)</Form.Label>
                                             <Form.Control
@@ -651,6 +982,47 @@ const CompanyPage = () => {
                                     </Form>
                                 </>
                             )}
+                        </Modal.Body>
+                    </Modal>
+
+                    {/* Modal para cancelar cajas extra */}
+                    <Modal show={showRemoveRegistersModal} onHide={() => !removingRegisters && setShowRemoveRegistersModal(false)} centered>
+                        <Modal.Header closeButton={!removingRegisters} className="border-0 pb-0">
+                            <Modal.Title className="fw-bold text-danger">
+                                <FaExclamationTriangle className="me-2" /> Cancelar Cajas Extra
+                            </Modal.Title>
+                        </Modal.Header>
+                        <Modal.Body className="p-4">
+                            <p className="mb-3">
+                                ¿Cuántas cajas extra deseas cancelar? Actualmente tienes <strong>{company?.extraRegisters} {company?.extraRegisters === 1 ? 'caja' : 'cajas'} extra</strong> contratadas.
+                            </p>
+                            <Form.Group className="mb-4">
+                                <Form.Label className="small fw-bold text-muted">CANTIDAD A CANCELAR</Form.Label>
+                                <Form.Control
+                                    type="number"
+                                    min="1"
+                                    max={company?.extraRegisters || 1}
+                                    value={registersToCancel}
+                                    onFocus={(e) => e.target.select()}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        setRegistersToCancel(val === '' ? '' : parseInt(val, 10));
+                                    }}
+                                    className="py-2"
+                                />
+                            </Form.Group>
+                            <Alert variant="warning" className="border-0 shadow-sm rounded-3">
+                                <FaInfoCircle className="me-2" />
+                                <strong>Nota importante:</strong> Como el servicio es prepago, las cajas que canceles seguirán activas hasta el final de tu mes actual, ya que fueron pagadas por adelantado. En tu próxima renovación, el monto a pagar se ajustará a tu nueva cantidad de cajas.
+                            </Alert>
+                            <div className="d-flex gap-2 mt-4">
+                                <Button variant="secondary" className="flex-grow-1 rounded-pill" onClick={() => setShowRemoveRegistersModal(false)} disabled={removingRegisters}>
+                                    Volver
+                                </Button>
+                                <Button variant="danger" className="flex-grow-1 rounded-pill fw-bold" onClick={handleRemoveRegisters} disabled={removingRegisters || registersToCancel === '' || registersToCancel < 1 || registersToCancel > (company?.extraRegisters || 0)}>
+                                    {removingRegisters ? <Spinner size="sm" animation="border" /> : `Sí, cancelar ${registersToCancel === '' ? '' : registersToCancel} ${registersToCancel === 1 ? 'caja' : 'cajas'}`}
+                                </Button>
+                            </div>
                         </Modal.Body>
                     </Modal>
                 </Container>

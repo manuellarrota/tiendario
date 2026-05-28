@@ -276,10 +276,26 @@ public class ShiftService {
 
         shift.setStatus(ShiftStatus.VERIFIED);
         if (observation != null && !observation.isEmpty()) {
-            shift.setObservation((shift.getObservation() != null ? shift.getObservation() + "\n" : "") + "Verificación: " + observation);
+            shift.setObservation((shift.getObservation() != null ? shift.getObservation() + "\n" : "") + "Verificacion: " + observation);
         }
 
-        return shiftRepository.save(shift);
+        Shift saved = shiftRepository.save(shift);
+
+        // Audit log: who verified, whose shift, which register, cash diff
+        String cajero = shift.getUser() != null ? shift.getUser().getUsername() : "desconocido";
+        String caja = shift.getCashRegister() != null ? shift.getCashRegister().getName() : "N/A";
+        BigDecimal diffCash = BigDecimal.ZERO;
+        String cuadre = "SIN DATOS";
+        if (shift.getExpectedCash() != null && shift.getReportedCash() != null) {
+            diffCash = shift.getReportedCash().subtract(shift.getExpectedCash());
+            cuadre = diffCash.compareTo(BigDecimal.ZERO) < 0 ? "FALTANTE"
+                    : diffCash.compareTo(BigDecimal.ZERO) > 0 ? "SOBRANTE" : "CUADRE EXACTO";
+        }
+        log.info("[AUDITORIA CAJA] Verificado por: {} | Cajero: {} | Turno ID: {} | Caja: {} | Diff Efectivo: ${} ({}) | Obs: {}",
+            userDetails.getUsername(), cajero, shiftId, caja, diffCash, cuadre,
+            observation != null && !observation.isEmpty() ? observation : "ninguna");
+
+        return saved;
     }
 
     public List<Shift> getCompanyShifts(UserDetailsImpl userDetails) {

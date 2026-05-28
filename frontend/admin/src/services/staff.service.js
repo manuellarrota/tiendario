@@ -19,6 +19,10 @@ class StaffService {
     toggleStaffStatus(id) {
         return axios.put(`${API_URL}/${id}/toggle`, {}, { headers: authHeader() });
     }
+
+    deleteStaff(id) {
+        return axios.delete(`${API_URL}/${id}`, { headers: authHeader() });
+    }
 }
 
 export default new StaffService();

@@ -378,7 +378,7 @@ public class PublicController {
 
         // Send email notification to store manager(s)
         try {
-            List<User> managers = userRepository.findByCompanyIdAndRole(
+            List<User> managers = userRepository.findByCompanyIdAndRolesContaining(
                     company.getId(), Role.ROLE_MANAGER);
             String orderSummary = request.getQuantity() + "x " + product.getName();
             for (User mgr : managers) {
@@ -390,7 +390,7 @@ public class PublicController {
                 }
             }
         } catch (Exception e) {
-            log.error("Failed to send order notification email", e);
+            log.error("[PUBLIC_API] Failed to send order notification email", e);
         }
 
         // Update Loyalty Points (1 point per $1)
@@ -424,6 +424,7 @@ public class PublicController {
                     map.put("baseCurrencyCode", config.getBaseCurrencyCode());
                     map.put("baseCurrencySymbol", config.getBaseCurrencySymbol());
                     map.put("currencies", config.getCurrencies());
+                    map.put("extraRegisterMonthlyPrice", config.getExtraRegisterMonthlyPrice() != null ? config.getExtraRegisterMonthlyPrice() : new BigDecimal("5.00"));
                     return map;
                 })
                 .orElseGet(() -> {
@@ -434,6 +435,7 @@ public class PublicController {
                     map.put("baseCurrencyCode", "USD");
                     map.put("baseCurrencySymbol", "$");
                     map.put("currencies", "[{\"code\":\"COP\",\"symbol\":\"$\",\"name\":\"Peso Colombiano\",\"rate\":4200.00,\"enabled\":true},{\"code\":\"VES\",\"symbol\":\"Bs.\",\"name\":\"Bolívar\",\"rate\":36.50,\"enabled\":true}]");
+                    map.put("extraRegisterMonthlyPrice", new BigDecimal("5.00"));
                     return map;
                 }));
     }

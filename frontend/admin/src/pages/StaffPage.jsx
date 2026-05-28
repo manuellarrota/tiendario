@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Table, Badge, Modal, Form, Spinner, Alert } from 'react-bootstrap';
-import { FaUserPlus, FaUserTie, FaToggleOn, FaToggleOff } from 'react-icons/fa';
+import { FaUserPlus, FaUserTie, FaToggleOn, FaToggleOff, FaTrash } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import StaffService from '../services/staff.service';
 
@@ -11,6 +11,8 @@ const StaffPage = () => {
     const [processing, setProcessing] = useState(null);
 
     const [showModal, setShowModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [staffToDelete, setStaffToDelete] = useState(null);
     const [formData, setFormData] = useState({ username: '', email: '', password: '' });
     const [formError, setFormError] = useState('');
     const [creating, setCreating] = useState(false);
@@ -85,6 +87,35 @@ const StaffPage = () => {
             });
     };
 
+    const confirmDelete = (staff) => {
+        setStaffToDelete(staff);
+        setShowDeleteModal(true);
+    };
+
+    const handleDelete = () => {
+        if (!staffToDelete) return;
+        const id = staffToDelete.id;
+        
+        setProcessing(id);
+        StaffService.deleteStaff(id)
+            .then(() => {
+                setStaff(staff.filter(u => u.id !== id));
+                setProcessing(null);
+                setShowDeleteModal(false);
+                setStaffToDelete(null);
+            })
+            .catch(err => {
+                const msg = err.response?.data?.message || "Error al eliminar el cajero.";
+                setError(msg);
+                setProcessing(null);
+                setShowDeleteModal(false);
+                setStaffToDelete(null);
+                // Reload staff to reflect the suspension
+                loadStaff();
+                setTimeout(() => setError(null), 8000);
+            });
+    };
+
     if (loading) {
         return (
             <div className="d-flex" style={{ height: '100vh' }}>
@@ -139,13 +170,22 @@ const StaffPage = () => {
                                                 <Button 
                                                     variant={u.enabled ? "outline-danger" : "outline-success"}
                                                     size="sm"
-                                                    className="rounded-pill px-3"
+                                                    className="rounded-pill px-3 me-2"
                                                     onClick={() => handleToggleStatus(u.id)}
                                                     disabled={processing === u.id}
                                                 >
                                                     {processing === u.id ? <Spinner size="sm" animation="border" /> : (
                                                         u.enabled ? <><FaToggleOff className="me-1"/> Suspender</> : <><FaToggleOn className="me-1"/> Reactivar</>
                                                     )}
+                                                </Button>
+                                                <Button 
+                                                    variant="outline-danger"
+                                                    size="sm"
+                                                    className="rounded-pill px-3"
+                                                    onClick={() => confirmDelete(u)}
+                                                    disabled={processing === u.id}
+                                                >
+                                                    <FaTrash />
                                                 </Button>
                                             </td>
                                         </tr>
@@ -209,6 +249,29 @@ const StaffPage = () => {
                         </Button>
                     </Modal.Footer>
                 </Form>
+            </Modal>
+
+            {/* Delete Confirmation Modal */}
+            <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+                <Modal.Body className="text-center p-5">
+                    <div className="mb-4">
+                        <div className="rounded-circle bg-danger bg-opacity-10 d-inline-flex p-4">
+                            <FaTrash size={40} className="text-danger" />
+                        </div>
+                    </div>
+                    <h4 className="fw-bold mb-3">¿Eliminar Cajero?</h4>
+                    <p className="text-secondary mb-4">
+                        Estás a punto de eliminar a <strong>{staffToDelete?.username}</strong>. Si este cajero tiene ventas registradas, será suspendido en lugar de ser eliminado por motivos de auditoría.
+                    </p>
+                    <div className="d-flex justify-content-center gap-3">
+                        <Button variant="outline-secondary" className="px-4 rounded-pill fw-bold" onClick={() => setShowDeleteModal(false)}>
+                            Cancelar
+                        </Button>
+                        <Button variant="danger" className="px-4 rounded-pill fw-bold" onClick={handleDelete} disabled={processing === staffToDelete?.id}>
+                            {processing === staffToDelete?.id ? <Spinner size="sm" animation="border" /> : 'Sí, Eliminar Cajero'}
+                        </Button>
+                    </div>
+                </Modal.Body>
             </Modal>
         </div>
     );

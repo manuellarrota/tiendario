@@ -113,7 +113,7 @@ const ReportsPage = () => {
                                     </OverlayTrigger>
                                     <FaDollarSign className="text-primary opacity-50" />
                                 </div>
-                                <h3 className="fw-bold mb-1">${Number(stats?.revenueToday || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
+                                <h3 className="fw-bold mb-1">${Number(stats?.revenueToday || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
                                 <div className="d-flex align-items-center gap-2">
                                     <Badge bg={stats?.revenueGrowth >= 0 ? "success" : "danger"} className="rounded-pill">
                                         {stats?.revenueGrowth >= 0 ? <FaArrowUp /> : <FaArrowDown />} {Math.abs(stats?.revenueGrowth)}%
@@ -146,7 +146,7 @@ const ReportsPage = () => {
                                     </OverlayTrigger>
                                     <FaBox className="text-warning opacity-50" />
                                 </div>
-                                <h3 className="fw-bold mb-1">${Number(invStats?.totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
+                                <h3 className="fw-bold mb-1">${Number(invStats?.totalValue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
                                 <small className="text-muted">Precio venta de todo el stock</small>
                             </Card.Body>
                         </Card>
@@ -160,7 +160,7 @@ const ReportsPage = () => {
                                     </OverlayTrigger>
                                     <FaArrowUp className="text-info opacity-50" />
                                 </div>
-                                <h3 className="fw-bold mb-1">${Number(invStats?.potentialProfit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
+                                <h3 className="fw-bold mb-1">${Number(invStats?.potentialProfit || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
                                 <small className="text-muted">Si vendes todo el stock hoy</small>
                             </Card.Body>
                         </Card>
@@ -213,7 +213,7 @@ const ReportsPage = () => {
                                                     </Badge>
                                                 </td>
                                                 <td className="text-end pe-4 fw-bold text-success">
-                                                    ${Number(p.totalRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                                    ${Number(p.totalRevenue || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                 </td>
                                             </tr>
                                         ))}
@@ -303,10 +303,10 @@ const ReportsPage = () => {
                                                 <td>{s.items?.length || 0}</td>
                                                 <td>
                                                     <Badge bg="light" text="dark" className="border px-2 py-1 fw-normal">
-                                                        {s.paymentMethod === 'CASH' ? '💵 Efectivo' : s.paymentMethod === 'CARD' ? '💳 Tarjeta' : s.paymentMethod === 'TRANSFER' ? '🏦 Transf' : '📱 P. Móvil'}
+                                                        {s.paymentMethod === 'CASH' ? '💵 Efectivo' : s.paymentMethod === 'CARD' ? '💳 Tarjeta' : s.paymentMethod === 'TRANSFER' ? '🏦 Transf' : s.paymentMethod === 'MOBILE_PAYMENT' ? '📱 P. Móvil' : s.paymentMethod === 'MIXED' ? '🔀 Mixto' : '—'}
                                                     </Badge>
                                                 </td>
-                                                <td className="text-end pe-4 fw-bold text-primary">${Number(s.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                                <td className="text-end pe-4 fw-bold text-primary">${Number(s.totalAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                                             </tr>
                                         ))}
                                         {sales.length === 0 && !salesLoading && (
@@ -361,7 +361,7 @@ const ReportsPage = () => {
                                                         <OverlayTrigger placement="right" overlay={(props) => renderTooltip(props, 'Inversión total realizada para adquirir el stock actual.')}>
                                                             <span className="cursor-help">Costo de Adquisición</span>
                                                         </OverlayTrigger>
-                                                        <span className="fw-bold">${Number(invStats?.totalCost || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                                        <span className="fw-bold">${Number(invStats?.totalCost || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                                     </div>
                                                     <div className="progress" style={{ height: '10px' }}>
                                                         <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, `Representa el ${invStats?.totalValue > 0 ? ((invStats.totalCost / invStats.totalValue) * 100).toFixed(1) : 0}% del valor total.`)}>
@@ -374,7 +374,7 @@ const ReportsPage = () => {
                                                         <OverlayTrigger placement="right" overlay={(props) => renderTooltip(props, 'Utilidad que percibirás tras descontar los costos.')}>
                                                             <span className="cursor-help text-success">Margen de Ganancia Neto</span>
                                                         </OverlayTrigger>
-                                                        <span className="fw-bold text-success">+${Number(invStats?.potentialProfit || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                                        <span className="fw-bold text-success">+${Number(invStats?.potentialProfit || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                                     </div>
                                                     <div className="progress" style={{ height: '10px' }}>
                                                         <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, `Representa el ${invStats?.totalValue > 0 ? ((invStats.potentialProfit / invStats.totalValue) * 100).toFixed(1) : 0}% del valor total.`)}>

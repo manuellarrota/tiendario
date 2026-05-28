@@ -22,7 +22,7 @@ public class ProductIndexService {
             try {
                 productSearchRepository.save(product);
             } catch (Exception e) {
-                log.warn("Could not index product in Elasticsearch: {}", e.getMessage());
+                log.warn("[ELASTICSEARCH] Could not index product in Elasticsearch: {}", e.getMessage());
             }
         }
     }
@@ -32,7 +32,7 @@ public class ProductIndexService {
             try {
                 productSearchRepository.deleteById(id);
             } catch (Exception e) {
-                log.warn("Could not delete product from Elasticsearch: {}", e.getMessage());
+                log.warn("[ELASTICSEARCH] Could not delete product from Elasticsearch: {}", e.getMessage());
             }
         }
     }
@@ -43,7 +43,7 @@ public class ProductIndexService {
             try {
                 return productSearchRepository.findByNameContainingOrDescriptionContaining(normalizedQuery, normalizedQuery);
             } catch (Exception e) {
-                log.warn("Elasticsearch search failed: {}", e.getMessage());
+                log.warn("[ELASTICSEARCH] Elasticsearch search failed: {}", e.getMessage());
             }
         }
         
@@ -67,9 +67,9 @@ public class ProductIndexService {
                 for (Product product : products) {
                     productSearchRepository.save(product);
                 }
-                log.info("Re-indexed {} products for company {}", products.size(), companyId);
+                log.info("[ELASTICSEARCH] Re-indexed {} products for company {}", products.size(), companyId);
             } catch (Exception e) {
-                log.warn("Could not re-index products for company {}: {}", companyId, e.getMessage());
+                log.warn("[ELASTICSEARCH] Could not re-index products for company {}: {}", companyId, e.getMessage());
             }
         }
     }

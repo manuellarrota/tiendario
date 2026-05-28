@@ -7,7 +7,9 @@ import DashboardService from '../services/dashboard.service';
 import CompanyService from '../services/company.service';
 import PaymentService from '../services/payment.service';
 import AdminService from '../services/admin.service';
-import { FaRocket, FaGem, FaUsers, FaStore, FaChartLine, FaGlobe, FaReceipt, FaMoneyBillWave, FaClock, FaCheckCircle, FaTimesCircle, FaCog, FaBox } from 'react-icons/fa';
+import PublicService from '../services/public.service';
+import { Link } from 'react-router-dom';
+import { FaRocket, FaGem, FaUsers, FaStore, FaChartLine, FaGlobe, FaReceipt, FaMoneyBillWave, FaClock, FaCheckCircle, FaTimesCircle, FaCog, FaBox, FaCashRegister, FaChevronRight } from 'react-icons/fa';
 
 const DashboardHome = () => {
     const user = AuthService.getCurrentUser();
@@ -18,16 +20,30 @@ const DashboardHome = () => {
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentForm, setPaymentForm] = useState({
         amount: '0.00',
-        paymentMethod: 'Pago Móvil / Transferencia',
+        paymentMethod: '',
         reference: '',
         notes: '',
         billingCycle: 'MONTHLY',
-        targetPlan: 'BASIC'
+        targetPlan: 'BASIC',
+        banco: '',
+        cedula: '',
+        nombreTitular: '',
+        correoTelefono: '',
+        ordenId: ''
     });
     const [paymentStatus, setPaymentStatus] = useState({ loading: false, success: false, error: '' });
+    
+    // Extra Registers
+    const [showExtraModal, setShowExtraModal] = useState(false);
+    const [extraForm, setExtraForm] = useState({ requested: 1, paymentMethod: '', reference: '', banco: '', cedula: '', nombreTitular: '', correoTelefono: '', ordenId: '' });
+    const [extraStatus, setExtraStatus] = useState({ loading: false, success: false, error: '' });
+
     const [chartData, setChartData] = useState([]);
     const [chartPeriod, setChartPeriod] = useState('weekly');
     const [chartLoading, setChartLoading] = useState(false);
+    
+    // Config global
+    const [platformConfig, setPlatformConfig] = useState(null);
 
     const isSuperAdmin = user?.roles?.includes('ROLE_ADMIN');
     const isPremium = user?.subscriptionStatus === 'PAID' || user?.subscriptionStatus === 'TRIAL';
@@ -99,15 +115,15 @@ const DashboardHome = () => {
 
     useEffect(() => {
         loadData();
-
-        // 30 Seconds Polling for live dashboard updates only (data, no subscription check)
-        const interval = setInterval(() => {
-            loadData(true); // silent refresh
-        }, 30000);
-
-        return () => clearInterval(interval);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isSuperAdmin, isBlocked]);
+
+    useEffect(() => {
+        PublicService.getPlatformConfig().then(
+            (response) => setPlatformConfig(response.data),
+            (err) => console.error("Error loading config", err)
+        );
+    }, []);
 
     useEffect(() => {
         if (!isSuperAdmin && !isBlocked) {
@@ -116,10 +132,10 @@ const DashboardHome = () => {
     }, [chartPeriod, isSuperAdmin, isBlocked]);
 
     useEffect(() => {
-        if (user?.roles?.includes('ROLE_CASHIER') && !user?.roles?.includes('ROLE_MANAGER') && !isSuperAdmin) {
-            window.location.href = '/pos';
+        if (!isSuperAdmin && !isBlocked) {
+            loadChart(chartPeriod);
         }
-    }, [user, isSuperAdmin]);
+    }, [chartPeriod, isSuperAdmin, isBlocked]);
 
     const calculateAmount = (cycle, plan) => {
         const effectivePlan = plan || paymentForm?.targetPlan || summary?.subscriptionPlan || 'BASIC';
@@ -129,7 +145,9 @@ const DashboardHome = () => {
         else if (effectivePlan === 'PREMIUM') basePrice = cycle === 'MONTHLY' ? 49.99 : 499.99;
         else basePrice = cycle === 'MONTHLY' ? 19.99 : 199.99;
 
-        const extras = (summary?.extraRegisters || 0) * (cycle === 'MONTHLY' ? 10 : 100);
+        // Extra Registers monthly cost
+        const extraPrice = platformConfig?.extraRegisterMonthlyPrice || 5.00;
+        const extras = (summary?.billedExtraRegisters || 0) * (cycle === 'MONTHLY' ? extraPrice : extraPrice * 10);
         const eBilling = summary?.hasElectronicBilling ? (cycle === 'MONTHLY' ? 10 : 100) : 0;
 
         return (basePrice + extras + eBilling).toFixed(2);
@@ -165,18 +183,64 @@ const DashboardHome = () => {
         e.preventDefault();
         setPaymentStatus({ loading: true, success: false, error: '' });
 
-        PaymentService.submitPayment(paymentForm).then(
+        const payload = {
+            ...paymentForm,
+            amount: parseFloat(paymentForm.amount),
+            paymentType: (summary?.billedExtraRegisters > 0) ? 'SUBSCRIPTION_AND_REGISTERS' : 'SUBSCRIPTION'
+        };
+
+        PaymentService.submitPayment(payload).then(
             () => {
                 setPaymentStatus({ loading: false, success: true, error: '' });
-                setTimeout(() => {
-                    setShowPaymentModal(false);
-                    setPaymentStatus({ loading: false, success: false, error: '' });
-                }, 3000);
+                loadData(true);
             },
             (err) => {
                 setPaymentStatus({ loading: false, success: false, error: err.response?.data?.message || 'Error al enviar el comprobante' });
             }
         );
+    };
+
+    const buildReference = () => {
+        const method = extraForm.paymentMethod;
+        if (method === 'PAGO_MOVIL') return `Banco: ${extraForm.banco} | Cédula: ${extraForm.cedula} | Ref: ${extraForm.reference}`;
+        if (method === 'ZELLE') return `Titular: ${extraForm.nombreTitular} | Contacto: ${extraForm.correoTelefono}`;
+        if (method === 'BINANCE') return `Orden ID: ${extraForm.ordenId} | Titular: ${extraForm.nombreTitular}`;
+        if (method === 'TRANSFERENCIA') return `Ref: ${extraForm.reference}`;
+        return 'Efectivo';
+    };
+
+    const handleExtraRegisterSubmit = (e) => {
+        e.preventDefault();
+        setExtraStatus({ loading: true, success: false, error: '' });
+        
+        const requested = parseInt(extraForm.requested) || 0;
+        
+        try {
+            if (requested > 0) {
+                const extraPrice = platformConfig?.extraRegisterMonthlyPrice || 5.00;
+                
+                const payload = {
+                    amount: requested * extraPrice,
+                    paymentMethod: extraForm.paymentMethod,
+                    reference: buildReference(),
+                    notes: '',
+                    paymentType: 'EXTRA_REGISTER',
+                    requestedExtraRegisters: requested
+                };
+                
+                PaymentService.submitPayment(payload).then(
+                    () => {
+                        setExtraStatus({ loading: false, success: true, error: '' });
+                        loadData(true);
+                    },
+                    (err) => {
+                        setExtraStatus({ loading: false, success: false, error: err.response?.data?.message || 'Error al procesar pago de cajas' });
+                    }
+                );
+            }
+        } catch (error) {
+            setExtraStatus({ loading: false, success: false, error: 'Error al solicitar cajas' });
+        }
     };
 
     const renderTooltip = (props, text) => (
@@ -209,26 +273,32 @@ const DashboardHome = () => {
                                     ? 'Esperamos que hayas disfrutado de las herramientas Pro. Para continuar gestionando tu inventario y ventas, por favor elige un plan.'
                                     : 'Tu tienda se encuentra temporalmente suspendida por falta de pago. Para continuar gestionando tu negocio, por favor regulariza tu suscripción.'}
                             </p>
-                            <div className="d-grid gap-3 d-sm-flex justify-content-center">
-                                <Button
-                                    variant="primary"
-                                    size="lg"
-                                    className="rounded-pill px-5 py-3 shadow"
-                                    onClick={() => {
-                                        const pricingSection = document.getElementById('pricing-section');
-                                        if (pricingSection) pricingSection.scrollIntoView({ behavior: 'smooth' });
-                                        else handleSubscriptionChange('upgrade');
-                                    }}
-                                    disabled={processingPayment}
-                                >
-                                    {processingPayment ? <><Spinner animation="border" size="sm" className="me-2" /> Procesando...</> : 'Elegir Plan / Regularizar'}
-                                </Button>
-                            </div>
+                            {user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN') ? (
+                                <div className="d-grid gap-3 d-sm-flex justify-content-center">
+                                    <Button
+                                        variant="primary"
+                                        size="lg"
+                                        className="rounded-pill px-5 py-3 shadow"
+                                        onClick={() => {
+                                            const pricingSection = document.getElementById('pricing-section');
+                                            if (pricingSection) pricingSection.scrollIntoView({ behavior: 'smooth' });
+                                            else handleSubscriptionChange('upgrade');
+                                        }}
+                                        disabled={processingPayment}
+                                    >
+                                        {processingPayment ? <><Spinner animation="border" size="sm" className="me-2" /> Procesando...</> : 'Elegir Plan / Regularizar'}
+                                    </Button>
+                                </div>
+                            ) : (
+                                <Alert variant="warning" className="border-0 shadow-sm rounded-4">
+                                    <strong>Aviso:</strong> Por favor contacta al administrador o dueño de la tienda para reactivar el sistema.
+                                </Alert>
+                            )}
                         </div>
                     </div>
                 ) : (
                     <>
-                        {isTrial && !isTrialExpired && (
+                        {isTrial && !isTrialExpired && (user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
                             <Alert variant="info" className="border-0 shadow-sm rounded-4 mb-4 d-flex align-items-center justify-content-between p-3" style={{ background: 'linear-gradient(90deg, #eef2ff 0%, #f5f3ff 100%)', color: '#4338ca', borderLeft: '5px solid #6366f1 !important' }}>
                                 <div className="d-flex align-items-center">
                                     <div className="bg-white p-2 rounded-3 me-3 shadow-sm" style={{ fontSize: '1.2rem' }}>🚀</div>
@@ -313,7 +383,7 @@ const DashboardHome = () => {
                                         <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-success" style={{ cursor: 'help' }}>
                                             <Card.Body className="p-4">
                                                 <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Ingresos (MRR)</span>
-                                                <h1 className="display-5 fw-bold text-success mb-1">${Number(summary?.mrr || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</h1>
+                                                <h1 className="display-5 fw-bold text-success mb-1">${Number(summary?.mrr || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h1>
                                                 <small className="text-muted fw-medium"><FaMoneyBillWave className="me-1" /> Recurrencia Mensual</small>
                                             </Card.Body>
                                         </Card>
@@ -339,7 +409,7 @@ const DashboardHome = () => {
                                                     <FaGlobe className="text-success h3 mb-0" />
                                                 </div>
                                                 <h5 className="fw-bold mb-1">Volumen Global de la Plataforma</h5>
-                                                <h2 className="fw-bold text-dark">${Number(summary?.globalGmv || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</h2>
+                                                <h2 className="fw-bold text-dark">${Number(summary?.globalGmv || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
                                                 <p className="text-muted small">Monto total transaccionado</p>
                                             </Card.Body>
                                         </Card>
@@ -353,7 +423,7 @@ const DashboardHome = () => {
                                                     <FaChartLine className="text-warning h3 mb-0" />
                                                 </div>
                                                 <h5 className="fw-bold mb-1">Valor Promedio por Pedido (Global)</h5>
-                                                <h2 className="fw-bold text-dark">${Number(summary?.globalAov || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</h2>
+                                                <h2 className="fw-bold text-dark">${Number(summary?.globalAov || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
                                                 <p className="text-muted small">Promedio por pedido</p>
                                             </Card.Body>
                                         </Card>
@@ -385,6 +455,40 @@ const DashboardHome = () => {
                             </Row>
                         ) : (user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) ? (
                             <>
+                                <Row className="g-4 mb-4 reveal-up delay-1">
+                                    <Col lg={12}>
+                                        <Card className="glass-card-admin border-0 shadow-sm rounded-4" style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)' }}>
+                                            <Card.Body className="p-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                                                <div className="d-flex align-items-center gap-3">
+                                                    <div className="bg-primary bg-opacity-10 p-3 rounded-circle">
+                                                        <FaCashRegister className="text-primary h4 mb-0" />
+                                                    </div>
+                                                    <div>
+                                                        <h6 className="fw-bold mb-1 text-dark">Cajas Habilitadas</h6>
+                                                        <p className="text-secondary small mb-0">
+                                                            Tienes <strong>{summary?.extraRegisters || 0}</strong> caja(s) habilitada(s) actualmente.
+                                                            {summary?.nextCycleExtraRegisters != null && (
+                                                                <><br/><span className="text-danger">Has solicitado reducir a <strong>{summary.nextCycleExtraRegisters}</strong> caja(s) para el próximo ciclo.</span></>
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <Button 
+                                                    variant="primary" 
+                                                    className="rounded-pill shadow-sm px-4 fw-bold"
+                                                    onClick={() => {
+                                                        setExtraForm({ requested: 1, paymentMethod: '', reference: '', banco: '', cedula: '', nombreTitular: '', correoTelefono: '', ordenId: '' });
+                                                        setExtraStatus({ loading: false, success: false, error: '' });
+                                                        setShowExtraModal(true);
+                                                    }}
+                                                >
+                                                    + Solicitar Caja Extra (${(platformConfig?.extraRegisterMonthlyPrice || 5.00).toFixed(2)}/mes)
+                                                </Button>
+                                            </Card.Body>
+                                        </Card>
+                                    </Col>
+                                </Row>
+
                                 <Row className="g-4 reveal-up delay-2">
                                     <Col lg={3} md={6}>
                                         <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-dark">
@@ -410,14 +514,14 @@ const DashboardHome = () => {
                                                     </OverlayTrigger>
                                                     <FaMoneyBillWave className="text-primary opacity-50" />
                                                 </div>
-                                                    <h3 className="fw-bold mb-1 text-primary">${Number(summary?.revenueToday || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
+                                                    <h3 className="fw-bold mb-1 text-primary">${Number(summary?.revenueToday || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
                                                     <div className="d-flex align-items-center gap-2">
                                                         {summary?.revenueGrowth >= 0 ? (
                                                             <span className="text-success small fw-bold">↑ {summary?.revenueGrowth}%</span>
                                                         ) : (
                                                             <span className="text-danger small fw-bold">↓ {Math.abs(summary?.revenueGrowth)}%</span>
                                                         )}
-                                                        <small className="text-muted">vs ayer (${Number(summary?.revenueYesterday || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })})</small>
+                                                        <small className="text-muted">vs ayer (${Number(summary?.revenueYesterday || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</small>
                                                     </div>
                                             </Card.Body>
                                         </Card>
@@ -432,7 +536,7 @@ const DashboardHome = () => {
                                                     </OverlayTrigger>
                                                     <FaChartLine className="text-warning opacity-50" />
                                                 </div>
-                                                    <h3 className="fw-bold mb-1 text-warning">${Number(summary?.shopAov || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</h3>
+                                                    <h3 className="fw-bold mb-1 text-warning">${Number(summary?.shopAov || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
                                                     <small className="text-muted">Promedio por Venta</small>
                                             </Card.Body>
                                         </Card>
@@ -494,7 +598,7 @@ const DashboardHome = () => {
                                                                 return (
                                                                     <div key={i} className="d-flex flex-column align-items-center flex-grow-1 h-100 min-width-50">
                                                                         <div className="flex-grow-1 d-flex align-items-end w-100 px-1">
-                                                                            <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, `${d.label}: $${Number(d.value).toLocaleString()}`)}>
+                                                                            <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, `${d.label}: $${Number(d.value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)}>
                                                                                 <div 
                                                                                     className="w-100 rounded-top-3 transition-all chart-bar-gradient"
                                                                                     style={{ 
@@ -583,10 +687,11 @@ const DashboardHome = () => {
                                                             <div key={idx} className="mb-3">
                                                                 <div className="d-flex justify-content-between small mb-1">
                                                                     <span className="text-muted">
-                                                                        {method === 'CASH' ? '💵 Efectivo' : 
-                                                                         method === 'CARD' ? '💳 Tarjeta' : 
-                                                                         method === 'TRANSFER' ? '🏦 Transferencia' : 
-                                                                         method === 'MOBILE_PAYMENT' ? '📱 Pago Móvil' : method}
+                                                                        {method === 'CASH' ? '💵 Efectivo' :
+                                                                         method === 'CARD' ? '💳 Tarjeta' :
+                                                                         method === 'TRANSFER' ? '🏦 Transferencia' :
+                                                                         method === 'MOBILE_PAYMENT' ? '📱 Pago Móvil' :
+                                                                         method === 'MIXED' ? '🔀 Mixto' : method}
                                                                     </span>
                                                                     <span className="fw-bold">{count}</span>
                                                                 </div>
@@ -639,7 +744,7 @@ const DashboardHome = () => {
                                                                         </td>
                                                                         <td>
                                                                             <Badge bg="light" text="dark" className="rounded-pill px-2 py-1">
-                                                                                {sale.paymentMethod === 'CASH' ? '💵 Efectivo' : sale.paymentMethod === 'CARD' ? '💳 Tarjeta' : sale.paymentMethod === 'TRANSFER' ? '🏦 Transf' : '📱 P. Móvil'}
+                                                                                {sale.paymentMethod === 'CASH' ? '💵 Efectivo' : sale.paymentMethod === 'CARD' ? '💳 Tarjeta' : sale.paymentMethod === 'TRANSFER' ? '🏦 Transf' : sale.paymentMethod === 'MOBILE_PAYMENT' ? '📱 P. Móvil' : sale.paymentMethod === 'MIXED' ? '🔀 Mixto' : '—'}
                                                                             </Badge>
                                                                         </td>
                                                                         <td>
@@ -648,7 +753,7 @@ const DashboardHome = () => {
                                                                             </Badge>
                                                                         </td>
                                                                         <td className="text-end px-3">
-                                                                            <div className="fw-bold text-primary">${Number(sale.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                                                                            <div className="fw-bold text-primary">${Number(sale.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                                                                         </td>
                                                                     </tr>
                                                                 ))
@@ -665,7 +770,7 @@ const DashboardHome = () => {
                                     </div>
                                 )}
 
-                                {!isPremium && (
+                                {!isPremium && (user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
                                     <div className="mt-5" id="pricing-section">
                                         <div className="text-center mb-5">
                                             <h2 className="fw-bold text-dark">Lleva tu negocio al siguiente nivel</h2>
@@ -746,11 +851,36 @@ const DashboardHome = () => {
                                 )}
                             </>
                         ) : (
-                            <div className="text-center py-5 glass-card-admin rounded-4 mt-4">
-                                <h3 className="fw-bold">¡Bienvenido al Panel, {user?.username}! 🚀</h3>
-                                <p className="text-secondary">Tu rol de Cajero te permite gestionar ventas rápidas y pedidos.</p>
-                                <Button variant="primary" className="rounded-pill px-4 mt-3" onClick={() => window.location.href='/pos'}>Ir al Punto de Venta</Button>
-                            </div>
+                            <Row className="g-4 reveal-up delay-2 justify-content-center">
+                                <Col lg={8} className="text-center mt-4">
+                                    <div className="glass-card-admin p-5 rounded-4 shadow-sm border-0 mb-4">
+                                        <div className="bg-primary bg-opacity-10 text-primary rounded-circle d-inline-flex p-4 mb-4 shadow-sm">
+                                            <FaCashRegister size={40} />
+                                        </div>
+                                        <h2 className="fw-bold text-dark mb-3">¡Hola, {user?.username}! 👋</h2>
+                                        <p className="text-secondary lead mb-5">Listo para tu turno de hoy. Administra tus ventas o abre la caja registradora.</p>
+                                        
+                                        <Row className="justify-content-center mb-5 g-4">
+                                            <Col md={5}>
+                                                <div className="bg-white p-4 rounded-4 shadow-sm border border-light h-100 d-flex flex-column justify-content-center hover-lift">
+                                                    <div className="text-muted small fw-bold text-uppercase mb-2 letter-spacing-1">Tus Ventas Hoy</div>
+                                                    <h2 className="text-primary fw-bold mb-0">${Number(summary?.revenueToday || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+                                                </div>
+                                            </Col>
+                                            <Col md={5}>
+                                                <div className="bg-white p-4 rounded-4 shadow-sm border border-light h-100 d-flex flex-column justify-content-center hover-lift">
+                                                    <div className="text-muted small fw-bold text-uppercase mb-2 letter-spacing-1">Tickets Procesados</div>
+                                                    <h2 className="text-dark fw-bold mb-0">{summary?.salesCountToday || 0}</h2>
+                                                </div>
+                                            </Col>
+                                        </Row>
+                                        
+                                        <Button as={Link} to="/pos" variant="primary" size="lg" className="rounded-pill px-5 py-3 fw-bold shadow-lg d-inline-flex align-items-center justify-content-center">
+                                            Abrir Punto de Venta <FaChevronRight className="ms-2" />
+                                        </Button>
+                                    </div>
+                                </Col>
+                            </Row>
                         )}
 
                         {!isSuperAdmin && isPremium && (
@@ -763,7 +893,7 @@ const DashboardHome = () => {
 
 
                 {/* Manual Payment Modal */}
-                <Modal scrollable show={showPaymentModal} onHide={() => setShowPaymentModal(false)} centered className="rounded-4 overflow-hidden">
+                <Modal scrollable show={showPaymentModal} onHide={() => { setShowPaymentModal(false); setPaymentStatus({ loading: false, success: false, error: '' }); }} centered className="rounded-4 overflow-hidden">
                     <Modal.Header closeButton className="border-0 pb-0">
                         <Modal.Title className="fw-bold">Informar Pago de Suscripción</Modal.Title>
                     </Modal.Header>
@@ -773,7 +903,7 @@ const DashboardHome = () => {
                                 <div className="display-4 text-success mb-3">✅</div>
                                 <h5 className="fw-bold">¡Comprobante Enviado!</h5>
                                 <p className="text-secondary small">Nuestro equipo validará tu pago en un plazo de 1 a 24 horas hábiles. Recibirás una notificación.</p>
-                                <Button variant="primary" className="rounded-pill px-5 mt-3" onClick={() => setShowPaymentModal(false)}>Cerrar</Button>
+                                <Button variant="primary" className="rounded-pill px-5 mt-3" onClick={() => { setShowPaymentModal(false); setPaymentStatus({ loading: false, success: false, error: '' }); }}>Cerrar</Button>
                             </div>
                         ) : (
                             <Form onSubmit={handleManualPaymentSubmit}>
@@ -833,34 +963,152 @@ const DashboardHome = () => {
                                         onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
                                         required
                                     />
-                                    <Form.Text className="text-muted small">
-                                        Este es el monto exacto basado en tu Plan {summary?.subscriptionPlan || 'Básico'}, cajas extra y facturación.
+                                    <Form.Text className="text-muted small d-block mt-2">
+                                        <strong>Desglose de facturación:</strong><br/>
+                                        • Membresía Base: ${(paymentForm.amount - ((summary?.billedExtraRegisters || 0) * (paymentForm.billingCycle === 'MONTHLY' ? (platformConfig?.extraRegisterMonthlyPrice || 5) : (platformConfig?.extraRegisterMonthlyPrice || 5) * 10))).toFixed(2)}<br/>
+                                        {summary?.billedExtraRegisters > 0 && (
+                                            <>• Cajas Adicionales ({summary.billedExtraRegisters}): ${(summary.billedExtraRegisters * (paymentForm.billingCycle === 'MONTHLY' ? (platformConfig?.extraRegisterMonthlyPrice || 5) : (platformConfig?.extraRegisterMonthlyPrice || 5) * 10)).toFixed(2)}<br/></>
+                                        )}
+                                        <strong>• Total a Pagar: ${paymentForm.amount}</strong>
                                     </Form.Text>
+                                    {(summary?.billedExtraRegisters > 0 && paymentForm.targetPlan === 'BASIC' && (summary.billedExtraRegisters * (platformConfig?.extraRegisterMonthlyPrice || 5) + 19.99) >= 29.99) && (
+                                        <Alert variant="warning" className="mt-2 small py-2">
+                                            💡 <strong>Sugerencia:</strong> El costo actual (Plan + Cajas) es mayor o igual al Plan Medium. Te sugerimos mejorar tu plan para obtener más beneficios.
+                                        </Alert>
+                                    )}
                                 </Form.Group>
                                 <Form.Group className="mb-3">
                                     <Form.Label className="small fw-bold">Método de Pago</Form.Label>
                                     <Form.Select
                                         className="py-2 rounded-3"
                                         value={paymentForm.paymentMethod}
-                                        onChange={(e) => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value })}
+                                        onChange={(e) => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value, reference: '', banco: '', cedula: '', nombreTitular: '', correoTelefono: '', ordenId: '' })}
                                     >
-                                        <option>Pago Móvil / Transferencia</option>
-                                        <option>Zelle / PayPal</option>
-                                        <option>Binance / Crypto</option>
-                                        <option>Efectivo (Local)</option>
+                                        <option value="">-- Seleccione método de pago --</option>
+                                        <option value="PAGO_MOVIL">📱 Pago Móvil</option>
+                                        <option value="ZELLE">💵 Zelle</option>
+                                        <option value="BINANCE">🪙 Binance / Crypto</option>
+                                        <option value="TRANSFERENCIA">🏦 Transferencia Bancaria</option>
+                                        <option value="EFECTIVO">💰 Efectivo (Local)</option>
                                     </Form.Select>
                                 </Form.Group>
-                                <Form.Group className="mb-3">
-                                    <Form.Label className="small fw-bold">Número de Referencia</Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        placeholder="Ultimos 4 o 6 dígitos"
-                                        className="py-2 rounded-3"
-                                        value={paymentForm.reference}
-                                        onChange={(e) => setPaymentForm({ ...paymentForm, reference: e.target.value })}
-                                        required
-                                    />
-                                </Form.Group>
+                                        {(paymentForm.paymentMethod === 'PAGO_MOVIL' || paymentForm.paymentMethod === 'TRANSFERENCIA') && (
+                                            <>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label className="small fw-bold">Banco</Form.Label>
+                                                    <Form.Select
+                                                        className="py-2 rounded-3"
+                                                        value={paymentForm.banco}
+                                                        onChange={(e) => setPaymentForm({ ...paymentForm, banco: e.target.value })}
+                                                        required
+                                                    >
+                                                        <option value="">-- Seleccionar Banco --</option>
+                                                        <option>Banco de Venezuela</option>
+                                                        <option>Banesco</option>
+                                                        <option>Banco Mercantil</option>
+                                                        <option>Banco Provincial</option>
+                                                        <option>Banco Nacional de Crédito (BNC)</option>
+                                                        <option>Banco Bicentenario</option>
+                                                        <option>Banco del Tesoro</option>
+                                                        <option>Banco Exterior</option>
+                                                        <option>Banplus</option>
+                                                        <option>Bancamiga</option>
+                                                        <option>Banco Plaza</option>
+                                                        <option>Banco Activo</option>
+                                                        <option>Bancaribe</option>
+                                                        <option>Banco Sofitasa</option>
+                                                        <option>Banco Caroní</option>
+                                                        <option>100% Banco</option>
+                                                        <option>Mi Banco</option>
+                                                        <option>Banco de la Fuerza Armada (BANFANB)</option>
+                                                        <option>Banco del Sur</option>
+                                                        <option>Otro</option>
+                                                    </Form.Select>
+                                                </Form.Group>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label className="small fw-bold">Cédula del Titular</Form.Label>
+                                                    <Form.Control
+                                                        type="text"
+                                                        placeholder="Ej: V-12345678"
+                                                        className="py-2 rounded-3"
+                                                        value={paymentForm.cedula}
+                                                        onChange={(e) => setPaymentForm({ ...paymentForm, cedula: e.target.value })}
+                                                        required
+                                                    />
+                                                </Form.Group>
+                                                <Form.Group className="mb-4">
+                                                    <Form.Label className="small fw-bold">Número de Referencia</Form.Label>
+                                                    <Form.Control
+                                                        type="text"
+                                                        placeholder="Ej: 123456789"
+                                                        className="py-2 rounded-3"
+                                                        value={paymentForm.reference}
+                                                        onChange={(e) => setPaymentForm({ ...paymentForm, reference: e.target.value })}
+                                                        required
+                                                    />
+                                                </Form.Group>
+                                            </>
+                                        )}
+
+                                        {paymentForm.paymentMethod === 'ZELLE' && (
+                                            <>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label className="small fw-bold">Nombre del Titular de la Cuenta</Form.Label>
+                                                    <Form.Control
+                                                        type="text"
+                                                        placeholder="Ej: John Doe"
+                                                        className="py-2 rounded-3"
+                                                        value={paymentForm.nombreTitular}
+                                                        onChange={(e) => setPaymentForm({ ...paymentForm, nombreTitular: e.target.value })}
+                                                        required
+                                                    />
+                                                </Form.Group>
+                                                <Form.Group className="mb-4">
+                                                    <Form.Label className="small fw-bold">Correo o Teléfono Zelle</Form.Label>
+                                                    <Form.Control
+                                                        type="text"
+                                                        placeholder="Ej: john@email.com"
+                                                        className="py-2 rounded-3"
+                                                        value={paymentForm.correoTelefono}
+                                                        onChange={(e) => setPaymentForm({ ...paymentForm, correoTelefono: e.target.value })}
+                                                        required
+                                                    />
+                                                </Form.Group>
+                                            </>
+                                        )}
+
+                                        {paymentForm.paymentMethod === 'BINANCE' && (
+                                            <>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label className="small fw-bold">Número de ID de la Orden</Form.Label>
+                                                    <Form.Control
+                                                        type="text"
+                                                        placeholder="Ej: 123456789"
+                                                        className="py-2 rounded-3"
+                                                        value={paymentForm.ordenId}
+                                                        onChange={(e) => setPaymentForm({ ...paymentForm, ordenId: e.target.value })}
+                                                        required
+                                                    />
+                                                </Form.Group>
+                                                <Form.Group className="mb-4">
+                                                    <Form.Label className="small fw-bold">Nombre del Titular de la Cuenta</Form.Label>
+                                                    <Form.Control
+                                                        type="text"
+                                                        placeholder="Ej: Juan Pérez"
+                                                        className="py-2 rounded-3"
+                                                        value={paymentForm.nombreTitular}
+                                                        onChange={(e) => setPaymentForm({ ...paymentForm, nombreTitular: e.target.value })}
+                                                        required
+                                                    />
+                                                </Form.Group>
+                                            </>
+                                        )}
+
+                                        {paymentForm.paymentMethod === 'EFECTIVO' && (
+                                            <Alert variant="warning" className="small py-2 border-0">
+                                                📍 Coordina la entrega del efectivo con el administrador de la plataforma.
+                                            </Alert>
+                                        )}
                                 <Form.Group className="mb-4">
                                     <Form.Label className="small fw-bold">Notas adicionales (Opcional)</Form.Label>
                                     <Form.Control
@@ -874,6 +1122,205 @@ const DashboardHome = () => {
                                 <div className="d-grid">
                                     <Button variant="primary" type="submit" className="py-2 fw-bold shadow-sm rounded-pill" disabled={paymentStatus.loading}>
                                         {paymentStatus.loading ? <><Spinner animation="border" size="sm" className="me-2" /> Enviando...</> : 'Enviar Comprobante'}
+                                    </Button>
+                                </div>
+                            </Form>
+                        )}
+                    </Modal.Body>
+                </Modal>
+
+                {/* Extra Register Request Modal */}
+                <Modal scrollable show={showExtraModal} onHide={() => { setShowExtraModal(false); setExtraStatus({ loading: false, success: false, error: '' }); }} centered className="rounded-4 overflow-hidden">
+                    <Modal.Header closeButton className="border-0 pb-0">
+                        <Modal.Title className="fw-bold">Adquirir Cajas Extra</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body className="p-4">
+                        {extraStatus.success ? (
+                            <div className="text-center py-4">
+                                <div className="display-4 text-success mb-3">✅</div>
+                                <h5 className="fw-bold">
+                                    ¡Comprobante Enviado!
+                                </h5>
+                                <p className="text-secondary small">
+                                    Nuestro equipo validará tu pago. Las nuevas cajas se activarán automáticamente en un plazo de 1 a 24 horas hábiles.
+                                </p>
+                                <Button variant="primary" className="rounded-pill px-5 mt-3" onClick={() => { setShowExtraModal(false); setExtraStatus({ loading: false, success: false, error: '' }); }}>Cerrar</Button>
+                            </div>
+                        ) : (
+                            <Form onSubmit={handleExtraRegisterSubmit}>
+                                <Alert variant="info" className="small py-2 border-0 shadow-sm">
+                                    Adquiere cajas registradoras adicionales para tu negocio.<br/><br/>
+                                    <strong>Importante:</strong> Cada nueva caja tiene un costo de <strong>${(platformConfig?.extraRegisterMonthlyPrice || 5.00).toFixed(2)} mensuales</strong>. Al aprobarse tu pago, estas cajas se sumarán a las que ya tienes habilitadas.
+                                </Alert>
+
+                                {extraStatus.error && <Alert variant="danger" className="py-2 small">{extraStatus.error}</Alert>}
+
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="small fw-bold">Cantidad de Cajas Extra a Adquirir</Form.Label>
+                                    <Form.Control
+                                        type="number"
+                                        min="1"
+                                        max="50"
+                                        value={extraForm.requested}
+                                        onFocus={(e) => e.target.select()}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            setExtraForm({ ...extraForm, requested: val === '' ? '' : parseInt(val) });
+                                        }}
+                                        className="py-2 rounded-3"
+                                        required
+                                    />
+                                </Form.Group>
+
+                                <div className="bg-light p-3 rounded-3 mb-4 text-center border">
+                                    <span className="small text-muted d-block mb-1">Monto a Pagar Ahora</span>
+                                    <h3 className="fw-bold text-dark mb-0">
+                                        ${((parseInt(extraForm.requested) || 0) * (platformConfig?.extraRegisterMonthlyPrice || 5)).toFixed(2)}
+                                    </h3>
+                                </div>
+                                
+                                {parseInt(extraForm.requested) > 0 && (
+                                    <>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label className="small fw-bold">Método de Pago</Form.Label>
+                                            <Form.Select
+                                                className="py-2 rounded-3"
+                                                value={extraForm.paymentMethod}
+                                                onChange={(e) => setExtraForm({ ...extraForm, paymentMethod: e.target.value, reference: '', banco: '', cedula: '', nombreTitular: '', correoTelefono: '', ordenId: '' })}
+                                            >
+                                                <option value="">-- Seleccione método de pago --</option>
+                                                <option value="PAGO_MOVIL">📱 Pago Móvil</option>
+                                                <option value="ZELLE">💵 Zelle</option>
+                                                <option value="BINANCE">🪙 Binance / Crypto</option>
+                                                <option value="TRANSFERENCIA">🏦 Transferencia Bancaria</option>
+                                                <option value="EFECTIVO">💰 Efectivo (Local)</option>
+                                            </Form.Select>
+                                        </Form.Group>
+
+                                        {(extraForm.paymentMethod === 'PAGO_MOVIL' || extraForm.paymentMethod === 'TRANSFERENCIA') && (
+                                            <>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label className="small fw-bold">Banco</Form.Label>
+                                                    <Form.Select
+                                                        className="py-2 rounded-3"
+                                                        value={extraForm.banco}
+                                                        onChange={(e) => setExtraForm({ ...extraForm, banco: e.target.value })}
+                                                        required
+                                                    >
+                                                        <option value="">-- Seleccionar Banco --</option>
+                                                        <option>Banco de Venezuela</option>
+                                                        <option>Banesco</option>
+                                                        <option>Banco Mercantil</option>
+                                                        <option>Banco Provincial</option>
+                                                        <option>Banco Nacional de Crédito (BNC)</option>
+                                                        <option>Banco Bicentenario</option>
+                                                        <option>Banco del Tesoro</option>
+                                                        <option>Banco Exterior</option>
+                                                        <option>Banplus</option>
+                                                        <option>Bancamiga</option>
+                                                        <option>Banco Plaza</option>
+                                                        <option>Banco Activo</option>
+                                                        <option>Bancaribe</option>
+                                                        <option>Banco Sofitasa</option>
+                                                        <option>Banco Caroní</option>
+                                                        <option>100% Banco</option>
+                                                        <option>Mi Banco</option>
+                                                        <option>Banco de la Fuerza Armada (BANFANB)</option>
+                                                        <option>Banco del Sur</option>
+                                                        <option>Otro</option>
+                                                    </Form.Select>
+                                                </Form.Group>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label className="small fw-bold">Cédula del Titular</Form.Label>
+                                                    <Form.Control
+                                                        type="text"
+                                                        placeholder="Ej: V-12345678"
+                                                        className="py-2 rounded-3"
+                                                        value={extraForm.cedula}
+                                                        onChange={(e) => setExtraForm({ ...extraForm, cedula: e.target.value })}
+                                                        required
+                                                    />
+                                                </Form.Group>
+                                                <Form.Group className="mb-4">
+                                                    <Form.Label className="small fw-bold">Número de Referencia</Form.Label>
+                                                    <Form.Control
+                                                        type="text"
+                                                        placeholder="Ej: 123456789"
+                                                        className="py-2 rounded-3"
+                                                        value={extraForm.reference}
+                                                        onChange={(e) => setExtraForm({ ...extraForm, reference: e.target.value })}
+                                                        required
+                                                    />
+                                                </Form.Group>
+                                            </>
+                                        )}
+
+                                        {extraForm.paymentMethod === 'ZELLE' && (
+                                            <>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label className="small fw-bold">Nombre del Titular de la Cuenta</Form.Label>
+                                                    <Form.Control
+                                                        type="text"
+                                                        placeholder="Ej: John Doe"
+                                                        className="py-2 rounded-3"
+                                                        value={extraForm.nombreTitular}
+                                                        onChange={(e) => setExtraForm({ ...extraForm, nombreTitular: e.target.value })}
+                                                        required
+                                                    />
+                                                </Form.Group>
+                                                <Form.Group className="mb-4">
+                                                    <Form.Label className="small fw-bold">Correo Electrónico o Número Telefónico</Form.Label>
+                                                    <Form.Control
+                                                        type="text"
+                                                        placeholder="Ej: john@email.com o +1234567890"
+                                                        className="py-2 rounded-3"
+                                                        value={extraForm.correoTelefono}
+                                                        onChange={(e) => setExtraForm({ ...extraForm, correoTelefono: e.target.value })}
+                                                        required
+                                                    />
+                                                </Form.Group>
+                                            </>
+                                        )}
+
+                                        {extraForm.paymentMethod === 'BINANCE' && (
+                                            <>
+                                                <Form.Group className="mb-3">
+                                                    <Form.Label className="small fw-bold">Número de ID de la Orden</Form.Label>
+                                                    <Form.Control
+                                                        type="text"
+                                                        placeholder="Ej: 123456789"
+                                                        className="py-2 rounded-3"
+                                                        value={extraForm.ordenId}
+                                                        onChange={(e) => setExtraForm({ ...extraForm, ordenId: e.target.value })}
+                                                        required
+                                                    />
+                                                </Form.Group>
+                                                <Form.Group className="mb-4">
+                                                    <Form.Label className="small fw-bold">Nombre del Titular de la Cuenta</Form.Label>
+                                                    <Form.Control
+                                                        type="text"
+                                                        placeholder="Ej: Juan Pérez"
+                                                        className="py-2 rounded-3"
+                                                        value={extraForm.nombreTitular}
+                                                        onChange={(e) => setExtraForm({ ...extraForm, nombreTitular: e.target.value })}
+                                                        required
+                                                    />
+                                                </Form.Group>
+                                            </>
+                                        )}
+
+
+                                        {extraForm.paymentMethod === 'EFECTIVO' && (
+                                            <Alert variant="warning" className="small py-2 border-0">
+                                                📍 Coordina la entrega del efectivo con el administrador de la plataforma.
+                                            </Alert>
+                                        )}
+                                    </>
+                                )}
+
+                                <div className="d-grid">
+                                    <Button variant="primary" type="submit" className="py-2 fw-bold shadow-sm rounded-pill" disabled={extraStatus.loading}>
+                                        {extraStatus.loading ? <><Spinner animation="border" size="sm" className="me-2" /> Procesando...</> : 'Actualizar Cajas Ahora'}
                                     </Button>
                                 </div>
                             </Form>

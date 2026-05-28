@@ -24,6 +24,10 @@ const downgradeSubscription = () => {
     return axios.post(API_URL + '/unsubscribe', {}, { headers: getAuthHeader() });
 };
 
+const addExtraRegisters = (requested) => {
+    return axios.post(API_URL + '/add-registers', { requested }, { headers: getAuthHeader() });
+};
+
 const updateProfile = (profileData) => {
     return axios.put(API_URL + '/profile', profileData, { headers: getAuthHeader() });
 };
@@ -32,7 +36,8 @@ const CompanyService = {
     getProfile,
     upgradeSubscription,
     downgradeSubscription,
-    updateProfile
+    updateProfile,
+    addExtraRegisters
 };
 
 export default CompanyService;

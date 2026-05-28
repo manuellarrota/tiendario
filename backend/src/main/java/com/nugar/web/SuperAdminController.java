@@ -13,6 +13,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.security.core.context.SecurityContextHolder;
+import com.nugar.security.UserDetailsImpl;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -172,7 +174,7 @@ public class SuperAdminController {
                         company.setExtraRegisters(extraRegisters);
                         
                         companyRepository.save(company);
-                        log.info("[SUSCRIPCIÓN ACTUALIZADA] Estado: {} | Plan: {} | Cajas Extra: {} | Empresa: {} (ID: {})", 
+                        log.info("[SUSCRIPCION ACTUALIZADA] Estado: {} | Plan: {} | Cajas Extra: {} | Empresa: {} (ID: {})", 
                                 newStatus, newPlan, extraRegisters, company.getName(), company.getId());
                         return ResponseEntity.ok(new MessageResponse("Subscription updated successfully!"));
                 } catch (IllegalArgumentException e) {
@@ -195,15 +197,29 @@ public class SuperAdminController {
         @PostMapping("/payments/{id}/approve")
         @PreAuthorize("hasRole('ADMIN')")
         public ResponseEntity<?> approvePayment(@PathVariable Long id) {
-                subscriptionService.approvePayment(id);
+                Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+                String adminEmail = "admin@nugar.com";
+                if (principal instanceof UserDetailsImpl) {
+                        adminEmail = ((UserDetailsImpl) principal).getEmail();
+                } else if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
+                        adminEmail = ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
+                }
+                subscriptionService.approvePayment(id, adminEmail);
                 return ResponseEntity.ok(new MessageResponse("Payment approved successfully"));
         }
 
         @PostMapping("/payments/{id}/reject")
         @PreAuthorize("hasRole('ADMIN')")
         public ResponseEntity<?> rejectPayment(@PathVariable Long id, @RequestBody Map<String, String> request) {
+                Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+                String adminEmail = "admin@nugar.com";
+                if (principal instanceof UserDetailsImpl) {
+                        adminEmail = ((UserDetailsImpl) principal).getEmail();
+                } else if (principal instanceof org.springframework.security.core.userdetails.UserDetails) {
+                        adminEmail = ((org.springframework.security.core.userdetails.UserDetails) principal).getUsername();
+                }
                 String reason = request.get("reason");
-                subscriptionService.rejectPayment(id, reason);
+                subscriptionService.rejectPayment(id, reason, adminEmail);
                 return ResponseEntity.ok(new MessageResponse("Payment rejected"));
         }
 
@@ -232,6 +248,9 @@ public class SuperAdminController {
 
                 current.setFreePlanProductLimit(newConfig.getFreePlanProductLimit());
                 current.setPremiumPlanMonthlyPrice(newConfig.getPremiumPlanMonthlyPrice());
+                if (newConfig.getExtraRegisterMonthlyPrice() != null) {
+                    current.setExtraRegisterMonthlyPrice(newConfig.getExtraRegisterMonthlyPrice());
+                }
                 current.setTrialDays(newConfig.getTrialDays());
                 current.setMaintenanceMode(newConfig.isMaintenanceMode());
                 current.setAnnouncementMessage(newConfig.getAnnouncementMessage());
@@ -330,7 +349,7 @@ public class SuperAdminController {
                         user.setUsername(username);
                         user.setEmail(email);
                         user.setPassword(passwordEncoder.encode(password));
-                        user.setRole(Role.ROLE_MANAGER);
+                        user.getRoles().add(Role.ROLE_MANAGER);
                         user.setEnabled(true);
                         user.setCompany(company);
                         userRepository.save(user);

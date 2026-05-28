@@ -26,9 +26,13 @@ public class SubscriptionPayment {
     private String notes;
     private String billingCycle; // "MONTHLY" or "ANNUAL"
     private String targetPlan;   // "BASIC", "MEDIUM" or "PREMIUM" — the plan being paid for
+    private String paymentType;  // "SUBSCRIPTION" or "EXTRA_REGISTER"
+    private Integer requestedExtraRegisters;
 
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
+    
+    private String processedBy; // email or name of the admin who approved/rejected it
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

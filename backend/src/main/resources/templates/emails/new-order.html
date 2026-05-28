@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Nueva Orden</title>
+</head>
+<body style="font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background-color:#f1f5f9;">
+    <div style="background:linear-gradient(135deg,#3b82f6,#6366f1);padding:40px;border-radius:16px 16px 0 0;text-align:center;color:white;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
+        <h1 style="margin:0 0 10px;font-size:28px;">🛒 ¡Nueva Orden!</h1>
+        <p style="opacity:0.9;margin:0;font-size:16px;" th:text="${storeName}">Tienda</p>
+    </div>
+    <div style="padding:30px;background:#ffffff;border-radius:0 0 16px 16px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);">
+        <p style="color:#1e293b;font-size:16px;margin-top:0;">Un nuevo pedido ha llegado de <strong th:text="${customerName}">Cliente</strong>.</p>
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin:20px 0;">
+            <h3 style="margin:0 0 10px;color:#1e293b;font-size:18px;">📋 Detalle del Pedido</h3>
+            <p style="white-space:pre-line;color:#475569;font-size:15px;" th:text="${orderSummary}">Detalle</p>
+            <hr style="border:none;border-top:1px dashed #cbd5e1;margin:15px 0;"/>
+            <p style="font-size:20px;font-weight:900;color:#3b82f6;margin:0;">Total: $<span th:text="${total}">0.00</span></p>
+        </div>
+        <p style="color:#64748b;font-size:14px;">Ingresa al <strong>Panel de Administración</strong> para gestionar esta orden.</p>
+        <hr style="border:none;border-top:1px solid #e2e8f0;margin:20px 0;"/>
+        <p style="color:#94a3b8;font-size:12px;text-align:center;margin-bottom:0;">© Nugar — Marketplace Local</p>
+    </div>
+</body>
+</html>

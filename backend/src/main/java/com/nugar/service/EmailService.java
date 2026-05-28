@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import jakarta.mail.internet.MimeMessage;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
 
 @Service
 public class EmailService {
@@ -22,6 +24,9 @@ public class EmailService {
 
     @Autowired(required = false)
     private JavaMailSender mailSender;
+
+    @Autowired
+    private TemplateEngine templateEngine;
 
     @Value("${app.mail.from:noreply@nugar.com}")
     private String fromAddress;
@@ -38,7 +43,7 @@ public class EmailService {
     public void sendSimpleMessage(String to, String subject, String text) {
         try {
             if (mailSender == null) {
-                log.warn("JavaMailSender not configured. Skipping email to {}. Falling back to file log.", to);
+                log.warn("[EMAIL] JavaMailSender not configured. Skipping email to {}. Falling back to file log.", to);
                 writeToFallbackFile("emails_fallback.txt", "TO: " + to + " | SUBJECT: " + subject + " | BODY: " + text);
                 return;
             }
@@ -48,9 +53,9 @@ public class EmailService {
             message.setSubject(subject);
             message.setText(text);
             mailSender.send(message);
-            log.info("Email sent to {} — subject: {}", to, subject);
+            log.info("[EMAIL] Email sent to {} — subject: {}", to, subject);
         } catch (Exception e) {
-            log.warn("Could not send email to {}: {}. Falling back to file log.", to, e.getMessage());
+            log.warn("[EMAIL] Could not send email to {}: {}. Falling back to file log.", to, e.getMessage());
             writeToFallbackFile("emails_fallback.txt",
                     "TO: " + to + " | SUBJECT: " + subject + " | BODY: " + text);
         }
@@ -62,7 +67,7 @@ public class EmailService {
     public void sendHtmlMessage(String to, String subject, String htmlContent) {
         try {
             if (mailSender == null) {
-                log.warn("JavaMailSender not configured. Skipping HTML email to {}. Falling back to file log.", to);
+                log.warn("[EMAIL] JavaMailSender not configured. Skipping HTML email to {}. Falling back to file log.", to);
                 writeToFallbackFile("emails_fallback.txt",
                         "TO: " + to + " | SUBJECT: " + subject + " | HTML: (logged)");
                 return;
@@ -74,9 +79,9 @@ public class EmailService {
             helper.setSubject(subject);
             helper.setText(htmlContent, true);
             mailSender.send(message);
-            log.info("HTML email sent to {} — subject: {}", to, subject);
+            log.info("[EMAIL] HTML email sent to {} — subject: {}", to, subject);
         } catch (Exception e) {
-            log.warn("Could not send HTML email to {}: {}. Falling back to file log.", to, e.getMessage());
+            log.warn("[EMAIL] Could not send HTML email to {}: {}. Falling back to file log.", to, e.getMessage());
             writeToFallbackFile("emails_fallback.txt",
                     "TO: " + to + " | SUBJECT: " + subject + " | HTML: (logged)");
         }
@@ -89,7 +94,11 @@ public class EmailService {
         String base = (customFrontendUrl != null && !customFrontendUrl.isBlank()) ? customFrontendUrl : frontendUrl;
         String resetLink = base + "/reset-password?token=" + resetToken;
         String subject = "🔐 Restablecer tu contraseña — Nugar";
-        String html = buildPasswordResetHtml(username, resetLink);
+        
+        Context context = new Context();
+        context.setVariable("username", username);
+        context.setVariable("resetLink", resetLink);
+        String html = templateEngine.process("emails/password-reset", context);
 
         sendHtmlMessage(to, subject, html);
 
@@ -105,7 +114,14 @@ public class EmailService {
     public void sendNewOrderNotification(String storeEmail, String storeName,
             String customerName, String orderSummary, java.math.BigDecimal total) {
         String subject = "🛒 ¡Nueva orden recibida! — " + storeName;
-        String html = buildNewOrderHtml(storeName, customerName, orderSummary, total);
+
+        Context context = new Context();
+        context.setVariable("storeName", storeName);
+        context.setVariable("customerName", customerName);
+        context.setVariable("orderSummary", orderSummary);
+        context.setVariable("total", total != null ? total.setScale(2, java.math.RoundingMode.HALF_UP).toString() : "0.00");
+        String html = templateEngine.process("emails/new-order", context);
+
         sendHtmlMessage(storeEmail, subject, html);
     }
 
@@ -136,8 +152,30 @@ public class EmailService {
         }
 
         String subject = emoji + " Tu pedido #" + orderId + " — " + statusText;
-        String html = buildOrderStatusHtml(customerName, storeName, statusText, emoji, orderId);
+
+        Context context = new Context();
+        context.setVariable("customerName", customerName);
+        context.setVariable("storeName", storeName);
+        context.setVariable("statusText", statusText);
+        context.setVariable("emoji", emoji);
+        context.setVariable("orderId", orderId);
+        String html = templateEngine.process("emails/order-status", context);
+
         sendHtmlMessage(customerEmail, subject, html);
+    }
+
+    /**
+     * Send subscription warning email 3 days before expiration.
+     */
+    public void sendSubscriptionWarningEmail(String to, String storeName, String expirationDate) {
+        String subject = "⏳ Tu suscripción a Nugar vence pronto";
+        
+        Context context = new Context();
+        context.setVariable("storeName", storeName);
+        context.setVariable("expirationDate", expirationDate);
+
+        String html = templateEngine.process("emails/subscription-warning", context);
+        sendHtmlMessage(to, subject, html);
     }
 
     /**
@@ -147,22 +185,10 @@ public class EmailService {
         String base = (customBackendUrl != null && !customBackendUrl.isBlank()) ? customBackendUrl : backendUrl;
         String verificationUrl = base + "/api/auth/verify?code=" + code;
         String subject = "✉️ Verifica tu cuenta — Nugar";
-        String html = "<!DOCTYPE html><html><body style='font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background-color:#f1f5f9;'>"
-                + "<div style='background:linear-gradient(135deg,#3b82f6,#6366f1);padding:40px;border-radius:16px 16px 0 0;text-align:center;color:white;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'>"
-                + "<h1 style='margin:0 0 10px;font-size:28px;'>✉️ Verifica tu Cuenta</h1>"
-                + "<p style='opacity:0.9;margin:0;font-size:16px;'>Nugar — Tu Marketplace Local</p>"
-                + "</div>"
-                + "<div style='padding:30px;background:#ffffff;border-radius:0 0 16px 16px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'>"
-                + "<p style='color:#1e293b;font-size:16px;margin-top:0;'>¡Bienvenido a Nugar!</p>"
-                + "<p style='color:#1e293b;font-size:16px;'>Haz clic en el siguiente botón para activar tu cuenta:</p>"
-                + "<div style='text-align:center;margin:30px 0;'>"
-                + "<a href='" + verificationUrl
-                + "' style='background:linear-gradient(135deg,#3b82f6,#6366f1);color:white;padding:16px 40px;border-radius:30px;text-decoration:none;font-weight:bold;display:inline-block;font-size:16px;box-shadow:0 4px 12px rgba(59,130,246,0.3);'>Verificar Cuenta</a>"
-                + "</div>"
-                + "<p style='color:#64748b;font-size:14px;'>Si no te has registrado, puedes ignorar este correo.</p>"
-                + "<hr style='border:none;border-top:1px solid #e2e8f0;margin:20px 0;'/>"
-                + "<p style='color:#94a3b8;font-size:12px;text-align:center;margin-bottom:0;'>© Nugar — San Cristóbal, Táchira</p>"
-                + "</div></body></html>";
+
+        Context context = new Context();
+        context.setVariable("verificationUrl", verificationUrl);
+        String html = templateEngine.process("emails/verify-account", context);
 
         sendHtmlMessage(email, subject, html);
 
@@ -177,98 +203,19 @@ public class EmailService {
     @Async
     public void sendStoreCredentials(String to, String storeName, String username, String password) {
         String subject = "🚀 ¡Bienvenido a Nugar! — Credenciales de " + storeName;
-        String html = buildStoreCredentialsHtml(storeName, username, password);
+        String adminUrl = frontendUrl + "/admin";
+
+        Context context = new Context();
+        context.setVariable("storeName", storeName);
+        context.setVariable("username", username);
+        context.setVariable("password", password);
+        context.setVariable("adminUrl", adminUrl);
+        String html = templateEngine.process("emails/store-credentials", context);
+
         sendHtmlMessage(to, subject, html);
     }
 
-    // ─── HTML Templates ───────────────────────────────────────────────
-
-    private String buildPasswordResetHtml(String username, String resetLink) {
-        return "<!DOCTYPE html><html><body style='font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background-color:#f1f5f9;'>"
-                + "<div style='background:linear-gradient(135deg,#3b82f6,#6366f1);padding:40px;border-radius:16px 16px 0 0;text-align:center;color:white;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'>"
-                + "<h1 style='margin:0 0 10px;font-size:28px;'>🔐 Restablecer Contraseña</h1>"
-                + "<p style='opacity:0.9;margin:0;font-size:16px;'>Nugar — Tu Marketplace Local</p>"
-                + "</div>"
-                + "<div style='padding:30px;background:#ffffff;border-radius:0 0 16px 16px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'>"
-                + "<p style='color:#1e293b;font-size:16px;margin-top:0;'>Hola <strong>" + username + "</strong>,</p>"
-                + "<p style='color:#1e293b;font-size:16px;'>Recibimos una solicitud para restablecer tu contraseña. Haz clic en el botón para crear una nueva:</p>"
-                + "<div style='text-align:center;margin:30px 0;'>"
-                + "<a href='" + resetLink
-                + "' style='background:linear-gradient(135deg,#3b82f6,#6366f1);color:white;padding:16px 40px;border-radius:30px;text-decoration:none;font-weight:bold;display:inline-block;font-size:16px;box-shadow:0 4px 12px rgba(59,130,246,0.3);'>Restablecer Contraseña</a>"
-                + "</div>"
-                + "<p style='color:#64748b;font-size:14px;'>Este enlace expira en <strong>30 minutos</strong>. Si no solicitaste este cambio, puedes ignorar este correo sin problemas.</p>"
-                + "<hr style='border:none;border-top:1px solid #e2e8f0;margin:20px 0;'/>"
-                + "<p style='color:#94a3b8;font-size:12px;text-align:center;margin-bottom:0;'>© Nugar — San Cristóbal, Táchira, Venezuela</p>"
-                + "</div></body></html>";
-    }
-
-    private String buildStoreCredentialsHtml(String storeName, String username, String password) {
-        String adminUrl = frontendUrl + "/admin";
-        return "<!DOCTYPE html><html><body style='font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background-color:#f1f5f9;'>"
-                + "<div style='background:linear-gradient(135deg,#3b82f6,#6366f1);padding:40px;border-radius:16px 16px 0 0;text-align:center;color:white;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'>"
-                + "<h1 style='margin:0 0 10px;font-size:28px;'>🚀 ¡Bienvenido a Nugar!</h1>"
-                + "<p style='opacity:0.9;margin:0;font-size:16px;'>Tu tienda " + storeName + " ha sido registrada</p>"
-                + "</div>"
-                + "<div style='padding:30px;background:#ffffff;border-radius:0 0 16px 16px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'>"
-                + "<p style='color:#1e293b;font-size:16px;margin-top:0;'>¡Felicidades! Se ha creado la cuenta de administración para <strong>" + storeName
-                + "</strong>.</p>"
-                + "<div style='background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin:20px 0;'>"
-                + "<p style='margin:0 0 10px;color:#1e293b;font-size:15px;'><strong>Usuario:</strong> <code style='background:#e2e8f0;padding:4px 8px;border-radius:6px;color:#3b82f6;font-size:15px;'>"
-                + username + "</code></p>"
-                + "<p style='margin:0;color:#1e293b;font-size:15px;'><strong>Contraseña:</strong> <code style='background:#e2e8f0;padding:4px 8px;border-radius:6px;color:#3b82f6;font-size:15px;'>"
-                + password + "</code></p>"
-                + "</div>"
-                + "<div style='text-align:center;margin:30px 0;'>"
-                + "<a href='" + adminUrl
-                + "' style='background:linear-gradient(135deg,#3b82f6,#6366f1);color:white;padding:16px 40px;border-radius:30px;text-decoration:none;font-weight:bold;display:inline-block;font-size:16px;box-shadow:0 4px 12px rgba(59,130,246,0.3);'>Ingresar al Panel</a>"
-                + "</div>"
-                + "<p style='color:#64748b;font-size:14px;'>Te recomendamos cambiar tu contraseña al ingresar por primera vez desde Configuraciones.</p>"
-                + "<hr style='border:none;border-top:1px solid #e2e8f0;margin:20px 0;'/>"
-                + "<p style='color:#94a3b8;font-size:12px;text-align:center;margin-bottom:0;'>© Nugar — Tu Marketplace Local</p>"
-                + "</div></body></html>";
-    }
-
-    private String buildNewOrderHtml(String storeName, String customerName,
-            String orderSummary, java.math.BigDecimal total) {
-        return "<!DOCTYPE html><html><body style='font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background-color:#f1f5f9;'>"
-                + "<div style='background:linear-gradient(135deg,#3b82f6,#6366f1);padding:40px;border-radius:16px 16px 0 0;text-align:center;color:white;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'>"
-                + "<h1 style='margin:0 0 10px;font-size:28px;'>🛒 ¡Nueva Orden!</h1>"
-                + "<p style='opacity:0.9;margin:0;font-size:16px;'>" + storeName + "</p>"
-                + "</div>"
-                + "<div style='padding:30px;background:#ffffff;border-radius:0 0 16px 16px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'>"
-                + "<p style='color:#1e293b;font-size:16px;margin-top:0;'>Un nuevo pedido ha llegado de <strong>" + customerName + "</strong>.</p>"
-                + "<div style='background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin:20px 0;'>"
-                + "<h3 style='margin:0 0 10px;color:#1e293b;font-size:18px;'>📋 Detalle del Pedido</h3>"
-                + "<p style='white-space:pre-line;color:#475569;font-size:15px;'>" + orderSummary + "</p>"
-                + "<hr style='border:none;border-top:1px dashed #cbd5e1;margin:15px 0;'/>"
-                + "<p style='font-size:20px;font-weight:900;color:#3b82f6;margin:0;'>Total: $" + (total != null ? total.setScale(2, java.math.RoundingMode.HALF_UP).toString() : "0.00")
-                + "</p>"
-                + "</div>"
-                + "<p style='color:#64748b;font-size:14px;'>Ingresa al <strong>Panel de Administración</strong> para gestionar esta orden.</p>"
-                + "<hr style='border:none;border-top:1px solid #e2e8f0;margin:20px 0;'/>"
-                + "<p style='color:#94a3b8;font-size:12px;text-align:center;margin-bottom:0;'>© Nugar — Marketplace Local</p>"
-                + "</div></body></html>";
-    }
-
-    private String buildOrderStatusHtml(String customerName, String storeName,
-            String statusText, String emoji, String orderId) {
-        return "<!DOCTYPE html><html><body style='font-family:Inter,Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;background-color:#f1f5f9;'>"
-                + "<div style='background:linear-gradient(135deg,#3b82f6,#6366f1);padding:40px;border-radius:16px 16px 0 0;text-align:center;color:white;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'>"
-                + "<h1 style='margin:0 0 10px;font-size:28px;'>" + emoji + " Actualización de Pedido</h1>"
-                + "<p style='opacity:0.9;margin:0;font-size:16px;'>Pedido #" + orderId + "</p>"
-                + "</div>"
-                + "<div style='padding:30px;background:#ffffff;border-radius:0 0 16px 16px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);'>"
-                + "<p style='color:#1e293b;font-size:16px;margin-top:0;'>Hola <strong>" + customerName + "</strong>,</p>"
-                + "<p style='color:#1e293b;font-size:16px;'>Tu pedido en <strong>" + storeName + "</strong> ha sido actualizado:</p>"
-                + "<div style='text-align:center;margin:20px 0;padding:20px;background:#f8fafc;border-radius:12px;border:1px solid #e2e8f0;'>"
-                + "<p style='font-size:32px;margin:0 0 10px;'>" + emoji + "</p>"
-                + "<p style='font-size:20px;font-weight:800;margin:0;color:#3b82f6;'>" + statusText + "</p>"
-                + "</div>"
-                + "<p style='color:#64748b;font-size:14px;'>Puedes ver el estado de todos tus pedidos desde tu <strong>Panel de Cliente</strong>.</p>"
-                + "<hr style='border:none;border-top:1px solid #e2e8f0;margin:20px 0;'/>"
-                + "<p style='color:#94a3b8;font-size:12px;text-align:center;margin-bottom:0;'>© Nugar — San Cristóbal, Táchira</p>"
-                + "</div></body></html>";
-    }
+    // ─── Utility Methods ───────────────────────────────────────────────
 
     private void writeToFallbackFile(String filename, String content) {
         try {
@@ -278,7 +225,7 @@ public class EmailService {
                     java.nio.file.StandardOpenOption.CREATE,
                     java.nio.file.StandardOpenOption.APPEND);
         } catch (Exception e) {
-            log.error("Could not write to fallback file {}: {}", filename, e.getMessage());
+            log.error("[EMAIL_FALLBACK] Could not write to fallback file {}: {}", filename, e.getMessage());
         }
     }
 }

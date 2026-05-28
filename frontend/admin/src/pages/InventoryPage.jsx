@@ -16,6 +16,8 @@ const InventoryPage = () => {
     const [categories, setCategories] = useState([]);
     const [suggestions, setSuggestions] = useState([]);
     const [showModal, setShowModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [productToDelete, setProductToDelete] = useState(null);
     const [showImportWizard, setShowImportWizard] = useState(false);
     const [editingProduct, setEditingProduct] = useState(null);
     const [message, setMessage] = useState("");
@@ -258,14 +260,23 @@ const InventoryPage = () => {
         setEditingProduct(null);
     };
 
-    const handleDelete = (id) => {
-        if (window.confirm("¿Estás seguro de eliminar este producto?")) {
-            ProductService.remove(id).then(
+    const confirmDelete = (product) => {
+        setProductToDelete(product);
+        setShowDeleteModal(true);
+    };
+
+    const handleDelete = () => {
+        if (productToDelete) {
+            ProductService.remove(productToDelete.id).then(
                 () => {
                     loadProducts();
+                    setShowDeleteModal(false);
+                    setProductToDelete(null);
                 },
                 () => {
                     setMessage("❌ No pudimos eliminar el producto. Intente más tarde.");
+                    setShowDeleteModal(false);
+                    setProductToDelete(null);
                     setTimeout(() => setMessage(""), 3500);
                 }
             );
@@ -539,7 +550,7 @@ const InventoryPage = () => {
                                                     <Button variant="link" className="text-primary me-2 p-0 text-decoration-none fw-bold small" onClick={() => handleEditClick(product)}>
                                                         Editar
                                                     </Button>
-                                                    <Button variant="link" className="text-danger p-0 text-decoration-none fw-bold small" onClick={() => handleDelete(product.id)}>
+                                                    <Button variant="link" className="text-danger p-0 text-decoration-none fw-bold small" onClick={() => confirmDelete(product)}>
                                                         Borrar
                                                     </Button>
                                                 </td>
@@ -588,7 +599,7 @@ const InventoryPage = () => {
             </Container>
 
             {/* Create/Edit Modal */}
-            <Modal scrollable show={showModal} onHide={() => { setShowModal(false); setEditingProduct(null); }} centered scrollable size="lg">
+            <Modal scrollable show={showModal} onHide={() => { setShowModal(false); setEditingProduct(null); }} centered size="lg">
                 <Modal.Header closeButton className="border-0">
                     <Modal.Title className="fw-bold text-dark">{editingProduct ? 'Editar Producto' : 'Nuevo Producto'}</Modal.Title>
                 </Modal.Header>
@@ -890,6 +901,30 @@ const InventoryPage = () => {
                 show={showImportWizard} 
                 onHide={() => { setShowImportWizard(false); loadProducts(); }} 
             />
+
+            {/* Delete Confirmation Modal */}
+            <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+                <Modal.Body className="text-center p-5">
+                    <div className="mb-4">
+                        <div className="rounded-circle bg-danger bg-opacity-10 d-inline-flex p-4">
+                            <FaTrash size={40} className="text-danger" />
+                        </div>
+                    </div>
+                    <h4 className="fw-bold mb-3">¿Eliminar Producto?</h4>
+                    <p className="text-secondary mb-4">
+                        Estás a punto de eliminar el producto <strong>{productToDelete?.name}</strong> de forma permanente.
+                        Esta acción no se puede deshacer.
+                    </p>
+                    <div className="d-flex justify-content-center gap-3">
+                        <Button variant="outline-secondary" className="px-4 rounded-pill fw-bold" onClick={() => setShowDeleteModal(false)}>
+                            Cancelar
+                        </Button>
+                        <Button variant="danger" className="px-4 rounded-pill fw-bold" onClick={handleDelete}>
+                            Sí, Eliminar Producto
+                        </Button>
+                    </div>
+                </Modal.Body>
+            </Modal>
         </Layout>
     );
 };

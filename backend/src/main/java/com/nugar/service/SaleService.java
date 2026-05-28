@@ -85,12 +85,18 @@ public class SaleService {
             SaleStatus status,
             Pageable pageable) {
         
-        // Potential logic: If cashier, they might only see their own sales? 
-        // For now, let's keep it global if they have access to history, 
-        // but we can add the userId filter if needed.
-        
+        boolean isCashier = userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_CASHIER"));
+        boolean isManagerOrAdmin = userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_MANAGER")) || 
+                                   userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+
+        Long filterUserId = null;
+        if (isCashier && !isManagerOrAdmin) {
+            filterUserId = userDetails.getId();
+        }
+
         return saleRepository.findByFilters(
                 userDetails.getCompanyId(),
+                filterUserId,
                 customerName,
                 dateFrom,
                 dateTo,
@@ -149,9 +155,34 @@ public class SaleService {
                     }
                 });
 
-        // Payment Method can be null for PENDING orders
-        if (com.nugar.domain.SaleStatus.PAID.equals(sale.getStatus()) && sale.getPaymentMethod() == null) {
-            sale.setPaymentMethod(com.nugar.domain.PaymentMethod.CASH);
+        // Derive the primary payment method from the payments list
+        if (com.nugar.domain.SaleStatus.PAID.equals(sale.getStatus())) {
+            if (sale.getPayments() != null && !sale.getPayments().isEmpty()) {
+                long distinctMethods = sale.getPayments().stream()
+                        .filter(p -> p.getMethod() != null
+                                && p.getAmountInBaseCurrency() != null
+                                && p.getAmountInBaseCurrency().compareTo(java.math.BigDecimal.ZERO) > 0)
+                        .map(p -> p.getMethod())
+                        .distinct()
+                        .count();
+
+                if (distinctMethods > 1) {
+                    // Multiple payment methods used → MIXED
+                    sale.setPaymentMethod(com.nugar.domain.PaymentMethod.MIXED);
+                } else {
+                    // Single method: pick it directly
+                    com.nugar.domain.PaymentMethod dominant = sale.getPayments().stream()
+                            .filter(p -> p.getMethod() != null
+                                    && p.getAmountInBaseCurrency() != null
+                                    && p.getAmountInBaseCurrency().compareTo(java.math.BigDecimal.ZERO) > 0)
+                            .map(p -> p.getMethod())
+                            .findFirst()
+                            .orElse(com.nugar.domain.PaymentMethod.CASH);
+                    sale.setPaymentMethod(dominant);
+                }
+            } else if (sale.getPaymentMethod() == null) {
+                sale.setPaymentMethod(com.nugar.domain.PaymentMethod.CASH);
+            }
         }
 
         if (sale.getItems() == null || sale.getItems().isEmpty()) {
@@ -260,7 +291,7 @@ public class SaleService {
         if (SaleStatus.PENDING.equals(sale.getStatus())) {
             try {
                 // Find the store manager's email
-                List<User> managers = userRepository.findByCompanyIdAndRole(
+                List<User> managers = userRepository.findByCompanyIdAndRolesContaining(
                         company.getId(), Role.ROLE_MANAGER);
                 if (!managers.isEmpty()) {
                     String orderSummary = sale.getItems().stream()
@@ -309,8 +340,9 @@ public class SaleService {
                     }
                 }
             }
-            log.warn("[VENTA CANCELADA] Usuario: {} | Factura ID: {} | Motivo: Cambio de estado a CANCELLED | Stock devuelto: [{}]", 
-                userDetails.getUsername(), sale.getId(), stockRestored.toString());
+            log.warn("[VENTA CANCELADA] Por: {} | Empresa: {} | Factura ID: {} | Cliente: {} | Monto: ${} | Stock devuelto: [{}]", 
+                userDetails.getUsername(), sale.getCompany().getName(), sale.getId(),
+                sale.getCustomerName(), sale.getTotalAmount(), stockRestored.toString());
         }
 
         sale.setStatus(status);
@@ -329,10 +361,13 @@ public class SaleService {
 
         saleRepository.save(sale);
 
-        log.info("[VENTA_ESTADO] Usuario: {} | Empresa: {} | ID Venta: {} | Nuevo Estado: {}", 
+        log.info("[VENTA_ESTADO] Por: {} | Empresa: {} | Factura ID: {} | Cliente: {} | Monto: ${} | {} -> {}", 
             userDetails.getUsername(),
             sale.getCompany().getName(),
             sale.getId(),
+            sale.getCustomerName() != null ? sale.getCustomerName() : "Publico General",
+            sale.getTotalAmount(),
+            sale.getPaymentMethod() != null ? sale.getPaymentMethod() : "SIN METODO",
             status);
 
         // Notify customer about status change (if email available)

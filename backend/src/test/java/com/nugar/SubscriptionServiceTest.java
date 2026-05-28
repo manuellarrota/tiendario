@@ -53,7 +53,7 @@ public class SubscriptionServiceTest {
         Long paymentId = testPayment.getId();
 
         // Act
-        subscriptionService.approvePayment(paymentId);
+        subscriptionService.approvePayment(paymentId, "admin@nugar.com");
 
         // Assert
         SubscriptionPayment approvedPayment = paymentRepository.findById(paymentId).get();
@@ -72,7 +72,7 @@ public class SubscriptionServiceTest {
         String reason = "Monto incorrecto";
 
         // Act
-        subscriptionService.rejectPayment(paymentId, reason);
+        subscriptionService.rejectPayment(paymentId, reason, "admin@nugar.com");
 
         // Assert
         SubscriptionPayment rejectedPayment = paymentRepository.findById(paymentId).get();
@@ -92,7 +92,7 @@ public class SubscriptionServiceTest {
         companyRepository.save(testCompany);
 
         // Act
-        subscriptionService.approvePayment(testPayment.getId());
+        subscriptionService.approvePayment(testPayment.getId(), "admin@nugar.com");
 
         // Assert
         Company updatedCompany = companyRepository.findById(testCompany.getId()).get();

@@ -38,7 +38,7 @@ public class TrialExpirationService {
     @Scheduled(initialDelay = 60000, fixedDelay = Long.MAX_VALUE) // Once at startup (after 60s)
     @Transactional
     public void checkExpiredTrials() {
-        logger.info("Running trial expiration check...");
+        // No startup log - only log when something actually happens
 
         int trialDays = globalConfigRepository.findFirstByOrderByIdAsc()
                 .map(GlobalConfig::getTrialDays)
@@ -76,6 +76,8 @@ public class TrialExpirationService {
             expiredCount++;
         }
 
-        logger.info("Trial expiration check complete. {} subscriptions updated.", expiredCount);
+        if (expiredCount > 0) {
+            logger.info("[TRIAL EXPIRATION] {} subscriptions changed to PAST_DUE.", expiredCount);
+        }
     }
 }

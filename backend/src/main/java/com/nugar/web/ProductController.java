@@ -220,7 +220,7 @@ public class ProductController {
 
         // Ensure SKU uniqueness within the company
         if (productRepository.existsBySkuAndCompanyId(product.getSku(), userDetails.getCompanyId())) {
-            log.warn("Attempt to create product with duplicate SKU: {} for company ID: {}", product.getSku(), userDetails.getCompanyId());
+            log.warn("[PRODUCTO] Attempt to create product with duplicate SKU: {} for company ID: {}", product.getSku(), userDetails.getCompanyId());
             return ResponseEntity.badRequest()
                     .body(new MessageResponse("Error: SKU already exists in your inventory."));
         }
@@ -232,13 +232,13 @@ public class ProductController {
             com.nugar.domain.SubscriptionStatus status = product.getCompany().getSubscriptionStatus();
 
             if (com.nugar.domain.SubscriptionStatus.PAST_DUE.equals(status)) {
-                log.warn("Creation blocked: Company {} is PAST_DUE", product.getCompany().getName());
+                log.warn("[PRODUCTO] Creation blocked: Company {} is PAST_DUE", product.getCompany().getName());
                 return ResponseEntity.status(403)
                         .body(new MessageResponse(
                                 "Tu suscripción ha vencido. Renueva tu plan para poder agregar nuevos productos y seguir operando."));
             }
             if (com.nugar.domain.SubscriptionStatus.SUSPENDED.equals(status)) {
-                log.warn("Creation blocked: Company {} is SUSPENDED", product.getCompany().getName());
+                log.warn("[PRODUCTO] Creation blocked: Company {} is SUSPENDED", product.getCompany().getName());
                 return ResponseEntity.status(403)
                         .body(new MessageResponse(
                                 "Tu cuenta está suspendida. Contacta al administrador para reactivarla."));
@@ -280,7 +280,7 @@ public class ProductController {
                 suggestion.setSuggestedImageUrl(product.getImageUrl());
                 suggestion.setStatus(com.nugar.domain.SuggestionStatus.PENDING);
                 catalogSuggestionRepository.save(suggestion);
-                log.info("💡 [SUGERENCIA CATALOGO] Usuario '{}' sugirio cambios para el producto '{}' (SKU: {}) desde la empresa '{}'",
+                log.info("[SUGERENCIA CATALOGO] Usuario '{}' sugirio cambios para el producto '{}' (SKU: {}) desde la empresa '{}'",
                     userDetails.getUsername(), suggestion.getSuggestedName(), catalog.getSku(), product.getCompany().getName());
             }
         }
@@ -291,14 +291,14 @@ public class ProductController {
         // product.setImageUrl(catalog.getImageUrl());
 
         Product savedProduct = productRepository.save(product);
-        log.info("🛒 [PRODUCTO] Usuario {} creo nuevo producto: '{}' (SKU: {})", 
+        log.info("[PRODUCTO] Usuario {} creo nuevo producto: '{}' (SKU: {})", 
                 userDetails.getUsername(), savedProduct.getName(), savedProduct.getSku());
 
         // Index in search engine
         try {
             productIndexService.indexProduct(savedProduct);
         } catch (Exception e) {
-            log.warn("Could not index product {}: {}", savedProduct.getId(), e.getMessage());
+            log.warn("[PRODUCTO_INDEX] Could not index product {}: {}", savedProduct.getId(), e.getMessage());
         }
 
         return ResponseEntity.ok(savedProduct);
@@ -359,7 +359,7 @@ public class ProductController {
                 suggestion.setSuggestedImageUrl(productDetails.getImageUrl());
                 suggestion.setStatus(com.nugar.domain.SuggestionStatus.PENDING);
                 catalogSuggestionRepository.save(suggestion);
-                log.info("💡 [SUGERENCIA CATALOGO] Usuario '{}' sugirio actualizacion para el producto '{}' (SKU: {}) desde la empresa '{}'",
+                log.info("[SUGERENCIA CATALOGO] Usuario '{}' sugirio actualizacion para el producto '{}' (SKU: {}) desde la empresa '{}'",
                     userDetails.getUsername(), suggestion.getSuggestedName(), catalog.getSku(), product.getCompany().getName());
             }
         }
@@ -384,7 +384,7 @@ public class ProductController {
             log.info("[ALERTA PRECIO] Usuario: {} | Producto: {} | Viejo Precio: ${} | Nuevo Precio: ${}", 
                 userDetails.getUsername(), updatedProduct.getName(), oldPrice, newPrice);
         } else {
-            log.info("📝 [PRODUCTO] Usuario {} actualizó producto: '{}' (SKU: {})", 
+            log.info("[PRODUCTO] Usuario {} actualizo producto: '{}' (SKU: {})", 
                 userDetails.getUsername(), updatedProduct.getName(), updatedProduct.getSku());
         }
 
@@ -402,7 +402,7 @@ public class ProductController {
 
         Product product = productRepository.findById(id).orElse(null);
         if (product == null || !product.getCompany().getId().equals(userDetails.getCompanyId())) {
-            log.error("Access denied or product not found: ID {} for company {}", id, userDetails.getCompanyId());
+            log.error("[PRODUCTO] Access denied or product not found: ID {} for company {}", id, userDetails.getCompanyId());
             return ResponseEntity.badRequest().body(new MessageResponse("Error: Product not found or access denied."));
         }
 

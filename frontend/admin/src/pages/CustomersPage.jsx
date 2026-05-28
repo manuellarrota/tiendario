@@ -8,6 +8,8 @@ const CustomersPage = () => {
     const [customers, setCustomers] = useState([]);
     const [filteredCustomers, setFilteredCustomers] = useState([]);
     const [showModal, setShowModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [customerToDelete, setCustomerToDelete] = useState(null);
     const [editMode, setEditMode] = useState(false);
     const [currentCustomer, setCurrentCustomer] = useState(null);
     const [message, setMessage] = useState('');
@@ -89,20 +91,28 @@ const CustomersPage = () => {
         setShowModal(true);
     };
 
-    const handleDelete = (id) => {
-        if (window.confirm('¿Estás seguro de eliminar este cliente?')) {
-            CustomerService.delete(id).then(
-                () => {
-                    setMessage('✅ Cliente eliminado');
-                    loadCustomers();
-                    setTimeout(() => setMessage(''), 3000);
-                },
-                (error) => {
-                    setMessage('❌ ' + (error.translatedMessage || 'Error eliminando cliente'));
-                    setTimeout(() => setMessage(''), 3000);
-                }
-            );
-        }
+    const confirmDelete = (customer) => {
+        setCustomerToDelete(customer);
+        setShowDeleteModal(true);
+    };
+
+    const handleDelete = () => {
+        if (!customerToDelete) return;
+        CustomerService.delete(customerToDelete.id).then(
+            () => {
+                setMessage('✅ Cliente eliminado');
+                loadCustomers();
+                setShowDeleteModal(false);
+                setCustomerToDelete(null);
+                setTimeout(() => setMessage(''), 3000);
+            },
+            (error) => {
+                setMessage('❌ ' + (error.translatedMessage || 'Error eliminando cliente'));
+                setShowDeleteModal(false);
+                setCustomerToDelete(null);
+                setTimeout(() => setMessage(''), 3000);
+            }
+        );
     };
 
     const resetForm = () => {
@@ -215,7 +225,7 @@ const CustomersPage = () => {
                                                         <Button
                                                             variant="outline-danger"
                                                             size="sm"
-                                                            onClick={() => handleDelete(customer.id)}
+                                                            onClick={() => confirmDelete(customer)}
                                                         >
                                                             <FaTrash />
                                                         </Button>
@@ -305,6 +315,29 @@ const CustomersPage = () => {
                                 {editMode ? 'Actualizar Cliente' : 'Crear Cliente'}
                             </Button>
                         </Form>
+                    </Modal.Body>
+                </Modal>
+
+                {/* Delete Confirmation Modal */}
+                <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
+                    <Modal.Body className="text-center p-5">
+                        <div className="mb-4">
+                            <div className="rounded-circle bg-danger bg-opacity-10 d-inline-flex p-4">
+                                <FaTrash size={40} className="text-danger" />
+                            </div>
+                        </div>
+                        <h4 className="fw-bold mb-3">¿Eliminar Cliente?</h4>
+                        <p className="text-secondary mb-4">
+                            Estás a punto de eliminar a <strong>{customerToDelete?.name}</strong>. Esta acción no se puede deshacer.
+                        </p>
+                        <div className="d-flex justify-content-center gap-3">
+                            <Button variant="outline-secondary" className="px-4 rounded-pill fw-bold" onClick={() => setShowDeleteModal(false)}>
+                                Cancelar
+                            </Button>
+                            <Button variant="danger" className="px-4 rounded-pill fw-bold" onClick={handleDelete}>
+                                Sí, Eliminar Cliente
+                            </Button>
+                        </div>
                     </Modal.Body>
                 </Modal>
             </div>

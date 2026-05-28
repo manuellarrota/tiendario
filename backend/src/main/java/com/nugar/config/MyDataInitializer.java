@@ -44,11 +44,24 @@ public class MyDataInitializer implements CommandLineRunner {
     @Autowired
     private com.nugar.service.ExchangeRateService exchangeRateService;
 
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
     @Override
     @Transactional
     public void run(String... args) {
         try {
             System.err.println("DEBUG: DataInitializer running...");
+
+            // Fix payment_method check constraint to include MIXED (idempotent)
+            try {
+                jdbcTemplate.execute("ALTER TABLE sales DROP CONSTRAINT IF EXISTS sales_payment_method_check");
+                jdbcTemplate.execute("ALTER TABLE sales ADD CONSTRAINT sales_payment_method_check " +
+                    "CHECK (payment_method IN ('CASH', 'CARD', 'TRANSFER', 'MOBILE_PAYMENT', 'MIXED'))");
+                System.err.println("✓ sales_payment_method_check constraint updated.");
+            } catch (Exception ex) {
+                System.err.println("Warning: Could not update payment_method constraint: " + ex.getMessage());
+            }
             
             // 0. Ensure Global Config
             ensureGlobalConfig();
@@ -276,7 +289,7 @@ public class MyDataInitializer implements CommandLineRunner {
             User user = new User();
             user.setUsername(username);
             user.setPassword(passwordEncoder.encode(password));
-            user.setRole(Role.ROLE_ADMIN);
+            user.getRoles().add(Role.ROLE_ADMIN);
             user.setEnabled(true);
             user.setEmail(username);
             userRepository.save(user);
@@ -304,7 +317,7 @@ public class MyDataInitializer implements CommandLineRunner {
             User user = new User();
             user.setUsername(username);
             user.setPassword(passwordEncoder.encode(password));
-            user.setRole(Role.ROLE_MANAGER);
+            user.getRoles().add(Role.ROLE_MANAGER);
             user.setEnabled(true);
             user.setEmail(username);
             user.setCompany(company);
@@ -318,7 +331,7 @@ public class MyDataInitializer implements CommandLineRunner {
             User user = new User();
             user.setUsername(username);
             user.setPassword(passwordEncoder.encode(password));
-            user.setRole(Role.ROLE_CLIENT);
+            user.getRoles().add(Role.ROLE_CLIENT);
             user.setEnabled(true);
             user.setEmail(username);
             user.setPoints(100); // Start with some demo points
@@ -335,7 +348,7 @@ public class MyDataInitializer implements CommandLineRunner {
             User user = new User();
             user.setUsername(username);
             user.setPassword(passwordEncoder.encode(password));
-            user.setRole(Role.ROLE_CASHIER);
+            user.getRoles().add(Role.ROLE_CASHIER);
             user.setEnabled(true);
             user.setEmail(username);
             user.setCompany(company);

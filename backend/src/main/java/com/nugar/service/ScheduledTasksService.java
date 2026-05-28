@@ -20,6 +20,8 @@ public class ScheduledTasksService {
 
     private static final Logger log = LoggerFactory.getLogger(ScheduledTasksService.class);
     private final CompanyRepository companyRepository;
+    private final EmailService emailService;
+    private final com.nugar.repository.UserRepository userRepository;
 
     /**
      * Revisa diariamente a la medianoche (00:00) las suscripciones que han vencido.
@@ -28,7 +30,7 @@ public class ScheduledTasksService {
     @Scheduled(cron = "0 0 0 * * ?") // Todos los días a las 00:00:00
     @Transactional
     public void checkExpiredSubscriptions() {
-        log.info("Iniciando tarea programada: Verificación de suscripciones vencidas...");
+        log.info("[SUSCRIPCION_CRON] Iniciando tarea programada: Verificacion de suscripciones vencidas...");
 
         LocalDateTime now = LocalDateTime.now();
         List<SubscriptionStatus> activeStatuses = Arrays.asList(SubscriptionStatus.PAID, SubscriptionStatus.TRIAL);
@@ -37,14 +39,14 @@ public class ScheduledTasksService {
                 .findBySubscriptionStatusInAndSubscriptionEndDateBefore(activeStatuses, now);
 
         if (expiredCompanies.isEmpty()) {
-            log.info("No se encontraron suscripciones vencidas hoy.");
+            log.info("[SUSCRIPCION_CRON] No se encontraron suscripciones vencidas hoy.");
             return;
         }
 
-        log.info("Se encontraron {} empresas con suscripción vencida. Procesando...", expiredCompanies.size());
+        log.info("[SUSCRIPCION_CRON] Se encontraron {} empresas con suscripcion vencida. Procesando...", expiredCompanies.size());
 
         for (Company company : expiredCompanies) {
-            log.warn("Suscripción vencida para empresa ID: {} ({}), Venció: {}. Cambiando a PAST_DUE.",
+            log.warn("[SUSCRIPCION_CRON] Suscripción vencida para empresa ID: {} ({}), Venció: {}. Cambiando a PAST_DUE.",
                     company.getId(), company.getName(), company.getSubscriptionEndDate());
 
             company.setSubscriptionStatus(SubscriptionStatus.PAST_DUE);
@@ -53,7 +55,55 @@ public class ScheduledTasksService {
         }
 
         companyRepository.saveAll(expiredCompanies);
-        log.info("Tarea finalizada. {} empresas actualizadas a PAST_DUE.", expiredCompanies.size());
+        log.info("[SUSCRIPCION_CRON] Tarea finalizada. {} empresas actualizadas a PAST_DUE.", expiredCompanies.size());
+    }
+
+    /**
+     * Revisa diariamente a las 8:00 AM las suscripciones que vencen en exactamente 3 días.
+     * Envía un correo preventivo a los administradores de la tienda.
+     */
+    @Scheduled(cron = "0 0 8 * * ?") // Todos los días a las 08:00:00
+    @Transactional
+    public void sendSubscriptionWarnings() {
+        log.info("[SUSCRIPCION_CRON] Iniciando tarea programada: Alerta de suscripciones por vencer (3 días)...");
+
+        LocalDateTime now = LocalDateTime.now();
+        // Queremos las que venzan entre el inicio y el fin del 3er día a partir de hoy
+        LocalDateTime startOfTargetDay = now.plusDays(3).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime endOfTargetDay = startOfTargetDay.plusDays(1);
+
+        List<SubscriptionStatus> activeStatuses = Arrays.asList(SubscriptionStatus.PAID, SubscriptionStatus.TRIAL);
+
+        List<Company> expiringCompanies = companyRepository.findAll().stream()
+                .filter(c -> activeStatuses.contains(c.getSubscriptionStatus()))
+                .filter(c -> c.getSubscriptionEndDate() != null && 
+                             c.getSubscriptionEndDate().isAfter(startOfTargetDay) &&
+                             c.getSubscriptionEndDate().isBefore(endOfTargetDay))
+                .toList();
+
+        if (expiringCompanies.isEmpty()) {
+            log.info("[SUSCRIPCION_CRON] No hay suscripciones que venzan en 3 días exactos.");
+            return;
+        }
+
+        log.info("[SUSCRIPCION_CRON] Se encontraron {} empresas con suscripcion por vencer. Enviando correos...", expiringCompanies.size());
+
+        for (Company company : expiringCompanies) {
+            String formattedDate = company.getSubscriptionEndDate().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            
+            userRepository.findByCompanyIdAndRolesContaining(company.getId(), com.nugar.domain.Role.ROLE_MANAGER)
+                    .forEach(manager -> {
+                        if (manager.getEmail() != null) {
+                            emailService.sendSubscriptionWarningEmail(
+                                    manager.getEmail(),
+                                    company.getName(),
+                                    formattedDate
+                            );
+                            log.info("[SUSCRIPCION_CRON] Correo preventivo enviado a {} (Empresa: {})", manager.getEmail(), company.getName());
+                        }
+                    });
+        }
+        log.info("[SUSCRIPCION_CRON] Tarea de prevención finalizada.");
     }
 
     /**

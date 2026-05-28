@@ -70,6 +70,7 @@ const ShiftHistoryPage = () => {
                             <thead className="bg-light">
                                 <tr>
                                     <th className="ps-4">Usuario</th>
+                                    <th>Caja</th>
                                     <th>Apertura</th>
                                     <th>Cierre</th>
                                     <th>Estado</th>
@@ -80,6 +81,9 @@ const ShiftHistoryPage = () => {
                                 {shifts.map(s => (
                                     <tr key={s.id} className="align-middle">
                                         <td className="ps-4 fw-bold">{s.user.username}</td>
+                                        <td>
+                                            <span className="badge bg-light text-dark border fw-normal">{s.cashRegister?.name || '—'}</span>
+                                        </td>
                                         <td>{new Date(s.startTime).toLocaleString()}</td>
                                         <td>{s.endTime ? new Date(s.endTime).toLocaleString() : '---'}</td>
                                         <td>{getStatusBadge(s.status)}</td>
@@ -100,7 +104,7 @@ const ShiftHistoryPage = () => {
                     </Card.Body>
                 </Card>
 
-                <Modal scrollable show={showModal} onHide={() => setShowModal(false)} size="lg" centered scrollable>
+                <Modal scrollable show={showModal} onHide={() => setShowModal(false)} size="lg" centered>
                     {selectedShift && (
                         <>
                             <Modal.Header closeButton className="border-0 bg-light">
@@ -111,6 +115,10 @@ const ShiftHistoryPage = () => {
                                     <Col>
                                         <div className="text-muted small">Cajero</div>
                                         <div className="fw-bold fs-5">{selectedShift.user.username}</div>
+                                    </Col>
+                                    <Col>
+                                        <div className="text-muted small">Caja</div>
+                                        <div className="fw-bold fs-5">{selectedShift.cashRegister?.name || '—'}</div>
                                     </Col>
                                     <Col>
                                         <div className="text-muted small">Estado</div>

@@ -15,6 +15,7 @@ public class Company {
     private Long id;
 
     private String name;
+    private String rif;
 
     @Enumerated(EnumType.STRING)
     private SubscriptionStatus subscriptionStatus;
@@ -24,6 +25,12 @@ public class Company {
 
     private Boolean hasElectronicBilling = false;
     private Integer extraRegisters = 0;
+
+    @Column(name = "next_cycle_extra_registers")
+    private Integer nextCycleExtraRegisters;
+
+    @Column(name = "billed_extra_registers")
+    private Integer billedExtraRegisters = 0;
 
     private LocalDateTime trialStartDate;
     private LocalDateTime subscriptionEndDate;

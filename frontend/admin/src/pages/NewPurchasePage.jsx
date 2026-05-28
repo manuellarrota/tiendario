@@ -18,6 +18,9 @@ const NewPurchasePage = () => {
     const [selectedSupplier, setSelectedSupplier] = useState("");
     const [message, setMessage] = useState("");
 
+    const [step, setStep] = useState(1);
+    const [invoiceNumber, setInvoiceNumber] = useState("");
+
     // Multi-currency
     const [platformConfig, setPlatformConfig] = useState(null);
     const [purchaseCurrency, setPurchaseCurrency] = useState("USD");
@@ -141,6 +144,11 @@ const NewPurchasePage = () => {
 
 
     const addToCart = () => {
+        if (!selectedSupplier) {
+            setMessage("❌ Por favor, selecciona un proveedor antes de agregar productos.");
+            setTimeout(() => setMessage(""), 4000);
+            return;
+        }
         if (!selectedProduct || !quantity || !unitCost) return;
         const product = products.find(p => p.id === parseInt(selectedProduct));
         const unitCostDec = new Decimal(unitCost);
@@ -152,7 +160,7 @@ const NewPurchasePage = () => {
         if (existingItemIndex > -1) {
             // Unify: Update existing item with new quantity and latest cost
             const newCart = [...cart];
-            const existingItem = newCart[existingItemIndex];
+            const existingItem = newCart.splice(existingItemIndex, 1)[0];
             const newQty = existingItem.quantity + qty;
             
             existingItem.quantity = newQty;
@@ -161,7 +169,7 @@ const NewPurchasePage = () => {
             existingItem.total = unitCostDec.times(newQty).toDecimalPlaces(2).toNumber();
             existingItem.subtotalInBaseCurrency = unitCostInBase.times(newQty).toDecimalPlaces(2).toNumber();
             
-            setCart(newCart);
+            setCart([existingItem, ...newCart]);
         } else {
             const subtotalInBase = unitCostInBase.times(qty).toDecimalPlaces(2);
             const newItem = {
@@ -174,7 +182,7 @@ const NewPurchasePage = () => {
                 currencyCode: purchaseCurrency,
                 exchangeRate: exchangeRate
             };
-            setCart([...cart, newItem]);
+            setCart([newItem, ...cart]);
         }
 
         setSelectedProduct("");
@@ -300,6 +308,7 @@ const NewPurchasePage = () => {
 
         const purchaseData = {
             supplierId: parseInt(selectedSupplier),
+            invoiceNumber: invoiceNumber.trim() || null,
             currencyCode: purchaseCurrency,
             exchangeRate: exchangeRate,
             total: totalInCurrency.toNumber(),
@@ -317,7 +326,7 @@ const NewPurchasePage = () => {
         PurchaseService.create(purchaseData).then(
             () => {
                 setMessage("✅ ¡Compra registrada y Stock actualizado!");
-                setCart([]); setSelectedSupplier("");
+                setCart([]); setSelectedSupplier(""); setInvoiceNumber(""); setStep(1);
                 loadData();
             },
             (error) => {
@@ -368,237 +377,270 @@ const NewPurchasePage = () => {
         );
     };
 
+    const getSupplierName = () => {
+        const s = suppliers.find(s => s.id === parseInt(selectedSupplier));
+        return s ? s.name : '';
+    };
+
     return (
         <Layout>
             <Container fluid className="py-2">
                 <div className="d-flex justify-content-between align-items-center mb-4">
                     <h2 className="text-dark fw-bold mb-0">Registro de Compras</h2>
-                    <Button variant="primary" onClick={() => { resetProductForm(); setShowProductModal(true); }}>
-                        <FaPlus className="me-2" /> Nuevo Producto
-                    </Button>
+                    {step === 2 && (
+                        <Button variant="primary" onClick={() => { resetProductForm(); setShowProductModal(true); }}>
+                            <FaPlus className="me-2" /> Nuevo Producto
+                        </Button>
+                    )}
                 </div>
 
                 {message && !showSupplierModal && !showProductModal && <Alert variant={message.includes("✅") ? "success" : message.includes("❌") ? "danger" : "info"} className="mb-4 shadow-sm border-0">{message}</Alert>}
 
-                <Row>
-                    <Col md={8}>
-                        <Card className="border-0 shadow-sm p-4 mb-4">
-                            <h5 className="mb-3">Lista de Productos a Ingresar</h5>
-                            <Table responsive>
-                                <thead className="bg-light">
-                                    <tr>
-                                        <th>Producto</th>
-                                        <th className="text-center" style={{ width: '90px' }}>Cant.</th>
-                                        <th className="text-start" style={{ width: '165px' }}>Costo Unit.</th>
-                                        <th className="text-end">Subtotal</th>
-                                        <th className="text-end text-success">Base ({baseCurrencyCode})</th>
-                                        <th className="text-center">Acción</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {cart.map((item, idx) => {
-                                        const itemSymbol = getItemSymbol(item.currencyCode);
-                                        const isBase = !item.currencyCode || item.currencyCode === baseCurrencyCode;
-                                        return (
-                                        <tr key={idx}>
-                                            <td>
-                                                <div className="fw-bold text-dark">{item.product.name}</div>
-                                                <div className="d-flex align-items-center gap-1 mt-1">
-                                                    {item.product.variant && <Badge bg="light" text="dark" className="border small fw-normal">{item.product.variant}</Badge>}
-                                                    {!isBase && <Badge bg="primary" className="small">{item.currencyCode}</Badge>}
-                                                </div>
-                                            </td>
-                                            <td className="text-center pt-3" style={{ width: '90px' }}>
-                                                <span className="fw-bold">{item.quantity}</span>
-                                            </td>
-                                            <td className="text-start pt-3" style={{ width: '165px' }}>
-                                                <span className="fw-bold">{itemSymbol}{item.unitCost.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                                            </td>
-                                            <td className="text-end fw-bold pt-3">{itemSymbol}{item.total.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                            <td className="text-end text-success small fw-bold pt-3">
-                                                {baseCurrencySymbol}{(item.subtotalInBaseCurrency || item.total).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                            </td>
-                                            <td className="text-center pt-2">
-                                                <Button variant="link" className="text-danger p-0" onClick={() => removeFromCart(idx)}>
-                                                    <FaTrash size={14} />
-                                                </Button>
-                                            </td>
-                                        </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </Table>
-                            {cart.length === 0 && <p className="text-center text-muted my-3">Agrega productos a la orden</p>}
+                {step === 1 && (
+                    <Row className="justify-content-center">
+                        <Col md={6}>
+                            <Card className="border-0 shadow-sm p-4 mb-4">
+                                <h4 className="mb-4 text-primary fw-bold">Paso 1: Datos de la Factura</h4>
+                                
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="fw-bold">1. Seleccionar Proveedor <span className="text-danger">*</span></Form.Label>
+                                    <div className="d-flex gap-2">
+                                        <Form.Select
+                                            value={selectedSupplier}
+                                            onChange={e => setSelectedSupplier(e.target.value)}
+                                            className="flex-grow-1"
+                                        >
+                                            <option value="">-- Elige un Proveedor --</option>
+                                            {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                        </Form.Select>
+                                        <Button variant="outline-success" onClick={() => setShowSupplierModal(true)}>
+                                            <FaPlus />
+                                        </Button>
+                                    </div>
+                                </Form.Group>
 
-                            <div className="text-end mt-3">
-                                {/* Always sum the base-currency subtotals — safe regardless of mixed currencies */}
-                                <div className="text-muted small mb-1">
-                                    {cart.length} producto(s) en la orden
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="fw-bold">2. Moneda de la Factura</Form.Label>
+                                    <Form.Select
+                                        value={purchaseCurrency}
+                                        onChange={e => setPurchaseCurrency(e.target.value)}
+                                    >
+                                        <option value={baseCurrencyCode}>{baseCurrencyCode} (Moneda Base)</option>
+                                        {availableCurrencies.filter(c => c.code !== baseCurrencyCode).map(c => (
+                                            <option key={c.code} value={c.code}>{c.code} – {c.name} (Tasa: {c.rate})</option>
+                                        ))}
+                                    </Form.Select>
+                                </Form.Group>
+
+                                <Form.Group className="mb-4">
+                                    <Form.Label className="fw-bold">3. Medio de Pago</Form.Label>
+                                    <Form.Select
+                                        value={paymentMethod}
+                                        onChange={e => setPaymentMethod(e.target.value)}
+                                    >
+                                        <option value="CASH">💵 Efectivo / Cash</option>
+                                        <option value="TRANSFER">🏦 Transferencia / Zelle</option>
+                                        <option value="MOBILE_PAYMENT">📱 Pago Móvil</option>
+                                        <option value="CARD">💳 Tarjeta (Débito/Crédito)</option>
+                                    </Form.Select>
+                                </Form.Group>
+
+                                <Button 
+                                    variant="primary" 
+                                    size="lg" 
+                                    className="w-100 fw-bold"
+                                    disabled={!selectedSupplier}
+                                    onClick={() => setStep(2)}
+                                >
+                                    Siguiente: Agregar Productos ➔
+                                </Button>
+                                {!selectedSupplier && (
+                                    <div className="text-center text-danger small mt-2">
+                                        Debes seleccionar un proveedor para continuar.
+                                    </div>
+                                )}
+                            </Card>
+                        </Col>
+                    </Row>
+                )}
+
+                {step === 2 && (
+                    <>
+                        <Card className="border-0 shadow-sm p-3 mb-4 bg-light">
+                            <div className="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span className="me-3"><strong>Proveedor:</strong> {getSupplierName()}</span>
+                                    <span className="me-3"><strong>Moneda:</strong> {purchaseCurrency}</span>
+                                    <span><strong>Pago:</strong> {paymentMethod === 'CASH' ? 'Efectivo' : paymentMethod === 'TRANSFER' ? 'Transferencia' : paymentMethod === 'MOBILE_PAYMENT' ? 'Pago Móvil' : 'Tarjeta'}</span>
                                 </div>
-                                <h4 className="mb-0 mt-1 text-success">
-                                    Total Base: {baseCurrencySymbol}{cart.reduce((acc, item) => acc.plus(new Decimal(item.subtotalInBaseCurrency || item.total)), new Decimal(0)).toNumber().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}
-                                </h4>
+                                <Button variant="outline-secondary" size="sm" onClick={() => setStep(1)}>
+                                    Cambiar Datos Base
+                                </Button>
                             </div>
                         </Card>
-                    </Col>
 
-                    <Col md={4}>
-                        <Card className="border-0 shadow-sm p-4 mb-3">
-                            <h5 className="mb-3">1. Datos Proveedor</h5>
-                            <Form.Group className="mb-3">
-                                <Form.Label>Seleccionar Proveedor</Form.Label>
-                                <Form.Select
-                                    value={selectedSupplier}
-                                    onChange={e => setSelectedSupplier(e.target.value)}
-                                    disabled={cart.length > 0}
-                                >
-                                    <option value="">-- Elige un Proveedor --</option>
-                                    {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                </Form.Select>
-                                {cart.length > 0 && (
-                                    <Form.Text className="text-warning fw-bold">
-                                        🔒 Bloqueado. Guarda la compra para cambiar de proveedor.
-                                    </Form.Text>
-                                )}
-                            </Form.Group>
-                            <Button
-                                variant="outline-success"
-                                size="sm"
-                                className="w-100"
-                                disabled={cart.length > 0}
-                                onClick={() => setShowSupplierModal(true)}
-                            >
-                                <FaTruck className="me-2" /> Crear Nuevo Proveedor
-                            </Button>
-                        </Card>
+                        <Row>
+                            <Col md={8}>
+                                <Card className="border-0 shadow-sm p-4 mb-4">
+                                    <h5 className="mb-3">Lista de Productos a Ingresar</h5>
+                                    <Table responsive>
+                                        <thead className="bg-light">
+                                            <tr>
+                                                <th>Producto</th>
+                                                <th className="text-center" style={{ width: '90px' }}>Cant.</th>
+                                                <th className="text-start" style={{ width: '165px' }}>Costo Unit.</th>
+                                                <th className="text-end">Subtotal</th>
+                                                <th className="text-end text-success">Base ({baseCurrencyCode})</th>
+                                                <th className="text-center">Acción</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {cart.map((item, idx) => {
+                                                const itemSymbol = getItemSymbol(item.currencyCode);
+                                                const isBase = !item.currencyCode || item.currencyCode === baseCurrencyCode;
+                                                return (
+                                                <tr key={idx}>
+                                                    <td>
+                                                        <div className="fw-bold text-dark">{item.product.name}</div>
+                                                        <div className="d-flex align-items-center gap-1 mt-1">
+                                                            {item.product.variant && <Badge bg="light" text="dark" className="border small fw-normal">{item.product.variant}</Badge>}
+                                                            {!isBase && <Badge bg="primary" className="small">{item.currencyCode}</Badge>}
+                                                        </div>
+                                                    </td>
+                                                    <td className="text-center pt-3" style={{ width: '90px' }}>
+                                                        <span className="fw-bold">{item.quantity}</span>
+                                                    </td>
+                                                    <td className="text-start pt-3" style={{ width: '165px' }}>
+                                                        <span className="fw-bold">{itemSymbol}{item.unitCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                                    </td>
+                                                    <td className="text-end fw-bold pt-3">{itemSymbol}{item.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                    <td className="text-end text-success small fw-bold pt-3">
+                                                        {baseCurrencySymbol}{(item.subtotalInBaseCurrency || item.total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </td>
+                                                    <td className="text-center pt-2">
+                                                        <Button variant="link" className="text-danger p-0" onClick={() => removeFromCart(idx)}>
+                                                            <FaTrash size={14} />
+                                                        </Button>
+                                                    </td>
+                                                </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </Table>
+                                    {cart.length === 0 && <p className="text-center text-muted my-3">Agrega productos a la orden</p>}
 
-                        <Card className="border-0 shadow-sm p-4 mb-3">
-                            <h5 className="mb-3">2. Moneda y Producto</h5>
-
-                            {/* Currency Selector */}
-                            <Form.Group className="mb-3">
-                                <Form.Label className="fw-bold d-flex align-items-center gap-2">
-                                    <FaExchangeAlt className="text-primary" /> Moneda de la Factura
-                                </Form.Label>
-                                <Form.Select
-                                    value={purchaseCurrency}
-                                    onChange={e => setPurchaseCurrency(e.target.value)}
-                                    className="border-primary"
-                                    disabled={cart.length > 0}
-                                >
-                                    <option value={baseCurrencyCode}>{baseCurrencyCode} (Moneda Base)</option>
-                                    {availableCurrencies.filter(c => c.code !== baseCurrencyCode).map(c => (
-                                        <option key={c.code} value={c.code}>{c.code} – {c.name} (Tasa: {c.rate})</option>
-                                    ))}
-                                </Form.Select>
-                                {cart.length > 0 ? (
-                                    <Form.Text className="text-warning fw-bold">
-                                        🔒 Bloqueado. Guarda la compra para cambiar la moneda.
-                                    </Form.Text>
-                                ) : (
-                                    purchaseCurrency !== baseCurrencyCode && (
-                                        <Form.Text className="text-success fw-bold">
-                                            1 {baseCurrencyCode} = {exchangeRate} {purchaseCurrency}
-                                        </Form.Text>
-                                    )
-                                )}
-                            </Form.Group>
-
-                            {/* Payment Method Selector */}
-                            <Form.Group className="mb-3">
-                                <Form.Label className="fw-bold d-flex align-items-center gap-2">
-                                    💳 Medio de Pago
-                                </Form.Label>
-                                <Form.Select
-                                    value={paymentMethod}
-                                    onChange={e => setPaymentMethod(e.target.value)}
-                                    className="border-primary"
-                                >
-                                    <option value="CASH">💵 Efectivo / Cash</option>
-                                    <option value="TRANSFER">🏦 Transferencia / Zelle</option>
-                                    <option value="MOBILE_PAYMENT">📱 Pago Móvil</option>
-                                    <option value="CARD">💳 Tarjeta (Débito/Crédito)</option>
-                                </Form.Select>
-                            </Form.Group>
-
-                            {/* Custom Search Selector */}
-                            <Form.Group className="mb-2 position-relative" ref={searchRef}>
-                                <Form.Label>Buscar Producto</Form.Label>
-                                <div className="position-relative">
-                                    <Form.Control
-                                        type="text"
-                                        placeholder="Buscar por Nombre, Variante o SKU..."
-                                        value={searchTerm}
-                                        onChange={e => { setSearchTerm(e.target.value); setShowDropdown(true); setSelectedProduct(""); }}
-                                        onFocus={() => setShowDropdown(true)}
-                                    />
-                                    <div className="position-absolute end-0 top-50 translate-middle-y me-3 text-muted">
-                                        <FaSearch size={14} />
+                                    <div className="text-end mt-3">
+                                        <div className="text-muted small mb-1">
+                                            {cart.length} producto(s) en la orden
+                                        </div>
+                                        <h4 className="mb-0 mt-1 text-success">
+                                            Total Base: {baseCurrencySymbol}{cart.reduce((acc, item) => acc.plus(new Decimal(item.subtotalInBaseCurrency || item.total)), new Decimal(0)).toNumber().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}
+                                        </h4>
                                     </div>
-                                </div>
 
-                                {showDropdown && (
-                                    <div className="position-absolute w-100 bg-white border shadow-lg rounded mt-1" style={{ zIndex: 1000, maxHeight: '250px', overflowY: 'auto' }}>
-                                        {filteredProducts.length > 0 ? (
-                                            filteredProducts.map(p => (
-                                                <div
-                                                    key={p.id}
-                                                    className="p-2 border-bottom cursor-pointer hover-bg-light"
-                                                    style={{ cursor: 'pointer' }}
-                                                    onClick={() => selectProductFromList(p)}
-                                                >
-                                                    <div className="fw-bold">{p.name}</div>
-                                                    <div className="small text-muted d-flex justify-content-between">
-                                                        <span>{p.variant || 'Estándar'}</span>
-                                                        <span>SKU: {p.sku || 'N/A'}</span>
+                                    {cart.length > 0 && (
+                                        <>
+                                            <hr className="my-4" />
+                                            <Row className="justify-content-end">
+                                                <Col md={6}>
+                                                    <Form.Group className="mb-0">
+                                                        <Form.Label className="fw-bold text-muted small text-uppercase">Nro de Factura del Proveedor <span className="fw-normal text-lowercase">(opcional)</span></Form.Label>
+                                                        <Form.Control
+                                                            type="text"
+                                                            placeholder="Ej: FAC-00123"
+                                                            value={invoiceNumber}
+                                                            onChange={e => setInvoiceNumber(e.target.value)}
+                                                            className="border-primary bg-light"
+                                                        />
+                                                    </Form.Group>
+                                                </Col>
+                                            </Row>
+                                        </>
+                                    )}
+                                </Card>
+                            </Col>
+
+                            <Col md={4}>
+                                <Card className="border-0 shadow-sm p-4 mb-3">
+                                    <h5 className="mb-3">Agregar Producto</h5>
+
+                                    <Form.Group className="mb-2 position-relative" ref={searchRef}>
+                                        <Form.Label>Buscar Producto</Form.Label>
+                                        <div className="position-relative">
+                                            <Form.Control
+                                                type="text"
+                                                placeholder="Buscar por Nombre, Variante o SKU..."
+                                                value={searchTerm}
+                                                onChange={e => { setSearchTerm(e.target.value); setShowDropdown(true); setSelectedProduct(""); }}
+                                                onFocus={() => setShowDropdown(true)}
+                                            />
+                                            <div className="position-absolute end-0 top-50 translate-middle-y me-3 text-muted">
+                                                <FaSearch size={14} />
+                                            </div>
+                                        </div>
+
+                                        {showDropdown && (
+                                            <div className="position-absolute w-100 bg-white border shadow-lg rounded mt-1" style={{ zIndex: 1000, maxHeight: '250px', overflowY: 'auto' }}>
+                                                {filteredProducts.length > 0 ? (
+                                                    filteredProducts.map(p => (
+                                                        <div
+                                                            key={p.id}
+                                                            className="p-2 border-bottom cursor-pointer hover-bg-light"
+                                                            style={{ cursor: 'pointer' }}
+                                                            onClick={() => selectProductFromList(p)}
+                                                        >
+                                                            <div className="fw-bold">{p.name}</div>
+                                                            <div className="small text-muted d-flex justify-content-between">
+                                                                <span>{p.variant || 'Estándar'}</span>
+                                                                <span>SKU: {p.sku || 'N/A'}</span>
+                                                            </div>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div className="p-3 text-center text-muted">
+                                                        <p className="mb-2">No se encontraron productos</p>
+                                                        {searchTerm && (
+                                                            <Button variant="outline-primary" size="sm" onClick={() => { setProdName(searchTerm); setShowProductModal(true); setShowDropdown(false); }}>
+                                                                Crear "{searchTerm}"
+                                                            </Button>
+                                                        )}
                                                     </div>
-                                                </div>
-                                            ))
-                                        ) : (
-                                            <div className="p-3 text-center text-muted">
-                                                <p className="mb-2">No se encontraron productos</p>
-                                                {searchTerm && (
-                                                    <Button variant="outline-primary" size="sm" onClick={() => { setProdName(searchTerm); setShowProductModal(true); setShowDropdown(false); }}>
-                                                        Crear "{searchTerm}"
-                                                    </Button>
                                                 )}
                                             </div>
                                         )}
-                                    </div>
-                                )}
-                            </Form.Group>
-
-                            <Row className="align-items-end g-2">
-                                <Col xs={12}>
-                                    <Form.Group className="mb-2">
-                                        <Form.Label>Cantidad</Form.Label>
-                                        <Form.Control type="number" onFocus={(e) => e.target.select()} min="1" value={quantity} onChange={e => setQuantity(e.target.value)} />
                                     </Form.Group>
-                                </Col>
-                                <Col xs={12}>
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>Costo por Unidad ({purchaseCurrency})</Form.Label>
-                                        <InputGroup>
-                                            <InputGroup.Text>{selectedCurrencyData.symbol}</InputGroup.Text>
-                                            <Form.Control type="number" onFocus={(e) => e.target.select()} value={unitCost} onChange={e => setUnitCost(e.target.value)} placeholder="0.00" />
-                                        </InputGroup>
-                                        {purchaseCurrency !== baseCurrencyCode && unitCost && (
-                                            <Form.Text className="text-primary fw-bold">
-                                                ≈ {baseCurrencySymbol}{Number(convertToBase(unitCost)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} {baseCurrencyCode}
-                                                <span className="text-muted ms-2">(Tasa: {Number(exchangeRate).toLocaleString()})</span>
-                                            </Form.Text>
-                                        )}
-                                    </Form.Group>
-                                </Col>
-                            </Row>
-                            <Button variant="outline-primary" className="w-100" onClick={addToCart}>
-                                <FaPlus className="me-2" /> Agregar producto a Orden de Compra
-                            </Button>
-                        </Card>
 
-                    </Col>
-                </Row>
- 
+                                    <Row className="align-items-end g-2">
+                                        <Col xs={12}>
+                                            <Form.Group className="mb-2">
+                                                <Form.Label>Cantidad</Form.Label>
+                                                <Form.Control type="number" onFocus={(e) => e.target.select()} min="1" value={quantity} onChange={e => setQuantity(e.target.value)} />
+                                            </Form.Group>
+                                        </Col>
+                                        <Col xs={12}>
+                                            <Form.Group className="mb-3">
+                                                <Form.Label>Costo por Unidad ({purchaseCurrency})</Form.Label>
+                                                <InputGroup>
+                                                    <InputGroup.Text>{selectedCurrencyData.symbol}</InputGroup.Text>
+                                                    <Form.Control type="number" onFocus={(e) => e.target.select()} value={unitCost} onChange={e => setUnitCost(e.target.value)} placeholder="0.00" />
+                                                </InputGroup>
+                                                {purchaseCurrency !== baseCurrencyCode && unitCost && (
+                                                    <Form.Text className="text-primary fw-bold">
+                                                        ≈ {baseCurrencySymbol}{Number(convertToBase(unitCost)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} {baseCurrencyCode}
+                                                        <span className="text-muted ms-2">(Tasa: {Number(exchangeRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</span>
+                                                    </Form.Text>
+                                                )}
+                                            </Form.Group>
+                                        </Col>
+                                    </Row>
+                                    <Button variant="outline-primary" className="w-100" onClick={addToCart}>
+                                        <FaPlus className="me-2" /> Agregar a la Orden
+                                    </Button>
+                                </Card>
+                            </Col>
+                        </Row>
+                    </>
+                )}
                 {/* Floating Save Button - Replicating POS behavior */}
                 {cart.length > 0 && (
                      <div className="pos-floating-checkout shadow-lg animate-in">
@@ -607,7 +649,7 @@ const NewPurchasePage = () => {
                             onClick={handleSavePurchase}
                         >
                             <FaSave className="me-2" /> 
-                            GUARDAR COMPRA: {selectedCurrencyData.symbol}{cart.reduce((acc, item) => acc.plus(new Decimal(item.total)), new Decimal(0)).toNumber().toLocaleString(undefined, { minimumFractionDigits: 2 })} {purchaseCurrency} 
+                            GUARDAR COMPRA: {selectedCurrencyData.symbol}{cart.reduce((acc, item) => acc.plus(new Decimal(item.total)), new Decimal(0)).toNumber().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {purchaseCurrency} 
                             ({paymentMethod === 'CASH' ? 'Efectivo' : paymentMethod === 'TRANSFER' ? 'Transferencia' : paymentMethod === 'MOBILE_PAYMENT' ? 'Pago Móvil' : 'Tarjeta'})
                         </Button>
                      </div>
@@ -680,7 +722,7 @@ const NewPurchasePage = () => {
             </Modal>
 
             {/* New Product Modal */}
-            <Modal scrollable show={showProductModal} onHide={() => { setShowProductModal(false); resetProductForm(); }} centered scrollable size="lg">
+            <Modal scrollable show={showProductModal} onHide={() => { setShowProductModal(false); resetProductForm(); }} centered size="lg">
                 <Modal.Header closeButton className="border-0">
                     <Modal.Title className="fw-bold text-dark">Nuevo Producto</Modal.Title>
                 </Modal.Header>

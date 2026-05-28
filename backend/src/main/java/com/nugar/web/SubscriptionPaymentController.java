@@ -5,6 +5,8 @@ import com.nugar.domain.SubscriptionPayment;
 import com.nugar.domain.PaymentStatus;
 import com.nugar.domain.SubscriptionStatus; // Added import
 import com.nugar.repository.CompanyRepository;
+import com.nugar.repository.GlobalConfigRepository;
+import com.nugar.domain.GlobalConfig;
 import com.nugar.repository.SubscriptionPaymentRepository;
 import com.nugar.security.UserDetailsImpl;
 import com.nugar.payload.response.MessageResponse;
@@ -28,6 +30,9 @@ public class SubscriptionPaymentController {
     @Autowired
     CompanyRepository companyRepository;
 
+    @Autowired
+    GlobalConfigRepository globalConfigRepository;
+
     @PostMapping("/submit")
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<?> submitPayment(@RequestBody SubscriptionPayment payment) {
@@ -36,6 +41,32 @@ public class SubscriptionPaymentController {
 
         Company company = companyRepository.findById(userDetails.getCompanyId())
                 .orElseThrow(() -> new RuntimeException("Error: Company not found."));
+
+        if ("EXTRA_REGISTER".equalsIgnoreCase(payment.getPaymentType())) {
+            GlobalConfig config = globalConfigRepository.findFirstByOrderByIdAsc().orElse(new GlobalConfig());
+            BigDecimal price = config.getExtraRegisterMonthlyPrice() != null ? config.getExtraRegisterMonthlyPrice() : new BigDecimal("5.00");
+            int requested = payment.getRequestedExtraRegisters() != null ? payment.getRequestedExtraRegisters() : 1;
+            BigDecimal expected = price.multiply(new BigDecimal(requested));
+            
+            // Allow small rounding differences, but generally it should match
+            if (payment.getAmount().compareTo(expected) < 0) {
+                return ResponseEntity.badRequest().body(new MessageResponse("Error: El monto ingresado ($" + payment.getAmount() + ") no coincide con el costo de las cajas solicitadas ($" + expected + ")."));
+            }
+        } else if ("SUBSCRIPTION_AND_REGISTERS".equalsIgnoreCase(payment.getPaymentType())) {
+            GlobalConfig config = globalConfigRepository.findFirstByOrderByIdAsc().orElse(new GlobalConfig());
+            BigDecimal extraPrice = config.getExtraRegisterMonthlyPrice() != null ? config.getExtraRegisterMonthlyPrice() : new BigDecimal("5.00");
+            BigDecimal planPrice = config.getPremiumPlanMonthlyPrice() != null ? config.getPremiumPlanMonthlyPrice() : new BigDecimal("20.00");
+            if ("ANNUAL".equalsIgnoreCase(payment.getBillingCycle())) {
+                planPrice = planPrice.multiply(new BigDecimal("10")); // Assuming 10 months for annual
+                extraPrice = extraPrice.multiply(new BigDecimal("10"));
+            }
+            int activeExtra = company.getExtraRegisters() != null ? company.getExtraRegisters() : 0;
+            BigDecimal expected = planPrice.add(extraPrice.multiply(new BigDecimal(activeExtra)));
+            
+            if (payment.getAmount().compareTo(expected.multiply(new BigDecimal("0.9"))) < 0) { // Give 10% leeway for discounts
+                return ResponseEntity.badRequest().body(new MessageResponse("Error: El monto ingresado ($" + payment.getAmount() + ") es menor al costo del plan y las cajas ($" + expected + ")."));
+            }
+        }
 
         payment.setCompany(company);
         payment.setStatus(PaymentStatus.PENDING);

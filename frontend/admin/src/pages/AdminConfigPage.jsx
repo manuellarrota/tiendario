@@ -9,6 +9,7 @@ const AdminConfigPage = () => {
     const [config, setConfig] = useState({
         freePlanProductLimit: 20,
         premiumPlanMonthlyPrice: 25.00,
+        extraRegisterMonthlyPrice: 5.00,
         trialDays: 30,
         maintenanceMode: false,
         announcementMessage: "",
@@ -144,6 +145,23 @@ const AdminConfigPage = () => {
                                                         step="0.01"
                                                         name="premiumPlanMonthlyPrice"
                                                         value={config.premiumPlanMonthlyPrice}
+                                                        onChange={handleChange}
+                                                        onFocus={e => e.target.select()}
+                                                        required
+                                                    />
+                                                </InputGroup>
+                                            </Form.Group>
+                                        </Col>
+                                        <Col md={6}>
+                                            <Form.Group className="mb-3">
+                                                <Form.Label className="small fw-bold text-muted">PRECIO CAJA EXTRA (USD/MES)</Form.Label>
+                                                <InputGroup>
+                                                    <InputGroup.Text>$</InputGroup.Text>
+                                                    <Form.Control
+                                                        type="number"
+                                                        step="0.01"
+                                                        name="extraRegisterMonthlyPrice"
+                                                        value={config.extraRegisterMonthlyPrice || 5.00}
                                                         onChange={handleChange}
                                                         onFocus={e => e.target.select()}
                                                         required
@@ -361,7 +379,7 @@ const AdminConfigPage = () => {
                                             <p className="small fw-bold text-success mb-2">Vista previa (ejemplo: $10.00 {config.baseCurrencyCode || 'USD'}):</p>
                                             {currencies.filter(c => c.enabled && c.code).map(c => (
                                                 <span key={c.code} className="badge bg-success me-2 mb-1">
-                                                    {c.symbol} {(10 * c.rate).toLocaleString(undefined, { minimumFractionDigits: 2 })} {c.code}
+                                                    {c.symbol} {(10 * c.rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {c.code}
                                                 </span>
                                             ))}
                                         </div>
