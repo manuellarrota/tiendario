@@ -15,6 +15,7 @@ const AdminCompaniesPage = () => {
     const [updating, setUpdating] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'desc' });
     const toast = useToast();
     const ITEMS_PER_PAGE = 10;
 
@@ -170,9 +171,44 @@ const AdminCompaniesPage = () => {
         (company.id && company.id.toString().includes(searchTerm))
     );
 
-    const totalPages = Math.ceil(filteredCompanies.length / ITEMS_PER_PAGE);
+    const handleSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const getSortedCompanies = (companies) => {
+        if (!sortConfig.key) return companies;
+        
+        return [...companies].sort((a, b) => {
+            let valA = a[sortConfig.key];
+            let valB = b[sortConfig.key];
+            
+            if (valA === null || valA === undefined) valA = '';
+            if (valB === null || valB === undefined) valB = '';
+            
+            if (typeof valA === 'string') valA = valA.toLowerCase();
+            if (typeof valB === 'string') valB = valB.toLowerCase();
+            
+            if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+            if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+            return 0;
+        });
+    };
+
+    const sortedCompanies = getSortedCompanies(filteredCompanies);
+    const totalPages = Math.ceil(sortedCompanies.length / ITEMS_PER_PAGE);
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const paginatedCompanies = filteredCompanies.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+    const paginatedCompanies = sortedCompanies.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+
+    const renderSortIcon = (key) => {
+        if (sortConfig.key === key) {
+            return sortConfig.direction === 'asc' ? ' ↑' : ' ↓';
+        }
+        return ' ↕';
+    };
 
     return (
         <Layout>
@@ -200,9 +236,9 @@ const AdminCompaniesPage = () => {
                         <Table hover responsive className="mb-0 align-middle">
                             <thead className="bg-light">
                                 <tr>
-                                    <th className="ps-4">ID</th>
-                                    <th>Nombre Empresa</th>
-                                    <th>Plan Actual</th>
+                                    <th className="ps-4" style={{cursor: 'pointer'}} onClick={() => handleSort('id')}>ID{renderSortIcon('id')}</th>
+                                    <th style={{cursor: 'pointer'}} onClick={() => handleSort('name')}>Nombre Empresa{renderSortIcon('name')}</th>
+                                    <th style={{cursor: 'pointer'}} onClick={() => handleSort('subscriptionPlan')}>Plan Actual{renderSortIcon('subscriptionPlan')}</th>
                                     <th>Acciones</th>
                                 </tr>
                             </thead>

@@ -183,6 +183,7 @@ public class SuperAdminController {
                 company.setLongitude(companyDetails.getLongitude());
                 company.setDescription(companyDetails.getDescription());
                 company.setAddress(companyDetails.getAddress());
+                company.setPhoneNumber(companyDetails.getPhoneNumber());
                 companyRepository.save(company);
                 return ResponseEntity.ok(new MessageResponse("Company updated successfully"));
         }

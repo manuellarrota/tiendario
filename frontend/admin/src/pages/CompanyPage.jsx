@@ -176,6 +176,23 @@ const CompanyPage = () => {
         setPaymentForm(prev => ({ ...prev, [name]: value }));
     };
 
+    const canRenewOrPay = () => {
+        if (!company) return true;
+        if (company.subscriptionStatus === 'PAST_DUE' || company.subscriptionStatus === 'SUSPENDED') return true;
+        
+        // Always allow if they are changing to a different plan
+        if (company.subscriptionPlan !== selectedPlan) return true;
+
+        if (!company.subscriptionEndDate) return true;
+        
+        const end = new Date(company.subscriptionEndDate);
+        const now = new Date();
+        const diffTime = end - now;
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+        
+        return diffDays <= 8;
+    };
+
     const buildReference = () => {
         const method = paymentForm.paymentMethod;
         if (method === 'PAGO_MOVIL') return `Banco: ${paymentForm.banco} | Cédula: ${paymentForm.cedula} | Ref: ${paymentForm.reference}`;
@@ -627,15 +644,22 @@ const CompanyPage = () => {
                                         })}
                                     </Row>
                                     <div className="mt-4">
-                                        <Button
-                                            variant={company?.subscriptionStatus === 'PAID' && company?.subscriptionPlan === selectedPlan ? 'outline-success' : 'primary'}
-                                            className="w-100 py-3 rounded-pill fw-bold"
-                                            onClick={() => openPlanModal(selectedPlan)}
-                                        >
-                                            {company?.subscriptionStatus === 'PAID' && company?.subscriptionPlan === selectedPlan
-                                                ? <><FaCheckCircle className="me-2" /> Renovar Plan {PLAN_INFO[selectedPlan]?.label}</>
-                                                : <><FaCrown className="me-2" /> Contratar Plan {PLAN_INFO[selectedPlan]?.label} — ${calculateAmount(selectedPlan, billingCycle)}</>}
-                                        </Button>
+                                        {!canRenewOrPay() && company?.subscriptionPlan === selectedPlan ? (
+                                            <Alert variant="info" className="mb-0 text-center rounded-pill">
+                                                <FaInfoCircle className="me-2" />
+                                                Tu plan está activo. Podrás renovarlo cuando falten 8 días o menos para su vencimiento.
+                                            </Alert>
+                                        ) : (
+                                            <Button
+                                                variant={company?.subscriptionStatus === 'PAID' && company?.subscriptionPlan === selectedPlan ? 'outline-success' : 'primary'}
+                                                className="w-100 py-3 rounded-pill fw-bold"
+                                                onClick={() => openPlanModal(selectedPlan)}
+                                            >
+                                                {company?.subscriptionStatus === 'PAID' && company?.subscriptionPlan === selectedPlan
+                                                    ? <><FaCheckCircle className="me-2" /> Renovar Plan {PLAN_INFO[selectedPlan]?.label}</>
+                                                    : <><FaCrown className="me-2" /> Contratar Plan {PLAN_INFO[selectedPlan]?.label} — ${calculateAmount(selectedPlan, billingCycle)}</>}
+                                            </Button>
+                                        )}
                                     </div>
                                 </Card.Body>
                             </Card>
