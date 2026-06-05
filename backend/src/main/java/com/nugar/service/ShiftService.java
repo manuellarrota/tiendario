@@ -27,6 +27,9 @@ public class ShiftService {
     private ShiftRepository shiftRepository;
 
     @Autowired
+    private com.nugar.repository.CashMovementRepository cashMovementRepository;
+
+    @Autowired
     private CashRegisterRepository cashRegisterRepository;
 
     @Autowired
@@ -181,7 +184,10 @@ public class ShiftService {
             }
         }
 
-        shift.setExpectedCash(expCash.add(shift.getInitialCash()).subtract(shift.getRefundedCash() != null ? shift.getRefundedCash() : BigDecimal.ZERO));
+        shift.setExpectedCash(expCash.add(shift.getInitialCash())
+                .add(shift.getTotalCashInjections() != null ? shift.getTotalCashInjections() : BigDecimal.ZERO)
+                .subtract(shift.getTotalCashBleedings() != null ? shift.getTotalCashBleedings() : BigDecimal.ZERO)
+                .subtract(shift.getRefundedCash() != null ? shift.getRefundedCash() : BigDecimal.ZERO));
         shift.setExpectedCard(expCard.subtract(shift.getRefundedCard() != null ? shift.getRefundedCard() : BigDecimal.ZERO));
         shift.setExpectedTransfer(expTransfer.subtract(shift.getRefundedTransfer() != null ? shift.getRefundedTransfer() : BigDecimal.ZERO));
         shift.setExpectedMobile(expMobile.subtract(shift.getRefundedMobile() != null ? shift.getRefundedMobile() : BigDecimal.ZERO));
@@ -300,5 +306,96 @@ public class ShiftService {
 
     public List<Shift> getCompanyShifts(UserDetailsImpl userDetails) {
         return shiftRepository.findByCompanyIdOrderByStartTimeDesc(userDetails.getCompanyId());
+    }
+
+    @Transactional
+    public CashMovement registerCashMovement(Long shiftId, CashMovement.MovementType type, BigDecimal amount, String currencyCode, BigDecimal exchangeRate, String description, UserDetailsImpl userDetails) {
+        Shift shift = shiftRepository.findById(shiftId)
+                .orElseThrow(() -> new IllegalArgumentException("Turno no encontrado."));
+
+        if (shift.getStatus() != ShiftStatus.OPEN) {
+            throw new IllegalArgumentException("El turno está cerrado, no puede recibir movimientos.");
+        }
+
+        if (!shift.getUser().getId().equals(userDetails.getId())) {
+             throw new IllegalArgumentException("No puedes registrar movimientos en un turno que no te pertenece.");
+        }
+
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("El monto debe ser mayor a cero.");
+        }
+
+        BigDecimal rate = exchangeRate != null && exchangeRate.compareTo(BigDecimal.ZERO) > 0 ? exchangeRate : BigDecimal.ONE;
+        BigDecimal amountInBase = amount.divide(rate, 2, java.math.RoundingMode.HALF_UP);
+
+        CashMovement movement = new CashMovement();
+        movement.setShift(shift);
+        movement.setType(type);
+        movement.setAmount(amount);
+        movement.setCurrencyCode(currencyCode);
+        movement.setExchangeRate(rate);
+        movement.setAmountInBaseCurrency(amountInBase);
+        movement.setDescription(description);
+        movement.setCreatedAt(LocalDateTime.now());
+
+        if (type == CashMovement.MovementType.INJECTION) {
+            shift.setTotalCashInjections((shift.getTotalCashInjections() != null ? shift.getTotalCashInjections() : BigDecimal.ZERO).add(amountInBase));
+        } else {
+            shift.setTotalCashBleedings((shift.getTotalCashBleedings() != null ? shift.getTotalCashBleedings() : BigDecimal.ZERO).add(amountInBase));
+        }
+
+        cashMovementRepository.save(movement);
+        shiftRepository.save(shift);
+
+        log.info("[MOVIMIENTO CAJA] Cajero: {} | Tipo: {} | Monto Base: ${} | Desc: {}", 
+            userDetails.getUsername(), type, amountInBase, description);
+
+        return movement;
+    }
+
+    @Transactional
+    public void transferCash(Long fromShiftId, Long toCashRegisterId, BigDecimal amount, String currencyCode, BigDecimal exchangeRate, String description, UserDetailsImpl userDetails) {
+        // 1. Bleeding from current shift
+        Shift fromShift = shiftRepository.findById(fromShiftId)
+                .orElseThrow(() -> new IllegalArgumentException("Turno de origen no encontrado."));
+
+        if (!fromShift.getUser().getId().equals(userDetails.getId())) {
+             throw new IllegalArgumentException("Solo puedes transferir desde tu propio turno abierto.");
+        }
+
+        // 2. Find target shift (must be OPEN for the target cash register)
+        Shift toShift = shiftRepository.findByCompanyIdOrderByStartTimeDesc(userDetails.getCompanyId())
+                .stream()
+                .filter(s -> s.getStatus() == ShiftStatus.OPEN && s.getCashRegister() != null && s.getCashRegister().getId().equals(toCashRegisterId))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("La caja destino no tiene un turno abierto."));
+
+        // Register Egreso in source
+        String sourceDesc = "Transferencia a " + toShift.getCashRegister().getName() + " (" + toShift.getUser().getUsername() + "): " + description;
+        registerCashMovement(fromShiftId, CashMovement.MovementType.BLEEDING, amount, currencyCode, exchangeRate, sourceDesc, userDetails);
+
+        // Register Ingreso in target (System context internally uses the same method but we simulate the user)
+        // Since registerCashMovement checks if the shift belongs to the user, we bypass that by creating the movement directly here for the target shift.
+        
+        BigDecimal rate = exchangeRate != null && exchangeRate.compareTo(BigDecimal.ZERO) > 0 ? exchangeRate : BigDecimal.ONE;
+        BigDecimal amountInBase = amount.divide(rate, 2, java.math.RoundingMode.HALF_UP);
+
+        CashMovement inMovement = new CashMovement();
+        inMovement.setShift(toShift);
+        inMovement.setType(CashMovement.MovementType.INJECTION);
+        inMovement.setAmount(amount);
+        inMovement.setCurrencyCode(currencyCode);
+        inMovement.setExchangeRate(rate);
+        inMovement.setAmountInBaseCurrency(amountInBase);
+        inMovement.setDescription("Transferencia recibida desde " + fromShift.getCashRegister().getName() + " (" + userDetails.getUsername() + "): " + description);
+        inMovement.setCreatedAt(LocalDateTime.now());
+
+        toShift.setTotalCashInjections((toShift.getTotalCashInjections() != null ? toShift.getTotalCashInjections() : BigDecimal.ZERO).add(amountInBase));
+        
+        cashMovementRepository.save(inMovement);
+        shiftRepository.save(toShift);
+
+        log.info("[TRANSFERENCIA CAJA] Origen: {} | Destino: {} | Monto Base: ${}", 
+            fromShift.getCashRegister().getName(), toShift.getCashRegister().getName(), amountInBase);
     }
 }

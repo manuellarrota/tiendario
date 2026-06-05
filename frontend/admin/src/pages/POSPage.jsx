@@ -68,6 +68,27 @@ const POSPage = () => {
     const [showEmptyCartModal, setShowEmptyCartModal] = useState(false);
     const [showCloseZeroModal, setShowCloseZeroModal] = useState(false);
 
+    // Cash Movements State
+    const [showMovementModal, setShowMovementModal] = useState(false);
+    const [movementType, setMovementType] = useState('INJECTION');
+    const [movementAmount, setMovementAmount] = useState('');
+    const [movementCurrency, setMovementCurrency] = useState('USD');
+    const [movementDesc, setMovementDesc] = useState('');
+    const [transferTargetId, setTransferTargetId] = useState('');
+
+    // Parked Sales State
+    const [parkedSales, setParkedSales] = useState(() => {
+        try {
+            const saved = localStorage.getItem('pos_parked_sales');
+            return saved ? JSON.parse(saved) : [];
+        } catch { return []; }
+    });
+    const [showParkedModal, setShowParkedModal] = useState(false);
+
+    useEffect(() => {
+        localStorage.setItem('pos_parked_sales', JSON.stringify(parkedSales));
+    }, [parkedSales]);
+
     const barcodeInputRef = useRef(null);
     const barcodeTimerRef = useRef(null);
 
@@ -193,6 +214,84 @@ const POSPage = () => {
             ProductService.getPOSProducts().then(r => setProducts(r.data.products || r.data));
         }).catch(() => triggerToast("Error al procesar la venta", "error"));
     }, [cart, total, totalPaidInBase, payments, selectedCustomer, customerSearch, triggerToast]);
+
+    const handleParkSale = useCallback(() => {
+        if (cart.length === 0) return;
+        const newParked = {
+            id: Date.now(),
+            date: new Date().toLocaleTimeString(),
+            cart: [...cart],
+            customer: selectedCustomer,
+            customerSearch: customerSearch,
+            payments: [...payments],
+            total: total.toNumber()
+        };
+        setParkedSales(prev => [...prev, newParked]);
+        setCart([]);
+        setPayments([]);
+        setSelectedCustomer(null);
+        setCustomerSearch("");
+        triggerToast("Venta puesta en espera (aparcada)", "info");
+    }, [cart, selectedCustomer, customerSearch, payments, total, triggerToast]);
+
+    const handleRestoreSale = useCallback((parked) => {
+        if (cart.length > 0) {
+            triggerToast("Por favor vacía o aparca la venta actual primero", "error");
+            return;
+        }
+        setCart(parked.cart);
+        setSelectedCustomer(parked.customer);
+        setCustomerSearch(parked.customerSearch);
+        setPayments(parked.payments || []);
+        setParkedSales(prev => prev.filter(p => p.id !== parked.id));
+        setShowParkedModal(false);
+        triggerToast("Venta recuperada", "success");
+    }, [cart, triggerToast]);
+
+    const handleCashMovement = (e) => {
+        e.preventDefault();
+        if (!movementAmount || movementAmount <= 0) return;
+        
+        const rate = availableCurrencies.find(c => c.code === movementCurrency)?.rate || 1;
+        const payload = {
+            type: movementType,
+            amount: movementAmount,
+            currencyCode: movementCurrency,
+            exchangeRate: rate,
+            description: movementDesc
+        };
+
+        const updateCurrentShift = () => {
+            ShiftService.getCurrentShift().then((res) => {
+                if (res.status === 200 && res.data) {
+                    setCurrentShift(res.data);
+                }
+            });
+        };
+
+        if (movementType === 'TRANSFER') {
+            if (!transferTargetId) {
+                triggerToast("Selecciona la caja destino", "error");
+                return;
+            }
+            payload.toCashRegisterId = transferTargetId;
+            ShiftService.transferCash(currentShift.id, payload).then(() => {
+                triggerToast("Transferencia realizada");
+                setShowMovementModal(false);
+                setMovementAmount('');
+                setMovementDesc('');
+                updateCurrentShift();
+            }).catch(e => triggerToast(e.message || "Error al transferir", "error"));
+        } else {
+            ShiftService.registerCashMovement(currentShift.id, payload).then(() => {
+                triggerToast("Movimiento registrado");
+                setShowMovementModal(false);
+                setMovementAmount('');
+                setMovementDesc('');
+                updateCurrentShift();
+            }).catch(e => triggerToast(e.message || "Error al registrar movimiento", "error"));
+        }
+    };
 
     const addPaymentPart = () => {
         const amount = new Decimal(tempPayment.amount || 0);
@@ -340,12 +439,12 @@ const POSPage = () => {
                 if (res.status === 200 && res.data) {
                     setCurrentShift(res.data);
                 } else {
-                    CashRegisterService.getAvailableRegisters().then(r => setCashRegisters(r.data));
+                    CashRegisterService.getAvailableRegisters().then(r => setCashRegisters(r.data.sort((a,b) => (a.name||'').localeCompare(b.name||'', undefined, {numeric: true}))));
                     setShowShiftOpeningModal(true);
                 }
             },
             () => {
-                CashRegisterService.getAvailableRegisters().then(r => setCashRegisters(r.data));
+                CashRegisterService.getAvailableRegisters().then(r => setCashRegisters(r.data.sort((a,b) => (a.name||'').localeCompare(b.name||'', undefined, {numeric: true}))));
                 setShowShiftOpeningModal(true);
             }
         );
@@ -441,7 +540,7 @@ const POSPage = () => {
             triggerToast("Caja cerrada. Gracias por tu jornada.");
             setCurrentShift(null);
             setShowShiftClosingModal(false);
-            CashRegisterService.getAvailableRegisters().then(r => setCashRegisters(r.data));
+            CashRegisterService.getAvailableRegisters().then(r => setCashRegisters(r.data.sort((a,b) => (a.name||'').localeCompare(b.name||'', undefined, {numeric: true}))));
             setShowShiftOpeningModal(true); // Requiere abrir una nueva si quiere seguir
             // Reset form
             setClosingData({ declarations: [], observation: "" });
@@ -492,9 +591,15 @@ const POSPage = () => {
                 ) : null}
 
                 {currentShift && (
-                    <Alert variant="info" className="d-flex justify-content-between align-items-center shadow-sm mb-4 py-2 border-0 bg-primary bg-opacity-10 text-primary">
-                        <span><FaCashRegister className="me-2" /> Caja Abierta por: <strong>{user?.username}</strong> - Iniciada a las {new Date(currentShift.startTime).toLocaleTimeString()}</span>
-                        <Button variant="outline-primary" size="sm" onClick={() => setShowShiftClosingModal(true)}>Finalizar Turno / Cerrar Caja</Button>
+                    <Alert variant="info" className="d-flex justify-content-between align-items-center shadow-sm mb-4 py-2 border-0 bg-primary bg-opacity-10 text-primary flex-wrap gap-2">
+                        <span><FaCashRegister className="me-2" /> {currentShift.cashRegister?.name || 'Caja'}, Abierta por: <strong>{user?.username}</strong> - Iniciada a las {new Date(currentShift.startTime).toLocaleTimeString()}</span>
+                        <div className="d-flex gap-2">
+                            <Button variant="primary" size="sm" onClick={() => {
+                                CashRegisterService.getAllRegisters().then(r => setCashRegisters(r.data));
+                                setShowMovementModal(true);
+                            }}>💵 Movimientos de Caja</Button>
+                            <Button variant="outline-primary" size="sm" onClick={() => setShowShiftClosingModal(true)}>Finalizar Turno / Cerrar Caja</Button>
+                        </div>
                     </Alert>
                 )}
 
@@ -505,7 +610,19 @@ const POSPage = () => {
                             <div className="pos-receipt-header border-bottom p-3">
                                 <div className="d-flex justify-content-between align-items-center mb-3">
                                     <h4 className="fw-bold mb-0">Detalle de la Venta</h4>
-                                    <Badge bg="primary" className="rounded-pill px-3 py-2">{cart.length} productos</Badge>
+                                    <div className="d-flex align-items-center gap-2">
+                                        {parkedSales.length > 0 && (
+                                            <Button variant="warning" size="sm" className="rounded-pill fw-bold" onClick={() => setShowParkedModal(true)}>
+                                                ⏸️ Ventas en Espera ({parkedSales.length})
+                                            </Button>
+                                        )}
+                                        {cart.length > 0 && (
+                                            <Button variant="outline-secondary" size="sm" className="rounded-pill fw-bold" onClick={handleParkSale}>
+                                                ⏸️ Aparcar
+                                            </Button>
+                                        )}
+                                        <Badge bg="primary" className="rounded-pill px-3 py-2">{cart.length} productos</Badge>
+                                    </div>
                                 </div>
                                 <Card className="bg-light border-0 rounded-4 p-3">
                                     <Row className="align-items-center">
@@ -912,10 +1029,20 @@ const POSPage = () => {
                                             <span className="fw-bold">{baseCurrencySymbol}{totalPaidInBase.toFixed(2)}</span>
                                         </div>
                                         {totalPaidInBase.gt(total) && (
-                                            <div className="d-flex justify-content-between text-info mb-4">
-                                                <span className="small fw-bold">VUELTO / CAMBIO</span>
-                                                <span className="fs-4 fw-black text-info">{baseCurrencySymbol}{totalPaidInBase.minus(total).toFixed(2)}</span>
-                                            </div>
+                                            <>
+                                                <div className="d-flex justify-content-between text-info mb-2">
+                                                    <span className="small fw-bold">VUELTO / CAMBIO</span>
+                                                    <span className="fs-4 fw-black text-info">{baseCurrencySymbol}{totalPaidInBase.minus(total).toFixed(2)}</span>
+                                                </div>
+                                                {cashRegisters.length > 1 && totalPaidInBase.minus(total).gt(new Decimal(currentShift?.initialCash || 0)) && (
+                                                    <div className="d-flex align-items-start gap-2 p-3 mb-3 rounded-3 bg-warning text-dark shadow-sm">
+                                                        <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+                                                        <span className="small fw-bold">
+                                                            El vuelto ({baseCurrencySymbol}{totalPaidInBase.minus(total).toFixed(2)}) supera el fondo inicial de la caja ({baseCurrencySymbol}{new Decimal(currentShift?.initialCash || 0).toFixed(2)}). Verifica que tengas sencillo suficiente o solicita un <strong>Abono de Tesorería</strong>.
+                                                        </span>
+                                                    </div>
+                                                )}
+                                            </>
                                         )}
                                         <Button 
                                             variant="success" 
@@ -1070,6 +1197,109 @@ const POSPage = () => {
                                 FINALIZAR TURNO Y ENVIAR REPORTE
                             </Button>
                         </div>
+                    </Modal.Body>
+                </Modal>
+
+                {/* Parked Sales Modal */}
+                <Modal show={showParkedModal} onHide={() => setShowParkedModal(false)} size="lg" centered>
+                    <Modal.Header closeButton className="border-0 pb-0">
+                        <Modal.Title className="fw-bold text-dark"><FaHistory className="me-2 text-warning" /> Ventas en Espera</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body className="p-4">
+                        {parkedSales.length === 0 ? (
+                            <div className="text-center py-4 text-muted">No hay ventas aparcadas en este momento.</div>
+                        ) : (
+                            <ListGroup variant="flush">
+                                {parkedSales.map(ps => (
+                                    <ListGroup.Item key={ps.id} className="d-flex justify-content-between align-items-center py-3 border-bottom">
+                                        <div>
+                                            <div className="fw-bold mb-1">
+                                                {ps.customer ? ps.customer.name : (ps.customerSearch || 'Cliente General')}
+                                            </div>
+                                            <div className="small text-muted mb-1">
+                                                {ps.cart.length} productos | Aparcado a las {ps.date}
+                                            </div>
+                                            <div className="text-primary fw-bold">
+                                                Total: {baseCurrencySymbol}{ps.total?.toFixed(2)}
+                                            </div>
+                                        </div>
+                                        <Button variant="success" size="sm" className="rounded-pill px-4 fw-bold shadow-sm" onClick={() => handleRestoreSale(ps)}>
+                                            Recuperar
+                                        </Button>
+                                    </ListGroup.Item>
+                                ))}
+                            </ListGroup>
+                        )}
+                    </Modal.Body>
+                </Modal>
+
+                {/* Cash Movements Modal */}
+                <Modal show={showMovementModal} onHide={() => setShowMovementModal(false)} centered>
+                    <Modal.Header closeButton className="border-0 pb-0">
+                        <Modal.Title className="fw-bold text-dark"><FaExchangeAlt className="me-2 text-primary" /> Movimientos de Caja</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body className="p-4">
+                        <Form onSubmit={handleCashMovement}>
+                            <Form.Group className="mb-3">
+                                <Form.Label className="fw-bold">Tipo de Movimiento</Form.Label>
+                                <Form.Select value={movementType} onChange={e => {setMovementType(e.target.value); setTransferTargetId('');}}>
+                                    <option value="INJECTION">💰 Abono de Tesorería (entra dinero a la caja)</option>
+                                    <option value="BLEEDING">🏦 Retiro a Tesorería (sale dinero de la caja)</option>
+                                    {cashRegisters.filter(cr => cr.status === 'OPEN' && cr.id !== currentShift.cashRegister?.id).length > 0 && <option value="TRANSFER">🔄 Transferencia a otra Caja</option>}
+                                </Form.Select>
+                            </Form.Group>
+                            {movementType === 'INJECTION' && (
+                                <div className="small text-muted mb-3 p-2 bg-light rounded-3">
+                                    💡 Usa esta opción cuando el supervisor o tesorería te envía dinero para surtir la caja o dar sencillo.
+                                </div>
+                            )}
+                            {movementType === 'BLEEDING' && (
+                                <div className="small text-muted mb-3 p-2 bg-light rounded-3">
+                                    💡 Usa esta opción cuando retiras el exceso de efectivo de la caja para enviarlo a tesorería o resguardo.
+                                </div>
+                            )}
+
+                            {movementType === 'TRANSFER' && (
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="fw-bold text-danger">Caja Destino <span className="text-muted fw-normal">(debe estar abierta)</span></Form.Label>
+                                    <Form.Select required value={transferTargetId} onChange={e => setTransferTargetId(e.target.value)}>
+                                        <option value="">-- Seleccionar --</option>
+                                        {cashRegisters.filter(cr => cr.status === 'OPEN' && cr.id !== currentShift.cashRegister?.id).map(cr => (
+                                            <option key={cr.id} value={cr.id}>{cr.name}</option>
+                                        ))}
+                                    </Form.Select>
+                                </Form.Group>
+                            )}
+
+                            <Row>
+                                <Col md={8}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label className="fw-bold">Monto *</Form.Label>
+                                        <Form.Control type="number" step="0.01" min="0.01" required value={movementAmount} onChange={e => setMovementAmount(e.target.value)} placeholder="0.00" />
+                                    </Form.Group>
+                                </Col>
+                                <Col md={4}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label className="fw-bold">Moneda</Form.Label>
+                                        <Form.Select value={movementCurrency} onChange={e => setMovementCurrency(e.target.value)}>
+                                            <option value={baseCurrencyCode}>{baseCurrencyCode}</option>
+                                            {availableCurrencies.filter(c => c.code !== baseCurrencyCode).map(c => (
+                                                <option key={c.code} value={c.code}>{c.code}</option>
+                                            ))}
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+
+                            <Form.Group className="mb-4">
+                                <Form.Label className="fw-bold">Descripción / Motivo *</Form.Label>
+                                <Form.Control as="textarea" rows={2} required value={movementDesc} onChange={e => setMovementDesc(e.target.value)} placeholder="Ej. Fondo de cambio entregado por supervisor..." />
+                            </Form.Group>
+
+                            <Button variant={movementType === 'INJECTION' ? 'success' : 'danger'} type="submit" className="w-100 fw-bold py-2 rounded-pill shadow-sm">
+                                {movementType === 'INJECTION' ? '💰 Registrar Abono de Tesorería' : movementType === 'TRANSFER' ? '🔄 Registrar Transferencia' : '🏦 Registrar Retiro a Tesorería'}
+                            </Button>
+                        </Form>
                     </Modal.Body>
                 </Modal>
 

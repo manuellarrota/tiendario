@@ -23,12 +23,22 @@ const getHistory = () => {
   return axios.get(API_URL + "/history", { headers: authHeader() });
 };
 
+const registerCashMovement = (shiftId, data) => {
+  return axios.post(API_URL + `/${shiftId}/movement`, data, { headers: authHeader() });
+};
+
+const transferCash = (shiftId, data) => {
+  return axios.post(API_URL + `/${shiftId}/transfer`, data, { headers: authHeader() });
+};
+
 const ShiftService = {
   getCurrentShift,
   openShift,
   closeShift,
   verifyShift,
-  getHistory
+  getHistory,
+  registerCashMovement,
+  transferCash
 };
 
 export default ShiftService;

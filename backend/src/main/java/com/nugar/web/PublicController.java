@@ -17,6 +17,7 @@ import com.nugar.security.UserDetailsImpl;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import com.nugar.util.BusinessLogger;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -361,9 +362,18 @@ public class PublicController {
 
         saleRepository.save(sale);
 
-        log.info("[PEDIDO MARKETPLACE] Nuevo pedido ID: {} | Cliente: {} | Cedula: {} | Email: {} | Empresa: {} | Total: ${}", 
-                sale.getId(), request.getCustomerName(), request.getCustomerCedula(), 
-                request.getCustomerEmail(), company.getName(), sale.getTotalAmount());
+        final Sale finalSale = sale;
+        BusinessLogger.log(log, "PEDIDO_MARKETPLACE", data -> {
+            data.put("pedidoId", finalSale.getId());
+            data.put("empresa", company.getName());
+            data.put("cliente", request.getCustomerName());
+            data.put("cedula", request.getCustomerCedula());
+            if (request.getCustomerEmail() != null) data.put("email", request.getCustomerEmail());
+            data.put("telefono", request.getCustomerPhone());
+            data.put("producto", product.getName());
+            data.put("cantidad", request.getQuantity());
+            data.put("totalUSD", finalSale.getTotalAmount());
+        });
 
         // Create Notification for the seller
         Notification notification = new Notification();

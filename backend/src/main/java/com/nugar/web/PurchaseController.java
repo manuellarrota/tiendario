@@ -21,6 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import com.nugar.util.BusinessLogger;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -169,11 +170,30 @@ public class PurchaseController {
                 .map(i -> i.getQuantity() + "x " + i.getProduct().getName())
                 .collect(java.util.stream.Collectors.joining(", "));
 
-        org.slf4j.LoggerFactory.getLogger(PurchaseController.class).info("[NUEVA COMPRA] Gerente: {} | Proveedor: {} | Total Pagado: ${} | Detalle: [{}]", 
-            userDetails.getUsername(), 
-            purchase.getSupplier() != null ? purchase.getSupplier().getName() : "Sin Proveedor", 
-            purchase.getTotal(),
-            itemsDetail);
+        final Purchase finalPurchase = purchase;
+        BusinessLogger.log(org.slf4j.LoggerFactory.getLogger(PurchaseController.class), "NUEVA_COMPRA", data -> {
+            data.put("gerente", userDetails.getUsername());
+            data.put("empresaId", userDetails.getCompanyId());
+            data.put("compraId", finalPurchase.getId());
+            data.put("proveedor", finalPurchase.getSupplier() != null ? finalPurchase.getSupplier().getName() : "Sin Proveedor");
+            data.put("moneda", finalPurchase.getCurrencyCode());
+            data.put("total", finalPurchase.getTotal());
+            data.put("totalUSD", finalPurchase.getTotalInBaseCurrency());
+            if (finalPurchase.getExchangeRate() != null && finalPurchase.getExchangeRate().compareTo(java.math.BigDecimal.ONE) != 0)
+                data.put("tasa", finalPurchase.getExchangeRate());
+            if (finalPurchase.getPaymentMethod() != null) data.put("metodoPago", finalPurchase.getPaymentMethod());
+            if (finalPurchase.getInvoiceNumber() != null) data.put("numeroFactura", finalPurchase.getInvoiceNumber());
+            java.util.List<java.util.Map<String, Object>> items = new java.util.ArrayList<>();
+            for (PurchaseItem i : finalPurchase.getItems()) {
+                java.util.Map<String, Object> item = new java.util.LinkedHashMap<>();
+                item.put("producto", i.getProduct().getName());
+                item.put("cantidad", i.getQuantity());
+                item.put("costoUnit", i.getUnitCostInBaseCurrency());
+                item.put("subtotalUSD", i.getSubtotalInBaseCurrency());
+                items.add(item);
+            }
+            data.put("detalle", items);
+        });
 
         return ResponseEntity.ok(new MessageResponse("Purchase recorded and stock updated!"));
     }

@@ -21,6 +21,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.nugar.util.BusinessLogger;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
@@ -220,7 +221,11 @@ public class ProductController {
 
         // Ensure SKU uniqueness within the company
         if (productRepository.existsBySkuAndCompanyId(product.getSku(), userDetails.getCompanyId())) {
-            log.warn("[PRODUCTO] Attempt to create product with duplicate SKU: {} for company ID: {}", product.getSku(), userDetails.getCompanyId());
+            BusinessLogger.warn(log, "PRODUCTO_SKU_DUPLICADO", data -> {
+                data.put("usuario", userDetails.getUsername());
+                data.put("empresaId", userDetails.getCompanyId());
+                data.put("sku", product.getSku());
+            });
             return ResponseEntity.badRequest()
                     .body(new MessageResponse("Error: SKU already exists in your inventory."));
         }
@@ -232,13 +237,19 @@ public class ProductController {
             com.nugar.domain.SubscriptionStatus status = product.getCompany().getSubscriptionStatus();
 
             if (com.nugar.domain.SubscriptionStatus.PAST_DUE.equals(status)) {
-                log.warn("[PRODUCTO] Creation blocked: Company {} is PAST_DUE", product.getCompany().getName());
+                BusinessLogger.warn(log, "PRODUCTO_BLOQUEADO_SUSCRIPCION", data -> {
+                    data.put("empresa", product.getCompany().getName());
+                    data.put("motivo", "PAST_DUE");
+                });
                 return ResponseEntity.status(403)
                         .body(new MessageResponse(
                                 "Tu suscripción ha vencido. Renueva tu plan para poder agregar nuevos productos y seguir operando."));
             }
             if (com.nugar.domain.SubscriptionStatus.SUSPENDED.equals(status)) {
-                log.warn("[PRODUCTO] Creation blocked: Company {} is SUSPENDED", product.getCompany().getName());
+                BusinessLogger.warn(log, "PRODUCTO_BLOQUEADO_SUSCRIPCION", data -> {
+                    data.put("empresa", product.getCompany().getName());
+                    data.put("motivo", "SUSPENDED");
+                });
                 return ResponseEntity.status(403)
                         .body(new MessageResponse(
                                 "Tu cuenta está suspendida. Contacta al administrador para reactivarla."));
@@ -280,8 +291,14 @@ public class ProductController {
                 suggestion.setSuggestedImageUrl(product.getImageUrl());
                 suggestion.setStatus(com.nugar.domain.SuggestionStatus.PENDING);
                 catalogSuggestionRepository.save(suggestion);
-                log.info("[SUGERENCIA CATALOGO] Usuario '{}' sugirio cambios para el producto '{}' (SKU: {}) desde la empresa '{}'",
-                    userDetails.getUsername(), suggestion.getSuggestedName(), catalog.getSku(), product.getCompany().getName());
+                final String catalogSku = catalog.getSku();
+                BusinessLogger.log(log, "SUGERENCIA_CATALOGO", data -> {
+                    data.put("usuario", userDetails.getUsername());
+                    data.put("empresa", product.getCompany().getName());
+                    data.put("sku", catalogSku);
+                    data.put("nombreSugerido", suggestion.getSuggestedName());
+                    data.put("accion", "CREACION");
+                });
             }
         }
         product.setCatalogProduct(catalog);
@@ -291,8 +308,16 @@ public class ProductController {
         // product.setImageUrl(catalog.getImageUrl());
 
         Product savedProduct = productRepository.save(product);
-        log.info("[PRODUCTO] Usuario {} creo nuevo producto: '{}' (SKU: {})", 
-                userDetails.getUsername(), savedProduct.getName(), savedProduct.getSku());
+        BusinessLogger.log(log, "PRODUCTO_CREADO", data -> {
+            data.put("usuario", userDetails.getUsername());
+            data.put("empresaId", userDetails.getCompanyId());
+            data.put("productoId", savedProduct.getId());
+            data.put("nombre", savedProduct.getName());
+            data.put("sku", savedProduct.getSku());
+            if (savedProduct.getPrice() != null) data.put("precio", savedProduct.getPrice());
+            if (savedProduct.getStock() != null) data.put("stockInicial", savedProduct.getStock());
+            if (savedProduct.getCategory() != null) data.put("categoria", savedProduct.getCategory());
+        });
 
         // Index in search engine
         try {
@@ -359,8 +384,14 @@ public class ProductController {
                 suggestion.setSuggestedImageUrl(productDetails.getImageUrl());
                 suggestion.setStatus(com.nugar.domain.SuggestionStatus.PENDING);
                 catalogSuggestionRepository.save(suggestion);
-                log.info("[SUGERENCIA CATALOGO] Usuario '{}' sugirio actualizacion para el producto '{}' (SKU: {}) desde la empresa '{}'",
-                    userDetails.getUsername(), suggestion.getSuggestedName(), catalog.getSku(), product.getCompany().getName());
+                final String catalogSku = catalog.getSku();
+                BusinessLogger.log(log, "SUGERENCIA_CATALOGO", data -> {
+                    data.put("usuario", userDetails.getUsername());
+                    data.put("empresa", product.getCompany().getName());
+                    data.put("sku", catalogSku);
+                    data.put("nombreSugerido", suggestion.getSuggestedName());
+                    data.put("accion", "ACTUALIZACION");
+                });
             }
         }
         product.setCatalogProduct(catalog);
@@ -381,11 +412,24 @@ public class ProductController {
         Product updatedProduct = productRepository.save(product);
         
         if (oldPrice != null && newPrice != null && oldPrice.compareTo(newPrice) != 0) {
-            log.info("[ALERTA PRECIO] Usuario: {} | Producto: {} | Viejo Precio: ${} | Nuevo Precio: ${}", 
-                userDetails.getUsername(), updatedProduct.getName(), oldPrice, newPrice);
+            BusinessLogger.log(log, "PRODUCTO_PRECIO_CAMBIADO", data -> {
+                data.put("usuario", userDetails.getUsername());
+                data.put("empresaId", userDetails.getCompanyId());
+                data.put("productoId", updatedProduct.getId());
+                data.put("nombre", updatedProduct.getName());
+                data.put("sku", updatedProduct.getSku());
+                data.put("precioAnterior", oldPrice);
+                data.put("precioNuevo", newPrice);
+            });
         } else {
-            log.info("[PRODUCTO] Usuario {} actualizo producto: '{}' (SKU: {})", 
-                userDetails.getUsername(), updatedProduct.getName(), updatedProduct.getSku());
+            BusinessLogger.log(log, "PRODUCTO_ACTUALIZADO", data -> {
+                data.put("usuario", userDetails.getUsername());
+                data.put("empresaId", userDetails.getCompanyId());
+                data.put("productoId", updatedProduct.getId());
+                data.put("nombre", updatedProduct.getName());
+                data.put("sku", updatedProduct.getSku());
+                if (updatedProduct.getStock() != null) data.put("stock", updatedProduct.getStock());
+            });
         }
 
         // Update index
@@ -406,8 +450,15 @@ public class ProductController {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: Product not found or access denied."));
         }
 
-        log.warn("[PRODUCTO ELIMINADO] Eliminado por: {} | Producto ID: {} | Nombre: '{}' | SKU: {} | Empresa ID: {}", 
-            userDetails.getUsername(), id, product.getName(), product.getSku(), userDetails.getCompanyId());
+        BusinessLogger.warn(log, "PRODUCTO_ELIMINADO", data -> {
+            data.put("eliminadoPor", userDetails.getUsername());
+            data.put("empresaId", userDetails.getCompanyId());
+            data.put("productoId", id);
+            data.put("nombre", product.getName());
+            data.put("sku", product.getSku());
+            if (product.getPrice() != null) data.put("precio", product.getPrice());
+            if (product.getStock() != null) data.put("stockActual", product.getStock());
+        });
         productRepository.delete(product);
 
         // Remove from search engine

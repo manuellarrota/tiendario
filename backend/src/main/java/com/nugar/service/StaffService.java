@@ -41,26 +41,43 @@ public class StaffService {
 
     @Transactional
     public User createCashier(String username, String email, String password, Long companyId, String managerUsername) {
-        if (userRepository.existsByUsername(username)) {
-            throw new RuntimeException("Error: ¡El nombre de usuario ya está en uso!");
-        }
-
-        if (userRepository.existsByEmail(email)) {
-            throw new RuntimeException("Error: ¡El correo electrónico ya está en uso!");
-        }
-
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new RuntimeException("Error: Empresa no encontrada."));
 
-        // Los cajeros (usuarios) son totalmente ilimitados en todos los planes. No se limitan por cajas.
+        User existingUserByEmail = userRepository.findByEmail(email).orElse(null);
+        User existingUserByUsername = userRepository.findByUsername(username).orElse(null);
 
-        User cashier = new User();
-        cashier.setUsername(username);
-        cashier.setEmail(email);
-        cashier.setPassword(passwordEncoder.encode(password));
-        cashier.getRoles().add(Role.ROLE_CASHIER);
-        cashier.setCompany(company);
-        cashier.setEnabled(true); // Cashiers are active immediately
+        User cashier;
+
+        if (existingUserByEmail != null || existingUserByUsername != null) {
+            // Validate if email and username belong to different accounts
+            if (existingUserByEmail != null && existingUserByUsername != null && !existingUserByEmail.getId().equals(existingUserByUsername.getId())) {
+                throw new RuntimeException("Error: El correo y el usuario proporcionados pertenecen a cuentas diferentes.");
+            }
+
+            cashier = existingUserByEmail != null ? existingUserByEmail : existingUserByUsername;
+
+            if (cashier.getCompany() != null && !cashier.getCompany().getId().equals(companyId)) {
+                throw new RuntimeException("Error: Este usuario ya pertenece a otra empresa como empleado.");
+            }
+
+            if (cashier.getCompany() != null && cashier.getCompany().getId().equals(companyId) && cashier.getRoles().contains(Role.ROLE_CASHIER)) {
+                throw new RuntimeException("Error: Este usuario ya es cajero en tu empresa.");
+            }
+
+            // "Hire" the client
+            cashier.getRoles().add(Role.ROLE_CASHIER);
+            cashier.setCompany(company);
+        } else {
+            // Create a brand new user
+            cashier = new User();
+            cashier.setUsername(username);
+            cashier.setEmail(email);
+            cashier.setPassword(passwordEncoder.encode(password));
+            cashier.getRoles().add(Role.ROLE_CASHIER);
+            cashier.setCompany(company);
+            cashier.setEnabled(true);
+        }
 
         cashier = userRepository.save(cashier);
         

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import Decimal from 'decimal.js';
 import { Container, Row, Col, Table, Button, Form, Card, Alert, Modal, Badge, InputGroup } from "react-bootstrap";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Layout from "../components/Layout";
 import ProductService from "../services/product.service";
@@ -12,6 +13,7 @@ import { useToast } from "../components/ToastContext";
 import { FaPlus, FaSave, FaTruck, FaBoxOpen, FaImage, FaSearch, FaTimes, FaExchangeAlt, FaTrash, FaBarcode } from "react-icons/fa";
 
 const NewPurchasePage = () => {
+    const navigate = useNavigate();
     const [products, setProducts] = useState([]);
     const [suppliers, setSuppliers] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -385,11 +387,11 @@ const NewPurchasePage = () => {
 
     return (
         <Layout>
-            <Container fluid className="py-2">
+            <Container fluid className="py-4">
                 <div className="d-flex justify-content-between align-items-center mb-4">
-                    <h2 className="text-dark fw-bold mb-0">Registro de Compras</h2>
+                    <h2 className="display-6 fw-bold mb-0 text-gradient">Ingresar Mercancía</h2>
                     {step === 2 && (
-                        <Button variant="primary" onClick={() => { resetProductForm(); setShowProductModal(true); }}>
+                        <Button variant="primary" className="rounded-pill shadow-sm px-4 fw-bold" onClick={() => { resetProductForm(); setShowProductModal(true); }}>
                             <FaPlus className="me-2" /> Nuevo Producto
                         </Button>
                     )}
@@ -397,93 +399,107 @@ const NewPurchasePage = () => {
 
                 {message && !showSupplierModal && !showProductModal && <Alert variant={message.includes("✅") ? "success" : message.includes("❌") ? "danger" : "info"} className="mb-4 shadow-sm border-0">{message}</Alert>}
 
-                {step === 1 && (
-                    <Row className="justify-content-center">
-                        <Col md={6}>
-                            <Card className="border-0 shadow-sm p-4 mb-4">
-                                <h4 className="mb-4 text-primary fw-bold">Paso 1: Datos de la Factura</h4>
-                                
-                                <Form.Group className="mb-3">
-                                    <Form.Label className="fw-bold">1. Seleccionar Proveedor <span className="text-danger">*</span></Form.Label>
-                                    <div className="d-flex gap-2">
-                                        <Form.Select
-                                            value={selectedSupplier}
-                                            onChange={e => setSelectedSupplier(e.target.value)}
-                                            className="flex-grow-1"
-                                        >
-                                            <option value="">-- Elige un Proveedor --</option>
-                                            {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                                        </Form.Select>
-                                        <Button variant="outline-success" onClick={() => setShowSupplierModal(true)}>
-                                            <FaPlus />
-                                        </Button>
-                                    </div>
-                                </Form.Group>
-
-                                <Form.Group className="mb-3">
-                                    <Form.Label className="fw-bold">2. Moneda de la Factura</Form.Label>
-                                    <Form.Select
-                                        value={purchaseCurrency}
-                                        onChange={e => setPurchaseCurrency(e.target.value)}
-                                    >
-                                        <option value={baseCurrencyCode}>{baseCurrencyCode} (Moneda Base)</option>
-                                        {availableCurrencies.filter(c => c.code !== baseCurrencyCode).map(c => (
-                                            <option key={c.code} value={c.code}>{c.code} – {c.name} (Tasa: {c.rate})</option>
-                                        ))}
-                                    </Form.Select>
-                                </Form.Group>
-
-                                <Form.Group className="mb-4">
-                                    <Form.Label className="fw-bold">3. Medio de Pago</Form.Label>
-                                    <Form.Select
-                                        value={paymentMethod}
-                                        onChange={e => setPaymentMethod(e.target.value)}
-                                    >
-                                        <option value="CASH">💵 Efectivo / Cash</option>
-                                        <option value="TRANSFER">🏦 Transferencia / Zelle</option>
-                                        <option value="MOBILE_PAYMENT">📱 Pago Móvil</option>
-                                        <option value="CARD">💳 Tarjeta (Débito/Crédito)</option>
-                                    </Form.Select>
-                                </Form.Group>
-
-                                <Button 
-                                    variant="primary" 
-                                    size="lg" 
-                                    className="w-100 fw-bold"
-                                    disabled={!selectedSupplier}
-                                    onClick={() => setStep(2)}
+                <Modal 
+                    show={step === 1} 
+                    backdrop="static" 
+                    keyboard={false} 
+                    centered 
+                    contentClassName="glass-card-admin border-0 shadow-lg rounded-4"
+                >
+                    <Modal.Header className="border-0 pb-0 pt-4 px-4">
+                        <Modal.Title className="fw-black fs-3 text-primary">Iniciar Compra</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body className="p-4">
+                        <p className="text-muted mb-4">Selecciona el proveedor, la moneda y el método de pago para comenzar a ingresar los productos.</p>
+                        
+                        <Form.Group className="mb-3">
+                            <Form.Label className="fw-bold">1. Seleccionar Proveedor <span className="text-danger">*</span></Form.Label>
+                            <div className="d-flex gap-2">
+                                <Form.Select
+                                    value={selectedSupplier}
+                                    onChange={e => setSelectedSupplier(e.target.value)}
+                                    className="flex-grow-1"
                                 >
-                                    Siguiente: Agregar Productos ➔
-                                </Button>
-                                {!selectedSupplier && (
-                                    <div className="text-center text-danger small mt-2">
-                                        Debes seleccionar un proveedor para continuar.
-                                    </div>
-                                )}
-                            </Card>
-                        </Col>
-                    </Row>
-                )}
-
-                {step === 2 && (
-                    <>
-                        <Card className="border-0 shadow-sm p-3 mb-4 bg-light">
-                            <div className="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span className="me-3"><strong>Proveedor:</strong> {getSupplierName()}</span>
-                                    <span className="me-3"><strong>Moneda:</strong> {purchaseCurrency}</span>
-                                    <span><strong>Pago:</strong> {paymentMethod === 'CASH' ? 'Efectivo' : paymentMethod === 'TRANSFER' ? 'Transferencia' : paymentMethod === 'MOBILE_PAYMENT' ? 'Pago Móvil' : 'Tarjeta'}</span>
-                                </div>
-                                <Button variant="outline-secondary" size="sm" onClick={() => setStep(1)}>
-                                    Cambiar Datos Base
+                                    <option value="">-- Elige un Proveedor --</option>
+                                    {suppliers.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                                </Form.Select>
+                                <Button variant="outline-success" onClick={() => setShowSupplierModal(true)}>
+                                    <FaPlus />
                                 </Button>
                             </div>
-                        </Card>
+                        </Form.Group>
 
-                        <Row>
-                            <Col md={8}>
-                                <Card className="border-0 shadow-sm p-4 mb-4">
-                                    <h5 className="mb-3">Lista de Productos a Ingresar</h5>
+                        <Form.Group className="mb-3">
+                            <Form.Label className="fw-bold">2. Moneda de la Factura</Form.Label>
+                            <Form.Select
+                                value={purchaseCurrency}
+                                onChange={e => setPurchaseCurrency(e.target.value)}
+                            >
+                                <option value={baseCurrencyCode}>{baseCurrencyCode} (Moneda Base)</option>
+                                {availableCurrencies.filter(c => c.code !== baseCurrencyCode).map(c => (
+                                    <option key={c.code} value={c.code}>{c.code} – {c.name} (Tasa: {c.rate})</option>
+                                ))}
+                            </Form.Select>
+                        </Form.Group>
+
+                        <Form.Group className="mb-4">
+                            <Form.Label className="fw-bold">3. Medio de Pago</Form.Label>
+                            <Form.Select
+                                value={paymentMethod}
+                                onChange={e => setPaymentMethod(e.target.value)}
+                            >
+                                <option value="CASH">💵 Efectivo / Cash</option>
+                                <option value="TRANSFER">🏦 Transferencia / Zelle</option>
+                                <option value="MOBILE_PAYMENT">📱 Pago Móvil</option>
+                                <option value="CARD">💳 Tarjeta (Débito/Crédito)</option>
+                            </Form.Select>
+                        </Form.Group>
+
+                        <div className="d-flex gap-2 mt-4">
+                            <Button 
+                                variant="outline-secondary" 
+                                size="lg" 
+                                className="w-50 fw-bold rounded-pill shadow-sm"
+                                onClick={() => navigate('/admin/inventory')}
+                            >
+                                Cancelar
+                            </Button>
+                            <Button 
+                                variant="primary" 
+                                size="lg" 
+                                className="w-50 fw-bold rounded-pill shadow-sm"
+                                disabled={!selectedSupplier}
+                                onClick={() => setStep(2)}
+                            >
+                                COMENZAR ➔
+                            </Button>
+                        </div>
+                        {!selectedSupplier && (
+                            <div className="text-center text-danger small mt-2">
+                                Debes seleccionar un proveedor para continuar.
+                            </div>
+                        )}
+                    </Modal.Body>
+                </Modal>
+
+                <div style={{ opacity: step === 1 ? 0.3 : 1, pointerEvents: step === 1 ? 'none' : 'auto', filter: step === 1 ? 'blur(4px)' : 'none', transition: 'all 0.3s ease' }}>
+                    <Card className="glass-card-admin border-0 shadow-sm p-4 mb-4 rounded-4 bg-primary bg-opacity-10">
+                        <div className="d-flex justify-content-between align-items-center">
+                            <div>
+                                <span className="me-4"><strong className="text-primary">Proveedor:</strong> {getSupplierName() || '---'}</span>
+                                <span className="me-4"><strong className="text-primary">Moneda:</strong> {purchaseCurrency}</span>
+                                <span><strong className="text-primary">Pago:</strong> {paymentMethod === 'CASH' ? 'Efectivo' : paymentMethod === 'TRANSFER' ? 'Transferencia' : paymentMethod === 'MOBILE_PAYMENT' ? 'Pago Móvil' : 'Tarjeta'}</span>
+                            </div>
+                            <Button variant="outline-primary" size="sm" className="rounded-pill px-3" onClick={() => setStep(1)}>
+                                <FaExchangeAlt className="me-2" /> Editar Datos Base
+                            </Button>
+                        </div>
+                    </Card>
+
+                    <Row className="g-4">
+                            <Col lg={8}>
+                                <Card className="glass-card-admin border-0 shadow-sm p-4 mb-4 rounded-4 h-100">
+                                    <h5 className="mb-4 fw-bold text-dark">Lista de Productos a Ingresar</h5>
                                     <Table responsive>
                                         <thead className="bg-light">
                                             <tr>
@@ -561,9 +577,9 @@ const NewPurchasePage = () => {
                                 </Card>
                             </Col>
 
-                            <Col md={4}>
-                                <Card className="border-0 shadow-sm p-4 mb-3">
-                                    <h5 className="mb-3">Agregar Producto</h5>
+                            <Col lg={4}>
+                                <Card className="glass-card-admin border-0 shadow-sm p-4 mb-3 rounded-4">
+                                    <h5 className="mb-4 fw-bold text-dark">Agregar Producto</h5>
 
                                     <Form.Group className="mb-2 position-relative" ref={searchRef}>
                                         <Form.Label>Buscar Producto</Form.Label>
@@ -634,14 +650,13 @@ const NewPurchasePage = () => {
                                             </Form.Group>
                                         </Col>
                                     </Row>
-                                    <Button variant="outline-primary" className="w-100" onClick={addToCart}>
+                                    <Button variant="primary" className="w-100 py-2 rounded-pill fw-bold shadow-sm mt-3" onClick={addToCart} disabled={!selectedProduct || !quantity || !unitCost}>
                                         <FaPlus className="me-2" /> Agregar a la Orden
                                     </Button>
                                 </Card>
                             </Col>
-                        </Row>
-                    </>
-                )}
+                    </Row>
+                </div>
                 {/* Floating Save Button - Replicating POS behavior */}
                 {cart.length > 0 && (
                      <div className="pos-floating-checkout shadow-lg animate-in">

@@ -12,6 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import com.nugar.util.BusinessLogger;
 import java.util.List;
 
 @RestController
@@ -83,9 +84,16 @@ public class SupplierController {
         supplier.setCompany(companyRepository.findById(userDetails.getCompanyId()).orElse(null));
         Supplier savedSupplier = supplierRepository.save(supplier);
 
-        log.info("[NUEVO PROVEEDOR] Registrado por: {} | Nombre: {} | RIF/TaxId: {} | Telefono: {} | Email: {} | Empresa ID: {}",
-            userDetails.getUsername(), savedSupplier.getName(), savedSupplier.getTaxId(),
-            savedSupplier.getPhone(), savedSupplier.getEmail(), userDetails.getCompanyId());
+        BusinessLogger.log(log, "NUEVO_PROVEEDOR", data -> {
+            data.put("registradoPor", userDetails.getUsername());
+            data.put("empresaId", userDetails.getCompanyId());
+            data.put("proveedorId", savedSupplier.getId());
+            data.put("nombre", savedSupplier.getName());
+            if (savedSupplier.getTaxId() != null) data.put("rif", savedSupplier.getTaxId());
+            data.put("telefono", savedSupplier.getPhone());
+            if (savedSupplier.getEmail() != null) data.put("email", savedSupplier.getEmail());
+            if (savedSupplier.getAddress() != null) data.put("direccion", savedSupplier.getAddress());
+        });
 
         return ResponseEntity.ok(savedSupplier);
     }
@@ -123,8 +131,15 @@ public class SupplierController {
         supplier.setAddress(supplierDetails.getAddress());
 
         Supplier updatedSupplier = supplierRepository.save(supplier);
-        log.info("[PROVEEDOR ACTUALIZADO] ID: {} | Por: {} | Nombre: {} | Empresa ID: {}", 
-            id, userDetails.getUsername(), updatedSupplier.getName(), userDetails.getCompanyId());
+        BusinessLogger.log(log, "PROVEEDOR_ACTUALIZADO", data -> {
+            data.put("modificadoPor", userDetails.getUsername());
+            data.put("empresaId", userDetails.getCompanyId());
+            data.put("proveedorId", id);
+            data.put("nombre", updatedSupplier.getName());
+            if (updatedSupplier.getTaxId() != null) data.put("rif", updatedSupplier.getTaxId());
+            data.put("telefono", updatedSupplier.getPhone());
+            if (updatedSupplier.getEmail() != null) data.put("email", updatedSupplier.getEmail());
+        });
 
         return ResponseEntity.ok(updatedSupplier);
     }

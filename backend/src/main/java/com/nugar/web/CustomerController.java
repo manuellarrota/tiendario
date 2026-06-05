@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import com.nugar.util.BusinessLogger;
 import java.util.List;
 
 @RestController
@@ -69,9 +70,16 @@ public class CustomerController {
         customer.setCompany(companyRepository.findById(userDetails.getCompanyId()).orElse(null));
         Customer savedCustomer = customerRepository.save(customer);
 
-        log.info("[NUEVO CLIENTE] Registrado por: {} | Nombre: {} | Cedula: {} | Telefono: {} | Email: {} | Empresa ID: {}",
-            userDetails.getUsername(), savedCustomer.getName(), savedCustomer.getCedula(),
-            savedCustomer.getPhone(), savedCustomer.getEmail(), userDetails.getCompanyId());
+        BusinessLogger.log(log, "NUEVO_CLIENTE", data -> {
+            data.put("registradoPor", userDetails.getUsername());
+            data.put("empresaId", userDetails.getCompanyId());
+            data.put("clienteId", savedCustomer.getId());
+            data.put("nombre", savedCustomer.getName());
+            data.put("cedula", savedCustomer.getCedula());
+            data.put("telefono", savedCustomer.getPhone());
+            if (savedCustomer.getEmail() != null) data.put("email", savedCustomer.getEmail());
+            if (savedCustomer.getAddress() != null) data.put("direccion", savedCustomer.getAddress());
+        });
 
         return ResponseEntity.ok(savedCustomer);
     }
@@ -94,9 +102,15 @@ public class CustomerController {
         customer.setAddress(customerDetails.getAddress());
 
         customerRepository.save(customer);
-        log.info("[CLIENTE ACTUALIZADO] Modificado por: {} | Cliente ID: {} | Nombre: {} | Cedula: {} | Telefono: {} | Empresa ID: {}",
-            userDetails.getUsername(), id, customer.getName(), customer.getCedula(),
-            customer.getPhone(), userDetails.getCompanyId());
+        BusinessLogger.log(log, "CLIENTE_ACTUALIZADO", data -> {
+            data.put("modificadoPor", userDetails.getUsername());
+            data.put("empresaId", userDetails.getCompanyId());
+            data.put("clienteId", id);
+            data.put("nombre", customer.getName());
+            data.put("cedula", customer.getCedula());
+            data.put("telefono", customer.getPhone());
+            if (customer.getEmail() != null) data.put("email", customer.getEmail());
+        });
         return ResponseEntity.ok(new MessageResponse("Customer updated successfully!"));
     }
 
@@ -111,9 +125,14 @@ public class CustomerController {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: Customer not found or access denied."));
         }
 
-        log.warn("[CLIENTE ELIMINADO] Eliminado por: {} | Cliente ID: {} | Nombre: {} | Cedula: {} | Telefono: {} | Empresa ID: {}",
-            userDetails.getUsername(), id, customer.getName(), customer.getCedula(),
-            customer.getPhone(), userDetails.getCompanyId());
+        BusinessLogger.warn(log, "CLIENTE_ELIMINADO", data -> {
+            data.put("eliminadoPor", userDetails.getUsername());
+            data.put("empresaId", userDetails.getCompanyId());
+            data.put("clienteId", id);
+            data.put("nombre", customer.getName());
+            data.put("cedula", customer.getCedula());
+            data.put("telefono", customer.getPhone());
+        });
         customerRepository.delete(customer);
         return ResponseEntity.ok(new MessageResponse("Customer deleted successfully!"));
     }

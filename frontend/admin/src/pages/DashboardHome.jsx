@@ -339,7 +339,7 @@ const DashboardHome = () => {
                                         <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-primary" style={{ cursor: 'help' }}>
                                             <Card.Body className="p-4">
                                                 <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Empresas Totales</span>
-                                                <h1 className="display-5 fw-bold text-dark mb-1">{summary?.totalCompanies || 0}</h1>
+                                                <h1 className="display-5 fw-bold text-dark mb-1 text-nowrap">{Number(summary?.totalCompanies || 0).toLocaleString()}</h1>
                                                 <OverlayTrigger placement="bottom" overlay={(props) => renderTooltip(props, "Porcentaje de todas las tiendas registradas que actualmente pagan una membresía Premium.")}>
                                                     <div className="d-flex align-items-center gap-2" style={{ cursor: 'help' }}>
                                                         <Badge bg="success" className="rounded-pill px-2 py-1">
@@ -357,7 +357,7 @@ const DashboardHome = () => {
                                         <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-info" style={{ cursor: 'help' }}>
                                             <Card.Body className="p-4">
                                                 <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Tiendas Activas</span>
-                                                <h1 className="display-5 fw-bold text-info mb-1">{summary?.activeShops || 0}</h1>
+                                                <h1 className="display-5 fw-bold text-info mb-1 text-nowrap">{Number(summary?.activeShops || 0).toLocaleString()}</h1>
                                                 <small className="text-muted fw-medium"><FaClock className="me-1" /> Últimos 30 días con ventas</small>
                                             </Card.Body>
                                         </Card>
@@ -368,7 +368,7 @@ const DashboardHome = () => {
                                         <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-success" style={{ cursor: 'help' }}>
                                             <Card.Body className="p-4">
                                                 <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Ingresos (MRR)</span>
-                                                <h1 className="display-5 fw-bold text-success mb-1">${Number(summary?.mrr || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h1>
+                                                <h1 className="display-5 fw-bold text-success mb-1 text-nowrap">${Number(summary?.mrr || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h1>
                                                 <small className="text-muted fw-medium"><FaMoneyBillWave className="me-1" /> Recurrencia Mensual</small>
                                             </Card.Body>
                                         </Card>
@@ -379,7 +379,7 @@ const DashboardHome = () => {
                                         <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-danger" style={{ cursor: 'help' }}>
                                             <Card.Body className="p-4">
                                                 <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Alertas Churn</span>
-                                                <h1 className="display-5 fw-bold text-danger mb-1">{summary?.churnedShops || 0}</h1>
+                                                <h1 className="display-5 fw-bold text-danger mb-1 text-nowrap">{Number(summary?.churnedShops || 0).toLocaleString()}</h1>
                                                 <small className="text-muted fw-medium">Tiendas inactivas (+15d)</small>
                                             </Card.Body>
                                         </Card>
@@ -394,7 +394,7 @@ const DashboardHome = () => {
                                                     <FaGlobe className="text-success h3 mb-0" />
                                                 </div>
                                                 <h5 className="fw-bold mb-1">Volumen Global de la Plataforma</h5>
-                                                <h2 className="fw-bold text-dark">${Number(summary?.globalGmv || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+                                                <h2 className="fw-bold text-dark text-nowrap">${Number(summary?.globalGmv || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
                                                 <p className="text-muted small">Monto total transaccionado</p>
                                             </Card.Body>
                                         </Card>
@@ -408,7 +408,7 @@ const DashboardHome = () => {
                                                     <FaChartLine className="text-warning h3 mb-0" />
                                                 </div>
                                                 <h5 className="fw-bold mb-1">Valor Promedio por Pedido (Global)</h5>
-                                                <h2 className="fw-bold text-dark">${Number(summary?.globalAov || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+                                                <h2 className="fw-bold text-dark text-nowrap">${Number(summary?.globalAov || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
                                                 <p className="text-muted small">Promedio por pedido</p>
                                             </Card.Body>
                                         </Card>
@@ -421,14 +421,14 @@ const DashboardHome = () => {
                                                 <h6 className="fw-bold mb-4">Mezcla de Suscripciones</h6>
                                                 <div className="d-flex align-items-center justify-content-between mb-2">
                                                     <span>Planes Premium</span>
-                                                    <span className="fw-bold">{summary?.paidPlanCount || 0}</span>
+                                                    <span className="fw-bold">{Number(summary?.paidPlanCount || 0).toLocaleString()}</span>
                                                 </div>
                                                 <div className="progress mb-4" style={{ height: '8px' }}>
                                                     <div className="progress-bar bg-success" style={{ width: `${(summary?.paidPlanCount / (summary?.totalCompanies || 1)) * 100}%` }}></div>
                                                 </div>
                                                 <div className="d-flex align-items-center justify-content-between mb-2">
                                                     <span>En Periodo de Prueba</span>
-                                                    <span className="fw-bold">{summary?.trialPlanCount || 0}</span>
+                                                    <span className="fw-bold">{Number(summary?.trialPlanCount || 0).toLocaleString()}</span>
                                                 </div>
                                                 <div className="progress" style={{ height: '8px' }}>
                                                     <div className="progress-bar bg-warning" style={{ width: `${(summary?.trialPlanCount / (summary?.totalCompanies || 1)) * 100}%` }}></div>
@@ -486,7 +486,7 @@ const DashboardHome = () => {
                                                     </OverlayTrigger>
                                                     <FaBox className="text-dark opacity-50" />
                                                 </div>
-                                                <h3 className="fw-bold mb-1 text-dark">{summary?.totalProducts || 0}</h3>
+                                                <h3 className="fw-bold mb-1 text-dark text-nowrap">{Number(summary?.totalProducts || 0).toLocaleString()}</h3>
                                                 <small className="text-muted">Productos Disponibles</small>
                                             </Card.Body>
                                         </Card>
@@ -501,7 +501,7 @@ const DashboardHome = () => {
                                                     </OverlayTrigger>
                                                     <FaMoneyBillWave className="text-primary opacity-50" />
                                                 </div>
-                                                    <h3 className="fw-bold mb-1 text-primary">${Number(summary?.revenueToday || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+                                                <h3 className="fw-bold mb-1 text-primary text-nowrap">${Number(summary?.revenueToday || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
                                                     <div className="d-flex align-items-center gap-2">
                                                         {summary?.revenueGrowth >= 0 ? (
                                                             <span className="text-success small fw-bold">↑ {summary?.revenueGrowth}%</span>
@@ -523,7 +523,7 @@ const DashboardHome = () => {
                                                     </OverlayTrigger>
                                                     <FaChartLine className="text-warning opacity-50" />
                                                 </div>
-                                                    <h3 className="fw-bold mb-1 text-warning">${Number(summary?.shopAov || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+                                                <h3 className="fw-bold mb-1 text-warning text-nowrap">${Number(summary?.shopAov || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
                                                     <small className="text-muted">Promedio por Venta</small>
                                             </Card.Body>
                                         </Card>
@@ -538,8 +538,8 @@ const DashboardHome = () => {
                                                     </OverlayTrigger>
                                                     <FaRocket className={`${summary?.lowStockCount > 0 ? 'text-danger' : 'text-success'} opacity-50`} />
                                                 </div>
-                                                <h3 className={`fw-bold mb-1 ${summary?.lowStockCount > 0 ? 'text-danger' : 'text-success'}`}>
-                                                    {summary?.lowStockCount || 0}
+                                                <h3 className={`fw-bold mb-1 text-nowrap ${summary?.lowStockCount > 0 ? 'text-danger' : 'text-success'}`}>
+                                                    {Number(summary?.lowStockCount || 0).toLocaleString()}
                                                 </h3>
                                                 <small className={`${summary?.lowStockCount > 0 ? 'text-danger' : 'text-muted'} fw-medium`}>
                                                     {summary?.lowStockCount > 0 ? '¡Atención! Stock Crítico' : 'Stock saludable'}

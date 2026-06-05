@@ -12,6 +12,7 @@ import com.nugar.security.LoginRateLimiter;
 import com.nugar.security.UserDetailsImpl;
 import com.nugar.service.AuthService;
 import com.nugar.service.EmailService;
+import com.nugar.util.BusinessLogger;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -103,8 +104,13 @@ public class AuthController {
                             ? companyRepository.findById(userDetails.getCompanyId()).map(c -> c.getName()).orElse("N/A")
                             : "ADMIN/NO_COMPANY";
 
-                        logger.info("🔑 [LOGIN] Persona: '{}' | Usuario: '{}' | Empresa: '{}' | IP: {} | Roles: {}", 
-                                userDetails.getFullName(), userDetails.getUsername(), companyName, clientIp, roles);
+                        BusinessLogger.log(logger, "LOGIN_EXITOSO", data -> {
+                                data.put("persona", userDetails.getFullName());
+                                data.put("usuario", userDetails.getUsername());
+                                data.put("empresa", companyName);
+                                data.put("roles", roles);
+                                data.put("ip", clientIp);
+                        });
 
                         return ResponseEntity.ok(new JwtResponse(jwt,
                                         userDetails.getId(),
@@ -184,7 +190,10 @@ public class AuthController {
                                         .build();
                 }
         
-                logger.info("Verifying and enabling user: {} (ID: {})", user.getUsername(), user.getId());
+                BusinessLogger.log(logger, "CUENTA_VERIFICADA", data -> {
+                        data.put("usuario", user.getUsername());
+                        data.put("usuarioId", user.getId());
+                });
                 user.setEnabled(true);
                 user.setVerificationCode(null);
                 userRepository.save(user);
@@ -232,12 +241,20 @@ public class AuthController {
                         logger.info("Registering new user: {} (Email: {}) from {}", signUpRequest.getUsername(), signUpRequest.getEmail(), baseUrl);
                         User user = authService.registerUser(signUpRequest, baseUrl);
                         if (!user.isEnabled()) {
-                                logger.info("User registered successfully but pending email verification: {}", user.getUsername());
+                                BusinessLogger.log(logger, "NUEVO_USUARIO_REGISTRADO", data -> {
+                                        data.put("username", user.getUsername());
+                                        data.put("email", user.getEmail());
+                                        data.put("pendienteVerificacion", true);
+                                });
                                 return ResponseEntity.ok(
                                                 new MessageResponse(
                                                                 "Registro exitoso. Revisa tu correo electrónico para activar tu cuenta antes de iniciar sesión."));
                         } else {
-                                logger.info("User registered and enabled immediately: {}", user.getUsername());
+                                BusinessLogger.log(logger, "NUEVO_USUARIO_REGISTRADO", data -> {
+                                        data.put("username", user.getUsername());
+                                        data.put("email", user.getEmail());
+                                        data.put("pendienteVerificacion", false);
+                                });
                                 return ResponseEntity.ok(new MessageResponse("Registro exitoso."));
                         }
                 } catch (org.springframework.dao.DataIntegrityViolationException e) {
@@ -306,8 +323,11 @@ public class AuthController {
                                 token,
                                 origin);
 
-                logger.info("[FORGOT PASSWORD] Enlace de recuperacion solicitado para el usuario: {} | Correo: {} | IP: {}", 
-                                user.getUsername(), targetEmail, getClientIp(httpRequest));
+                BusinessLogger.log(logger, "RECUPERACION_CONTRASENA_SOLICITADA", data -> {
+                        data.put("usuario", user.getUsername());
+                        data.put("correo", targetEmail);
+                        data.put("ip", getClientIp(httpRequest));
+                });
 
                 return ResponseEntity.ok(new MessageResponse(
                                 "Si el email/usuario existe, recibirás instrucciones para restablecer tu contraseña."));
@@ -345,8 +365,11 @@ public class AuthController {
                 user.setResetTokenExpiry(null);
                 userRepository.save(user);
 
-                logger.info("[PASSWORD RESET] Contrasena restablecida para el usuario: {} | Correo: {} | IP: {}", 
-                        user.getUsername(), user.getEmail(), getClientIp(httpRequest));
+                BusinessLogger.log(logger, "CONTRASENA_RESTABLECIDA", data -> {
+                        data.put("usuario", user.getUsername());
+                        data.put("correo", user.getEmail());
+                        data.put("ip", getClientIp(httpRequest));
+                });
 
                 return ResponseEntity.ok(
                                 new MessageResponse("Contraseña restablecida exitosamente. Ya puedes iniciar sesión."));
@@ -379,8 +402,10 @@ public class AuthController {
                 user.setPassword(passwordEncoder.encode(newPassword));
                 userRepository.save(user);
 
-                logger.info("[CHANGE PASSWORD] Contraseña cambiada internamente para el usuario: {} | IP: {}", 
-                        user.getUsername(), getClientIp(httpRequest));
+                BusinessLogger.log(logger, "CONTRASENA_CAMBIADA", data -> {
+                        data.put("usuario", user.getUsername());
+                        data.put("ip", getClientIp(httpRequest));
+                });
 
                 return ResponseEntity.ok(
                                 new MessageResponse("Contraseña cambiada exitosamente."));

@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import com.nugar.security.UserDetailsImpl;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import com.nugar.util.BusinessLogger;
 import java.util.List;
 
 @RestController
@@ -75,8 +76,12 @@ public class CatalogSuggestionController {
         suggestionRepository.save(suggestion);
 
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        log.info("[CATALOGO APROBADO] SuperAdmin '{}' aprobo sugerencia ID: {} de la empresa '{}' para el producto '{}'",
-            userDetails.getUsername(), id, suggestion.getCompanyName(), suggestion.getSuggestedName());
+        BusinessLogger.log(log, "SUGERENCIA_CATALOGO_APROBADA", data -> {
+            data.put("superAdmin", userDetails.getUsername());
+            data.put("sugerenciaId", id);
+            data.put("empresa", suggestion.getCompanyName());
+            data.put("nombreAprobado", suggestion.getSuggestedName());
+        });
 
         return ResponseEntity.ok(new MessageResponse("Sugerencia de catálogo aprobada exitosamente."));
     }
@@ -93,8 +98,12 @@ public class CatalogSuggestionController {
         suggestionRepository.save(suggestion);
 
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        log.info("[CATALOGO RECHAZADO] SuperAdmin '{}' rechazo sugerencia ID: {} de la empresa '{}' para el producto '{}'",
-            userDetails.getUsername(), id, suggestion.getCompanyName(), suggestion.getSuggestedName());
+        BusinessLogger.log(log, "SUGERENCIA_CATALOGO_RECHAZADA", data -> {
+            data.put("superAdmin", userDetails.getUsername());
+            data.put("sugerenciaId", id);
+            data.put("empresa", suggestion.getCompanyName());
+            data.put("nombreRechazado", suggestion.getSuggestedName());
+        });
 
         return ResponseEntity.ok(new MessageResponse("Sugerencia rechazada."));
     }

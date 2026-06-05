@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.nugar.util.BusinessLogger;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -280,14 +281,43 @@ public class SaleService {
                 .map(i -> i.getQuantity() + "x " + i.getProduct().getName())
                 .collect(Collectors.joining(", "));
 
-        log.info("[NUEVA VENTA] Cajero: {} | Cliente: {} | Empresa: {} | Factura ID: {} | Total: ${} | Estado: {} | Detalle: [{}]", 
-            cashier != null ? cashier.getUsername() : "Desconocido/Sistema",
-            sale.getCustomerName() != null ? sale.getCustomerName() : "Público General",
-            company.getName(),
-            sale.getId(),
-            sale.getTotalAmount(),
-            sale.getStatus(),
-            itemsDetail);
+        BusinessLogger.log(log, "NUEVA_VENTA", data -> {
+            data.put("cajero", cashier != null ? cashier.getUsername() : "Sistema");
+            data.put("empresa", company.getName());
+            data.put("facturaId", sale.getId());
+            data.put("cliente", sale.getCustomerName() != null ? sale.getCustomerName() : "Publico General");
+            data.put("estado", sale.getStatus());
+            data.put("totalUSD", sale.getTotalAmount());
+
+            // Pagos detallados
+            if (sale.getPayments() != null && !sale.getPayments().isEmpty()) {
+                java.util.List<java.util.Map<String, Object>> pagos = new java.util.ArrayList<>();
+                for (SalePayment p : sale.getPayments()) {
+                    java.util.Map<String, Object> pago = new java.util.LinkedHashMap<>();
+                    pago.put("metodo", p.getMethod() != null ? p.getMethod().name() : "CASH");
+                    pago.put("moneda", p.getCurrencyCode() != null ? p.getCurrencyCode() : "USD");
+                    pago.put("monto", p.getAmount());
+                    if (p.getAmountInBaseCurrency() != null && !p.getAmountInBaseCurrency().equals(p.getAmount())) {
+                        pago.put("montoUSD", p.getAmountInBaseCurrency());
+                        pago.put("tasa", p.getExchangeRate());
+                    }
+                    pagos.add(pago);
+                }
+                data.put("pagos", pagos);
+            }
+
+            // Productos
+            java.util.List<java.util.Map<String, Object>> detalle = new java.util.ArrayList<>();
+            for (SaleItem i : sale.getItems()) {
+                java.util.Map<String, Object> item = new java.util.LinkedHashMap<>();
+                item.put("producto", i.getProduct().getName());
+                item.put("cantidad", i.getQuantity());
+                item.put("precioUnit", i.getUnitPrice());
+                item.put("subtotal", i.getSubtotal());
+                detalle.add(item);
+            }
+            data.put("detalle", detalle);
+        });
 
         // Notify store owner about new marketplace order (PENDING orders only)
         if (SaleStatus.PENDING.equals(sale.getStatus())) {
@@ -342,9 +372,25 @@ public class SaleService {
                     }
                 }
             }
-            log.warn("[VENTA CANCELADA] Por: {} | Empresa: {} | Factura ID: {} | Cliente: {} | Monto: ${} | Stock devuelto: [{}]", 
-                userDetails.getUsername(), sale.getCompany().getName(), sale.getId(),
-                sale.getCustomerName(), sale.getTotalAmount(), stockRestored.toString());
+            BusinessLogger.warn(log, "VENTA_CANCELADA", data -> {
+                data.put("canceladoPor", userDetails.getUsername());
+                data.put("empresa", sale.getCompany().getName());
+                data.put("facturaId", sale.getId());
+                data.put("cliente", sale.getCustomerName() != null ? sale.getCustomerName() : "Publico General");
+                data.put("montoOriginalUSD", sale.getTotalAmount());
+                java.util.List<java.util.Map<String, Object>> stockDevuelto = new java.util.ArrayList<>();
+                if (sale.getItems() != null) {
+                    for (SaleItem item : sale.getItems()) {
+                        if (item.getProduct() != null) {
+                            java.util.Map<String, Object> s = new java.util.LinkedHashMap<>();
+                            s.put("producto", item.getProduct().getName());
+                            s.put("cantidadDevuelta", item.getQuantity());
+                            stockDevuelto.add(s);
+                        }
+                    }
+                }
+                data.put("stockRestaurado", stockDevuelto);
+            });
         }
 
         sale.setStatus(status);

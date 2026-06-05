@@ -11,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import com.nugar.util.BusinessLogger;
 import java.util.List;
 
 @RestController
@@ -42,8 +43,14 @@ public class StaffController {
                     userDetails.getCompanyId(),
                     userDetails.getUsername()
             );
-            log.info("[NUEVO CAJERO] Creado por: {} | Username: {} | Email: {} | Empresa ID: {}",
-                userDetails.getUsername(), newCashier.getUsername(), newCashier.getEmail(), userDetails.getCompanyId());
+            BusinessLogger.log(log, "NUEVO_CAJERO", data -> {
+                data.put("creadoPor", userDetails.getUsername());
+                data.put("empresaId", userDetails.getCompanyId());
+                data.put("cajeroId", newCashier.getId());
+                data.put("username", newCashier.getUsername());
+                data.put("email", newCashier.getEmail());
+                data.put("estado", "ACTIVO");
+            });
             return ResponseEntity.ok(newCashier);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
@@ -57,9 +64,13 @@ public class StaffController {
         
         try {
             User updatedStaff = staffService.toggleStaffStatus(id, userDetails.getCompanyId(), userDetails.getUsername());
-            log.warn("[CAJERO ESTADO] Modificado por: {} | Usuario ID: {} | Username: {} | Nuevo estado: {} | Empresa ID: {}",
-                userDetails.getUsername(), updatedStaff.getId(), updatedStaff.getUsername(),
-                updatedStaff.isEnabled() ? "ACTIVO" : "INACTIVO", userDetails.getCompanyId());
+            BusinessLogger.warn(log, "CAJERO_ESTADO_CAMBIADO", data -> {
+                data.put("modificadoPor", userDetails.getUsername());
+                data.put("empresaId", userDetails.getCompanyId());
+                data.put("cajeroId", updatedStaff.getId());
+                data.put("username", updatedStaff.getUsername());
+                data.put("nuevoEstado", updatedStaff.isEnabled() ? "ACTIVO" : "INACTIVO");
+            });
             return ResponseEntity.ok(updatedStaff);
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));

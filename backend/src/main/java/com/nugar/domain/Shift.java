@@ -65,4 +65,11 @@ public class Shift {
 
     @OneToMany(mappedBy = "shift", cascade = CascadeType.ALL, orphanRemoval = true)
     private java.util.List<ShiftDeclaration> declarations = new java.util.ArrayList<>();
+
+    // Cash Movements (Injections and Bleedings)
+    private BigDecimal totalCashInjections = BigDecimal.ZERO;
+    private BigDecimal totalCashBleedings = BigDecimal.ZERO;
+
+    @OneToMany(mappedBy = "shift", cascade = CascadeType.ALL, orphanRemoval = true)
+    private java.util.List<CashMovement> cashMovements = new java.util.ArrayList<>();
 }

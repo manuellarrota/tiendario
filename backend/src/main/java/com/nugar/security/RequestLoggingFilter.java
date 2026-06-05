@@ -45,7 +45,7 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         if (authentication != null && authentication.isAuthenticated() && !authentication.getName().equals("anonymousUser")) {
             MDC.put("user", authentication.getName());
         } else {
-            MDC.put("user", "Público");
+            MDC.put("user", "Publico");
         }
         
         try {
@@ -61,8 +61,13 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
                 String fullPath = uri + (queryString != null ? "?" + queryString : "");
 
                 String description = resolveDescription(method, uri);
-                logger.info("[HTTP] {} {} | {} | Status: {} | Duration: {}ms",
-                    method, fullPath, description, status, duration);
+                com.nugar.util.BusinessLogger.log(logger, "PETICION_HTTP", data -> {
+                    data.put("metodo", method);
+                    data.put("ruta", fullPath);
+                    data.put("descripcion", description);
+                    data.put("status", status);
+                    data.put("duracionMs", duration);
+                });
             }
             MDC.clear();
         }
@@ -76,11 +81,14 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
             return "Cajero abrió turno de caja";
         if (method.equals("POST") && uri.matches(".*/shifts/\\d+/close"))
             return "Cajero cerró turno de caja #" + uri.replaceAll(".*/shifts/(\\d+)/close", "$1");
+        if (method.equals("GET") && uri.endsWith("/shifts/current"))
+            return "Verificacion de turno activo";
 
         // Auth
         if (method.equals("POST") && uri.endsWith("/auth/signin"))    return "Inicio de sesión";
         if (method.equals("POST") && uri.endsWith("/auth/signup"))    return "Registro de usuario";
         if (method.equals("POST") && uri.endsWith("/auth/signout"))   return "Cierre de sesión";
+        if (method.equals("GET") && uri.endsWith("/auth/me"))         return "Verificacion de sesion";
 
         // Pagos / Suscripciones
         if (method.equals("POST") && uri.endsWith("/payments/submit"))        return "Comprobante de pago enviado";
@@ -91,6 +99,11 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         // Ventas / POS
         if (method.equals("POST") && uri.endsWith("/sales"))          return "Nueva venta registrada";
         if (method.equals("POST") && uri.matches(".*/sales/\\d+/refund")) return "Devolución procesada en venta #" + uri.replaceAll(".*/sales/(\\d+)/refund", "$1");
+
+        // Listados generales
+        if (method.equals("GET") && uri.endsWith("/cash-registers"))  return "Listado de cajas registradoras";
+        if (method.equals("GET") && uri.endsWith("/customers"))       return "Listado de clientes";
+        if (method.equals("GET") && uri.contains("/products"))        return "Carga de catalogo de productos";
 
         // Inventario
         if (method.equals("POST")   && uri.endsWith("/products"))     return "Producto creado";
@@ -110,6 +123,12 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
         // Admin / Usuarios
         if (method.equals("PUT")    && uri.matches(".*/admin/companies/\\d+")) return "SuperAdmin actualizó empresa #" + uri.replaceAll(".*/admin/companies/(\\d+)", "$1");
         if (method.equals("DELETE") && uri.matches(".*/admin/companies/\\d+")) return "SuperAdmin eliminó empresa #" + uri.replaceAll(".*/admin/companies/(\\d+)", "$1");
+
+        // Configuración Pública
+        if (method.equals("GET") && uri.endsWith("/public/config"))
+            return "Carga de configuracion de monedas y tasas (publica)";
+        if (method.equals("GET") && uri.contains("/public/"))
+            return "Consulta publica: " + uri.replaceAll(".*/public/", "");
 
         // Genérico
         return method + " " + uri;
