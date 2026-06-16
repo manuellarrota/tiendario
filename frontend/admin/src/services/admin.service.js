@@ -115,6 +115,13 @@ const deleteCatalogProduct = (id) => {
     });
 };
 
+const syncCatalog = () => {
+    const user = AuthService.getCurrentUser();
+    return axios.post(API_URL + '/catalog/sync', {}, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
 const createStore = (data) => {
     const user = AuthService.getCurrentUser();
     return axios.post(API_URL + "/onboard/create-store", data, {
@@ -189,6 +196,73 @@ const markNotificationAsRead = (id) => {
     });
 };
 
+// ── Asistencia Técnica: Ventas ─────────────────────────────────────────────
+const getCompanySales = (companyId, page = 0, size = 15) => {
+    const user = AuthService.getCurrentUser();
+    return axios.get(API_URL + `/companies/${companyId}/sales?page=${page}&size=${size}`, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+const patchCompanySale = (companyId, saleId, data) => {
+    const user = AuthService.getCurrentUser();
+    return axios.patch(API_URL + `/companies/${companyId}/sales/${saleId}`, data, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+const voidCompanySale = (companyId, saleId, reason) => {
+    const user = AuthService.getCurrentUser();
+    return axios.post(API_URL + `/companies/${companyId}/sales/${saleId}/void`, { reason }, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+// ── Asistencia Técnica: Compras ────────────────────────────────────────────
+const getCompanyPurchases = (companyId, page = 0, size = 15) => {
+    const user = AuthService.getCurrentUser();
+    return axios.get(API_URL + `/companies/${companyId}/purchases?page=${page}&size=${size}`, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+const patchCompanyPurchase = (companyId, purchaseId, data) => {
+    const user = AuthService.getCurrentUser();
+    return axios.patch(API_URL + `/companies/${companyId}/purchases/${purchaseId}`, data, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+const voidCompanyPurchase = (companyId, purchaseId, reason) => {
+    const user = AuthService.getCurrentUser();
+    return axios.post(API_URL + `/companies/${companyId}/purchases/${purchaseId}/void`, { reason }, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+// ── Asistencia Técnica: Productos ──────────────────────────────────────────
+const getCompanyProducts = (companyId, page = 0, size = 20) => {
+    const user = AuthService.getCurrentUser();
+    return axios.get(API_URL + `/companies/${companyId}/products?page=${page}&size=${size}`, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+const patchCompanyProduct = (companyId, productId, data) => {
+    const user = AuthService.getCurrentUser();
+    return axios.patch(API_URL + `/companies/${companyId}/products/${productId}`, data, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+// ── Asistencia Técnica: Historial de Cambios ───────────────────────────────
+const getCompanyAuditLog = (companyId, page = 0, size = 20) => {
+    const user = AuthService.getCurrentUser();
+    return axios.get(API_URL + `/companies/${companyId}/audit-log?page=${page}&size=${size}`, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
 const AdminService = {
     getGlobalStats,
     getAllCompanies,
@@ -206,6 +280,7 @@ const AdminService = {
     getAllCatalogProducts,
     updateCatalogProduct,
     deleteCatalogProduct,
+    syncCatalog,
     createStore,
     addGlobalCategory,
     addProductToCompany,
@@ -216,6 +291,16 @@ const AdminService = {
     getSuperAdminNotifications,
     getAdminUnreadCount,
     markNotificationAsRead,
+    // Asistencia Técnica
+    getCompanySales,
+    patchCompanySale,
+    voidCompanySale,
+    getCompanyPurchases,
+    patchCompanyPurchase,
+    voidCompanyPurchase,
+    getCompanyProducts,
+    patchCompanyProduct,
+    getCompanyAuditLog,
 };
 
 export default AdminService;

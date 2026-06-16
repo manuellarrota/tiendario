@@ -15,15 +15,18 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.core.context.SecurityContextHolder;
 import com.nugar.security.UserDetailsImpl;
+import com.nugar.util.BusinessLogger;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @RestController
 @RequestMapping("/api/superadmin")
@@ -75,6 +78,39 @@ public class SuperAdminController {
 
         @Autowired
         com.nugar.service.ExchangeRateService exchangeRateService;
+
+        @Autowired
+        PurchaseRepository purchaseRepository;
+
+        @Autowired
+        InventoryBatchRepository inventoryBatchRepository;
+
+        @Autowired
+        AdminAuditLogRepository auditLogRepository;
+
+        // ─── Helper: obtener username del admin autenticado ────────────────────────
+        private String getAdminUsername() {
+            Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+            if (principal instanceof UserDetailsImpl u) return u.getUsername();
+            if (principal instanceof org.springframework.security.core.userdetails.UserDetails u) return u.getUsername();
+            return "admin";
+        }
+
+        // ─── Helper: guardar una entrada de auditoría ──────────────────────────────
+        private void audit(Long companyId, String entityType, Long entityId,
+                           String actionType, String field, String oldVal, String newVal, String reason) {
+            AdminAuditLog entry = new AdminAuditLog();
+            entry.setAdminUsername(getAdminUsername());
+            entry.setCompanyId(companyId);
+            entry.setEntityType(entityType);
+            entry.setEntityId(entityId);
+            entry.setActionType(actionType);
+            entry.setFieldChanged(field);
+            entry.setOldValue(oldVal);
+            entry.setNewValue(newVal);
+            entry.setReason(reason);
+            auditLogRepository.save(entry);
+        }
 
         @PostMapping("/config/refresh-rates")
         @PreAuthorize("hasRole('ADMIN')")
@@ -349,6 +385,37 @@ public class SuperAdminController {
                 return ResponseEntity.ok(new MessageResponse("Catalog item deleted"));
         }
 
+        @PostMapping("/catalog/sync")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<?> syncCatalogFromProducts() {
+                List<com.nugar.domain.Product> allProducts = productRepository.findAll();
+                int created = 0;
+                int skipped = 0;
+                for (com.nugar.domain.Product p : allProducts) {
+                        if (p.getSku() == null || p.getSku().trim().isEmpty()) { skipped++; continue; }
+                        String sku = p.getSku().trim();
+                        if (catalogProductRepository.findBySku(sku).isPresent()) { skipped++; continue; }
+                        com.nugar.domain.CatalogProduct cp = new com.nugar.domain.CatalogProduct();
+                        cp.setSku(sku);
+                        cp.setName(p.getName());
+                        cp.setDescription(p.getDescription());
+                        cp.setImageUrl(p.getImageUrl());
+                        cp.setBrand(p.getBrand());
+                        if (p.getCategory() != null && !p.getCategory().isEmpty()) {
+                                categoryRepository.findFirstByNameIgnoreCase(p.getCategory().trim())
+                                        .ifPresent(cp::setCategory);
+                        }
+                        catalogProductRepository.save(cp);
+                        created++;
+                }
+                final int c = created; final int s = skipped;
+                BusinessLogger.log(log, "CATALOGO_SINCRONIZADO", data -> {
+                        data.put("creados", c);
+                        data.put("omitidos", s);
+                });
+                return ResponseEntity.ok(Map.of("message", "Sincronizacion completada", "creados", created, "omitidos", skipped));
+        }
+
         @PostMapping("/onboard/create-store")
         @PreAuthorize("hasRole('ADMIN')")
         @Transactional
@@ -359,7 +426,8 @@ public class SuperAdminController {
                 String password = (String) body.get("password");
                 String phone = (String) body.getOrDefault("phoneNumber", "");
                 String description = (String) body.getOrDefault("description", "");
-                String planStr = (String) body.getOrDefault("subscriptionStatus", "TRIAL");
+                String planStr = (String) body.getOrDefault("subscriptionPlan", "BASIC");
+                String statusStr = (String) body.getOrDefault("subscriptionStatus", "TRIAL");
                 Double lat = body.get("latitude") != null ? ((Number) body.get("latitude")).doubleValue() : 0.0;
                 Double lng = body.get("longitude") != null ? ((Number) body.get("longitude")).doubleValue() : 0.0;
                 String address = (String) body.getOrDefault("address", "");
@@ -380,14 +448,15 @@ public class SuperAdminController {
                         company.setLongitude(lng);
                         company.setAddress(address);
 
-                        SubscriptionStatus plan;
+                        SubscriptionStatus status;
                         try {
-                                plan = SubscriptionStatus.valueOf(planStr);
+                                status = SubscriptionStatus.valueOf(statusStr);
                         } catch (Exception e) {
-                                plan = SubscriptionStatus.TRIAL;
+                                status = SubscriptionStatus.TRIAL;
                         }
-                        company.setSubscriptionStatus(plan);
-                        if (plan == SubscriptionStatus.TRIAL) {
+                        company.setSubscriptionStatus(status);
+                        
+                        if (status == SubscriptionStatus.TRIAL) {
                                 int trialDays = configRepository.findFirstByOrderByIdAsc()
                                         .map(com.nugar.domain.GlobalConfig::getTrialDays)
                                         .orElse(30);
@@ -395,8 +464,13 @@ public class SuperAdminController {
                                 company.setSubscriptionEndDate(LocalDateTime.now().plusDays(trialDays));
                         }
                         
-                        // Default to BASIC plan for new stores
-                        company.setSubscriptionPlan(com.nugar.domain.SubscriptionPlan.BASIC);
+                        SubscriptionPlan subPlan;
+                        try {
+                                subPlan = SubscriptionPlan.valueOf(planStr);
+                        } catch (Exception e) {
+                                subPlan = SubscriptionPlan.BASIC;
+                        }
+                        company.setSubscriptionPlan(subPlan);
                         
                         companyRepository.save(company);
                         cashRegisterService.provisionRegistersForCompany(company);
@@ -549,5 +623,286 @@ public class SuperAdminController {
                         return ResponseEntity.ok(new MessageResponse("Notificacion leida."));
                 }
                 return ResponseEntity.badRequest().body(new MessageResponse("Notificacion no encontrada."));
+        }
+
+        // ══════════════════════════════════════════════════════════════════════════
+        //  MÓDULO ASISTENCIA TÉCNICA — Ventas
+        // ══════════════════════════════════════════════════════════════════════════
+
+        @GetMapping("/companies/{companyId}/sales")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<?> getCompanySales(
+                @PathVariable Long companyId,
+                @RequestParam(defaultValue = "0") int page,
+                @RequestParam(defaultValue = "15") int size) {
+            Pageable pageable = PageRequest.of(page, size, Sort.by("date").descending());
+            Page<Sale> sales = saleRepository.findByCompanyId(companyId, pageable);
+            return ResponseEntity.ok(sales);
+        }
+
+        /** Editar campos seguros de una venta (typos, método de pago, datos de cliente) */
+        @PatchMapping("/companies/{companyId}/sales/{saleId}")
+        @PreAuthorize("hasRole('ADMIN')")
+        @Transactional
+        public ResponseEntity<?> patchSale(
+                @PathVariable Long companyId,
+                @PathVariable Long saleId,
+                @RequestBody Map<String, Object> body) {
+            Sale sale = saleRepository.findById(saleId).orElse(null);
+            if (sale == null || !sale.getCompany().getId().equals(companyId))
+                return ResponseEntity.notFound().build();
+
+            // Campos editables directamente
+            if (body.containsKey("totalAmount")) {
+                String old = sale.getTotalAmount() != null ? sale.getTotalAmount().toPlainString() : "null";
+                sale.setTotalAmount(new BigDecimal(body.get("totalAmount").toString()));
+                audit(companyId, "SALE", saleId, "EDIT", "totalAmount", old, body.get("totalAmount").toString(), (String) body.get("reason"));
+            }
+            if (body.containsKey("paymentMethod")) {
+                String old = sale.getPaymentMethod() != null ? sale.getPaymentMethod().name() : "null";
+                try { sale.setPaymentMethod(PaymentMethod.valueOf((String) body.get("paymentMethod"))); } catch (Exception ignored) {}
+                audit(companyId, "SALE", saleId, "EDIT", "paymentMethod", old, (String) body.get("paymentMethod"), (String) body.get("reason"));
+            }
+            if (body.containsKey("customerName")) {
+                String old = sale.getCustomerName();
+                sale.setCustomerName((String) body.get("customerName"));
+                audit(companyId, "SALE", saleId, "EDIT", "customerName", old, (String) body.get("customerName"), (String) body.get("reason"));
+            }
+            if (body.containsKey("customerPhone")) {
+                String old = sale.getCustomerPhone();
+                sale.setCustomerPhone((String) body.get("customerPhone"));
+                audit(companyId, "SALE", saleId, "EDIT", "customerPhone", old, (String) body.get("customerPhone"), (String) body.get("reason"));
+            }
+            if (body.containsKey("customerCedula")) {
+                String old = sale.getCustomerCedula();
+                sale.setCustomerCedula((String) body.get("customerCedula"));
+                audit(companyId, "SALE", saleId, "EDIT", "customerCedula", old, (String) body.get("customerCedula"), (String) body.get("reason"));
+            }
+
+            saleRepository.save(sale);
+            log.info("[ASISTENCIA] PATCH VENTA #{} empresa #{} por {}", saleId, companyId, getAdminUsername());
+            return ResponseEntity.ok(new MessageResponse("Venta actualizada correctamente."));
+        }
+
+        /** Anular una venta: cambia status a CANCELLED y restaura stock */
+        @PostMapping("/companies/{companyId}/sales/{saleId}/void")
+        @PreAuthorize("hasRole('ADMIN')")
+        @Transactional
+        public ResponseEntity<?> voidSale(
+                @PathVariable Long companyId,
+                @PathVariable Long saleId,
+                @RequestBody Map<String, String> body) {
+            String reason = body.get("reason");
+            if (reason == null || reason.trim().length() < 10)
+                return ResponseEntity.badRequest().body(new MessageResponse("El motivo de anulación debe tener al menos 10 caracteres."));
+
+            Sale sale = saleRepository.findById(saleId).orElse(null);
+            if (sale == null || !sale.getCompany().getId().equals(companyId))
+                return ResponseEntity.notFound().build();
+            if (SaleStatus.CANCELLED.equals(sale.getStatus()))
+                return ResponseEntity.badRequest().body(new MessageResponse("Esta venta ya está anulada."));
+
+            // Restaurar stock de cada item
+            if (sale.getItems() != null) {
+                for (SaleItem item : sale.getItems()) {
+                    Product product = item.getProduct();
+                    if (product != null && item.getQuantity() != null) {
+                        product.setStock(product.getStock() + item.getQuantity());
+                        productRepository.save(product);
+                        // Restaurar también en el lote FIFO más reciente (orden inverso)
+                        List<InventoryBatch> batches = inventoryBatchRepository
+                                .findByProductIdAndCurrentQuantityGreaterThanOrderByCreatedAtAsc(product.getId(), -1)
+                                .stream()
+                                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                                .collect(Collectors.toList());
+                        int toRestore = item.getQuantity();
+                        for (InventoryBatch batch : batches) {
+                            if (toRestore <= 0) break;
+                            int space = batch.getInitialQuantity() - batch.getCurrentQuantity();
+                            int restore = Math.min(toRestore, space);
+                            batch.setCurrentQuantity(batch.getCurrentQuantity() + restore);
+                            toRestore -= restore;
+                            inventoryBatchRepository.save(batch);
+                        }
+                    }
+                }
+            }
+
+            sale.setStatus(SaleStatus.CANCELLED);
+            saleRepository.save(sale);
+            audit(companyId, "SALE", saleId, "VOID", "ALL", sale.getStatus().name(), "CANCELLED", reason);
+            log.warn("[ASISTENCIA] VOID VENTA #{} empresa #{} por {} — Motivo: {}", saleId, companyId, getAdminUsername(), reason);
+            return ResponseEntity.ok(new MessageResponse("Venta anulada. Stock restaurado correctamente."));
+        }
+
+        // ══════════════════════════════════════════════════════════════════════════
+        //  MÓDULO ASISTENCIA TÉCNICA — Compras
+        // ══════════════════════════════════════════════════════════════════════════
+
+        @GetMapping("/companies/{companyId}/purchases")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<?> getCompanyPurchases(
+                @PathVariable Long companyId,
+                @RequestParam(defaultValue = "0") int page,
+                @RequestParam(defaultValue = "15") int size) {
+            Pageable pageable = PageRequest.of(page, size, Sort.by("date").descending());
+            Page<Purchase> purchases = purchaseRepository.findByCompanyId(companyId, pageable);
+            return ResponseEntity.ok(purchases);
+        }
+
+        /** Editar campos seguros de una compra (monto, factura, método de pago) */
+        @PatchMapping("/companies/{companyId}/purchases/{purchaseId}")
+        @PreAuthorize("hasRole('ADMIN')")
+        @Transactional
+        public ResponseEntity<?> patchPurchase(
+                @PathVariable Long companyId,
+                @PathVariable Long purchaseId,
+                @RequestBody Map<String, Object> body) {
+            Purchase purchase = purchaseRepository.findById(purchaseId).orElse(null);
+            if (purchase == null || !purchase.getCompany().getId().equals(companyId))
+                return ResponseEntity.notFound().build();
+
+            if (body.containsKey("total")) {
+                String old = purchase.getTotal() != null ? purchase.getTotal().toPlainString() : "null";
+                purchase.setTotal(new BigDecimal(body.get("total").toString()));
+                audit(companyId, "PURCHASE", purchaseId, "EDIT", "total", old, body.get("total").toString(), (String) body.get("reason"));
+            }
+            if (body.containsKey("invoiceNumber")) {
+                String old = purchase.getInvoiceNumber();
+                purchase.setInvoiceNumber((String) body.get("invoiceNumber"));
+                audit(companyId, "PURCHASE", purchaseId, "EDIT", "invoiceNumber", old, (String) body.get("invoiceNumber"), (String) body.get("reason"));
+            }
+            if (body.containsKey("paymentMethod")) {
+                String old = purchase.getPaymentMethod() != null ? purchase.getPaymentMethod().name() : "null";
+                try { purchase.setPaymentMethod(PaymentMethod.valueOf((String) body.get("paymentMethod"))); } catch (Exception ignored) {}
+                audit(companyId, "PURCHASE", purchaseId, "EDIT", "paymentMethod", old, (String) body.get("paymentMethod"), (String) body.get("reason"));
+            }
+
+            purchaseRepository.save(purchase);
+            log.info("[ASISTENCIA] PATCH COMPRA #{} empresa #{} por {}", purchaseId, companyId, getAdminUsername());
+            return ResponseEntity.ok(new MessageResponse("Compra actualizada correctamente."));
+        }
+
+        /** Anular compra: descuenta del stock lo que esa compra había sumado (bloquea si dejaría stock negativo) */
+        @PostMapping("/companies/{companyId}/purchases/{purchaseId}/void")
+        @PreAuthorize("hasRole('ADMIN')")
+        @Transactional
+        public ResponseEntity<?> voidPurchase(
+                @PathVariable Long companyId,
+                @PathVariable Long purchaseId,
+                @RequestBody Map<String, String> body) {
+            String reason = body.get("reason");
+            if (reason == null || reason.trim().length() < 10)
+                return ResponseEntity.badRequest().body(new MessageResponse("El motivo de anulación debe tener al menos 10 caracteres."));
+
+            Purchase purchase = purchaseRepository.findById(purchaseId).orElse(null);
+            if (purchase == null || !purchase.getCompany().getId().equals(companyId))
+                return ResponseEntity.notFound().build();
+
+            // Validar que ningún producto quedará con stock negativo
+            if (purchase.getItems() != null) {
+                for (PurchaseItem item : purchase.getItems()) {
+                    if (item.getProduct() != null && item.getQuantity() != null) {
+                        int currentStock = item.getProduct().getStock();
+                        if (currentStock < item.getQuantity()) {
+                            return ResponseEntity.badRequest().body(new MessageResponse(
+                                    "No se puede anular: el producto '" + item.getProduct().getName() +
+                                    "' tiene solo " + currentStock + " unidades en stock, pero la compra añadió " +
+                                    item.getQuantity() + ". Parte de ese stock ya fue vendido."));
+                        }
+                    }
+                }
+            }
+
+            // Descontar stock e invalidar lotes
+            if (purchase.getItems() != null) {
+                for (PurchaseItem item : purchase.getItems()) {
+                    if (item.getProduct() != null && item.getQuantity() != null) {
+                        Product product = item.getProduct();
+                        product.setStock(product.getStock() - item.getQuantity());
+                        productRepository.save(product);
+                    }
+                }
+            }
+            // Invalidar los lotes de inventario de esta compra
+            List<InventoryBatch> batches = inventoryBatchRepository.findAll().stream()
+                    .filter(b -> b.getPurchase() != null && b.getPurchase().getId().equals(purchaseId))
+                    .collect(Collectors.toList());
+            for (InventoryBatch batch : batches) {
+                batch.setCurrentQuantity(0);
+                inventoryBatchRepository.save(batch);
+            }
+
+            audit(companyId, "PURCHASE", purchaseId, "VOID", "ALL", "ACTIVE", "VOIDED", reason);
+            log.warn("[ASISTENCIA] VOID COMPRA #{} empresa #{} por {} — Motivo: {}", purchaseId, companyId, getAdminUsername(), reason);
+            return ResponseEntity.ok(new MessageResponse("Compra anulada. Stock descontado correctamente."));
+        }
+
+        // ══════════════════════════════════════════════════════════════════════════
+        //  MÓDULO ASISTENCIA TÉCNICA — Productos
+        // ══════════════════════════════════════════════════════════════════════════
+
+        @GetMapping("/companies/{companyId}/products")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<?> getCompanyProducts(
+                @PathVariable Long companyId,
+                @RequestParam(defaultValue = "0") int page,
+                @RequestParam(defaultValue = "20") int size) {
+            Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
+            Page<Product> products = productRepository.findByCompanyId(companyId, pageable);
+            return ResponseEntity.ok(products);
+        }
+
+        /** Editar nombre, categoría o precio de un producto de la empresa */
+        @PatchMapping("/companies/{companyId}/products/{productId}")
+        @PreAuthorize("hasRole('ADMIN')")
+        @Transactional
+        public ResponseEntity<?> patchProduct(
+                @PathVariable Long companyId,
+                @PathVariable Long productId,
+                @RequestBody Map<String, Object> body) {
+            Product product = productRepository.findById(productId).orElse(null);
+            if (product == null || !product.getCompany().getId().equals(companyId))
+                return ResponseEntity.notFound().build();
+
+            if (body.containsKey("name")) {
+                String old = product.getName();
+                product.setName((String) body.get("name"));
+                audit(companyId, "PRODUCT", productId, "EDIT", "name", old, (String) body.get("name"), (String) body.get("reason"));
+            }
+            if (body.containsKey("category")) {
+                String old = product.getCategory();
+                product.setCategory((String) body.get("category"));
+                audit(companyId, "PRODUCT", productId, "EDIT", "category", old, (String) body.get("category"), (String) body.get("reason"));
+            }
+            if (body.containsKey("price")) {
+                String old = product.getPrice() != null ? product.getPrice().toPlainString() : "null";
+                product.setPrice(new BigDecimal(body.get("price").toString()));
+                audit(companyId, "PRODUCT", productId, "EDIT", "price", old, body.get("price").toString(), (String) body.get("reason"));
+            }
+            if (body.containsKey("description")) {
+                String old = product.getDescription();
+                product.setDescription((String) body.get("description"));
+                audit(companyId, "PRODUCT", productId, "EDIT", "description", old, (String) body.get("description"), (String) body.get("reason"));
+            }
+
+            productRepository.save(product);
+            log.info("[ASISTENCIA] PATCH PRODUCTO #{} empresa #{} por {}", productId, companyId, getAdminUsername());
+            return ResponseEntity.ok(new MessageResponse("Producto actualizado correctamente."));
+        }
+
+        // ══════════════════════════════════════════════════════════════════════════
+        //  MÓDULO ASISTENCIA TÉCNICA — Historial de Cambios
+        // ══════════════════════════════════════════════════════════════════════════
+
+        @GetMapping("/companies/{companyId}/audit-log")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<?> getCompanyAuditLog(
+                @PathVariable Long companyId,
+                @RequestParam(defaultValue = "0") int page,
+                @RequestParam(defaultValue = "20") int size) {
+            Pageable pageable = PageRequest.of(page, size, Sort.by("timestamp").descending());
+            Page<AdminAuditLog> log2 = auditLogRepository.findByCompanyIdOrderByTimestampDesc(companyId, pageable);
+            return ResponseEntity.ok(log2);
         }
 }
