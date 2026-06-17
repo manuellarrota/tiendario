@@ -272,7 +272,7 @@ public class ShiftService {
     }
 
     @Transactional
-    public Shift verifyShift(Long shiftId, String observation, UserDetailsImpl userDetails) {
+    public Shift verifyShift(Long shiftId, String observation, boolean hasIssues, UserDetailsImpl userDetails) {
         Shift shift = shiftRepository.findById(shiftId).orElseThrow();
         
         // Security check - Only Manager or Admin
@@ -280,7 +280,7 @@ public class ShiftService {
             throw new IllegalArgumentException("Solo un administrador puede verificar los turnos.");
         }
 
-        shift.setStatus(ShiftStatus.VERIFIED);
+        shift.setStatus(hasIssues ? ShiftStatus.VERIFIED_WITH_ISSUES : ShiftStatus.VERIFIED);
         if (observation != null && !observation.isEmpty()) {
             shift.setObservation((shift.getObservation() != null ? shift.getObservation() + "\n" : "") + "Verificacion: " + observation);
         }

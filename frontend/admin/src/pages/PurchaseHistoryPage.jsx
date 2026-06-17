@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Table, Card, Badge, Button, Row, Col, Form, Modal, ListGroup, Spinner, Alert } from 'react-bootstrap';
+import { Container, Table, Card, Badge, Button, Row, Col, Form, Modal, ListGroup, Spinner, Alert, Tooltip, OverlayTrigger } from 'react-bootstrap';
 import { FaHistory, FaCalendarAlt, FaTruck, FaEye, FaSearch, FaTimes, FaInbox, FaPlus, FaMinus, FaBan, FaPen, FaUndo } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import PurchaseService from '../services/purchase.service';
@@ -395,7 +395,7 @@ const PurchaseHistoryPage = () => {
                                             </thead>
                                             <tbody>
                                                 {purchases.map((purchase) => (
-                                                    <tr key={purchase.id}>
+                                                    <tr key={purchase.id} onClick={() => openDetail(purchase)} style={{ cursor: 'pointer' }} className="table-row-hover">
                                                         <td className="px-4 py-3">
                                                             <div className="fw-bold text-dark">
                                                                 #{purchase.id}
@@ -429,20 +429,23 @@ const PurchaseHistoryPage = () => {
                                                             </Badge>
                                                         </td>
                                                         <td className="py-3 text-end">
-                                                            <div className="fw-bold text-dark">
-                                                                {purchase.currencyCode && purchase.currencyCode !== baseCurrencyCode ? (
-                                                                    <>
-                                                                        <span className="text-muted small me-1">{purchase.currencyCode}</span>
-                                                                        {Number(purchase.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                                    </>
-                                                                ) : (
-                                                                    `${baseCurrencySymbol}${Number(purchase.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                                                                )}
-                                                            </div>
-                                                            {purchase.currencyCode && purchase.currencyCode !== baseCurrencyCode && (
-                                                                <div className="text-success small">
-                                                                    ={baseCurrencySymbol}${Number(purchase.total / (purchase.exchangeRate || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}
+                                                            <OverlayTrigger
+                                                                placement="top"
+                                                                overlay={<Tooltip>Monto total en la moneda original de la compra ({purchase.currencyCode || baseCurrencyCode})</Tooltip>}
+                                                            >
+                                                                <div className="fw-bold text-dark" style={{ cursor: 'help' }}>
+                                                                    {Number(purchase.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {purchase.currencyCode || baseCurrencyCode}
                                                                 </div>
+                                                            </OverlayTrigger>
+                                                            {purchase.currencyCode && purchase.currencyCode !== baseCurrencyCode && (
+                                                                <OverlayTrigger
+                                                                    placement="bottom"
+                                                                    overlay={<Tooltip>Equivalente calculado con la tasa de cambio del momento: {purchase.exchangeRate}</Tooltip>}
+                                                                >
+                                                                    <div className="text-success small" style={{ cursor: 'help' }}>
+                                                                        {Number(purchase.total / (purchase.exchangeRate || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}
+                                                                    </div>
+                                                                </OverlayTrigger>
                                                             )}
                                                         </td>
                                                         <td className="py-3 text-center">
@@ -450,7 +453,7 @@ const PurchaseHistoryPage = () => {
                                                                 {purchase.status === 'CANCELLED' ? 'ANULADA' : 'COMPLETADA'}
                                                             </Badge>
                                                         </td>
-                                                        <td className="px-4 py-3 text-center">
+                                                        <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                                                             <div className="d-flex justify-content-center gap-1">
                                                                 <Button
                                                                     variant="outline-primary"
@@ -585,16 +588,21 @@ const PurchaseHistoryPage = () => {
                                             
                                             <div className="d-flex align-items-center gap-3 mb-2">
                                                 <h3 className="fw-bold mb-0">
-                                                    {selectedPurchase.currencyCode} {Number(
+                                                    {Number(
                                                         Number(selectedPurchase.total || 0) + 
                                                         adjustments.reduce((acc, adj) => acc + (adj.type === 'DEBIT_NOTE' ? adj.amount : -adj.amount), 0)
-                                                    ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    ).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {selectedPurchase.currencyCode}
                                                 </h3>
                                                 {renderPaymentMethod(selectedPurchase.paymentMethod)}
                                             </div>
 
                                             <div className="small opacity-75 mb-3">
                                                 Total Ajustado (Original: {Number(selectedPurchase.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})
+                                                {selectedPurchase.globalDiscountAmount > 0 && (
+                                                    <span className="text-warning fw-bold ms-2">
+                                                        • Descuento Global: -{selectedPurchase.globalDiscountType === 'PERCENTAGE' ? `${selectedPurchase.globalDiscountAmount}%` : `${selectedPurchase.globalDiscountAmount} ${selectedPurchase.currencyCode}`}
+                                                    </span>
+                                                )}
                                             </div>
                                             
                                             <div className="border-top pt-2 border-primary border-opacity-10">
@@ -666,9 +674,9 @@ const PurchaseHistoryPage = () => {
                                                         </div>
                                                         <div className="text-success small fw-bold">
                                                             {selectedPurchase.currencyCode === baseCurrencyCode ? (
-                                                                `= ${baseCurrencySymbol}${Number(item.quantity * item.unitCost).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${baseCurrencyCode}`
+                                                                `= ${Number(item.quantity * item.unitCost).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${baseCurrencyCode}`
                                                             ) : (
-                                                                `= ${baseCurrencySymbol}${Number((item.unitCost / (selectedPurchase.exchangeRate || 1)) * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${baseCurrencyCode}`
+                                                                `= ${Number((item.unitCost / (selectedPurchase.exchangeRate || 1)) * item.quantity).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${baseCurrencyCode}`
                                                             )}
                                                         </div>
                                                         <div className="text-muted small">Subtotal Artículos</div>
@@ -835,7 +843,7 @@ const PurchaseHistoryPage = () => {
                                     {refundForm.items.map((item, index) => (
                                         <tr key={index}>
                                             <td className="fw-bold">{item.productName} <br/><small className="text-muted fw-normal">Máx devolvible: {item.maxQuantity}</small></td>
-                                            <td className="text-center">${item.unitCost}</td>
+                                            <td className="text-center">{item.unitCost} {baseCurrencyCode}</td>
                                             <td className="text-center">
                                                 <Form.Control 
                                                     type="number" 
@@ -855,7 +863,7 @@ const PurchaseHistoryPage = () => {
                                                 />
                                             </td>
                                             <td className="text-end fw-bold text-danger">
-                                                ${((Number(item.quantityToReturn) || 0) * item.unitCost).toFixed(2)}
+                                                {((Number(item.quantityToReturn) || 0) * item.unitCost).toFixed(2)} {baseCurrencyCode}
                                             </td>
                                         </tr>
                                     ))}
@@ -869,7 +877,7 @@ const PurchaseHistoryPage = () => {
                                     <tr>
                                         <td colSpan="3" className="text-end fw-bold">Total a Recuperar:</td>
                                         <td className="text-end fw-bold text-danger fs-5">
-                                            ${refundForm.items.reduce((acc, curr) => acc + ((Number(curr.quantityToReturn) || 0) * curr.unitCost), 0).toFixed(2)}
+                                            {refundForm.items.reduce((acc, curr) => acc + ((Number(curr.quantityToReturn) || 0) * curr.unitCost), 0).toFixed(2)} {baseCurrencyCode}
                                         </td>
                                     </tr>
                                 </tfoot>

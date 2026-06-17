@@ -125,7 +125,7 @@ const POSPage = () => {
         if (!curr) return null;
         const converted = new Decimal(amount).times(curr.rate).toNumber();
         const decimals = currencyCode === 'COP' ? 0 : 2;
-        return `${curr.symbol} ${converted.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}`;
+        return `${converted.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })} ${curr.code}`;
     };
 
     const formatSecondary = (amount) => formatInCurrency(amount, 'VES');
@@ -140,8 +140,8 @@ const POSPage = () => {
 
     const formatPaymentCurrency = (amount) => {
         const converted = convertToPaymentCurrency(amount);
-        const curr = getSelectedCurrency() || { symbol: baseCurrencySymbol };
-        return `${curr.symbol}${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const curr = getSelectedCurrency() || { code: baseCurrencyCode };
+        return `${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${curr.code}`;
     };
 
     const preGlobalTotal = useMemo(() => {
@@ -693,7 +693,7 @@ const POSPage = () => {
                                         )}
                                         {cart.length > 0 && (
                                             <Button variant="outline-secondary" size="sm" className="rounded-pill fw-bold" onClick={handleParkSale}>
-                                                ⏸️ Aparcar
+                                                ⏸️ Poner en espera
                                             </Button>
                                         )}
                                         <Badge bg="primary" className="rounded-pill px-3 py-2">{cart.length} productos</Badge>
@@ -751,17 +751,17 @@ const POSPage = () => {
 
                             {/* Cart Items Header */}
                             <div className="px-4 py-2 bg-light border-bottom text-muted small fw-bold d-none d-md-flex">
-                                <div style={{ width: '45%' }}>PRODUCTO</div>
+                                <div style={{ width: '35%' }}>PRODUCTO</div>
                                 <div style={{ width: '15%' }} className="text-center">CANT</div>
-                                <div style={{ width: '20%' }} className="text-end">P. UNIT</div>
-                                <div style={{ width: '20%' }} className="text-end">TOTAL</div>
+                                <div style={{ width: '35%' }} className="text-center">P. UNIT</div>
+                                <div style={{ width: '15%' }} className="text-end">TOTAL</div>
                             </div>
 
                             <div className="pos-cart-items px-3 flex-grow-1 overflow-auto">
                                 {[...cart].reverse().map(item => (
                                     <div key={item.product.id} className="pos-cart-item border-bottom py-3 flex-shrink-0">
                                         <div className="d-flex justify-content-between align-items-center">
-                                            <div style={{ width: '45%' }} className="pe-2">
+                                            <div style={{ width: '35%' }} className="pe-2">
                                                 <div className="fw-bold text-dark text-truncate">{item.product.name}</div>
                                                 <div className="text-muted x-small">SKU: {item.product.sku}</div>
                                             </div>
@@ -790,31 +790,37 @@ const POSPage = () => {
                                                     />
                                                 </div>
                                             </div>
-                                            <div style={{ width: '20%' }} className="text-end text-muted d-flex flex-column align-items-end justify-content-center">
-                                                <div className="fw-bold">{baseCurrencySymbol}{new Decimal(item.unitPrice || 0).toFixed(2)}</div>
-                                                <div className="mt-1 d-flex gap-1" style={{ width: '90px' }}>
-                                                    <Form.Select 
-                                                        size="sm" 
-                                                        className="p-0 text-center" 
-                                                        style={{ width: '35px', fontSize: '0.7rem' }}
-                                                        value={item.discountType || 'PERCENTAGE'}
-                                                        onChange={(e) => updateCartDiscount(item.product.id, item.discountAmount || 0, e.target.value)}
+                                            <div style={{ width: '35%' }} className="text-center text-muted d-flex align-items-center justify-content-center gap-2">
+                                                <div className="fw-bold text-nowrap">{new Decimal(item.unitPrice || 0).toFixed(2)} {baseCurrencyCode}</div>
+                                                <InputGroup size="sm" className="shadow-sm flex-nowrap" style={{ width: '90px', flexShrink: 0 }}>
+                                                    <Button 
+                                                        variant={item.discountType === 'FIXED' ? 'primary' : 'warning'}
+                                                        className={`p-0 fw-bold border-end-0 ${item.discountType === 'PERCENTAGE' ? 'text-white' : ''}`}
+                                                        style={{ 
+                                                            width: '40px', 
+                                                            fontSize: '0.7rem', 
+                                                            flex: 'none',
+                                                            backgroundColor: item.discountType === 'PERCENTAGE' ? '#fd7e14' : undefined,
+                                                            borderColor: item.discountType === 'PERCENTAGE' ? '#fd7e14' : undefined
+                                                        }}
+                                                        onClick={() => updateCartDiscount(item.product.id, item.discountAmount || 0, item.discountType === 'PERCENTAGE' ? 'FIXED' : 'PERCENTAGE')}
+                                                        title="Click para cambiar a % o Monto"
                                                     >
-                                                        <option value="PERCENTAGE">%</option>
-                                                        <option value="FIXED">$</option>
-                                                    </Form.Select>
+                                                        {item.discountType === 'PERCENTAGE' ? '%' : baseCurrencyCode}
+                                                    </Button>
                                                     <Form.Control 
-                                                        size="sm" 
                                                         type="number" 
                                                         placeholder="Desc" 
-                                                        style={{ fontSize: '0.7rem', padding: '2px 4px' }}
+                                                        className="px-1 text-center"
+                                                        style={{ fontSize: '0.75rem', minWidth: '40px' }}
                                                         value={item.discountAmount || ""}
                                                         onChange={(e) => updateCartDiscount(item.product.id, e.target.value, item.discountType || 'PERCENTAGE')}
+                                                        onFocus={(e) => e.target.select()}
                                                     />
-                                                </div>
+                                                </InputGroup>
                                             </div>
-                                            <div style={{ width: '20%' }} className="text-end">
-                                                <span className="fw-bold text-primary fs-5">{baseCurrencySymbol}{new Decimal(item.subtotal || 0).toFixed(2)}</span>
+                                            <div style={{ width: '15%' }} className="text-end">
+                                                <span className="fw-bold text-primary fs-5">{new Decimal(item.subtotal || 0).toFixed(2)} {baseCurrencyCode}</span>
                                                 <br/>
                                                 <OverlayTrigger overlay={<Tooltip>Eliminar producto del carrito</Tooltip>}>
                                                     <Button variant="link" className="text-danger p-0 x-small text-decoration-none" onClick={() => removeFromCart(item.product.id)}>
@@ -869,7 +875,7 @@ const POSPage = () => {
                                                 <div className="text-muted" style={{ fontSize: '0.7rem' }}>SKU: {p.sku}</div>
                                             </div>
                                             <div className="d-flex align-items-center gap-2 flex-shrink-0">
-                                                <span className="fw-bold text-primary small">{baseCurrencySymbol}{p.price}</span>
+                                                <span className="fw-bold text-primary small">{p.price} {baseCurrencyCode}</span>
                                                 <Badge bg={p.stock > 5 ? 'success' : 'danger'} style={{ fontSize: '0.65rem' }}>{p.stock}</Badge>
                                             </div>
                                         </div>
@@ -889,11 +895,22 @@ const POSPage = () => {
                                         <Col xs={12}>
                                             <Form.Group className="mb-0 d-flex justify-content-between align-items-center">
                                                 <Form.Label className="fw-bold text-muted small text-uppercase mb-0">Desc. Global</Form.Label>
-                                                <InputGroup size="sm" style={{ width: '150px' }}>
-                                                    <Form.Select style={{ maxWidth: '50px', padding: '0 5px' }} value={globalDiscountType} onChange={e => setGlobalDiscountType(e.target.value)}>
-                                                        <option value="PERCENTAGE">%</option>
-                                                        <option value="FIXED">$</option>
-                                                    </Form.Select>
+                                                <InputGroup size="sm" className="shadow-sm flex-nowrap" style={{ width: '160px' }}>
+                                                    <Button 
+                                                        variant={globalDiscountType === 'FIXED' ? 'primary' : 'warning'}
+                                                        className={`px-1 fw-bold border-end-0 ${globalDiscountType === 'PERCENTAGE' ? 'text-white' : ''}`}
+                                                        style={{ 
+                                                            width: '60px', 
+                                                            fontSize: '0.8rem', 
+                                                            flex: 'none',
+                                                            backgroundColor: globalDiscountType === 'PERCENTAGE' ? '#fd7e14' : undefined,
+                                                            borderColor: globalDiscountType === 'PERCENTAGE' ? '#fd7e14' : undefined
+                                                        }}
+                                                        onClick={() => setGlobalDiscountType(globalDiscountType === 'PERCENTAGE' ? 'FIXED' : 'PERCENTAGE')}
+                                                        title="Click para cambiar a % o Monto"
+                                                    >
+                                                        {globalDiscountType === 'PERCENTAGE' ? '%' : baseCurrencyCode}
+                                                    </Button>
                                                     <Form.Control
                                                         type="number"
                                                         placeholder="0"
@@ -910,7 +927,7 @@ const POSPage = () => {
                                 <div className="d-flex justify-content-between align-items-center">
                                     <span className="text-muted fw-bold">TOTAL</span>
                                     <div className="text-end">
-                                        <div className="fs-3 fw-black">{baseCurrencySymbol}{total.toFixed(2)}</div>
+                                        <div className="fs-3 fw-black">{total.toFixed(2)} {baseCurrencyCode}</div>
                                         <div className="text-muted small">{formatSecondary(total)}</div>
                                     </div>
                                 </div>
@@ -1022,19 +1039,14 @@ const POSPage = () => {
                                     <div className="d-flex justify-content-between align-items-end mb-2">
                                         <span className="text-muted small fw-bold">TOTAL A PAGAR</span>
                                         <div className="text-end">
-                                            <div className="fs-4 fw-black">{baseCurrencySymbol}{total.toFixed(2)}</div>
-                                            {formatSecondary(total) && (
-                                                <div className="text-muted small fw-bold">
-                                                    {formatSecondary(total)} 
-                                                    <span className="ms-1 opacity-75" style={{ fontSize: '0.75rem' }}>(Tasa: {availableCurrencies.find(c => c.code === 'VES')?.rate})</span>
+                                            <div className="fs-4 fw-black">{total.toFixed(2)} {baseCurrencyCode}</div>
+                                            {availableCurrencies.filter(c => c.code !== baseCurrencyCode).map(c => (
+                                                <div key={c.code} className="text-muted small fw-bold">
+                                                    {formatInCurrency(total, c.code)} 
+                                                    <span className="ms-1 opacity-75" style={{ fontSize: '0.75rem' }}>(Tasa: {Number(c.rate).toFixed(2)})</span>
                                                 </div>
-                                            )}
-                                            {formatInCurrency(total, 'COP') && (
-                                                <div className="text-muted small fw-bold">
-                                                    {formatInCurrency(total, 'COP')} COP
-                                                    <span className="ms-1 opacity-75" style={{ fontSize: '0.75rem' }}>(Tasa: {availableCurrencies.find(c => c.code === 'COP')?.rate})</span>
-                                                </div>
-                                            )}
+                                            ))}
+
                                         </div>
                                     </div>
                                     <div className="progress mb-2" style={{ height: '8px', borderRadius: '10px' }}>
@@ -1045,14 +1057,14 @@ const POSPage = () => {
                                         ></div>
                                     </div>
                                     <div className="d-flex justify-content-between small">
-                                        <span className="text-success fw-bold">Pagado: {baseCurrencySymbol}{totalPaidInBase.toFixed(2)}</span>
+                                        <span className="text-success fw-bold">Pagado: {totalPaidInBase.toFixed(2)} {baseCurrencyCode}</span>
                                         <div className="text-end">
-                                            <span className="text-primary fw-bold d-block">Pendiente: {baseCurrencySymbol}{remainingToPay.toFixed(2)}</span>
-                                            {remainingToPay.gt(0) && (
-                                                <div className="text-muted fw-bold" style={{ fontSize: '0.65rem' }}>
-                                                    {formatSecondary(remainingToPay)} VES | {formatInCurrency(remainingToPay, 'COP')} COP
+                                            <span className="text-primary fw-bold d-block">Pendiente: {remainingToPay.toFixed(2)} {baseCurrencyCode}</span>
+                                            {remainingToPay.gt(0) && availableCurrencies.filter(c => c.code !== baseCurrencyCode).map(c => (
+                                                <div key={c.code} className="text-muted fw-bold" style={{ fontSize: '0.65rem' }}>
+                                                    {formatInCurrency(remainingToPay.toNumber(), c.code)}
                                                 </div>
-                                            )}
+                                            ))}
                                         </div>
                                     </div>
                                 </div>
@@ -1087,8 +1099,8 @@ const POSPage = () => {
                                 <div className="text-end mb-3 px-2">
                                     {tempPayment.amount && tempPayment.currency !== baseCurrencyCode && (
                                         <small className="text-primary fw-bold">
-                                            ≈ {baseCurrencySymbol}{(parseFloat(tempPayment.amount) / (availableCurrencies.find(c => c.code === tempPayment.currency)?.rate || 1)).toFixed(2)} {baseCurrencyCode}
-                                            <span className="text-muted ms-2">(Tasa: {availableCurrencies.find(c => c.code === tempPayment.currency)?.rate || 1})</span>
+                                            ≈ {(parseFloat(tempPayment.amount) / (availableCurrencies.find(c => c.code === tempPayment.currency)?.rate || 1)).toFixed(2)} {baseCurrencyCode}
+                                            <span className="text-muted ms-2">(Tasa: {Number(availableCurrencies.find(c => c.code === tempPayment.currency)?.rate || 1).toFixed(2)})</span>
                                         </small>
                                     )}
                                 </div>
@@ -1131,7 +1143,7 @@ const POSPage = () => {
                                                     <div className="text-white-50 x-small">{p.amount} {p.currency}</div>
                                                 </div>
                                                 <div className="d-flex align-items-center gap-3">
-                                                    <span className="balance-value paid small">{baseCurrencySymbol}{new Decimal(p.amountInBaseCurrency || 0).toFixed(2)}</span>
+                                                    <span className="balance-value paid small">{new Decimal(p.amountInBaseCurrency || 0).toFixed(2)} {baseCurrencyCode}</span>
                                                     <FaTrash 
                                                         size={12} 
                                                         className="text-danger cursor-pointer" 
@@ -1144,19 +1156,19 @@ const POSPage = () => {
                                     <div className="mt-4 pt-4 border-top border-secondary">
                                         <div className="d-flex justify-content-between mb-3">
                                             <span className="text-white-50 small">Total Pagado</span>
-                                            <span className="fw-bold">{baseCurrencySymbol}{totalPaidInBase.toFixed(2)}</span>
+                                            <span className="fw-bold">{totalPaidInBase.toFixed(2)} {baseCurrencyCode}</span>
                                         </div>
                                         {totalPaidInBase.gt(total) && (
                                             <>
                                                 <div className="d-flex justify-content-between text-info mb-2">
                                                     <span className="small fw-bold">VUELTO / CAMBIO</span>
-                                                    <span className="fs-4 fw-black text-info">{baseCurrencySymbol}{totalPaidInBase.minus(total).toFixed(2)}</span>
+                                                    <span className="fs-4 fw-black text-info">{totalPaidInBase.minus(total).toFixed(2)} {baseCurrencyCode}</span>
                                                 </div>
                                                 {cashRegisters.length > 1 && totalPaidInBase.minus(total).gt(new Decimal(currentShift?.initialCash || 0)) && (
                                                     <div className="d-flex align-items-start gap-2 p-3 mb-3 rounded-3 bg-warning text-dark shadow-sm">
                                                         <span style={{ fontSize: '1.2rem' }}>⚠️</span>
                                                         <span className="small fw-bold">
-                                                            El vuelto ({baseCurrencySymbol}{totalPaidInBase.minus(total).toFixed(2)}) supera el fondo inicial de la caja ({baseCurrencySymbol}{new Decimal(currentShift?.initialCash || 0).toFixed(2)}). Verifica que tengas sencillo suficiente o solicita un <strong>Abono de Tesorería</strong>.
+                                                            El vuelto ({totalPaidInBase.minus(total).toFixed(2)} {baseCurrencyCode}) supera el fondo inicial de la caja ({new Decimal(currentShift?.initialCash || 0).toFixed(2)} {baseCurrencyCode}). Verifica que tengas sencillo suficiente o solicita un <strong>Abono de Tesorería</strong>.
                                                         </span>
                                                     </div>
                                                 )}
@@ -1205,7 +1217,7 @@ const POSPage = () => {
                             <Col md={5}>
                                 <Form.Label className="small fw-bold">Moneda</Form.Label>
                                 <Form.Select value={tempOpeningDeclaration.currencyCode} onChange={e => setTempOpeningDeclaration({...tempOpeningDeclaration, currencyCode: e.target.value})}>
-                                    <option value={baseCurrencyCode}>{baseCurrencyCode} ({baseCurrencySymbol})</option>
+                                    <option value={baseCurrencyCode}>{baseCurrencyCode}</option>
                                     {availableCurrencies.filter(c => c.code !== baseCurrencyCode).map(c => <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>)}
                                 </Form.Select>
                             </Col>
@@ -1261,7 +1273,7 @@ const POSPage = () => {
                             ) : (
                                 <div className="d-flex justify-content-between align-items-center">
                                     <span className="small text-muted">Total (Base):</span>
-                                    <span className="fw-black text-primary fs-5">{baseCurrencySymbol}{currentShift?.initialCash?.toFixed(2) || '0.00'}</span>
+                                    <span className="fw-black text-primary fs-5">{currentShift?.initialCash?.toFixed(2) || '0.00'} {baseCurrencyCode}</span>
                                 </div>
                             )}
                         </div>
@@ -1278,7 +1290,7 @@ const POSPage = () => {
                             <Col md={3}>
                                 <Form.Label className="small fw-bold">Moneda</Form.Label>
                                 <Form.Select value={tempDeclaration.currencyCode} onChange={e => setTempDeclaration({...tempDeclaration, currencyCode: e.target.value})}>
-                                    <option value={baseCurrencyCode}>{baseCurrencyCode} ({baseCurrencySymbol})</option>
+                                    <option value={baseCurrencyCode}>{baseCurrencyCode}</option>
                                     {availableCurrencies.filter(c => c.code !== baseCurrencyCode).map(c => <option key={c.code} value={c.code}>{c.code} ({c.symbol})</option>)}
                                 </Form.Select>
                             </Col>
@@ -1335,10 +1347,10 @@ const POSPage = () => {
                                                 {ps.customer ? ps.customer.name : (ps.customerSearch || 'Cliente General')}
                                             </div>
                                             <div className="small text-muted mb-1">
-                                                {ps.cart.length} productos | Aparcado a las {ps.date}
+                                                {ps.cart.length} productos | En espera desde las {ps.date}
                                             </div>
                                             <div className="text-primary fw-bold">
-                                                Total: {baseCurrencySymbol}{ps.total?.toFixed(2)}
+                                                Total: {ps.total?.toFixed(2)} {baseCurrencyCode}
                                             </div>
                                         </div>
                                         <Button variant="success" size="sm" className="rounded-pill px-4 fw-bold shadow-sm" onClick={() => handleRestoreSale(ps)}>

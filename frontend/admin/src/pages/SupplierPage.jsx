@@ -195,7 +195,7 @@ const SupplierPage = () => {
                                 </thead>
                                 <tbody>
                                     {suppliers.map((s) => (
-                                        <tr key={s.id}>
+                                        <tr key={s.id} onClick={() => openModal(s)} style={{ cursor: 'pointer' }} className="table-row-hover align-middle">
                                             <td className="ps-4 py-3">
                                                 <div className="d-flex align-items-center">
                                                     <div className="rounded-circle bg-primary bg-opacity-10 text-primary d-flex align-items-center justify-content-center me-3" style={{ width: 40, height: 40 }}>
@@ -226,7 +226,7 @@ const SupplierPage = () => {
                                             <td className="text-end pe-4">
                                                 {s.address ? <span className="small">{s.address}</span> : <span className="text-muted small">No registrada</span>}
                                             </td>
-                                            <td className="text-end pe-4">
+                                            <td className="text-end pe-4" onClick={(e) => e.stopPropagation()}>
                                                 <OverlayTrigger overlay={<Tooltip>Editar Proveedor</Tooltip>}>
                                                     <Button variant="link" className="text-primary p-0" onClick={() => openModal(s)}>
                                                         <FaEdit size={16} />

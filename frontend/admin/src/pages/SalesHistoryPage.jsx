@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Table, Badge, Button, Modal, ListGroup, Form, OverlayTrigger, Tooltip } from 'react-bootstrap';
-import { FaHistory, FaEye, FaCheckCircle, FaClock, FaUser, FaPhoneAlt, FaMapMarkerAlt, FaSearch, FaUndo, FaCashRegister } from 'react-icons/fa';
+import { FaHistory, FaEye, FaCheckCircle, FaClock, FaUser, FaPhoneAlt, FaMapMarkerAlt, FaSearch, FaUndo, FaCashRegister, FaBoxOpen } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import SaleService from '../services/sale.service';
 import PublicService from '../services/public.service';
@@ -32,7 +32,7 @@ const SalesHistoryPage = () => {
     const formatSecondary = (amount) => {
         if (!platformConfig || !platformConfig.enableSecondaryCurrency) return null;
         const converted = amount * platformConfig.exchangeRate;
-        return `${platformConfig.secondaryCurrencySymbol} ${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        return `${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${platformConfig.secondaryCurrencyCode || 'VES'}`;
     };
 
     const loadSales = React.useCallback((silent = false) => {
@@ -378,7 +378,7 @@ const SalesHistoryPage = () => {
                             </thead>
                             <tbody>
                                 {filteredSales.map((sale) => (
-                                    <tr key={sale.id}>
+                                    <tr key={sale.id} onClick={() => openDetail(sale)} style={{ cursor: 'pointer' }} className="table-row-hover align-middle">
                                         <td className="px-4">
                                             <div className="fw-bold text-primary">#{sale.id}</div>
                                             <small className="text-muted d-block">{sale.date ? new Date(sale.date).toLocaleString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}</small>
@@ -397,12 +397,12 @@ const SalesHistoryPage = () => {
                                             {renderPaymentMethods(sale)}
                                         </td>
                                         <td className="text-end fw-bold text-success">
-                                            ${sale.totalAmount ? sale.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0'}
+                                            {sale.totalAmount ? sale.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0'} {platformConfig?.baseCurrencyCode || 'USD'}
                                             {platformConfig?.enableSecondaryCurrency && sale.totalAmount > 0 && (
                                                 <div className="text-muted fw-normal" style={{ fontSize: '0.75rem' }}>{formatSecondary(sale.totalAmount)}</div>
                                             )}
                                         </td>
-                                        <td className="text-center px-4">
+                                        <td className="text-center px-4" onClick={(e) => e.stopPropagation()}>
                                             <OverlayTrigger overlay={<Tooltip>Ver Detalle</Tooltip>}>
                                                 <Button variant="light" size="sm" className="rounded-circle me-1" onClick={() => openDetail(sale)}>
                                                     <FaEye className="text-primary" />
@@ -472,50 +472,104 @@ const SalesHistoryPage = () => {
                     <Modal.Body className="p-4">
                         {selectedSale && (
                             <Row>
-                                <Col md={6}>
-                                    <h6 className="text-uppercase fw-bold text-muted small mb-3">Información del Cliente</h6>
-                                    <div className="bg-light p-3 rounded-4 mb-4">
-                                        <p className="mb-2"><FaUser className="me-2 text-primary" /> <strong>Cliente:</strong> {selectedSale.customerName || selectedSale.customer?.name || 'Cliente Mostrador'}</p>
-                                        <p className="mb-2"><FaPhoneAlt className="me-2 text-primary" /> <strong>Teléfono:</strong> {selectedSale.customerPhone || selectedSale.customer?.phone || 'N/A'}</p>
-                                        <p className="mb-0"><FaMapMarkerAlt className="me-2 text-primary" /> <strong>Dirección:</strong> {selectedSale.customer?.address || 'Retiro en Local'}</p>
+                                <Col md={6} className="mb-4">
+                                    <div className="bg-light p-3 rounded-4 h-100">
+                                        <h6 className="text-uppercase small fw-bold text-muted mb-3">Información del Cliente</h6>
+                                        <div className="d-flex align-items-center mb-3">
+                                            <div className="bg-white rounded-circle p-2 me-3 shadow-sm">
+                                                <FaUser className="text-primary" />
+                                            </div>
+                                            <div>
+                                                <div className="fw-bold">{selectedSale.customerName || selectedSale.customer?.name || 'Cliente Mostrador'}</div>
+                                                <div className="text-muted small">{selectedSale.customer?.email || 'Venta presencial'}</div>
+                                            </div>
+                                        </div>
+                                        <div className="text-muted small">
+                                            <p className="mb-1"><FaPhoneAlt className="me-2 text-primary opacity-75" /> {selectedSale.customerPhone || selectedSale.customer?.phone || 'N/A'}</p>
+                                            <p className="mb-0"><FaMapMarkerAlt className="me-2 text-primary opacity-75" /> {selectedSale.customer?.address || 'Retiro en Local'}</p>
+                                        </div>
                                     </div>
                                 </Col>
-                                <Col md={6}>
-                                    <h6 className="text-uppercase fw-bold text-muted small mb-3">Resumen de Pago</h6>
-                                    <div className="bg-light p-3 rounded-4 mb-4">
-                                        <p className="mb-2"><strong>Estado:</strong> {getStatusBadge(selectedSale.status)}</p>
-                                        <p className="mb-2"><strong>Fecha:</strong> {selectedSale.date ? new Date(selectedSale.date).toLocaleString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}</p>
-                                        <p className="mb-2"><strong>Caja:</strong> {selectedSale.cashRegister?.name || 'Venta Web / Sin Caja'}</p>
-                                        {selectedSale.payments && selectedSale.payments.length > 0 ? (
-                                            <>
-                                                <p className="mb-1"><strong>Métodos de Pago:</strong></p>
-                                                <ul className="mb-2 ps-3 small text-muted">
-                                                    {selectedSale.payments.map((p, idx) => (
-                                                        <li key={idx}>
-                                                            {formatPaymentMethod(p.method)} {p.amount < 0 ? '(Vuelto)' : ''}: {p.currencyCode ? `${p.amount} ${p.currencyCode}` : `$${p.amount}`}
-                                                        </li>
-                                                    ))}
-                                                </ul>
-                                            </>
-                                        ) : (
-                                            <p className="mb-2"><strong>Método:</strong> {formatPaymentMethod(selectedSale.paymentMethod)}</p>
-                                        )}
-                                        <h4 className="fw-bold text-success mb-0 mt-3">Total: ${selectedSale.totalAmount ? selectedSale.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0'}</h4>
+                                <Col md={6} className="mb-4">
+                                    <div className="bg-primary-subtle p-3 rounded-4 h-100 text-primary">
+                                        <div className="d-flex justify-content-between align-items-start mb-3">
+                                            <h6 className="text-uppercase small fw-bold opacity-75 mb-0">Resumen de Pago</h6>
+                                            <div className="text-end">
+                                                <div className="mb-1">{getStatusBadge(selectedSale.status)}</div>
+                                                <div className="small opacity-75" style={{ fontSize: '0.7rem' }}>
+                                                    {selectedSale.date ? new Date(selectedSale.date).toLocaleString() : 'N/A'}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="d-flex align-items-center gap-3 mb-2">
+                                            <h3 className="fw-bold mb-0">
+                                                {selectedSale.totalAmount ? selectedSale.totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0'} {platformConfig?.baseCurrencyCode || ''}
+                                            </h3>
+                                        </div>
+                                        
+                                        <div className="small opacity-75 mb-3">
+                                            {selectedSale.globalDiscountAmount > 0 && (
+                                                <span className="text-warning fw-bold d-block mb-1">
+                                                    • Descuento Global: -{selectedSale.globalDiscountAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {platformConfig?.baseCurrencyCode || ''}
+                                                </span>
+                                            )}
+                                            {selectedSale.payments && selectedSale.payments.length > 0 ? (
+                                                <div className="mt-2">
+                                                    <strong>Pagos:</strong>
+                                                    <ul className="mb-0 ps-3">
+                                                        {selectedSale.payments.map((p, idx) => (
+                                                            <li key={idx}>
+                                                                {formatPaymentMethod(p.method)} {p.amount < 0 ? '(Vuelto)' : ''}: {Number(p.amount).toLocaleString()} {p.currencyCode || platformConfig?.baseCurrencyCode || ''}
+                                                            </li>
+                                                        ))}
+                                                    </ul>
+                                                </div>
+                                            ) : (
+                                                <div><strong>Método:</strong> {formatPaymentMethod(selectedSale.paymentMethod)}</div>
+                                            )}
+                                        </div>
                                         {platformConfig?.enableSecondaryCurrency && selectedSale.totalAmount > 0 && (
-                                            <h5 className="text-muted mt-1 mb-0">{formatSecondary(selectedSale.totalAmount)}</h5>
+                                            <div className="border-top pt-2 border-primary border-opacity-10 mt-3">
+                                                <div className="fw-bold small mb-1">
+                                                    Equivalente: {platformConfig.secondaryCurrencySymbol} {Number(selectedSale.totalAmount * (selectedSale.exchangeRateUsed || platformConfig.exchangeRate || 1)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    <span className="ms-2 opacity-75 fw-normal">(Tasa histórica: {Number(selectedSale.exchangeRateUsed || platformConfig.exchangeRate || 1).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</span>
+                                                </div>
+                                            </div>
                                         )}
+                                        <div className="border-top pt-2 mt-2 border-primary border-opacity-10 small fw-bold">
+                                            Caja: {selectedSale.cashRegister?.name || 'Venta Web / Sin Caja'}
+                                        </div>
                                     </div>
                                 </Col>
                                 <Col md={12}>
                                     <h6 className="text-uppercase fw-bold text-muted small mb-3">Productos Detallados</h6>
-                                    <ListGroup variant="flush" className="border rounded-4 overflow-hidden">
+                                    <ListGroup variant="flush" className="border rounded-4 overflow-hidden shadow-sm">
                                         {selectedSale.items?.map((item, idx) => (
-                                            <ListGroup.Item key={idx} className="d-flex justify-content-between align-items-center p-3">
-                                                <div>
-                                                    <div className="fw-bold">{item.product?.name}</div>
-                                                    <small className="text-muted">SKU: {item.product?.sku} | {item.quantity} unidades x ${item.unitPrice}</small>
+                                            <ListGroup.Item key={idx} className="p-3 border-light bg-hover-light transition-all">
+                                                <div className="d-flex justify-content-between align-items-center">
+                                                    <div className="d-flex align-items-center">
+                                                        <div className="bg-light rounded p-2 me-3 d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px' }}>
+                                                            {item.product?.image ? (
+                                                                <img src={item.product.image} alt={item.product?.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} className="rounded" />
+                                                            ) : (
+                                                                <FaBoxOpen className="text-muted opacity-50" />
+                                                            )}
+                                                        </div>
+                                                        <div>
+                                                            <div className="fw-bold">{item.product?.name}</div>
+                                                            <div className="text-muted small">
+                                                                SKU: {item.product?.sku} | {item.quantity} unidades x {item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {platformConfig?.baseCurrencyCode || ''}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-end">
+                                                        <div className="fw-bold text-dark">
+                                                            {item.subtotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {platformConfig?.baseCurrencyCode || ''}
+                                                        </div>
+                                                        {item.discountAmount > 0 && <div className="text-warning small fw-bold">Desc: -{item.discountAmount}</div>}
+                                                    </div>
                                                 </div>
-                                                <div className="fw-bold">${item.subtotal}</div>
                                             </ListGroup.Item>
                                         ))}
                                     </ListGroup>
@@ -601,7 +655,7 @@ const SalesHistoryPage = () => {
                                     {refundForm.items.map((item, index) => (
                                         <tr key={index}>
                                             <td className="fw-bold">{item.productName} <br/><small className="text-muted fw-normal">Máx: {item.maxQuantity}</small></td>
-                                            <td className="text-center">${item.unitPrice}</td>
+                                            <td className="text-center">{item.unitPrice} {platformConfig?.baseCurrencyCode || 'USD'}</td>
                                             <td className="text-center">
                                                 <Form.Control 
                                                     type="number" 
@@ -621,7 +675,7 @@ const SalesHistoryPage = () => {
                                                 />
                                             </td>
                                             <td className="text-end fw-bold text-danger">
-                                                ${((Number(item.quantityToReturn) || 0) * item.unitPrice).toFixed(2)}
+                                                {((Number(item.quantityToReturn) || 0) * item.unitPrice).toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}
                                             </td>
                                         </tr>
                                     ))}
@@ -635,7 +689,7 @@ const SalesHistoryPage = () => {
                                     <tr>
                                         <td colSpan="3" className="text-end fw-bold">Total a Reembolsar:</td>
                                         <td className="text-end fw-bold text-danger fs-5">
-                                            ${refundForm.items.reduce((acc, curr) => acc + ((Number(curr.quantityToReturn) || 0) * curr.unitPrice), 0).toFixed(2)}
+                                            {refundForm.items.reduce((acc, curr) => acc + ((Number(curr.quantityToReturn) || 0) * curr.unitPrice), 0).toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}
                                         </td>
                                     </tr>
                                 </tfoot>

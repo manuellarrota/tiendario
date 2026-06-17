@@ -453,7 +453,7 @@ const AdminCompaniesPage = () => {
                             </thead>
                             <tbody>
                                 {paginatedCompanies.map((company) => (
-                                    <tr key={company.id}>
+                                    <tr key={company.id} onClick={() => handleViewClick(company)} style={{ cursor: 'pointer' }} className="table-row-hover align-middle">
                                         <td className="ps-4 fw-bold text-muted">#{company.id}</td>
                                         <td>
                                             <div className="fw-bold fs-5">{company.name}</div>
@@ -469,7 +469,7 @@ const AdminCompaniesPage = () => {
                                                 </Badge>
                                                 {company.hasElectronicBilling && <Badge bg="info" className="ms-1 rounded-pill">Facturación ✅</Badge>}
                                             </td>
-                                            <td>
+                                            <td onClick={(e) => e.stopPropagation()}>
                                                 <div className="d-flex gap-2">
                                                     <OverlayTrigger overlay={<Tooltip>Ver Detalle de Empresa</Tooltip>}>
                                                         <Button variant="outline-info" size="sm" className="rounded-pill" onClick={() => handleViewClick(company)}>
@@ -702,7 +702,7 @@ const AdminCompaniesPage = () => {
                                     ) : companyKpis ? (
                                         <Row className="g-3">
                                             <Col md={4} sm={6}><Card className="bg-light border-0 shadow-sm h-100"><Card.Body className="p-3 text-center"><FaShoppingCart className="text-primary mb-2 fs-4" /><h4 className="fw-bold mb-1">{companyKpis.totalSales}</h4><small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Transacciones Exitosas</small></Card.Body></Card></Col>
-                                            <Col md={4} sm={6}><Card className="bg-light border-0 shadow-sm h-100"><Card.Body className="p-3 text-center"><FaMoneyBillWave className="text-success mb-2 fs-4" /><h4 className="fw-bold mb-1 text-success">${companyKpis.totalRevenue?.toFixed(2) || '0.00'}</h4><small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Volumen Ventas (USD)</small></Card.Body></Card></Col>
+                                            <Col md={4} sm={6}><Card className="bg-light border-0 shadow-sm h-100"><Card.Body className="p-3 text-center"><FaMoneyBillWave className="text-success mb-2 fs-4" /><h4 className="fw-bold mb-1 text-success">{companyKpis.totalRevenue?.toFixed(2) || '0.00'} {viewCompany?.baseCurrency || 'USD'}</h4><small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Volumen Ventas</small></Card.Body></Card></Col>
                                             <Col md={4} sm={6}><Card className="bg-light border-0 shadow-sm h-100"><Card.Body className="p-3 text-center"><FaBox className="text-info mb-2 fs-4" /><h4 className="fw-bold mb-1">{companyKpis.totalProducts}</h4><small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Productos en Catálogo</small></Card.Body></Card></Col>
                                             <Col md={6} sm={6}><Card className="bg-light border-0 shadow-sm h-100"><Card.Body className="p-3 text-center"><FaCashRegister className="text-warning mb-2 fs-4" /><h4 className="fw-bold mb-1">{companyKpis.totalRegisters}</h4><small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Cajas Registradoras</small></Card.Body></Card></Col>
                                             <Col md={6} sm={6}><Card className="bg-light border-0 shadow-sm h-100"><Card.Body className="p-3 text-center"><FaUsers className="text-secondary mb-2 fs-4" /><h4 className="fw-bold mb-1">{companyKpis.totalUsers}</h4><small className="text-muted d-block" style={{ fontSize: '0.75rem' }}>Usuarios (Staff)</small></Card.Body></Card></Col>
@@ -743,7 +743,7 @@ const AdminCompaniesPage = () => {
                                                                     <Badge bg="info" className="rounded-pill">{s.paymentCurrency || 'USD'}</Badge>
                                                                 </td>
                                                                 <td className="fw-bold">
-                                                                    ${Number(s.totalAmount || 0).toFixed(2)}
+                                                                    {Number(s.totalAmount || 0).toFixed(2)} {viewCompany?.baseCurrency || 'USD'}
                                                                     {(s.exchangeRateUsed && s.paymentCurrency !== 'USD') && <div className="text-muted" style={{ fontSize: '0.7em' }}>Tasa: {Number(s.exchangeRateUsed).toFixed(2)}</div>}
                                                                 </td>
                                                                 <td><Badge bg={s.status === 'PAID' ? 'success' : s.status === 'CANCELLED' ? 'danger' : 'warning'} className="rounded-pill">{s.status}</Badge></td>
@@ -792,7 +792,7 @@ const AdminCompaniesPage = () => {
                                                                     </Badge>
                                                                 </td>
                                                                 <td className="fw-bold">
-                                                                    ${Number(p.total || 0).toFixed(2)}
+                                                                    {Number(p.total || 0).toFixed(2)} {viewCompany?.baseCurrency || 'USD'}
                                                                     {(p.exchangeRate && p.currencyCode !== 'USD') && <div className="text-muted" style={{ fontSize: '0.7em' }}>Tasa: {Number(p.exchangeRate).toFixed(2)}</div>}
                                                                 </td>
                                                                 <td>
@@ -840,7 +840,7 @@ const AdminCompaniesPage = () => {
                                                                 <td className="fw-semibold">{prod.name}</td>
                                                                 <td><small className="text-muted">{prod.category || '—'}</small></td>
                                                                 <td><code className="small">{prod.sku || '—'}</code></td>
-                                                                <td>${Number(prod.price || 0).toFixed(2)}</td>
+                                                                <td>{Number(prod.price || 0).toFixed(2)} {viewCompany?.baseCurrency || 'USD'}</td>
                                                                 <td><Badge bg={prod.stock <= (prod.minStock || 0) ? 'danger' : 'success'} className="rounded-pill">{prod.stock}</Badge></td>
                                                                 <td>
                                                                     <Button size="sm" variant="outline-primary" className="rounded-pill py-0" onClick={() => openEditRecord('product', prod)}><FaEdit /></Button>
@@ -990,7 +990,7 @@ const AdminCompaniesPage = () => {
                                     <Form.Group className="mb-2"><Form.Label className="small fw-bold">Tipo Desc.</Form.Label>
                                         <Form.Select size="sm" value={editRecordForm.globalDiscountType || 'PERCENTAGE'} onChange={e => setEditRecordForm(f => ({ ...f, globalDiscountType: e.target.value }))}>
                                             <option value="PERCENTAGE">% Porcentaje</option>
-                                            <option value="FIXED">$ Monto Fijo</option>
+                                            <option value="FIXED">{viewCompany?.baseCurrency || 'USD'} Monto Fijo</option>
                                         </Form.Select>
                                     </Form.Group>
                                 </Col>
@@ -1056,7 +1056,7 @@ const AdminCompaniesPage = () => {
                                     <Form.Group className="mb-3"><Form.Label className="small fw-bold">Tipo Desc.</Form.Label>
                                         <Form.Select size="sm" value={editRecordForm.globalDiscountType || 'PERCENTAGE'} onChange={e => setEditRecordForm(f => ({ ...f, globalDiscountType: e.target.value }))}>
                                             <option value="PERCENTAGE">% Porcentaje</option>
-                                            <option value="FIXED">$ Monto Fijo</option>
+                                            <option value="FIXED">{viewCompany?.baseCurrency || 'USD'} Monto Fijo</option>
                                         </Form.Select>
                                     </Form.Group>
                                 </Col>

@@ -273,7 +273,7 @@ const SuperAdminNotificationsPage = () => {
                                     <span className="text-muted small">ID Transacción: #{paymentDetails.id}</span>
                                 </div>
                                 <div className="text-end">
-                                    <h3 className="fw-bold text-success mb-1">${paymentDetails.amount}</h3>
+                                    <h3 className="fw-bold text-success mb-1">{paymentDetails.amount} USD</h3>
                                     {getPaymentStatusBadge(paymentDetails.status)}
                                 </div>
                             </div>

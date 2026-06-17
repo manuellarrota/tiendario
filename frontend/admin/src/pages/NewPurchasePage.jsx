@@ -416,7 +416,14 @@ const NewPurchasePage = () => {
                     paymentMethod: purchaseData.paymentMethod,
                     itemsCount: purchaseData.items.length,
                     supplierName: getSupplierName(),
-                    globalDiscountAmountCalc: globalDiscountAmountCalc
+                    globalDiscountAmountCalc: globalDiscountAmountCalc,
+                    subtotal: preGlobalTotal,
+                    items: cart.map(item => ({
+                        name: item.product.name,
+                        quantity: item.quantity,
+                        unitCost: item.unitCost,
+                        total: item.total
+                    }))
                 });
                 setShowSuccessModal(true);
 
@@ -612,8 +619,8 @@ const NewPurchasePage = () => {
                                         <tr>
                                             <th>Producto</th>
                                             <th className="text-center" style={{ width: '90px' }}>Cant.</th>
-                                            <th className="text-start" style={{ width: '165px' }}>Costo Unit.</th>
-                                            <th className="text-end">Subtotal</th>
+                                            <th className="text-start" style={{ width: '165px' }}>Costo Unit. ({purchaseCurrency})</th>
+                                            <th className="text-end">Total a Pagar ({purchaseCurrency})</th>
                                             <th className="text-end text-success">Base ({baseCurrencyCode})</th>
                                             <th className="text-center">Acción</th>
                                         </tr>
@@ -635,18 +642,18 @@ const NewPurchasePage = () => {
                                                         <span className="fw-bold">{item.quantity}</span>
                                                     </td>
                                                     <td className="text-start pt-3" style={{ width: '165px' }}>
-                                                        <span className="fw-bold">{itemSymbol}{item.unitCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                                        <span className="fw-bold">{item.unitCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                                     </td>
                                                     <td className="text-end pt-3">
-                                                        <div className="fw-bold">{itemSymbol}{item.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                                        <div className="fw-bold">{item.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                                                         {item.discountAmount > 0 && (
                                                             <div className="text-warning small fw-bold" style={{ fontSize: '0.7rem' }}>
-                                                                Desc: -{item.discountType === 'PERCENTAGE' ? `${item.discountAmount}%` : `${itemSymbol}${item.discountAmount}`}
+                                                                Desc: -{item.discountType === 'PERCENTAGE' ? `${item.discountAmount}%` : `${item.discountAmount}`}
                                                             </div>
                                                         )}
                                                     </td>
                                                     <td className="text-end text-success small fw-bold pt-3">
-                                                        {baseCurrencySymbol}{(item.subtotalInBaseCurrency || item.total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        {(item.subtotalInBaseCurrency || item.total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </td>
                                                     <td className="text-center pt-2">
                                                         <Button variant="link" className="text-danger p-0" onClick={() => removeFromCart(idx)}>
@@ -666,20 +673,20 @@ const NewPurchasePage = () => {
                                     </div>
                                     <div className="d-flex justify-content-end mb-1">
                                         <span className="me-3 text-muted">Subtotal:</span>
-                                        <span className="fw-bold">{selectedCurrencyData?.symbol}{preGlobalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                        <span className="fw-bold">{preGlobalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {purchaseCurrency}</span>
                                     </div>
                                     {globalDiscountCalcRender > 0 && (
                                         <div className="d-flex justify-content-end mb-1 text-warning">
                                             <span className="me-3 fw-bold">Descuento Global:</span>
-                                            <span className="fw-bold">-{selectedCurrencyData?.symbol}{globalDiscountCalcRender.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                            <span className="fw-bold">-{globalDiscountCalcRender.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {purchaseCurrency}</span>
                                         </div>
                                     )}
                                     <h4 className="mb-0 mt-2 text-success fw-black">
-                                        Total a Pagar: {selectedCurrencyData?.symbol}{finalTotalRender.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {purchaseCurrency}
+                                        Total a Pagar: {finalTotalRender.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {purchaseCurrency}
                                     </h4>
                                     {purchaseCurrency !== baseCurrencyCode && (
                                         <div className="text-muted small mt-1 fw-bold">
-                                            Equivalente Base: {baseCurrencySymbol}{finalTotalBaseRender.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}
+                                            Equivalente Base: {finalTotalBaseRender.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}
                                         </div>
                                     )}
                                 </div>
@@ -803,7 +810,7 @@ const NewPurchasePage = () => {
                                             </InputGroup>
                                             {purchaseCurrency !== baseCurrencyCode && unitCost && (
                                                 <Form.Text className="text-primary fw-bold">
-                                                    ≈ {baseCurrencySymbol}{Number(convertToBase(unitCost)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} {baseCurrencyCode}
+                                                    ≈ {Number(convertToBase(unitCost)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} {baseCurrencyCode}
                                                     <span className="text-muted ms-2">(Tasa: {Number(exchangeRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</span>
                                                 </Form.Text>
                                             )}
@@ -1019,13 +1026,13 @@ const NewPurchasePage = () => {
 
                             <div className="col-md-4">
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Costo de Compra ($) <small className="text-muted">(Privado)</small></Form.Label>
+                                    <Form.Label>Costo de Compra ({baseCurrencyCode}) <small className="text-muted">(Privado)</small></Form.Label>
                                     <Form.Control type="number" onFocus={(e) => e.target.select()} step="0.01" value={prodCostPrice} onChange={(e) => setProdCostPrice(e.target.value)} min="0" placeholder="0.00" />
                                 </Form.Group>
                             </div>
                             <div className="col-md-4">
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Precio de Venta ($) <span className="text-danger">*</span></Form.Label>
+                                    <Form.Label>Precio de Venta ({baseCurrencyCode}) <span className="text-danger">*</span></Form.Label>
                                     <Form.Control type="number" onFocus={(e) => e.target.select()} step="0.01" required value={prodPrice} onChange={(e) => setProdPrice(e.target.value)} min="0" placeholder="0.00" />
                                 </Form.Group>
                             </div>
@@ -1034,7 +1041,7 @@ const NewPurchasePage = () => {
                                     <Form.Label>Ganancia Estimada (%)</Form.Label>
                                     <div className="d-flex align-items-center h-100 pb-1">
                                         <Badge bg={(prodPrice - prodCostPrice) > 0 ? "success" : "secondary"} className="p-2 w-100 fs-6 shadow-sm">
-                                            ${(prodPrice - prodCostPrice || 0).toFixed(2)}
+                                            {(prodPrice - prodCostPrice || 0).toFixed(2)} {baseCurrencyCode}
                                             <small className="ms-2 opacity-75">
                                                 ({prodCostPrice > 0 ? (((prodPrice - prodCostPrice) / prodCostPrice) * 100).toFixed(1) : (prodPrice > 0 ? "100.0" : "0.0")}%)
                                             </small>
@@ -1126,13 +1133,13 @@ const NewPurchasePage = () => {
                             <div className="d-flex justify-content-between mb-2">
                                 <span className="text-muted">Costo Anterior:</span>
                                 <span className="fw-bold text-success">
-                                    {baseCurrencySymbol}{pendingCartItem.product.costPrice?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}
+                                    {pendingCartItem.product.costPrice?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}
                                 </span>
                             </div>
                             <div className="d-flex justify-content-between">
                                 <span className="text-muted">Nuevo Costo:</span>
                                 <span className="fw-bold text-danger">
-                                    {baseCurrencySymbol}{pendingCartItem.unitCostInBaseCurrency?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}
+                                    {pendingCartItem.unitCostInBaseCurrency?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}
                                 </span>
                             </div>
                         </div>
@@ -1165,40 +1172,66 @@ const NewPurchasePage = () => {
                     {lastPurchaseSummary && (
                         <Card className="border-0 bg-light rounded-4 p-4 text-start mb-4 shadow-sm">
                             <Row className="g-3">
-                                <Col xs={6}>
+                                <Col xs={12}>
                                     <small className="text-muted d-block text-uppercase fw-bold" style={{ fontSize: '0.7rem' }}>Proveedor</small>
-                                    <div className="fw-bold text-dark">{lastPurchaseSummary.supplierName}</div>
+                                    <div className="fw-bold text-dark text-truncate" title={lastPurchaseSummary.supplierName}>{lastPurchaseSummary.supplierName}</div>
                                 </Col>
-                                <Col xs={6}>
+                                <Col xs={lastPurchaseSummary.invoiceNumber ? 6 : 12}>
                                     <small className="text-muted d-block text-uppercase fw-bold" style={{ fontSize: '0.7rem' }}>Método de Pago</small>
-                                    <div className="fw-bold text-dark">
+                                    <div className="fw-bold text-dark text-truncate">
                                         {lastPurchaseSummary.paymentMethod === 'CASH' ? 'Efectivo' :
                                             lastPurchaseSummary.paymentMethod === 'TRANSFER' ? 'Transferencia' :
                                                 lastPurchaseSummary.paymentMethod === 'MOBILE_PAYMENT' ? 'Pago Móvil' : 'Tarjeta'}
                                     </div>
                                 </Col>
                                 {lastPurchaseSummary.invoiceNumber && (
-                                    <Col xs={12}>
+                                    <Col xs={6}>
                                         <small className="text-muted d-block text-uppercase fw-bold" style={{ fontSize: '0.7rem' }}>Nro. Factura</small>
-                                        <div className="fw-bold text-dark">{lastPurchaseSummary.invoiceNumber}</div>
+                                        <div className="fw-bold text-dark text-truncate" title={lastPurchaseSummary.invoiceNumber}>{lastPurchaseSummary.invoiceNumber}</div>
                                     </Col>
                                 )}
                                 <Col xs={12}>
                                     <hr className="my-2 border-secondary opacity-25" />
+                                    <small className="text-muted d-block text-uppercase fw-bold mb-2" style={{ fontSize: '0.7rem' }}>Detalle de Compra</small>
+                                    <div className="bg-white rounded p-3 border shadow-sm" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                                        {lastPurchaseSummary.items?.map((item, idx) => (
+                                            <div key={idx} className="d-flex justify-content-between mb-2 pb-2 border-bottom border-light">
+                                                <div>
+                                                    <span className="fw-bold text-dark d-block" style={{ fontSize: '0.85rem' }}>{item.name}</span>
+                                                    <span className="text-muted" style={{ fontSize: '0.75rem' }}>{item.quantity} x {Number(item.unitCost).toLocaleString(undefined, { minimumFractionDigits: 2 })} {lastPurchaseSummary.currencyCode}</span>
+                                                </div>
+                                                <div className="fw-bold text-dark" style={{ fontSize: '0.85rem' }}>
+                                                    {Number(item.total).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </Col>
-                                <Col xs={6}>
-                                    <small className="text-muted d-block text-uppercase fw-bold" style={{ fontSize: '0.7rem' }}>Cant. Productos</small>
-                                    <div className="fw-bold text-dark">{lastPurchaseSummary.itemsCount}</div>
-                                </Col>
-                                <Col xs={6} className="text-end">
-                                    <small className="text-muted d-block text-uppercase fw-bold" style={{ fontSize: '0.7rem' }}>Total a Pagar</small>
-                                    <h4 className="fw-bold text-success mb-0">
-                                        {lastPurchaseSummary.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {lastPurchaseSummary.currencyCode}
-                                    </h4>
+
+                                <Col xs={12}>
+                                    <div className="d-flex justify-content-between mb-1 mt-2">
+                                        <span className="text-muted small">Subtotal</span>
+                                        <span className="fw-bold">{Number(lastPurchaseSummary.subtotal).toLocaleString(undefined, { minimumFractionDigits: 2 })} {lastPurchaseSummary.currencyCode}</span>
+                                    </div>
+                                    {lastPurchaseSummary.globalDiscountAmountCalc > 0 && (
+                                        <div className="d-flex justify-content-between mb-1 text-warning">
+                                            <span className="fw-bold small">Descuento Global</span>
+                                            <span className="fw-bold">-{Number(lastPurchaseSummary.globalDiscountAmountCalc).toLocaleString(undefined, { minimumFractionDigits: 2 })} {lastPurchaseSummary.currencyCode}</span>
+                                        </div>
+                                    )}
+                                    <hr className="my-2 border-secondary opacity-25" />
+                                    <div className="d-flex justify-content-between align-items-center">
+                                        <span className="text-muted text-uppercase fw-bold" style={{ fontSize: '0.7rem' }}>Total a Pagar</span>
+                                        <h4 className="fw-black text-success mb-0">
+                                            {lastPurchaseSummary.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {lastPurchaseSummary.currencyCode}
+                                        </h4>
+                                    </div>
                                     {lastPurchaseSummary.currencyCode !== baseCurrencyCode && (
-                                        <small className="text-muted fw-bold">
-                                            Equiv: {baseCurrencySymbol}{lastPurchaseSummary.totalInBaseCurrency.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}
-                                        </small>
+                                        <div className="text-end mt-1">
+                                            <small className="text-muted fw-bold" style={{ fontSize: '0.75rem' }}>
+                                                Equiv: {lastPurchaseSummary.totalInBaseCurrency.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}
+                                            </small>
+                                        </div>
                                     )}
                                 </Col>
                             </Row>

@@ -15,7 +15,7 @@ const DailyClosingPage = () => {
     const formatSecondary = (amount) => {
         if (!platformConfig || !platformConfig.enableSecondaryCurrency) return null;
         const converted = new Decimal(amount).times(platformConfig.exchangeRate).toNumber();
-        return `${platformConfig.secondaryCurrencySymbol} ${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        return `${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${platformConfig.secondaryCurrencyCode || 'VES'}`;
     };
 
     const fetchSummary = (silent = false) => {
@@ -101,31 +101,31 @@ const DailyClosingPage = () => {
                                         <tr key={r.user} className="text-center align-middle">
                                             <td className="fw-bold text-start ps-4">{r.user}</td>
                                             <td>
-                                                ${r.totalCash.toFixed(2)}
+                                                {r.totalCash.toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}
                                                 {platformConfig?.enableSecondaryCurrency && r.totalCash > 0 && (
                                                     <div className="text-muted" style={{ fontSize: '0.7rem' }}>{formatSecondary(r.totalCash)}</div>
                                                 )}
                                             </td>
                                             <td>
-                                                ${r.totalCard.toFixed(2)}
+                                                {r.totalCard.toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}
                                                 {platformConfig?.enableSecondaryCurrency && r.totalCard > 0 && (
                                                     <div className="text-muted" style={{ fontSize: '0.7rem' }}>{formatSecondary(r.totalCard)}</div>
                                                 )}
                                             </td>
                                             <td>
-                                                ${r.totalTransfer.toFixed(2)}
+                                                {r.totalTransfer.toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}
                                                 {platformConfig?.enableSecondaryCurrency && r.totalTransfer > 0 && (
                                                     <div className="text-muted" style={{ fontSize: '0.7rem' }}>{formatSecondary(r.totalTransfer)}</div>
                                                 )}
                                             </td>
                                             <td>
-                                                ${r.totalMobile.toFixed(2)}
+                                                {r.totalMobile.toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}
                                                 {platformConfig?.enableSecondaryCurrency && r.totalMobile > 0 && (
                                                     <div className="text-muted" style={{ fontSize: '0.7rem' }}>{formatSecondary(r.totalMobile)}</div>
                                                 )}
                                             </td>
                                             <td className="fw-bold bg-light">
-                                                ${r.grandTotal.toFixed(2)}
+                                                {r.grandTotal.toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}
                                                 {platformConfig?.enableSecondaryCurrency && r.grandTotal > 0 && (
                                                     <div className="text-muted" style={{ fontSize: '0.75rem' }}>{formatSecondary(r.grandTotal)}</div>
                                                 )}
@@ -142,12 +142,12 @@ const DailyClosingPage = () => {
                                     <tfoot className="bg-dark text-white text-center">
                                         <tr>
                                             <td className="text-end pe-3 fw-bold">TOTAL GENERAL</td>
-                                            <td>${report.reduce((acc, r) => acc.plus(new Decimal(r.totalCash)), new Decimal(0)).toFixed(2)}</td>
-                                            <td>${report.reduce((acc, r) => acc.plus(new Decimal(r.totalCard)), new Decimal(0)).toFixed(2)}</td>
-                                            <td>${report.reduce((acc, r) => acc.plus(new Decimal(r.totalTransfer)), new Decimal(0)).toFixed(2)}</td>
-                                            <td>${report.reduce((acc, r) => acc.plus(new Decimal(r.totalMobile)), new Decimal(0)).toFixed(2)}</td>
+                                            <td>{report.reduce((acc, r) => acc.plus(new Decimal(r.totalCash)), new Decimal(0)).toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}</td>
+                                            <td>{report.reduce((acc, r) => acc.plus(new Decimal(r.totalCard)), new Decimal(0)).toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}</td>
+                                            <td>{report.reduce((acc, r) => acc.plus(new Decimal(r.totalTransfer)), new Decimal(0)).toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}</td>
+                                            <td>{report.reduce((acc, r) => acc.plus(new Decimal(r.totalMobile)), new Decimal(0)).toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}</td>
                                             <td className="fw-bold fs-5">
-                                                ${new Decimal(grandTotalAll).toFixed(2)}
+                                                {new Decimal(grandTotalAll).toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}
                                                 {platformConfig?.enableSecondaryCurrency && grandTotalAll > 0 && (
                                                     <div style={{ fontSize: '0.8rem' }}>{formatSecondary(grandTotalAll)}</div>
                                                 )}

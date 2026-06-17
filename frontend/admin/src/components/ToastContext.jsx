@@ -31,7 +31,7 @@ export const ToastProvider = ({ children }) => {
                         key={toast.id}
                         bg={toast.variant === 'light' ? 'light' : toast.variant}
                         onClose={() => removeToast(toast.id)}
-                        delay={4000}
+                        delay={toast.variant === 'danger' ? 30000 : 4000}
                         autohide
                         className={`shadow-sm mb-2 text-${toast.variant === 'light' ? 'dark' : 'white'}`}
                     >

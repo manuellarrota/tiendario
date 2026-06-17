@@ -57,7 +57,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, Object>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {
-        String msg = "Error de integridad de datos.";
+        String msg = "No se puede eliminar por razones contables o de seguridad, ya que este registro tiene operaciones asociadas y forma parte del historial del sistema.";
         String message = ex.getMostSpecificCause().getMessage();
         if (message.contains("UK_6DOTKOTT2KJSP8VW4D0M25FB7") || message.toLowerCase().contains("users(email") || message.toLowerCase().contains("email nulls first")) {
             msg = "El correo electrónico ya está registrado.";

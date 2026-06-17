@@ -6,7 +6,7 @@ import com.nugar.repository.CompanyRepository;
 import com.nugar.repository.ProductRepository;
 import com.nugar.repository.UserRepository;
 import com.nugar.security.UserDetailsImpl;
-import com.nugar.service.FileStorageService;
+import com.nugar.service.S3StorageService;
 import com.nugar.service.ProductIndexService;
 import com.nugar.repository.CatalogProductRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +56,7 @@ public class ProductController {
     com.nugar.repository.CatalogSuggestionRepository catalogSuggestionRepository;
 
     @Autowired
-    FileStorageService fileStorageService;
+    S3StorageService s3StorageService;
 
     @Autowired
     com.nugar.repository.CategoryRepository categoryRepository;
@@ -74,8 +74,8 @@ public class ProductController {
     @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN')")
     public ResponseEntity<?> uploadImage(@RequestParam("file") MultipartFile file) {
         try {
-            String fileName = fileStorageService.storeFile(file);
-            return ResponseEntity.ok(new MessageResponse("/api/products/images/" + fileName));
+            String fileUrl = s3StorageService.storeFile(file);
+            return ResponseEntity.ok(new MessageResponse(fileUrl));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new MessageResponse("Could not upload file: " + e.getMessage()));
         }

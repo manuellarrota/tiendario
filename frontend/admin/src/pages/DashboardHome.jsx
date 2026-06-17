@@ -45,6 +45,7 @@ const DashboardHome = () => {
     
     // Config global
     const [platformConfig, setPlatformConfig] = useState(null);
+    const baseCurrencyCode = platformConfig?.baseCurrencyCode || '';
 
     const isSuperAdmin = user?.roles?.includes('ROLE_ADMIN');
     const isPremium = user?.subscriptionStatus === 'PAID' || user?.subscriptionStatus === 'TRIAL';
@@ -368,7 +369,7 @@ const DashboardHome = () => {
                                         <Card className="glass-card-admin h-100 border-0 shadow-sm border-start border-4 border-success" style={{ cursor: 'help' }}>
                                             <Card.Body className="p-4">
                                                 <span className="text-secondary small text-uppercase fw-bold mb-3 d-block letter-spacing-1">Ingresos (MRR)</span>
-                                                <h1 className="display-5 fw-bold text-success mb-1 text-nowrap">${Number(summary?.mrr || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h1>
+                                                <h1 className="display-5 fw-bold text-success mb-1 text-nowrap">{Number(summary?.mrr || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}</h1>
                                                 <small className="text-muted fw-medium"><FaMoneyBillWave className="me-1" /> Recurrencia Mensual</small>
                                             </Card.Body>
                                         </Card>
@@ -394,7 +395,7 @@ const DashboardHome = () => {
                                                     <FaGlobe className="text-success h3 mb-0" />
                                                 </div>
                                                 <h5 className="fw-bold mb-1">Volumen Global de la Plataforma</h5>
-                                                <h2 className="fw-bold text-dark text-nowrap">${Number(summary?.globalGmv || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+                                                <h2 className="fw-bold text-dark text-nowrap">{Number(summary?.globalGmv || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}</h2>
                                                 <p className="text-muted small">Monto total transaccionado</p>
                                             </Card.Body>
                                         </Card>
@@ -408,7 +409,7 @@ const DashboardHome = () => {
                                                     <FaChartLine className="text-warning h3 mb-0" />
                                                 </div>
                                                 <h5 className="fw-bold mb-1">Valor Promedio por Pedido (Global)</h5>
-                                                <h2 className="fw-bold text-dark text-nowrap">${Number(summary?.globalAov || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+                                                <h2 className="fw-bold text-dark text-nowrap">{Number(summary?.globalAov || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}</h2>
                                                 <p className="text-muted small">Promedio por pedido</p>
                                             </Card.Body>
                                         </Card>
@@ -468,7 +469,7 @@ const DashboardHome = () => {
                                                             setShowExtraModal(true);
                                                         }}
                                                     >
-                                                        + Solicitar Caja Extra (${(platformConfig?.extraRegisterMonthlyPrice || 5.00).toFixed(2)}/mes)
+                                                        + Solicitar Caja Extra ({(platformConfig?.extraRegisterMonthlyPrice || 5.00).toFixed(2)} {baseCurrencyCode}/mes)
                                                     </Button>
                                                 </Card.Body>
                                             </Card>
@@ -501,14 +502,14 @@ const DashboardHome = () => {
                                                     </OverlayTrigger>
                                                     <FaMoneyBillWave className="text-primary opacity-50" />
                                                 </div>
-                                                <h3 className="fw-bold mb-1 text-primary text-nowrap">${Number(summary?.revenueToday || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+                                                <h3 className="fw-bold mb-1 text-primary text-nowrap">{Number(summary?.revenueToday || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}</h3>
                                                     <div className="d-flex align-items-center gap-2">
                                                         {summary?.revenueGrowth >= 0 ? (
                                                             <span className="text-success small fw-bold">↑ {summary?.revenueGrowth}%</span>
                                                         ) : (
                                                             <span className="text-danger small fw-bold">↓ {Math.abs(summary?.revenueGrowth)}%</span>
                                                         )}
-                                                        <small className="text-muted">vs ayer (${Number(summary?.revenueYesterday || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</small>
+                                                        <small className="text-muted">vs ayer ({Number(summary?.revenueYesterday || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode})</small>
                                                     </div>
                                             </Card.Body>
                                         </Card>
@@ -523,7 +524,7 @@ const DashboardHome = () => {
                                                     </OverlayTrigger>
                                                     <FaChartLine className="text-warning opacity-50" />
                                                 </div>
-                                                <h3 className="fw-bold mb-1 text-warning text-nowrap">${Number(summary?.shopAov || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+                                                <h3 className="fw-bold mb-1 text-warning text-nowrap">{Number(summary?.shopAov || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}</h3>
                                                     <small className="text-muted">Promedio por Venta</small>
                                             </Card.Body>
                                         </Card>
@@ -584,12 +585,15 @@ const DashboardHome = () => {
                                                                 const heightPercent = (d.value / maxValue) * 100;
                                                                 return (
                                                                     <div key={i} className="d-flex flex-column align-items-center flex-grow-1 h-100 min-width-50">
-                                                                        <div className="flex-grow-1 d-flex align-items-end w-100 px-1">
-                                                                            <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, `${d.label}: $${Number(d.value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)}>
+                                                                        <div className="flex-grow-1 d-flex flex-column justify-content-end align-items-center w-100 px-1">
+                                                                            <span className="fw-bold text-primary mb-1" style={{ fontSize: '0.65rem', whiteSpace: 'nowrap', opacity: d.value > 0 ? 0.8 : 0 }}>
+                                                                                {d.value >= 1000 ? (d.value / 1000).toFixed(1) + 'k' : Number(d.value).toLocaleString()} {baseCurrencyCode}
+                                                                            </span>
+                                                                            <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, `${d.label}: ${Number(d.value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${baseCurrencyCode}`)}>
                                                                                 <div 
                                                                                     className="w-100 rounded-top-3 transition-all chart-bar-gradient"
                                                                                     style={{ 
-                                                                                        height: `${Math.max(heightPercent, 5)}%`,
+                                                                                        height: `${Math.max(heightPercent, 2)}%`,
                                                                                         opacity: i === chartData.length - 1 ? 1 : 0.7,
                                                                                         cursor: 'pointer'
                                                                                     }}
@@ -740,7 +744,7 @@ const DashboardHome = () => {
                                                                             </Badge>
                                                                         </td>
                                                                         <td className="text-end px-3">
-                                                                            <div className="fw-bold text-primary">${Number(sale.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                                                            <div className="fw-bold text-primary">{Number(sale.totalAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}</div>
                                                                         </td>
                                                                     </tr>
                                                                 ))
@@ -773,7 +777,7 @@ const DashboardHome = () => {
                                             <Col md={5}>
                                                 <div className="bg-white p-4 rounded-4 shadow-sm border border-light h-100 d-flex flex-column justify-content-center hover-lift">
                                                     <div className="text-muted small fw-bold text-uppercase mb-2 letter-spacing-1">Tus Ventas Hoy</div>
-                                                    <h2 className="text-primary fw-bold mb-0">${Number(summary?.revenueToday || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+                                                    <h2 className="text-primary fw-bold mb-0">{Number(summary?.revenueToday || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}</h2>
                                                 </div>
                                             </Col>
                                             <Col md={5}>
@@ -830,9 +834,9 @@ const DashboardHome = () => {
                                             setPaymentForm({ ...paymentForm, targetPlan: newPlan, amount: calculateAmount(paymentForm.billingCycle, newPlan) });
                                         }}
                                     >
-                                        <option value="BASIC">🥉 Plan Básico — ${(platformConfig?.basicPlanMonthlyPrice || 19.99).toFixed(2)}/mes</option>
-                                        <option value="MEDIUM">🥈 Plan Medium — ${(platformConfig?.mediumPlanMonthlyPrice || 29.99).toFixed(2)}/mes</option>
-                                        <option value="PREMIUM">🥇 Plan Premium — ${(platformConfig?.premiumPlanMonthlyPrice || 49.99).toFixed(2)}/mes</option>
+                                        <option value="BASIC">🥉 Plan Básico — {(platformConfig?.basicPlanMonthlyPrice || 19.99).toFixed(2)} {baseCurrencyCode}/mes</option>
+                                        <option value="MEDIUM">🥈 Plan Medium — {(platformConfig?.mediumPlanMonthlyPrice || 29.99).toFixed(2)} {baseCurrencyCode}/mes</option>
+                                        <option value="PREMIUM">🥇 Plan Premium — {(platformConfig?.premiumPlanMonthlyPrice || 49.99).toFixed(2)} {baseCurrencyCode}/mes</option>
                                     </Form.Select>
                                 </Form.Group>
 
@@ -863,7 +867,7 @@ const DashboardHome = () => {
                                 </Form.Group>
 
                                 <Form.Group className="mb-3">
-                                    <Form.Label className="small fw-bold">Monto Pagado ($)</Form.Label>
+                                    <Form.Label className="small fw-bold">Monto Pagado ({baseCurrencyCode})</Form.Label>
                                     <Form.Control
                                         type="number"
                                         step="0.01"
@@ -873,11 +877,11 @@ const DashboardHome = () => {
                                     />
                                     <Form.Text className="text-muted small d-block mt-2">
                                         <strong>Desglose de facturación:</strong><br/>
-                                        • Membresía Base: ${(paymentForm.amount - ((summary?.billedExtraRegisters || 0) * (paymentForm.billingCycle === 'MONTHLY' ? (platformConfig?.extraRegisterMonthlyPrice || 5) : (platformConfig?.extraRegisterMonthlyPrice || 5) * 10))).toFixed(2)}<br/>
+                                        • Membresía Base: {(paymentForm.amount - ((summary?.billedExtraRegisters || 0) * (paymentForm.billingCycle === 'MONTHLY' ? (platformConfig?.extraRegisterMonthlyPrice || 5) : (platformConfig?.extraRegisterMonthlyPrice || 5) * 10))).toFixed(2)} {baseCurrencyCode}<br/>
                                         {summary?.billedExtraRegisters > 0 && (
-                                            <>• Cajas Adicionales ({summary.billedExtraRegisters}): ${(summary.billedExtraRegisters * (paymentForm.billingCycle === 'MONTHLY' ? (platformConfig?.extraRegisterMonthlyPrice || 5) : (platformConfig?.extraRegisterMonthlyPrice || 5) * 10)).toFixed(2)}<br/></>
+                                            <>• Cajas Adicionales ({summary.billedExtraRegisters}): {(summary.billedExtraRegisters * (paymentForm.billingCycle === 'MONTHLY' ? (platformConfig?.extraRegisterMonthlyPrice || 5) : (platformConfig?.extraRegisterMonthlyPrice || 5) * 10)).toFixed(2)} {baseCurrencyCode}<br/></>
                                         )}
-                                        <strong>• Total a Pagar: ${paymentForm.amount}</strong>
+                                        <strong>• Total a Pagar: {paymentForm.amount} {baseCurrencyCode}</strong>
                                     </Form.Text>
                                     {(summary?.billedExtraRegisters > 0 && paymentForm.targetPlan === 'BASIC' && (summary.billedExtraRegisters * (platformConfig?.extraRegisterMonthlyPrice || 5) + (platformConfig?.basicPlanMonthlyPrice || 19.99)) >= (platformConfig?.mediumPlanMonthlyPrice || 29.99)) && (
                                         <Alert variant="warning" className="mt-2 small py-2">
@@ -1058,7 +1062,7 @@ const DashboardHome = () => {
                             <Form onSubmit={handleExtraRegisterSubmit}>
                                 <Alert variant="info" className="small py-2 border-0 shadow-sm">
                                     Adquiere cajas registradoras adicionales para tu negocio.<br/><br/>
-                                    <strong>Importante:</strong> Cada nueva caja tiene un costo de <strong>${(platformConfig?.extraRegisterMonthlyPrice || 5.00).toFixed(2)} mensuales</strong>. Al aprobarse tu pago, estas cajas se sumarán a las que ya tienes habilitadas.
+                                    <strong>Importante:</strong> Cada nueva caja tiene un costo de <strong>{(platformConfig?.extraRegisterMonthlyPrice || 5.00).toFixed(2)} {baseCurrencyCode} mensuales</strong>. Al aprobarse tu pago, estas cajas se sumarán a las que ya tienes habilitadas.
                                 </Alert>
 
                                 {extraStatus.error && <Alert variant="danger" className="py-2 small">{extraStatus.error}</Alert>}
@@ -1083,7 +1087,7 @@ const DashboardHome = () => {
                                 <div className="bg-light p-3 rounded-3 mb-4 text-center border">
                                     <span className="small text-muted d-block mb-1">Monto a Pagar Ahora</span>
                                     <h3 className="fw-bold text-dark mb-0">
-                                        ${((parseInt(extraForm.requested) || 0) * (platformConfig?.extraRegisterMonthlyPrice || 5)).toFixed(2)}
+                                        {((parseInt(extraForm.requested) || 0) * (platformConfig?.extraRegisterMonthlyPrice || 5)).toFixed(2)} {baseCurrencyCode}
                                     </h3>
                                 </div>
                                 

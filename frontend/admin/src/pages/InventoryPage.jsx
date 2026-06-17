@@ -7,6 +7,7 @@ import CategoryService from "../services/category.service";
 import CategorySuggestionService from "../services/category-suggestion.service";
 import AuthService from "../services/auth.service";
 import InventoryService from "../services/inventory.service";
+import PublicService from "../services/public.service";
 import { FaPlus, FaTrash, FaEdit, FaBoxOpen, FaExclamationTriangle, FaLock, FaImage, FaFileExcel, FaFilePdf, FaUpload, FaSort, FaSortUp, FaSortDown, FaBarcode, FaChartLine, FaCogs } from "react-icons/fa";
 import InventoryImportWizard from "../components/InventoryImportWizard";
 import { useToast } from "../components/ToastContext";
@@ -43,6 +44,7 @@ const InventoryPage = () => {
     const [isGeneratingSku, setIsGeneratingSku] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [catalogSuggestions, setCatalogSuggestions] = useState([]);
+    const [platformConfig, setPlatformConfig] = useState(null);
     const [showCatalogSuggestions, setShowCatalogSuggestions] = useState(false);
 
     // Category Suggestion
@@ -130,6 +132,7 @@ const InventoryPage = () => {
 
     useEffect(() => {
         loadCategories();
+        PublicService.getPlatformConfig().then(res => setPlatformConfig(res.data)).catch(err => console.error(err));
     }, []);
 
     const handleViewHistory = (product) => {
@@ -299,11 +302,11 @@ const InventoryPage = () => {
                     setShowDeleteModal(false);
                     setProductToDelete(null);
                 },
-                () => {
-                    setMessage("❌ No pudimos eliminar el producto. Intente más tarde.");
+                (error) => {
+                    setMessage("❌ " + (error.response?.data?.message || error.translatedMessage || "No pudimos eliminar el producto. Intente más tarde."));
                     setShowDeleteModal(false);
                     setProductToDelete(null);
-                    setTimeout(() => setMessage(""), 3500);
+                    setTimeout(() => setMessage(""), 30000);
                 }
             );
         }
@@ -592,7 +595,7 @@ const InventoryPage = () => {
                                                 <Badge bg="light" className="text-dark border shadow-sm fw-normal px-2 py-1" style={{ fontSize: '0.75rem' }}>{product.category || 'Sin Cat.'}</Badge>
                                             </td>
                                             <td className="text-end align-middle">
-                                                <div className="fw-bold text-dark" style={{ fontSize: '0.9rem' }}>${product.price}</div>
+                                                <div className="fw-bold text-dark" style={{ fontSize: '0.9rem' }}>{product.price} {platformConfig?.baseCurrencyCode || 'USD'}</div>
                                                 {product.price > 0 && product.costPrice >= product.price * 0.85 && (
                                                     <Badge bg="warning" text="dark" className="mt-1 shadow-sm opacity-75" style={{ fontSize: '0.65rem' }}>📉 Margen Bajo</Badge>
                                                 )}
@@ -668,250 +671,230 @@ const InventoryPage = () => {
 
             {/* Create/Edit Modal */}
             <Modal scrollable show={showModal} onHide={() => { setShowModal(false); setEditingProduct(null); }} centered size="lg">
-                <Modal.Header closeButton className="border-0">
-                    <Modal.Title className="fw-bold text-dark">{editingProduct ? 'Editar Producto' : 'Nuevo Producto'}</Modal.Title>
+                <Modal.Header closeButton className="border-0 pb-0 px-4 pt-4">
+                    <div>
+                        <Modal.Title className="fw-bold text-dark fs-5">
+                            {editingProduct ? (
+                                <><FaEdit className="me-2 text-primary" />{editingProduct.name}</>
+                            ) : (
+                                <><FaPlus className="me-2 text-success" />Nuevo Producto</>
+                            )}
+                        </Modal.Title>
+                        <small className="text-muted">
+                            {editingProduct ? 'Modifica los datos del producto' : 'Completa los campos para añadir al inventario'}
+                            {' · '}<span className="text-danger">*</span> <span style={{ fontSize: '0.78rem' }}>campo obligatorio</span>
+                        </small>
+                    </div>
                 </Modal.Header>
-                <Modal.Body className="p-4">
+                <Modal.Body className="p-0">
                     <Form onSubmit={handleSubmit}>
-                        <div className="row g-3">
-                            {/* Basic Info */}
-                            <div className="col-12">
-                                <h6 className="text-primary fw-bold mb-3">Información Básica</h6>
-                            </div>
 
-                            <div className="col-md-8">
-                                <Form.Group className="mb-3 position-relative">
-                                    <Form.Label>Nombre del Producto <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        required
-                                        placeholder="Ej: Zapatillas Running"
-                                        value={name}
-                                        onChange={(e) => setName(e.target.value)}
-                                        onFocus={() => catalogSuggestions.length > 0 && setShowCatalogSuggestions(true)}
-                                        onBlur={() => setTimeout(() => setShowCatalogSuggestions(false), 200)}
-                                    />
-                                    {showCatalogSuggestions && (
-                                        <div className="list-group position-absolute w-100 shadow-lg" style={{ zIndex: 1000, top: '100%' }}>
-                                            {catalogSuggestions.map(cp => (
-                                                <button
-                                                    key={cp.id}
-                                                    type="button"
-                                                    className="list-group-item list-group-item-action d-flex align-items-center gap-2"
-                                                    onClick={() => handleSelectCatalogProduct(cp)}
-                                                >
-                                                    {cp.imageUrl && <img src={cp.imageUrl} alt="" style={{ width: '30px', height: '30px', objectFit: 'cover' }} className="rounded" />}
-                                                    <div>
-                                                        <div className="fw-bold small">{cp.name}</div>
-                                                        <div className="d-flex gap-2 align-items-center">
-                                                            <small className="text-primary fw-bold" style={{ fontSize: '0.7rem' }}>{cp.brand || 'Marca no reg.'}</small>
-                                                            <small className="text-muted">SKU: {cp.sku}</small>
-                                                        </div>
-                                                    </div>
-                                                    <Badge bg="info" className="ms-auto small">Sugerencia Global</Badge>
-                                                </button>
-                                            ))}
+                        {/* ── Image Hero ─────────────────────────────────────── */}
+                        <div className="px-4 pt-3 pb-3" style={{ background: 'linear-gradient(135deg,#f8f9fa 0%,#e9ecef 100%)', borderBottom: '1px solid #dee2e6' }}>
+                            <div className="d-flex gap-3 align-items-center">
+                                <div className="rounded-3 border bg-white d-flex align-items-center justify-content-center shadow-sm flex-shrink-0" style={{ width: 110, height: 110, overflow: 'hidden' }}>
+                                    {imageUrl ? (
+                                        <img src={getFullImageUrl(imageUrl)} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    ) : (
+                                        <div className="d-flex flex-column align-items-center" style={{ color: '#adb5bd' }}>
+                                            <FaImage size={28} />
+                                            <small style={{ fontSize: '0.65rem', marginTop: 4 }}>Sin imagen</small>
                                         </div>
                                     )}
-                                </Form.Group>
-                            </div>
-                            <div className="col-md-4">
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Variante / Presentación <small className="text-muted">(Opcional)</small></Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        placeholder="Ej: Manzana, Naranja, XL, 500ml"
-                                        value={variant}
-                                        onChange={(e) => setVariant(e.target.value)}
-                                    />
-                                    <Form.Text className="text-muted">
-                                        Para distinguir versiones del mismo producto. Ej: <em>Jugo Del Valle → Manzana / Naranja</em>
-                                    </Form.Text>
-                                </Form.Group>
-                            </div>
-
-                            <div className="col-md-4">
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Marca <small className="text-muted">(Opcional)</small></Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        placeholder="Ej: Del Valle, Stanley, Nike"
-                                        value={brand}
-                                        onChange={(e) => setBrand(e.target.value)}
-                                    />
-                                    <Form.Text className="text-muted">
-                                        Fabricante o marca del producto.
-                                    </Form.Text>
-                                </Form.Group>
-                            </div>
-
-                            <div className="col-md-6">
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Categoría <span className="text-danger">*</span></Form.Label>
-                                    <Form.Select
-                                        required
-                                        value={category}
-                                        onChange={(e) => {
-                                            if (e.target.value === 'suggest_new_category_action') {
-                                                setShowSuggestModal(true);
-                                                setCategory('');
-                                            } else {
-                                                setCategory(e.target.value);
-                                            }
-                                        }}
-                                    >
-                                        <option value="">Selecciona una categoría...</option>
-
-                                        {/* Global Approved Categories */}
-                                        {categories.length > 0 && (
-                                            <optgroup label="Categorías Globales">
-                                                {categories.map(cat => (
-                                                    <option key={cat.id} value={cat.name}>{cat.name}</option>
-                                                ))}
-                                            </optgroup>
-                                        )}
-
-                                        {/* Store Pending Suggestions */}
-                                        {suggestions.filter(s => s.status === 'PENDING').length > 0 && (
-                                            <optgroup label="Tus Sugerencias (Pendientes)">
-                                                {suggestions.filter(s => s.status === 'PENDING').map(s => (
-                                                    <option key={'sug-' + s.id} value={s.name}>{s.name}</option>
-                                                ))}
-                                            </optgroup>
-                                        )}
-
-                                        <option value="Otros">Otros</option>
-                                        <optgroup label="Opciones">
-                                            <option value="suggest_new_category_action" className="fw-bold text-primary">+ Sugerir Categoría Nueva</option>
-                                        </optgroup>
-                                    </Form.Select>
-                                </Form.Group>
-                            </div>
-
-                            <div className="col-md-6">
-                                <Form.Group className="mb-3">
-                                    <Form.Label className="d-flex justify-content-between">
-                                        SKU (Código Interno) <span className="text-danger">*</span>
-                                        {isGeneratingSku && <span className="spinner-border spinner-border-sm text-primary"></span>}
-                                    </Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        required
-                                        value={sku}
-                                        onChange={(e) => setSku(e.target.value)}
-                                        disabled={editingProduct}
-                                        placeholder="Generación automática..."
-                                    />
-                                    <Form.Text className="text-muted">Generado automáticamente por el sistema.</Form.Text>
-                                </Form.Group>
-                            </div>
-
-                            <div className="col-md-6">
-                                <Form.Group className="mb-3">
-                                    <Form.Label className="d-flex align-items-center gap-2">
-                                        <FaBarcode className="text-secondary" /> Código de Barras
-                                        <small className="text-muted fw-normal">(EAN-13, UPC — Opcional)</small>
-                                    </Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        value={barcode}
-                                        onChange={(e) => setBarcode(e.target.value)}
-                                        placeholder="Escanear o ingresar código del fabricante"
-                                    />
-                                    <Form.Text className="text-muted">Se usa para búsqueda rápida en el POS con lector de barras.</Form.Text>
-                                </Form.Group>
-                            </div>
-
-                            {/* Inventory & Pricing */}
-                            <div className="col-12 mt-4">
-                                <h6 className="text-primary fw-bold mb-3">Precios e Inventario</h6>
-                            </div>
-
-                            <div className="col-md-4">
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Costo de Adquisición ($) <small className="text-muted">(Privado)</small></Form.Label>
-                                    <Form.Control type="number" onFocus={(e) => e.target.select()} step="0.01" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} min="0" placeholder="0.00" />
-                                </Form.Group>
-                            </div>
-                            <div className="col-md-4">
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Precio de Venta ($) <span className="text-danger">*</span></Form.Label>
-                                    <Form.Control type="number" onFocus={(e) => e.target.select()} step="0.01" required value={price} onChange={(e) => setPrice(e.target.value)} min="0" placeholder="0.00" />
-                                </Form.Group>
-                            </div>
-                            <div className="col-md-4">
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Ganancia Estimada (%)</Form.Label>
-                                    <div className="d-flex align-items-center h-100 pb-1">
-                                        <Badge bg={(price - costPrice) > 0 ? "success" : "secondary"} className="p-2 w-100 fs-6 shadow-sm">
-                                            ${(price - costPrice || 0).toFixed(2)}
-                                            <small className="ms-2 opacity-75">
-                                                ({costPrice > 0 ? (((price - costPrice) / costPrice) * 100).toFixed(1) : (price > 0 ? "100.0" : "0.0")}%)
-                                            </small>
-                                        </Badge>
+                                </div>
+                                <div className="flex-grow-1">
+                                    <Form.Label className="fw-semibold small text-dark mb-1 d-block">Imagen del Producto</Form.Label>
+                                    <div className="d-flex flex-column gap-2">
+                                        <label className={`btn btn-sm ${isUploading ? 'btn-secondary' : 'btn-outline-primary'} mb-0 d-inline-flex align-items-center gap-2`} style={{ width: 'fit-content' }}>
+                                            {isUploading ? <span className="spinner-border spinner-border-sm" /> : <FaUpload />}
+                                            {isUploading ? 'Subiendo...' : 'Subir imagen'}
+                                            <input type="file" hidden accept="image/*" onChange={handleUploadImage} disabled={isUploading} />
+                                        </label>
+                                        <Form.Control type="text" size="sm" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="o pega una URL: https://..." className="border-0 bg-white shadow-sm" />
                                     </div>
-                                </Form.Group>
+                                    <small className="text-muted" style={{ fontSize: '0.72rem' }}>Imagen cuadrada (1:1), menos de 2MB recomendado.</small>
+                                </div>
                             </div>
-                            <div className="col-md-4">
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Stock Inicial</Form.Label>
-                                    <Form.Control type="number" onFocus={(e) => e.target.select()} required value={stock} onChange={(e) => setStock(e.target.value)} min="0" placeholder="Cantidad actual" />
-                                </Form.Group>
-                            </div>
-                            <div className="col-md-4">
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Stock Mínimo (Alerta)</Form.Label>
-                                    <Form.Control type="number" onFocus={(e) => e.target.select()} required value={minStock} onChange={(e) => setMinStock(e.target.value)} min="0" placeholder="Ej: 5" />
-                                </Form.Group>
-                            </div>
-
-                            {/* Media */}
-                            <div className="col-12 mt-4">
-                                <h6 className="text-primary fw-bold mb-3">Multimedia</h6>
-                            </div>
-
-                            <div className="col-12">
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Imagen del Producto</Form.Label>
-                                    <div className="d-flex flex-column gap-3">
-                                        {/* File Upload Option */}
-                                        <div className="d-flex align-items-center gap-2">
-                                            <label className={`btn ${isUploading ? 'btn-secondary' : 'btn-outline-primary'} mb-0`}>
-                                                {isUploading ? <span className="spinner-border spinner-border-sm me-2"></span> : <FaUpload className="me-2" />}
-                                                {isUploading ? 'Subiendo...' : 'Subir Archivo'}
-                                                <input type="file" hidden accept="image/*" onChange={handleUploadImage} disabled={isUploading} />
-                                            </label>
-                                            <span className="text-muted small">o pega una URL abajo</span>
-                                        </div>
-
-                                        {/* URL Input Option */}
-                                        <div className="d-flex gap-3">
-                                            <Form.Control
-                                                type="text"
-                                                value={imageUrl}
-                                                onChange={(e) => setImageUrl(e.target.value)}
-                                                placeholder="https://ejemplo.com/imagen.jpg o ruta/interna"
-                                            />
-                                            {imageUrl && (
-                                                <div className="border rounded d-flex align-items-center justify-content-center bg-light" style={{ width: 80, height: 45, flexShrink: 0, overflow: 'hidden' }}>
-                                                    <img src={getFullImageUrl(imageUrl)} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <Form.Text className="text-muted">
-                                        Recomendamos usar imágenes cuadradas (1:1) de menos de 2MB.
-                                    </Form.Text>
-                                </Form.Group>
-                            </div>
-
                         </div>
 
-                        <div className="d-flex justify-content-end gap-2 mt-4 pt-3 border-top">
-                            <Button variant="light" onClick={() => setShowModal(false)}>Cancelar</Button>
-                            <Button variant="primary" type="submit" className="px-4">
-                                {editingProduct ? 'Actualizar Producto' : 'Guardar Producto'}
-                            </Button>
+                        <div className="p-4">
+                            {/* ── Section 1: Información Básica ────────────────── */}
+                            <div className="p-3 rounded-3 border mb-3 bg-white">
+                                <div className="d-flex align-items-center gap-2 mb-3">
+                                    <div className="rounded-2 p-1 d-flex" style={{ background: '#e7f0ff' }}><FaBoxOpen size={13} className="text-primary" /></div>
+                                    <span className="fw-bold text-dark small text-uppercase" style={{ letterSpacing: '0.5px' }}>Información Básica</span>
+                                </div>
+                                <div className="row g-3">
+                                    <div className="col-md-8">
+                                        <Form.Group className="position-relative">
+                                            <Form.Label className="fw-semibold small">Nombre <span className="text-danger">*</span></Form.Label>
+                                            <Form.Control type="text" required placeholder="Ej: Zapatillas Running Air Max" value={name}
+                                                onChange={(e) => setName(e.target.value)}
+                                                onFocus={() => catalogSuggestions.length > 0 && setShowCatalogSuggestions(true)}
+                                                onBlur={() => setTimeout(() => setShowCatalogSuggestions(false), 200)}
+                                            />
+                                            {showCatalogSuggestions && (
+                                                <div className="list-group position-absolute w-100 shadow-lg" style={{ zIndex: 1000, top: '100%' }}>
+                                                    {catalogSuggestions.map(cp => (
+                                                        <button key={cp.id} type="button" className="list-group-item list-group-item-action d-flex align-items-center gap-2" onClick={() => handleSelectCatalogProduct(cp)}>
+                                                            {cp.imageUrl && <img src={cp.imageUrl} alt="" style={{ width: '30px', height: '30px', objectFit: 'cover' }} className="rounded" />}
+                                                            <div>
+                                                                <div className="fw-bold small">{cp.name}</div>
+                                                                <div className="d-flex gap-2 align-items-center">
+                                                                    <small className="text-primary fw-bold" style={{ fontSize: '0.7rem' }}>{cp.brand || 'Marca no reg.'}</small>
+                                                                    <small className="text-muted">SKU: {cp.sku}</small>
+                                                                </div>
+                                                            </div>
+                                                            <Badge bg="info" className="ms-auto small">Sugerencia Global</Badge>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </Form.Group>
+                                    </div>
+                                    <div className="col-md-4">
+                                        <Form.Group>
+                                            <Form.Label className="fw-semibold small">Variante <small className="text-muted fw-normal">(Opcional)</small></Form.Label>
+                                            <Form.Control type="text" placeholder="Ej: XL, Naranja, 500ml" value={variant} onChange={(e) => setVariant(e.target.value)} />
+                                        </Form.Group>
+                                    </div>
+                                    <div className="col-md-4">
+                                        <Form.Group>
+                                            <Form.Label className="fw-semibold small">Marca <small className="text-muted fw-normal">(Opcional)</small></Form.Label>
+                                            <Form.Control type="text" placeholder="Ej: Nike, Del Valle" value={brand} onChange={(e) => setBrand(e.target.value)} />
+                                        </Form.Group>
+                                    </div>
+                                    <div className="col-md-8">
+                                        <Form.Group>
+                                            <Form.Label className="fw-semibold small">Categoría <span className="text-danger">*</span></Form.Label>
+                                            <Form.Select required value={category} onChange={(e) => { if (e.target.value === 'suggest_new_category_action') { setShowSuggestModal(true); setCategory(''); } else { setCategory(e.target.value); } }}>
+                                                <option value="">Selecciona una categoría...</option>
+                                                {categories.length > 0 && (<optgroup label="Categorías Globales">{categories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}</optgroup>)}
+                                                {suggestions.filter(s => s.status === 'PENDING').length > 0 && (<optgroup label="Tus Sugerencias (Pendientes)">{suggestions.filter(s => s.status === 'PENDING').map(s => <option key={'sug-' + s.id} value={s.name}>{s.name}</option>)}</optgroup>)}
+                                                <option value="Otros">Otros</option>
+                                                <optgroup label="Opciones"><option value="suggest_new_category_action" className="fw-bold text-primary">+ Sugerir Categoría Nueva</option></optgroup>
+                                            </Form.Select>
+                                        </Form.Group>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ── Section 2: Códigos ───────────────────────────── */}
+                            <div className="p-3 rounded-3 border mb-3 bg-white">
+                                <div className="d-flex align-items-center gap-2 mb-3">
+                                    <div className="rounded-2 p-1 d-flex" style={{ background: '#fff3e0' }}><FaBarcode size={13} className="text-warning" /></div>
+                                    <span className="fw-bold text-dark small text-uppercase" style={{ letterSpacing: '0.5px' }}>Códigos / Identificadores</span>
+                                </div>
+                                <div className="row g-3">
+                                    <div className="col-md-6">
+                                        <Form.Group>
+                                            <Form.Label className="fw-semibold small d-flex align-items-center gap-2">
+                                                SKU <span className="text-danger">*</span>
+                                                {editingProduct && <Badge bg="secondary" className="fw-normal" style={{ fontSize: '0.65rem' }}><FaLock style={{ marginRight: 3 }} /> No editable</Badge>}
+                                                {isGeneratingSku && <span className="spinner-border spinner-border-sm text-primary ms-1" />}
+                                            </Form.Label>
+                                            <Form.Control type="text" required value={sku} onChange={(e) => setSku(e.target.value)} disabled={editingProduct} placeholder="Generación automática..." className={editingProduct ? 'bg-light text-muted' : ''} />
+                                            {!editingProduct && <Form.Text className="text-muted">Generado automáticamente al guardar.</Form.Text>}
+                                        </Form.Group>
+                                    </div>
+                                    <div className="col-md-6">
+                                        <Form.Group>
+                                            <Form.Label className="fw-semibold small">Código de Barras <small className="text-muted fw-normal">(Opcional)</small></Form.Label>
+                                            <Form.Control type="text" value={barcode} onChange={(e) => setBarcode(e.target.value)} placeholder="EAN-13, UPC..." />
+                                            <Form.Text className="text-muted">Para lectura rápida en el POS.</Form.Text>
+                                        </Form.Group>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ── Section 3: Precios ───────────────────────────── */}
+                            <div className="p-3 rounded-3 border mb-3 bg-white">
+                                <div className="d-flex align-items-center gap-2 mb-3">
+                                    <div className="rounded-2 p-1 d-flex" style={{ background: '#e8f5e9' }}><FaChartLine size={13} className="text-success" /></div>
+                                    <span className="fw-bold text-dark small text-uppercase" style={{ letterSpacing: '0.5px' }}>Precios</span>
+                                </div>
+                                <div className="row g-3 align-items-end">
+                                    <div className="col-md-4">
+                                        <Form.Group>
+                                            <Form.Label className="fw-semibold small">Costo <small className="text-muted fw-normal">({platformConfig?.baseCurrencyCode || 'USD'}) · Privado</small></Form.Label>
+                                            <Form.Control type="number" onFocus={(e) => e.target.select()} step="0.01" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} min="0" placeholder="0.00" />
+                                        </Form.Group>
+                                    </div>
+                                    <div className="col-md-4">
+                                        <Form.Group>
+                                            <Form.Label className="fw-semibold small">Precio de Venta <span className="text-danger">*</span> <small className="text-muted fw-normal">({platformConfig?.baseCurrencyCode || 'USD'})</small></Form.Label>
+                                            <Form.Control type="number" onFocus={(e) => e.target.select()} step="0.01" required value={price} onChange={(e) => setPrice(e.target.value)} min="0" placeholder="0.00" />
+                                        </Form.Group>
+                                    </div>
+                                    <div className="col-md-4">
+                                        {(() => {
+                                            const p = parseFloat(price) || 0;
+                                            const c = parseFloat(costPrice) || 0;
+                                            const margin = p > 0 && c > 0 ? (((p - c) / c) * 100) : (p > 0 ? 100 : 0);
+                                            const profit = (p - c).toFixed(2);
+                                            const barColor = margin >= 30 ? '#198754' : margin >= 15 ? '#fd7e14' : margin > 0 ? '#dc3545' : '#6c757d';
+                                            return (
+                                                <div className="p-2 rounded-3 border bg-light">
+                                                    <div className="d-flex justify-content-between align-items-center mb-1">
+                                                        <small className="text-muted fw-semibold" style={{ fontSize: '0.72rem' }}>GANANCIA</small>
+                                                        <small className="fw-bold" style={{ color: barColor, fontSize: '0.8rem' }}>{margin.toFixed(1)}%</small>
+                                                    </div>
+                                                    <div className="progress mb-1" style={{ height: 6, borderRadius: 4 }}>
+                                                        <div className="progress-bar" style={{ width: `${Math.min(margin, 100)}%`, backgroundColor: barColor, transition: 'all 0.4s ease' }} />
+                                                    </div>
+                                                    <small style={{ fontSize: '0.72rem', color: barColor }} className="fw-semibold">
+                                                        {p > 0 ? `+${profit} ${platformConfig?.baseCurrencyCode || 'USD'} por unidad` : 'Ingresa los precios'}
+                                                    </small>
+                                                </div>
+                                            );
+                                        })()}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ── Section 4: Inventario ────────────────────────── */}
+                            <div className="p-3 rounded-3 border bg-white">
+                                <div className="d-flex align-items-center gap-2 mb-3">
+                                    <div className="rounded-2 p-1 d-flex" style={{ background: '#f3e8ff' }}><FaBoxOpen size={13} style={{ color: '#7c3aed' }} /></div>
+                                    <span className="fw-bold text-dark small text-uppercase" style={{ letterSpacing: '0.5px' }}>Control de Inventario</span>
+                                </div>
+                                <div className="row g-3">
+                                    <div className="col-md-4">
+                                        <Form.Group>
+                                            <Form.Label className="fw-semibold small">{editingProduct ? 'Stock Actual' : 'Stock Inicial'} <span className="text-danger">*</span></Form.Label>
+                                            <Form.Control type="number" onFocus={(e) => e.target.select()} required value={stock} onChange={(e) => setStock(e.target.value)} min="0" placeholder="0" />
+                                        </Form.Group>
+                                    </div>
+                                    <div className="col-md-4">
+                                        <Form.Group>
+                                            <Form.Label className="fw-semibold small">Alerta de Stock Mínimo</Form.Label>
+                                            <Form.Control type="number" onFocus={(e) => e.target.select()} required value={minStock} onChange={(e) => setMinStock(e.target.value)} min="0" placeholder="5" />
+                                            <Form.Text className="text-muted">Recibirás alertas al llegar a este nivel.</Form.Text>
+                                        </Form.Group>
+                                    </div>
+                                    {editingProduct && stock !== '' && minStock !== '' && (
+                                        <div className="col-md-4 d-flex align-items-center">
+                                            <div className={`p-2 rounded-3 w-100 text-center ${parseInt(stock) <= parseInt(minStock) ? 'bg-danger bg-opacity-10 border border-danger border-opacity-25' : 'bg-success bg-opacity-10 border border-success border-opacity-25'}`}>
+                                                <div className="fw-bold" style={{ fontSize: '1.5rem', color: parseInt(stock) <= parseInt(minStock) ? '#dc3545' : '#198754' }}>{stock}</div>
+                                                <small className={`fw-semibold ${parseInt(stock) <= parseInt(minStock) ? 'text-danger' : 'text-success'}`} style={{ fontSize: '0.72rem' }}>
+                                                    {parseInt(stock) <= parseInt(minStock) ? '⚠️ Stock bajo' : '✓ Stock saludable'}
+                                                </small>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* ── Footer ───────────────────────────────────────────── */}
+                        <div className="d-flex justify-content-between align-items-center px-4 py-3 border-top bg-light">
+                            <small className="text-muted" style={{ fontSize: '0.78rem' }}><span className="text-danger">*</span> Campos obligatorios</small>
+                            <div className="d-flex gap-2">
+                                <Button variant="light" className="border" onClick={() => setShowModal(false)}>Cancelar</Button>
+                                <Button variant="primary" type="submit" className="px-4 shadow-sm fw-semibold">
+                                    {editingProduct ? '✓ Actualizar Producto' : '＋ Guardar Producto'}
+                                </Button>
+                            </div>
                         </div>
                     </Form>
                 </Modal.Body>
@@ -1011,11 +994,11 @@ const InventoryPage = () => {
                             <div className="d-flex flex-wrap gap-3 mb-4">
                                 <div className="p-3 bg-light rounded-4 flex-grow-1 border">
                                     <small className="text-muted text-uppercase fw-bold">Costo Promedio (Último)</small>
-                                    <h4 className="fw-bold mb-0 text-dark">${selectedHistoryProduct?.costPrice || 0}</h4>
+                                    <h4 className="fw-bold mb-0 text-dark">{selectedHistoryProduct?.costPrice || 0} {platformConfig?.baseCurrencyCode || 'USD'}</h4>
                                 </div>
                                 <div className="p-3 bg-light rounded-4 flex-grow-1 border">
                                     <small className="text-muted text-uppercase fw-bold">Precio Actual</small>
-                                    <h4 className="fw-bold mb-0 text-primary">${selectedHistoryProduct?.price || 0}</h4>
+                                    <h4 className="fw-bold mb-0 text-primary">{selectedHistoryProduct?.price || 0} {platformConfig?.baseCurrencyCode || 'USD'}</h4>
                                 </div>
                                 <div className="p-3 bg-light rounded-4 flex-grow-1 border">
                                     <small className="text-muted text-uppercase fw-bold">Stock</small>
@@ -1088,7 +1071,7 @@ const InventoryPage = () => {
                                                 <g key={i}>
                                                     <line x1={padL} y1={g.y} x2={svgW - padR} y2={g.y} stroke="#e2e8f0" strokeWidth="1" strokeDasharray={i === gridLines ? "0" : "4 3"} />
                                                     <text x={padL - 8} y={g.y + 4} textAnchor="end" fontSize="10" fill="#94a3b8" fontWeight="600">
-                                                        ${Math.round(g.val)}
+                                                        {Math.round(g.val)} {platformConfig?.baseCurrencyCode || 'USD'}
                                                     </text>
                                                 </g>
                                             ))}
@@ -1113,11 +1096,11 @@ const InventoryPage = () => {
                                             {historyData.map((d, i) => (
                                                 <g key={`pts-${i}`}>
                                                     {/* Price dot */}
-                                                    <OverlayTrigger placement="top" overlay={<Tooltip><strong>Precio Venta</strong><br/>${Number(d.avgPrice).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</Tooltip>}>
+                                                    <OverlayTrigger placement="top" overlay={<Tooltip><strong>Precio Venta</strong><br/>{Number(d.avgPrice).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})} {platformConfig?.baseCurrencyCode || 'USD'}</Tooltip>}>
                                                         <circle cx={toX(i)} cy={toY(d.avgPrice)} r="5" fill="#10b981" stroke="#fff" strokeWidth="2" style={{ cursor: 'pointer' }} />
                                                     </OverlayTrigger>
                                                     {/* Cost dot */}
-                                                    <OverlayTrigger placement="top" overlay={<Tooltip><strong>Costo Prom.</strong><br/>${Number(d.avgCost).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</Tooltip>}>
+                                                    <OverlayTrigger placement="top" overlay={<Tooltip><strong>Costo Prom.</strong><br/>{Number(d.avgCost).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})} {platformConfig?.baseCurrencyCode || 'USD'}</Tooltip>}>
                                                         <circle cx={toX(i)} cy={toY(d.avgCost)} r="5" fill="#ef4444" stroke="#fff" strokeWidth="2" style={{ cursor: 'pointer' }} />
                                                     </OverlayTrigger>
                                                     {/* Margin label between the two dots */}

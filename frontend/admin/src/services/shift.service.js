@@ -15,8 +15,8 @@ const closeShift = (shiftId, data) => {
   return axios.post(API_URL + `/${shiftId}/close`, data, { headers: authHeader() });
 };
 
-const verifyShift = (shiftId, observation) => {
-  return axios.post(API_URL + `/${shiftId}/verify`, { observation }, { headers: authHeader() });
+const verifyShift = (shiftId, observation, hasIssues = false) => {
+  return axios.post(API_URL + `/${shiftId}/verify`, { observation, hasIssues }, { headers: authHeader() });
 };
 
 const getHistory = () => {

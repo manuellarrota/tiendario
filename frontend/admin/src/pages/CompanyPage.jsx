@@ -39,9 +39,9 @@ const CompanyPage = () => {
     };
 
     const PLAN_INFO = {
-        BASIC:   { label: 'Básico',   registers: 1, features: ['1 caja registradora', 'Ventas presenciales', 'Inventario básico', 'Reportes de ventas'] },
-        MEDIUM:  { label: 'Medium',   registers: 3, features: ['Hasta 3 cajas registradoras', 'Todo lo del plan Básico', 'Gestión de compras', 'Reportes avanzados'] },
-        PREMIUM: { label: 'Premium',  registers: 5, features: ['Hasta 5 cajas registradoras', 'Todo lo del plan Medium', 'Ventas en marketplace', 'Soporte prioritario'] },
+        BASIC:   { label: 'Básico',   registers: 1, features: ['1 Caja Registradora activa', 'Control de Inventario completo', 'Todas las métricas y reportes', 'Acceso a todas las funciones'] },
+        MEDIUM:  { label: 'Medium',   registers: 3, features: ['Hasta 3 Cajas en simultáneo', 'Control de Inventario completo', 'Todas las métricas y reportes', 'Acceso a todas las funciones'] },
+        PREMIUM: { label: 'Premium',  registers: 5, features: ['Hasta 5 Cajas en simultáneo', 'Control de Inventario completo', 'Todas las métricas y reportes', 'Acceso a todas las funciones'] },
     };
 
     const calculateAmount = (plan, cycle) => {
@@ -607,34 +607,70 @@ const CompanyPage = () => {
                                         {Object.entries(PLAN_INFO).map(([planKey, info]) => {
                                             const isCurrent = company?.subscriptionPlan === planKey && company?.subscriptionStatus === 'PAID';
                                             const isSelected = selectedPlan === planKey;
+                                            
+                                            let borderStyle = isSelected ? '2px solid #0d6efd' : '2px solid #dee2e6';
+                                            let bgStyle = isCurrent ? '#f0f7ff' : isSelected ? '#f8f9ff' : '#fff';
+                                            let textColor = '#212529';
+                                            let priceColor = 'text-primary';
+                                            let subtitle = 'Ideal para empezar';
+                                            let shadowStyle = isSelected ? '0 10px 20px rgba(13, 110, 253, 0.15)' : 'none';
+                                            
+                                            if (planKey === 'MEDIUM') {
+                                                borderStyle = isSelected ? '2px solid #6610f2' : '2px solid #dee2e6';
+                                                bgStyle = isCurrent ? '#f4f0ff' : isSelected ? '#fbfaff' : '#fff';
+                                                priceColor = ''; 
+                                                subtitle = 'Para tiendas en crecimiento';
+                                                shadowStyle = isSelected ? '0 10px 20px rgba(102, 16, 242, 0.15)' : 'none';
+                                            } else if (planKey === 'PREMIUM') {
+                                                borderStyle = isSelected ? '2px solid #ffc107' : '2px solid transparent';
+                                                bgStyle = 'linear-gradient(135deg, #1e1e2f 0%, #050505 100%)';
+                                                textColor = '#fff';
+                                                priceColor = 'text-warning';
+                                                subtitle = 'Potencia total para tu negocio';
+                                                shadowStyle = isSelected ? '0 12px 25px rgba(255, 193, 7, 0.25)' : '0 4px 15px rgba(0,0,0,0.1)';
+                                            }
+
                                             return (
                                                 <Col md={4} key={planKey}>
                                                     <div
                                                         onClick={() => setSelectedPlan(planKey)}
                                                         style={{
                                                             cursor: 'pointer',
-                                                            border: isSelected ? '2px solid #0d6efd' : '2px solid #dee2e6',
-                                                            borderRadius: '12px',
-                                                            padding: '1.25rem',
-                                                            background: isCurrent ? '#f0f7ff' : isSelected ? '#f8f9ff' : '#fff',
-                                                            transition: 'all 0.2s',
-                                                            position: 'relative'
+                                                            border: borderStyle,
+                                                            borderRadius: '16px',
+                                                            padding: '1.5rem',
+                                                            background: bgStyle,
+                                                            color: textColor,
+                                                            transition: 'all 0.3s ease',
+                                                            position: 'relative',
+                                                            boxShadow: shadowStyle,
+                                                            transform: isSelected ? 'translateY(-5px)' : 'none',
+                                                            height: '100%',
+                                                            display: 'flex',
+                                                            flexDirection: 'column'
                                                         }}
                                                     >
                                                         {isCurrent && (
-                                                            <Badge bg="success" className="position-absolute" style={{top:'10px',right:'10px',fontSize:'0.65rem'}}>
+                                                            <Badge bg={planKey === 'PREMIUM' ? 'warning' : 'success'} text={planKey === 'PREMIUM' ? 'dark' : 'white'} className="position-absolute" style={{top:'12px',right:'12px',fontSize:'0.7rem'}}>
                                                                 ✓ Activo
                                                             </Badge>
                                                         )}
-                                                        <div className="fw-bold fs-6 mb-1">{info.label}</div>
-                                                        <div className="mb-2">
-                                                            <span className="fs-4 fw-bold text-primary">${Number(PLAN_PRICES[planKey][billingCycle]).toFixed(2)}</span>
-                                                            <small className="text-muted">/{billingCycle === 'MONTHLY' ? 'mes' : 'año'}</small>
+                                                        <div className="d-flex align-items-center mb-1">
+                                                            {planKey === 'PREMIUM' && <FaCrown className="me-2 text-warning" />}
+                                                            <div className="fw-bold fs-5">{info.label}</div>
                                                         </div>
-                                                        <ul className="list-unstyled mb-0" style={{fontSize:'0.8rem'}}>
+                                                        <div className="small mb-3" style={{ opacity: 0.8 }}>{subtitle}</div>
+                                                        <div className="mb-3">
+                                                            <span className={`fs-3 fw-bold ${planKey !== 'MEDIUM' ? priceColor : ''}`} style={planKey === 'MEDIUM' ? {color: '#6610f2'} : {}}>
+                                                                ${Number(PLAN_PRICES[planKey][billingCycle]).toFixed(2)}
+                                                            </span>
+                                                            <small style={{ opacity: 0.7 }}>/{billingCycle === 'MONTHLY' ? 'mes' : 'año'}</small>
+                                                        </div>
+                                                        <ul className="list-unstyled mb-0 flex-grow-1" style={{fontSize:'0.85rem'}}>
                                                             {info.features.map((f, i) => (
-                                                                <li key={i} className="text-muted mb-1">
-                                                                    <FaCheckCircle className="me-1 text-success" style={{fontSize:'0.7rem'}} />{f}
+                                                                <li key={i} className="mb-2 d-flex align-items-start">
+                                                                    <FaCheckCircle className={`me-2 mt-1 ${planKey === 'PREMIUM' ? 'text-warning' : planKey === 'MEDIUM' ? '' : 'text-success'}`} style={planKey === 'MEDIUM' ? {color: '#6610f2', fontSize:'0.8rem'} : {fontSize:'0.8rem'}} />
+                                                                    <span style={{ opacity: 0.9 }}>{f}</span>
                                                                 </li>
                                                             ))}
                                                         </ul>
@@ -651,13 +687,23 @@ const CompanyPage = () => {
                                             </Alert>
                                         ) : (
                                             <Button
-                                                variant={company?.subscriptionStatus === 'PAID' && company?.subscriptionPlan === selectedPlan ? 'outline-success' : 'primary'}
-                                                className="w-100 py-3 rounded-pill fw-bold"
+                                                className={`w-100 py-3 rounded-pill fw-bold border-0`}
+                                                style={{
+                                                    background: company?.subscriptionStatus === 'PAID' && company?.subscriptionPlan === selectedPlan 
+                                                        ? '#198754' // Success green
+                                                        : selectedPlan === 'PREMIUM' 
+                                                            ? 'linear-gradient(135deg, #ffc107 0%, #e0a800 100%)' 
+                                                            : selectedPlan === 'MEDIUM'
+                                                                ? '#6610f2'
+                                                                : '#0d6efd',
+                                                    color: selectedPlan === 'PREMIUM' && !(company?.subscriptionStatus === 'PAID' && company?.subscriptionPlan === selectedPlan) ? '#000' : '#fff',
+                                                    boxShadow: '0 4px 10px rgba(0,0,0,0.1)'
+                                                }}
                                                 onClick={() => openPlanModal(selectedPlan)}
                                             >
                                                 {company?.subscriptionStatus === 'PAID' && company?.subscriptionPlan === selectedPlan
                                                     ? <><FaCheckCircle className="me-2" /> Renovar Plan {PLAN_INFO[selectedPlan]?.label}</>
-                                                    : <><FaCrown className="me-2" /> Contratar Plan {PLAN_INFO[selectedPlan]?.label} — ${calculateAmount(selectedPlan, billingCycle)}</>}
+                                                    : <><FaCrown className="me-2" style={selectedPlan !== 'PREMIUM' ? {color: '#ffc107'} : {}} /> Contratar Plan {PLAN_INFO[selectedPlan]?.label} — ${calculateAmount(selectedPlan, billingCycle)}</>}
                                             </Button>
                                         )}
                                     </div>

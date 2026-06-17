@@ -110,7 +110,7 @@ const CustomersPage = () => {
                 setMessage('❌ ' + (error.translatedMessage || 'Error eliminando cliente'));
                 setShowDeleteModal(false);
                 setCustomerToDelete(null);
-                setTimeout(() => setMessage(''), 3000);
+                setTimeout(() => setMessage(''), 30000);
             }
         );
     };
@@ -178,7 +178,7 @@ const CustomersPage = () => {
                                     </thead>
                                     <tbody>
                                         {filteredCustomers.map((customer) => (
-                                            <tr key={customer.id}>
+                                            <tr key={customer.id} onClick={() => handleEdit(customer)} style={{ cursor: 'pointer' }} className="table-row-hover align-middle">
                                                 <td className="fw-bold">
                                                     <FaUsers className="me-2 text-primary" />
                                                     {customer.name}
@@ -210,7 +210,7 @@ const CustomersPage = () => {
                                                         </>
                                                     ) : '-'}
                                                 </td>
-                                                <td className="text-end">
+                                                <td className="text-end" onClick={(e) => e.stopPropagation()}>
                                                     <OverlayTrigger overlay={<Tooltip>Editar Cliente</Tooltip>}>
                                                         <Button
                                                             variant="outline-primary"

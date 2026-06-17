@@ -122,10 +122,11 @@ public class ShiftController {
 
     @PostMapping("/{id}/verify")
     @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<Shift> verifyShift(@PathVariable Long id, @RequestBody Map<String, String> payload) {
+    public ResponseEntity<Shift> verifyShift(@PathVariable Long id, @RequestBody Map<String, Object> payload) {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String observation = payload.get("observation");
-        return ResponseEntity.ok(shiftService.verifyShift(id, observation, userDetails));
+        String observation = payload.get("observation") != null ? payload.get("observation").toString() : null;
+        boolean hasIssues = payload.get("hasIssues") != null && Boolean.parseBoolean(payload.get("hasIssues").toString());
+        return ResponseEntity.ok(shiftService.verifyShift(id, observation, hasIssues, userDetails));
     }
 
     @GetMapping("/history")

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Card, Table, Badge, Button, Modal, Row, Col, Alert, Form } from 'react-bootstrap';
+import { Container, Card, Table, Badge, Button, Modal, Row, Col, Alert, Form, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaHistory, FaCheckCircle, FaExclamationTriangle, FaEye, FaCalculator, FaMoneyBillWave, FaCreditCard, FaUniversity } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import ShiftService from '../services/shift.service';
+import PublicService from '../services/public.service';
 
 const ShiftHistoryPage = () => {
     const [shifts, setShifts] = useState([]);
@@ -10,7 +11,9 @@ const ShiftHistoryPage = () => {
     const [selectedShift, setSelectedShift] = useState(null);
     const [showModal, setShowModal] = useState(false);
     const [observation, setObservation] = useState("");
+    const [verifyError, setVerifyError] = useState("");
     const [error, setError] = useState("");
+    const [platformConfig, setPlatformConfig] = useState(null);
 
     const fetchShifts = () => {
         setLoading(true);
@@ -28,23 +31,57 @@ const ShiftHistoryPage = () => {
 
     useEffect(() => {
         fetchShifts();
+        PublicService.getPlatformConfig().then(res => setPlatformConfig(res.data)).catch(err => console.error(err));
     }, []);
 
-    const handleVerify = () => {
-        ShiftService.verifyShift(selectedShift.id, observation).then(() => {
+    const handleVerify = (hasIssues = false) => {
+        setVerifyError("");
+        if (hasIssues && !observation.trim()) {
+            setVerifyError("Debe ingresar una nota de auditoría explicando el descuadre antes de continuar.");
+            return;
+        }
+        ShiftService.verifyShift(selectedShift.id, observation, hasIssues).then(() => {
             fetchShifts();
             setShowModal(false);
-            setObservation("");
+            setVerifyError("");
+        }).catch(err => {
+            console.error(err);
+            setVerifyError(err.response?.data?.message || "Error al verificar turno.");
         });
     };
 
-    const getStatusBadge = (status) => {
-        switch (status) {
-            case 'OPEN': return <Badge bg="success">ABIERTO</Badge>;
-            case 'CLOSED': return <Badge bg="warning" className="text-dark">POR VERIFICAR</Badge>;
-            case 'VERIFIED': return <Badge bg="primary">VERIFICADO</Badge>;
-            default: return <Badge bg="secondary">{status}</Badge>;
+    const getStatusBadge = (s) => {
+        let badge;
+        switch (s.status) {
+            case 'OPEN': badge = <Badge bg="success">ABIERTO</Badge>; break;
+            case 'CLOSED': badge = <Badge bg="warning" className="text-dark">POR VERIFICAR</Badge>; break;
+            case 'VERIFIED': badge = <Badge bg="primary">VERIFICADO</Badge>; break;
+            case 'VERIFIED_WITH_ISSUES': badge = <Badge bg="warning" text="dark">VERIFICADO (CON DESCUADRE)</Badge>; break;
+            default: badge = <Badge bg="secondary">{s.status}</Badge>;
         }
+
+        return (
+            <div className="d-flex align-items-center gap-2 justify-content-center">
+                {badge}
+                {s.observation && (
+                    <OverlayTrigger placement="top" overlay={<Tooltip>{s.observation}</Tooltip>}>
+                        <div style={{cursor: 'help'}}><FaExclamationTriangle className="text-muted" size={14}/></div>
+                    </OverlayTrigger>
+                )}
+            </div>
+        );
+    };
+
+    const renderDifference = (s) => {
+        if (s.status === 'OPEN') return <span className="text-muted">—</span>;
+        
+        const expected = s.expectedCash || 0;
+        const reported = s.reportedCash || 0;
+        const diff = reported - expected;
+        
+        if (diff === 0) return <span className="text-success small fw-bold"><FaCheckCircle className="me-1"/> Exacto</span>;
+        if (diff < 0) return <span className="text-danger small fw-bold">{diff.toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}</span>;
+        return <span className="text-warning small fw-bold text-dark">+{diff.toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}</span>;
     };
 
     const calculateDifference = (expected, reported) => {
@@ -72,21 +109,23 @@ const ShiftHistoryPage = () => {
                                     <th>Caja</th>
                                     <th>Apertura</th>
                                     <th>Cierre</th>
-                                    <th>Estado</th>
+                                    <th className="text-center">Descuadre Efectivo</th>
+                                    <th className="text-center">Estado</th>
                                     <th className="text-end pe-4">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {shifts.map(s => (
-                                    <tr key={s.id} className="align-middle">
+                                    <tr key={s.id} className="align-middle table-row-hover" onClick={() => {setSelectedShift(s); setShowModal(true);}} style={{ cursor: 'pointer' }}>
                                         <td className="ps-4 fw-bold">{s.user.username}</td>
                                         <td>
                                             <span className="badge bg-light text-dark border fw-normal">{s.cashRegister?.name || '—'}</span>
                                         </td>
                                         <td>{new Date(s.startTime).toLocaleString()}</td>
                                         <td>{s.endTime ? new Date(s.endTime).toLocaleString() : '---'}</td>
-                                        <td>{getStatusBadge(s.status)}</td>
-                                        <td className="text-end pe-4">
+                                        <td className="text-center align-middle">{renderDifference(s)}</td>
+                                        <td className="text-center align-middle">{getStatusBadge(s)}</td>
+                                        <td className="text-end pe-4" onClick={(e) => e.stopPropagation()}>
                                             <Button variant="light" size="sm" className="rounded-pill px-3" onClick={() => {setSelectedShift(s); setShowModal(true);}}>
                                                 <FaEye className="me-1" /> Ver Detalle
                                             </Button>
@@ -121,11 +160,11 @@ const ShiftHistoryPage = () => {
                                     </Col>
                                     <Col>
                                         <div className="text-muted small">Estado</div>
-                                        <div>{getStatusBadge(selectedShift.status)}</div>
+                                        <div>{getStatusBadge(selectedShift)}</div>
                                     </Col>
                                     <Col>
                                         <div className="text-muted small">Base Inicial</div>
-                                        <div className="fw-bold text-primary mb-1">${selectedShift.initialCash?.toFixed(2)}</div>
+                                        <div className="fw-bold text-primary mb-1">{selectedShift.initialCash?.toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}</div>
                                         {selectedShift.declarations?.filter(d => d.declarationType === 'OPENING').length > 0 && (
                                             <div className="small border-top pt-1 mt-1">
                                                 {selectedShift.declarations.filter(d => d.declarationType === 'OPENING').map(d => (
@@ -152,15 +191,15 @@ const ShiftHistoryPage = () => {
                                         <tr>
                                             <td className="text-start ps-3 fw-bold"><FaMoneyBillWave className="text-success me-2"/> Efectivo</td>
                                             <td>
-                                                ${selectedShift.expectedCash?.toFixed(2)}
+                                                {selectedShift.expectedCash?.toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}
                                                 {selectedShift.totalChangeGiven > 0 && (
-                                                    <div className="text-danger small fw-normal mt-1">
-                                                        (Incluye -${selectedShift.totalChangeGiven.toFixed(2)} en Vueltos)
+                                                    <div className="text-danger small mt-1" style={{ fontSize: '0.75rem' }}>
+                                                        (Incluye -{selectedShift.totalChangeGiven.toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'} en Vueltos)
                                                     </div>
                                                 )}
                                             </td>
                                             <td>
-                                                <div className="fw-bold">${selectedShift.reportedCash?.toFixed(2)}</div>
+                                                <div className="fw-bold">{selectedShift.reportedCash?.toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}</div>
                                                 {selectedShift.declarations?.filter(d => d.declarationType === 'CLOSING' && d.method === 'CASH').length > 0 && (
                                                     <div className="mt-1">
                                                         {selectedShift.declarations.filter(d => d.declarationType === 'CLOSING' && d.method === 'CASH').map(d => (
@@ -175,10 +214,10 @@ const ShiftHistoryPage = () => {
                                             <td className="align-middle">{calculateDifference(selectedShift.expectedCash, selectedShift.reportedCash)}</td>
                                         </tr>
                                         <tr>
-                                            <td className="text-start ps-3 fw-bold"><FaCreditCard className="text-info me-2"/> Tarjeta</td>
-                                            <td>${selectedShift.expectedCard?.toFixed(2)}</td>
+                                            <td className="ps-3"><FaCreditCard className="text-info me-2" /> Tarjeta</td>
+                                            <td>{selectedShift.expectedCard?.toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}</td>
                                             <td>
-                                                <div className="fw-bold">${selectedShift.reportedCard?.toFixed(2)}</div>
+                                                <div className="fw-bold">{selectedShift.reportedCard?.toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}</div>
                                                 {selectedShift.declarations?.filter(d => d.declarationType === 'CLOSING' && d.method === 'CARD').length > 0 && (
                                                     <div className="mt-1">
                                                         {selectedShift.declarations.filter(d => d.declarationType === 'CLOSING' && d.method === 'CARD').map(d => (
@@ -193,10 +232,10 @@ const ShiftHistoryPage = () => {
                                             <td className="align-middle">{calculateDifference(selectedShift.expectedCard, selectedShift.reportedCard)}</td>
                                         </tr>
                                         <tr>
-                                            <td className="text-start ps-3 fw-bold"><FaUniversity className="text-warning me-2"/> Transf.</td>
-                                            <td>${selectedShift.expectedTransfer?.toFixed(2)}</td>
+                                            <td className="ps-3"><FaUniversity className="text-warning me-2" /> Transferencia</td>
+                                            <td>{selectedShift.expectedTransfer?.toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}</td>
                                             <td>
-                                                <div className="fw-bold">${selectedShift.reportedTransfer?.toFixed(2)}</div>
+                                                <div className="fw-bold">{selectedShift.reportedTransfer?.toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}</div>
                                                 {selectedShift.declarations?.filter(d => d.declarationType === 'CLOSING' && d.method === 'TRANSFER').length > 0 && (
                                                     <div className="mt-1">
                                                         {selectedShift.declarations.filter(d => d.declarationType === 'CLOSING' && d.method === 'TRANSFER').map(d => (
@@ -210,11 +249,11 @@ const ShiftHistoryPage = () => {
                                             </td>
                                             <td className="align-middle">{calculateDifference(selectedShift.expectedTransfer, selectedShift.reportedTransfer)}</td>
                                         </tr>
-                                        <tr className="bg-light fw-bold">
-                                            <td className="text-start ps-3">📱 Pago Móvil</td>
-                                            <td>${selectedShift.expectedMobile?.toFixed(2)}</td>
+                                        <tr>
+                                            <td className="ps-3">📱 Pago Móvil</td>
+                                            <td>{selectedShift.expectedMobile?.toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}</td>
                                             <td>
-                                                <div className="fw-bold">${selectedShift.reportedMobile?.toFixed(2)}</div>
+                                                <div className="fw-bold">{selectedShift.reportedMobile?.toFixed(2)} {platformConfig?.baseCurrencyCode || 'USD'}</div>
                                                 {selectedShift.declarations?.filter(d => d.declarationType === 'CLOSING' && d.method === 'MOBILE_PAYMENT').length > 0 && (
                                                     <div className="mt-1">
                                                         {selectedShift.declarations.filter(d => d.declarationType === 'CLOSING' && d.method === 'MOBILE_PAYMENT').map(d => (
@@ -242,11 +281,15 @@ const ShiftHistoryPage = () => {
                                     <div className="mt-4 border-top pt-4">
                                         <h6 className="fw-bold mb-3">Verificación de Gerencia</h6>
                                         <Alert variant="info" className="py-2 small">Al verificar, confirmas que has auditado físicamente el dinero de este turno.</Alert>
+                                        {verifyError && <Alert variant="danger" className="py-2 small fw-bold">{verifyError}</Alert>}
                                         <Form.Group className="mb-3">
                                             <Form.Control as="textarea" rows={2} placeholder="Opcional: Nota de auditoría..." value={observation} onChange={e => setObservation(e.target.value)} />
                                         </Form.Group>
-                                        <Button variant="primary" className="w-100 py-3 rounded-4 fw-bold" onClick={handleVerify}>
-                                            <FaCheckCircle className="me-2" /> MARCAR COMO VERIFICADO Y CERRAR AUDITORÍA
+                                        <Button variant="success" className="w-100 py-2 mb-2 rounded-4 fw-bold" onClick={() => handleVerify(false)}>
+                                            <FaCheckCircle className="me-2" /> MARCAR COMO VERIFICADO (TODO CUADRA)
+                                        </Button>
+                                        <Button variant="warning" className="w-100 py-2 rounded-4 fw-bold text-dark" onClick={() => handleVerify(true)}>
+                                            <FaExclamationTriangle className="me-2" /> REGISTRAR DESCUADRE (SOBRANTE/FALTANTE)
                                         </Button>
                                     </div>
                                 )}
