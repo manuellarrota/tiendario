@@ -36,7 +36,7 @@ const NewPurchasePage = () => {
     const [unitCost, setUnitCost] = useState("");
     const [itemDiscountAmount, setItemDiscountAmount] = useState("");
     const [itemDiscountType, setItemDiscountType] = useState("PERCENTAGE");
-    
+
     const [globalDiscountAmount, setGlobalDiscountAmount] = useState("");
     const [globalDiscountType, setGlobalDiscountType] = useState("PERCENTAGE");
 
@@ -171,7 +171,7 @@ const NewPurchasePage = () => {
         const unitCostDec = new Decimal(unitCost);
         const qty = parseInt(quantity);
         const totalRaw = unitCostDec.times(qty).toNumber();
-        
+
         let discountVal = 0;
         const discAmt = parseFloat(itemDiscountAmount);
         if (discAmt > 0) {
@@ -181,7 +181,7 @@ const NewPurchasePage = () => {
                 discountVal = discAmt;
             }
         }
-        
+
         if (discountVal > totalRaw) discountVal = totalRaw;
         const totalAfterLineDiscount = totalRaw - discountVal;
 
@@ -230,7 +230,7 @@ const NewPurchasePage = () => {
             const newCart = [...cart];
             const existingItem = newCart.splice(existingItemIndex, 1)[0];
             const newQty = existingItem.quantity + newItemData.quantity;
-            
+
             const unitCostDec = new Decimal(newItemData.unitCost);
             const unitCostInBase = new Decimal(newItemData.unitCostInBaseCurrency);
 
@@ -239,7 +239,7 @@ const NewPurchasePage = () => {
             existingItem.unitCostInBaseCurrency = unitCostInBase.toNumber();
             existingItem.total = unitCostDec.times(newQty).toDecimalPlaces(2).toNumber();
             existingItem.subtotalInBaseCurrency = unitCostInBase.times(newQty).toDecimalPlaces(2).toNumber();
-            
+
             setCart([existingItem, ...newCart]);
         } else {
             setCart([newItemData, ...cart]);
@@ -262,7 +262,7 @@ const NewPurchasePage = () => {
         if (value < 0) return;
         const newCart = [...cart];
         const item = newCart[index];
-        
+
         if (field === 'quantity') {
             item.quantity = parseInt(value) || 0;
         } else if (field === 'unitCost') {
@@ -376,7 +376,7 @@ const NewPurchasePage = () => {
             }
             if (globalDiscountAmountCalc > preGlobalTotal) globalDiscountAmountCalc = preGlobalTotal;
         }
-        
+
         const finalTotal = preGlobalTotal - globalDiscountAmountCalc;
         const discountRatio = preGlobalTotal > 0 ? finalTotal / preGlobalTotal : 1;
 
@@ -393,7 +393,7 @@ const NewPurchasePage = () => {
             items: cart.map(item => {
                 const itemFinalTotal = item.total * discountRatio;
                 const finalUnitCostInBase = Number(convertToBase(itemFinalTotal / item.quantity));
-                
+
                 return {
                     productId: item.product.id,
                     quantity: item.quantity,
@@ -506,11 +506,11 @@ const NewPurchasePage = () => {
 
                 {message && !showSupplierModal && !showProductModal && <Alert variant={message.includes("✅") ? "success" : message.includes("❌") ? "danger" : "info"} className="mb-4 shadow-sm border-0">{message}</Alert>}
 
-                <Modal 
-                    show={step === 1} 
-                    backdrop="static" 
-                    keyboard={false} 
-                    centered 
+                <Modal
+                    show={step === 1}
+                    backdrop="static"
+                    keyboard={false}
+                    centered
                     contentClassName="glass-card-admin border-0 shadow-lg rounded-4"
                 >
                     <Modal.Header className="border-0 pb-0 pt-4 px-4">
@@ -518,7 +518,7 @@ const NewPurchasePage = () => {
                     </Modal.Header>
                     <Modal.Body className="p-4">
                         <p className="text-muted mb-4">Selecciona el proveedor, la moneda y el método de pago para comenzar a ingresar los productos.</p>
-                        
+
                         <Form.Group className="mb-3">
                             <Form.Label className="fw-bold">1. Seleccionar Proveedor <span className="text-danger">*</span></Form.Label>
                             <div className="d-flex gap-2">
@@ -563,17 +563,17 @@ const NewPurchasePage = () => {
                         </Form.Group>
 
                         <div className="d-flex gap-2 mt-4">
-                            <Button 
-                                variant="outline-secondary" 
-                                size="lg" 
+                            <Button
+                                variant="outline-secondary"
+                                size="lg"
                                 className="w-50 fw-bold rounded-pill shadow-sm"
                                 onClick={() => navigate('/admin/inventory')}
                             >
                                 Cancelar
                             </Button>
-                            <Button 
-                                variant="primary" 
-                                size="lg" 
+                            <Button
+                                variant="primary"
+                                size="lg"
                                 className="w-50 fw-bold rounded-pill shadow-sm"
                                 disabled={!selectedSupplier}
                                 onClick={() => setStep(2)}
@@ -604,25 +604,25 @@ const NewPurchasePage = () => {
                     </Card>
 
                     <Row className="g-4">
-                            <Col lg={8}>
-                                <Card className="glass-card-admin border-0 shadow-sm p-4 mb-4 rounded-4 h-100">
-                                    <h5 className="mb-4 fw-bold text-dark">Lista de Productos a Ingresar</h5>
-                                    <Table responsive>
-                                        <thead className="bg-light">
-                                            <tr>
-                                                <th>Producto</th>
-                                                <th className="text-center" style={{ width: '90px' }}>Cant.</th>
-                                                <th className="text-start" style={{ width: '165px' }}>Costo Unit.</th>
-                                                <th className="text-end">Subtotal</th>
-                                                <th className="text-end text-success">Base ({baseCurrencyCode})</th>
-                                                <th className="text-center">Acción</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {cart.map((item, idx) => {
-                                                const itemSymbol = getItemSymbol(item.currencyCode);
-                                                const isBase = !item.currencyCode || item.currencyCode === baseCurrencyCode;
-                                                return (
+                        <Col lg={8}>
+                            <Card className="glass-card-admin border-0 shadow-sm p-4 mb-4 rounded-4 h-100">
+                                <h5 className="mb-4 fw-bold text-dark">Lista de Productos a Ingresar</h5>
+                                <Table responsive>
+                                    <thead className="bg-light">
+                                        <tr>
+                                            <th>Producto</th>
+                                            <th className="text-center" style={{ width: '90px' }}>Cant.</th>
+                                            <th className="text-start" style={{ width: '165px' }}>Costo Unit.</th>
+                                            <th className="text-end">Subtotal</th>
+                                            <th className="text-end text-success">Base ({baseCurrencyCode})</th>
+                                            <th className="text-center">Acción</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {cart.map((item, idx) => {
+                                            const itemSymbol = getItemSymbol(item.currencyCode);
+                                            const isBase = !item.currencyCode || item.currencyCode === baseCurrencyCode;
+                                            return (
                                                 <tr key={idx}>
                                                     <td>
                                                         <div className="fw-bold text-dark">{item.product.name}</div>
@@ -654,181 +654,181 @@ const NewPurchasePage = () => {
                                                         </Button>
                                                     </td>
                                                 </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </Table>
-                                    {cart.length === 0 && <p className="text-center text-muted my-3">Agrega productos a la orden</p>}
+                                            );
+                                        })}
+                                    </tbody>
+                                </Table>
+                                {cart.length === 0 && <p className="text-center text-muted my-3">Agrega productos a la orden</p>}
 
-                                    <div className="text-end mt-3 border-top pt-3">
-                                        <div className="text-muted small mb-2">
-                                            {cart.length} producto(s) en la orden
-                                        </div>
-                                        <div className="d-flex justify-content-end mb-1">
-                                            <span className="me-3 text-muted">Subtotal:</span>
-                                            <span className="fw-bold">{selectedCurrencyData?.symbol}{preGlobalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                        </div>
-                                        {globalDiscountCalcRender > 0 && (
-                                            <div className="d-flex justify-content-end mb-1 text-warning">
-                                                <span className="me-3 fw-bold">Descuento Global:</span>
-                                                <span className="fw-bold">-{selectedCurrencyData?.symbol}{globalDiscountCalcRender.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                            </div>
-                                        )}
-                                        <h4 className="mb-0 mt-2 text-success fw-black">
-                                            Total a Pagar: {selectedCurrencyData?.symbol}{finalTotalRender.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {purchaseCurrency}
-                                        </h4>
-                                        {purchaseCurrency !== baseCurrencyCode && (
-                                            <div className="text-muted small mt-1 fw-bold">
-                                                Equivalente Base: {baseCurrencySymbol}{finalTotalBaseRender.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}
-                                            </div>
-                                        )}
+                                <div className="text-end mt-3 border-top pt-3">
+                                    <div className="text-muted small mb-2">
+                                        {cart.length} producto(s) en la orden
                                     </div>
+                                    <div className="d-flex justify-content-end mb-1">
+                                        <span className="me-3 text-muted">Subtotal:</span>
+                                        <span className="fw-bold">{selectedCurrencyData?.symbol}{preGlobalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                    </div>
+                                    {globalDiscountCalcRender > 0 && (
+                                        <div className="d-flex justify-content-end mb-1 text-warning">
+                                            <span className="me-3 fw-bold">Descuento Global:</span>
+                                            <span className="fw-bold">-{selectedCurrencyData?.symbol}{globalDiscountCalcRender.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                        </div>
+                                    )}
+                                    <h4 className="mb-0 mt-2 text-success fw-black">
+                                        Total a Pagar: {selectedCurrencyData?.symbol}{finalTotalRender.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {purchaseCurrency}
+                                    </h4>
+                                    {purchaseCurrency !== baseCurrencyCode && (
+                                        <div className="text-muted small mt-1 fw-bold">
+                                            Equivalente Base: {baseCurrencySymbol}{finalTotalBaseRender.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}
+                                        </div>
+                                    )}
+                                </div>
 
-                                    {cart.length > 0 && (
-                                        <>
-                                            <hr className="my-4" />
-                                            <Row className="justify-content-end g-3">
-                                                <Col md={4}>
-                                                    <Form.Group className="mb-0">
-                                                        <Form.Label className="fw-bold text-muted small text-uppercase">Descuento Global</Form.Label>
-                                                        <InputGroup>
-                                                            <Form.Select style={{ flex: '0 0 95px' }} value={globalDiscountType} onChange={e => setGlobalDiscountType(e.target.value)}>
+                                {cart.length > 0 && (
+                                    <>
+                                        <hr className="my-4" />
+                                        <Row className="justify-content-end g-3">
+                                            <Col md={4}>
+                                                <Form.Group className="mb-0">
+                                                    <Form.Label className="fw-bold text-muted small text-uppercase">Descuento Global</Form.Label>
+                                                    <InputGroup>
+                                                            <Form.Select style={{ flex: '0 0 90px' }} value={globalDiscountType} onChange={e => setGlobalDiscountType(e.target.value)}>
                                                                 <option value="PERCENTAGE">%</option>
                                                                 <option value="FIXED">{purchaseCurrency}</option>
                                                             </Form.Select>
-                                                            <Form.Control
-                                                                type="number"
-                                                                placeholder="0"
-                                                                value={globalDiscountAmount}
-                                                                onChange={e => setGlobalDiscountAmount(e.target.value)}
-                                                                className="border-primary bg-light"
-                                                                onFocus={(e) => e.target.select()}
-                                                            />
-                                                        </InputGroup>
-                                                    </Form.Group>
-                                                </Col>
-                                                <Col md={5}>
-                                                    <Form.Group className="mb-0">
-                                                        <Form.Label className="fw-bold text-muted small text-uppercase">Nro de Factura <span className="fw-normal text-lowercase">(opcional)</span></Form.Label>
                                                         <Form.Control
-                                                            type="text"
-                                                            placeholder="Ej: FAC-00123"
-                                                            value={invoiceNumber}
-                                                            onChange={e => setInvoiceNumber(e.target.value)}
+                                                            type="number"
+                                                            placeholder="0"
+                                                            value={globalDiscountAmount}
+                                                            onChange={e => setGlobalDiscountAmount(e.target.value)}
                                                             className="border-primary bg-light"
+                                                            onFocus={(e) => e.target.select()}
                                                         />
-                                                    </Form.Group>
-                                                </Col>
-                                            </Row>
-                                        </>
-                                    )}
-                                </Card>
-                            </Col>
+                                                    </InputGroup>
+                                                </Form.Group>
+                                            </Col>
+                                            <Col md={5}>
+                                                <Form.Group className="mb-0">
+                                                    <Form.Label className="fw-bold text-muted small text-uppercase">Nro de Factura <span className="fw-normal text-lowercase">(opcional)</span></Form.Label>
+                                                    <Form.Control
+                                                        type="text"
+                                                        placeholder="Ej: FAC-00123"
+                                                        value={invoiceNumber}
+                                                        onChange={e => setInvoiceNumber(e.target.value)}
+                                                        className="border-primary bg-light"
+                                                    />
+                                                </Form.Group>
+                                            </Col>
+                                        </Row>
+                                    </>
+                                )}
+                            </Card>
+                        </Col>
 
-                            <Col lg={4}>
-                                <Card className="glass-card-admin border-0 shadow-sm p-4 mb-3 rounded-4">
-                                    <h5 className="mb-4 fw-bold text-dark">Agregar Producto</h5>
+                        <Col lg={4}>
+                            <Card className="glass-card-admin border-0 shadow-sm p-4 mb-3 rounded-4">
+                                <h5 className="mb-4 fw-bold text-dark">Agregar Producto</h5>
 
-                                    <Form.Group className="mb-2 position-relative" ref={searchRef}>
-                                        <Form.Label>Buscar Producto</Form.Label>
-                                        <div className="position-relative">
-                                            <Form.Control
-                                                type="text"
-                                                placeholder="Buscar por Nombre, Variante o SKU..."
-                                                value={searchTerm}
-                                                onChange={e => { setSearchTerm(e.target.value); setShowDropdown(true); setSelectedProduct(""); }}
-                                                onFocus={() => setShowDropdown(true)}
-                                            />
-                                            <div className="position-absolute end-0 top-50 translate-middle-y me-3 text-muted">
-                                                <FaSearch size={14} />
-                                            </div>
+                                <Form.Group className="mb-2 position-relative" ref={searchRef}>
+                                    <Form.Label>Buscar Producto</Form.Label>
+                                    <div className="position-relative">
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="Buscar por Nombre, Variante o SKU..."
+                                            value={searchTerm}
+                                            onChange={e => { setSearchTerm(e.target.value); setShowDropdown(true); setSelectedProduct(""); }}
+                                            onFocus={() => setShowDropdown(true)}
+                                        />
+                                        <div className="position-absolute end-0 top-50 translate-middle-y me-3 text-muted">
+                                            <FaSearch size={14} />
                                         </div>
+                                    </div>
 
-                                        {showDropdown && (
-                                            <div className="position-absolute w-100 bg-white border shadow-lg rounded mt-1" style={{ zIndex: 1000, maxHeight: '250px', overflowY: 'auto' }}>
-                                                {filteredProducts.length > 0 ? (
-                                                    filteredProducts.map(p => (
-                                                        <div
-                                                            key={p.id}
-                                                            className="p-2 border-bottom cursor-pointer hover-bg-light"
-                                                            style={{ cursor: 'pointer' }}
-                                                            onClick={() => selectProductFromList(p)}
-                                                        >
-                                                            <div className="fw-bold">{p.name}</div>
-                                                            <div className="small text-muted d-flex justify-content-between">
-                                                                <span>{p.variant || 'Estándar'}</span>
-                                                                <span>SKU: {p.sku || 'N/A'}</span>
-                                                            </div>
+                                    {showDropdown && (
+                                        <div className="position-absolute w-100 bg-white border shadow-lg rounded mt-1" style={{ zIndex: 1000, maxHeight: '250px', overflowY: 'auto' }}>
+                                            {filteredProducts.length > 0 ? (
+                                                filteredProducts.map(p => (
+                                                    <div
+                                                        key={p.id}
+                                                        className="p-2 border-bottom cursor-pointer hover-bg-light"
+                                                        style={{ cursor: 'pointer' }}
+                                                        onClick={() => selectProductFromList(p)}
+                                                    >
+                                                        <div className="fw-bold">{p.name}</div>
+                                                        <div className="small text-muted d-flex justify-content-between">
+                                                            <span>{p.variant || 'Estándar'}</span>
+                                                            <span>SKU: {p.sku || 'N/A'}</span>
                                                         </div>
-                                                    ))
-                                                ) : (
-                                                    <div className="p-3 text-center text-muted">
-                                                        <p className="mb-2">No se encontraron productos</p>
-                                                        {searchTerm && (
-                                                            <Button variant="outline-primary" size="sm" onClick={() => { setProdName(searchTerm); setShowProductModal(true); setShowDropdown(false); }}>
-                                                                Crear "{searchTerm}"
-                                                            </Button>
-                                                        )}
                                                     </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </Form.Group>
+                                                ))
+                                            ) : (
+                                                <div className="p-3 text-center text-muted">
+                                                    <p className="mb-2">No se encontraron productos</p>
+                                                    {searchTerm && (
+                                                        <Button variant="outline-primary" size="sm" onClick={() => { setProdName(searchTerm); setShowProductModal(true); setShowDropdown(false); }}>
+                                                            Crear "{searchTerm}"
+                                                        </Button>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </Form.Group>
 
-                                    <Row className="align-items-end g-2">
-                                        <Col xs={6}>
-                                            <Form.Group className="mb-2">
-                                                <Form.Label className="small fw-bold">Cantidad</Form.Label>
-                                                <Form.Control type="number" onFocus={(e) => e.target.select()} min="1" value={quantity} onChange={e => setQuantity(e.target.value)} />
-                                            </Form.Group>
-                                        </Col>
-                                        <Col xs={6}>
-                                            <Form.Group className="mb-2">
-                                                <Form.Label className="small fw-bold">Descuento <span className="text-muted fw-normal">(opcional)</span></Form.Label>
-                                                <InputGroup size="sm">
-                                                    <Form.Select style={{ flex: '0 0 95px' }} value={itemDiscountType} onChange={e => setItemDiscountType(e.target.value)}>
-                                                        <option value="PERCENTAGE">%</option>
-                                                        <option value="FIXED">{purchaseCurrency}</option>
-                                                    </Form.Select>
-                                                    <Form.Control type="number" onFocus={(e) => e.target.select()} placeholder="0" value={itemDiscountAmount} onChange={e => setItemDiscountAmount(e.target.value)} />
-                                                </InputGroup>
-                                            </Form.Group>
-                                        </Col>
-                                        <Col xs={12}>
-                                            <Form.Group className="mb-3">
-                                                <Form.Label className="small fw-bold">Costo Unitario ({purchaseCurrency})</Form.Label>
-                                                <InputGroup>
-                                                    <InputGroup.Text>{selectedCurrencyData.symbol}</InputGroup.Text>
-                                                    <Form.Control type="number" onFocus={(e) => e.target.select()} value={unitCost} onChange={e => setUnitCost(e.target.value)} placeholder="0.00" />
-                                                </InputGroup>
-                                                {purchaseCurrency !== baseCurrencyCode && unitCost && (
-                                                    <Form.Text className="text-primary fw-bold">
-                                                        ≈ {baseCurrencySymbol}{Number(convertToBase(unitCost)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} {baseCurrencyCode}
-                                                        <span className="text-muted ms-2">(Tasa: {Number(exchangeRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</span>
-                                                    </Form.Text>
-                                                )}
-                                            </Form.Group>
-                                        </Col>
-                                    </Row>
-                                    <Button variant="primary" className="w-100 py-2 rounded-pill fw-bold shadow-sm mt-3" onClick={addToCart} disabled={!selectedProduct || !quantity || !unitCost}>
-                                        <FaPlus className="me-2" /> Agregar a la Orden
-                                    </Button>
-                                </Card>
-                            </Col>
+                                <Row className="align-items-end g-2">
+                                    <Col xs={4}>
+                                        <Form.Group className="mb-2">
+                                            <Form.Label className="small fw-bold">Cantidad</Form.Label>
+                                            <Form.Control type="number" onFocus={(e) => e.target.select()} min="1" value={quantity} onChange={e => setQuantity(e.target.value)} />
+                                        </Form.Group>
+                                    </Col>
+                                    <Col xs={8}>
+                                        <Form.Group className="mb-2">
+                                            <Form.Label className="small fw-bold">Descuento <span className="text-muted fw-normal">(opcional)</span></Form.Label>
+                                            <InputGroup>
+                                                <Form.Select style={{ flex: '0 0 90px' }} value={itemDiscountType} onChange={e => setItemDiscountType(e.target.value)}>
+                                                    <option value="PERCENTAGE">%</option>
+                                                    <option value="FIXED">{purchaseCurrency}</option>
+                                                </Form.Select>
+                                                <Form.Control type="number" onFocus={(e) => e.target.select()} placeholder="0" value={itemDiscountAmount} onChange={e => setItemDiscountAmount(e.target.value)} />
+                                            </InputGroup>
+                                        </Form.Group>
+                                    </Col>
+                                    <Col xs={12}>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label className="small fw-bold">Costo Unitario ({purchaseCurrency})</Form.Label>
+                                            <InputGroup>
+                                                <InputGroup.Text>{selectedCurrencyData.symbol}</InputGroup.Text>
+                                                <Form.Control type="number" onFocus={(e) => e.target.select()} value={unitCost} onChange={e => setUnitCost(e.target.value)} placeholder="0.00" />
+                                            </InputGroup>
+                                            {purchaseCurrency !== baseCurrencyCode && unitCost && (
+                                                <Form.Text className="text-primary fw-bold">
+                                                    ≈ {baseCurrencySymbol}{Number(convertToBase(unitCost)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 })} {baseCurrencyCode}
+                                                    <span className="text-muted ms-2">(Tasa: {Number(exchangeRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</span>
+                                                </Form.Text>
+                                            )}
+                                        </Form.Group>
+                                    </Col>
+                                </Row>
+                                <Button variant="primary" className="w-100 py-2 rounded-pill fw-bold shadow-sm mt-3" onClick={addToCart} disabled={!selectedProduct || !quantity || !unitCost}>
+                                    <FaPlus className="me-2" /> Agregar a la Orden
+                                </Button>
+                            </Card>
+                        </Col>
                     </Row>
                 </div>
                 {/* Floating Save Button - Replicating POS behavior */}
                 {cart.length > 0 && (
-                     <div className="pos-floating-checkout shadow-lg animate-in">
-                        <Button 
-                            className="btn-premium-checkout px-5" 
+                    <div className="pos-floating-checkout shadow-lg animate-in">
+                        <Button
+                            className="btn-premium-checkout px-5"
                             onClick={handleSavePurchase}
                         >
-                            <FaSave className="me-2" /> 
-                            GUARDAR COMPRA: {selectedCurrencyData.symbol}{finalTotalRender.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {purchaseCurrency} 
+                            <FaSave className="me-2" />
+                            GUARDAR COMPRA: {selectedCurrencyData.symbol}{finalTotalRender.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {purchaseCurrency}
                             ({paymentMethod === 'CASH' ? 'Efectivo' : paymentMethod === 'TRANSFER' ? 'Transferencia' : paymentMethod === 'MOBILE_PAYMENT' ? 'Pago Móvil' : 'Tarjeta'})
                         </Button>
-                     </div>
+                    </div>
                 )}
             </Container>
 
@@ -1172,9 +1172,9 @@ const NewPurchasePage = () => {
                                 <Col xs={6}>
                                     <small className="text-muted d-block text-uppercase fw-bold" style={{ fontSize: '0.7rem' }}>Método de Pago</small>
                                     <div className="fw-bold text-dark">
-                                        {lastPurchaseSummary.paymentMethod === 'CASH' ? 'Efectivo' : 
-                                         lastPurchaseSummary.paymentMethod === 'TRANSFER' ? 'Transferencia' : 
-                                         lastPurchaseSummary.paymentMethod === 'MOBILE_PAYMENT' ? 'Pago Móvil' : 'Tarjeta'}
+                                        {lastPurchaseSummary.paymentMethod === 'CASH' ? 'Efectivo' :
+                                            lastPurchaseSummary.paymentMethod === 'TRANSFER' ? 'Transferencia' :
+                                                lastPurchaseSummary.paymentMethod === 'MOBILE_PAYMENT' ? 'Pago Móvil' : 'Tarjeta'}
                                     </div>
                                 </Col>
                                 {lastPurchaseSummary.invoiceNumber && (
