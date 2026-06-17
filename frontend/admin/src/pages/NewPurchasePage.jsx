@@ -694,7 +694,7 @@ const NewPurchasePage = () => {
                                                         <InputGroup>
                                                             <Form.Select style={{ maxWidth: '100px' }} value={globalDiscountType} onChange={e => setGlobalDiscountType(e.target.value)}>
                                                                 <option value="PERCENTAGE">%</option>
-                                                                <option value="FIXED">{selectedCurrencyData?.symbol || ''} ({purchaseCurrency})</option>
+                                                                <option value="FIXED">{purchaseCurrency}</option>
                                                             </Form.Select>
                                                             <Form.Control
                                                                 type="number"
@@ -788,7 +788,7 @@ const NewPurchasePage = () => {
                                                 <InputGroup size="sm">
                                                     <Form.Select style={{ maxWidth: '100px', padding: '0 5px' }} value={itemDiscountType} onChange={e => setItemDiscountType(e.target.value)}>
                                                         <option value="PERCENTAGE">%</option>
-                                                        <option value="FIXED">{selectedCurrencyData?.symbol || ''} ({purchaseCurrency})</option>
+                                                        <option value="FIXED">{purchaseCurrency}</option>
                                                     </Form.Select>
                                                     <Form.Control type="number" onFocus={(e) => e.target.select()} placeholder="0" value={itemDiscountAmount} onChange={e => setItemDiscountAmount(e.target.value)} />
                                                 </InputGroup>
