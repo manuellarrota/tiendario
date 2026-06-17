@@ -61,6 +61,9 @@ public class PublicController {
     @Autowired
     InventoryBatchRepository inventoryBatchRepository;
 
+    @Autowired
+    com.nugar.repository.CategoryMappingRepository categoryMappingRepository;
+
     @GetMapping("/products")
     public ResponseEntity<Map<String, Object>> getAllProducts(
             @RequestParam(defaultValue = "0") int page,
@@ -78,8 +81,18 @@ public class PublicController {
         // But we can filter by category at the database level first.
         List<Product> allProducts;
         if (category != null && !category.equalsIgnoreCase("all")) {
+            // Find mappings for this category
+            List<String> mappedLocalCategories = new ArrayList<>();
+            categoryRepository.findFirstByNameIgnoreCase(category).ifPresent(globalCat -> {
+                categoryMappingRepository.findByGlobalCategoryId(globalCat.getId()).forEach(mapping -> {
+                    mappedLocalCategories.add(mapping.getLocalCategoryName().toLowerCase());
+                });
+            });
+
             allProducts = productRepository.findAll().stream()
-                    .filter(p -> p.getCategory() != null && p.getCategory().equalsIgnoreCase(category))
+                    .filter(p -> p.getCategory() != null && 
+                            (p.getCategory().equalsIgnoreCase(category) || 
+                             mappedLocalCategories.contains(p.getCategory().toLowerCase())))
                     .collect(Collectors.toList());
         } else {
             allProducts = productRepository.findAll();

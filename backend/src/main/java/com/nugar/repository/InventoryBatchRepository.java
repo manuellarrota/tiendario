@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface InventoryBatchRepository extends JpaRepository<InventoryBatch, Long> {
     List<InventoryBatch> findByProductIdAndCurrentQuantityGreaterThanOrderByCreatedAtAsc(Long productId, Integer quantity);
+    List<InventoryBatch> findByProductIdOrderByCreatedAtDesc(Long productId);
 }

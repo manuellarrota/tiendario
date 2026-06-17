@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Container, Table, Button, Modal, Form, Alert, Badge, Pagination } from "react-bootstrap";
+import { Container, Table, Button, Modal, Form, Alert, Badge, Pagination, OverlayTrigger, Tooltip } from "react-bootstrap";
 import Layout from "../components/Layout";
 import SupplierService from "../services/supplier.service";
 import { FaPlus, FaTruck, FaSort, FaSortUp, FaSortDown, FaEnvelope, FaPhone, FaSearch, FaEdit } from "react-icons/fa";
@@ -227,9 +227,11 @@ const SupplierPage = () => {
                                                 {s.address ? <span className="small">{s.address}</span> : <span className="text-muted small">No registrada</span>}
                                             </td>
                                             <td className="text-end pe-4">
-                                                <Button variant="link" className="text-primary p-0" onClick={() => openModal(s)} title="Editar Proveedor">
-                                                    <FaEdit size={16} />
-                                                </Button>
+                                                <OverlayTrigger overlay={<Tooltip>Editar Proveedor</Tooltip>}>
+                                                    <Button variant="link" className="text-primary p-0" onClick={() => openModal(s)}>
+                                                        <FaEdit size={16} />
+                                                    </Button>
+                                                </OverlayTrigger>
                                             </td>
                                         </tr>
                                     ))}

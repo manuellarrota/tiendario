@@ -24,9 +24,13 @@ import org.springframework.web.multipart.MultipartFile;
 import com.nugar.util.BusinessLogger;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
@@ -56,6 +60,12 @@ public class ProductController {
 
     @Autowired
     com.nugar.repository.CategoryRepository categoryRepository;
+
+    @Autowired
+    com.nugar.repository.PurchaseItemRepository purchaseItemRepository;
+
+    @Autowired
+    com.nugar.repository.SaleItemRepository saleItemRepository;
 
     @Value("${app.upload.dir:uploads}")
     private String uploadDir;
@@ -173,7 +183,8 @@ public class ProductController {
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "id,desc") String[] sort,
             @RequestParam(required = false) String q,
-            @RequestParam(defaultValue = "false") boolean lowStock) {
+            @RequestParam(defaultValue = "false") boolean lowStock,
+            @RequestParam(defaultValue = "false") boolean lowMargin) {
 
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
@@ -199,6 +210,7 @@ public class ProductController {
                     userDetails.getCompanyId(),
                     (q != null ? com.nugar.util.SearchUtils.normalize(q) : ""),
                     lowStock,
+                    lowMargin,
                     paging);
 
             Map<String, Object> response = new HashMap<>();
@@ -465,5 +477,76 @@ public class ProductController {
         productIndexService.deleteProductIndex(id);
 
         return ResponseEntity.ok(new MessageResponse("Product deleted successfully!"));
+    }
+
+    @GetMapping("/{id}/history")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN') or hasRole('CASHIER')")
+    public ResponseEntity<?> getProductHistory(@PathVariable Long id) {
+        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Product product = productRepository.findById(id).orElse(null);
+        if (product == null || !product.getCompany().getId().equals(userDetails.getCompanyId())) {
+            return ResponseEntity.badRequest().body(new MessageResponse("Error: Product not found or access denied."));
+        }
+
+        LocalDateTime sixMonthsAgo = LocalDateTime.now().minusMonths(6).withDayOfMonth(1).withHour(0).withMinute(0);
+        List<com.nugar.domain.PurchaseItem> purchases = purchaseItemRepository.findValidPurchasesByProductIdSince(id, sixMonthsAgo);
+        List<com.nugar.domain.SaleItem> sales = saleItemRepository.findValidSalesByProductIdSince(id, sixMonthsAgo);
+
+        Map<String, List<com.nugar.domain.PurchaseItem>> purchasesByMonth = purchases.stream()
+                .collect(Collectors.groupingBy(p -> p.getPurchase().getDate().format(DateTimeFormatter.ofPattern("yyyy-MM"))));
+        Map<String, List<com.nugar.domain.SaleItem>> salesByMonth = sales.stream()
+                .collect(Collectors.groupingBy(s -> s.getSale().getDate().format(DateTimeFormatter.ofPattern("yyyy-MM"))));
+
+        List<com.nugar.payload.response.ProductHistoryResponse.MonthlyData> monthlyData = new ArrayList<>();
+        
+        YearMonth currentMonth = YearMonth.now();
+        for (int i = 5; i >= 0; i--) {
+            YearMonth month = currentMonth.minusMonths(i);
+            String monthKey = month.format(DateTimeFormatter.ofPattern("yyyy-MM"));
+            String label = month.format(DateTimeFormatter.ofPattern("MMM yy", new Locale("es", "ES")));
+            
+            List<com.nugar.domain.PurchaseItem> monthPurchases = purchasesByMonth.getOrDefault(monthKey, Collections.emptyList());
+            List<com.nugar.domain.SaleItem> monthSales = salesByMonth.getOrDefault(monthKey, Collections.emptyList());
+            
+            BigDecimal avgCost = BigDecimal.ZERO;
+            if (!monthPurchases.isEmpty()) {
+                BigDecimal totalCostSum = monthPurchases.stream()
+                        .map(p -> {
+                            BigDecimal cost = p.getUnitCostInBaseCurrency() != null ? p.getUnitCostInBaseCurrency() : (p.getUnitCost() != null ? p.getUnitCost() : BigDecimal.ZERO);
+                            return cost.multiply(BigDecimal.valueOf(p.getQuantity() != null ? p.getQuantity() : 1));
+                        })
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                int totalQty = monthPurchases.stream().mapToInt(p -> p.getQuantity() != null ? p.getQuantity() : 1).sum();
+                avgCost = totalQty > 0 ? totalCostSum.divide(BigDecimal.valueOf(totalQty), 2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+            } else if (!monthlyData.isEmpty()) {
+                avgCost = monthlyData.get(monthlyData.size() - 1).getAvgCost();
+            } else {
+                avgCost = product.getCostPrice() != null ? product.getCostPrice() : BigDecimal.ZERO;
+            }
+
+            BigDecimal avgPrice = BigDecimal.ZERO;
+            if (!monthSales.isEmpty()) {
+                BigDecimal totalPriceSum = monthSales.stream()
+                        .map(s -> {
+                            BigDecimal price = s.getUnitPrice() != null ? s.getUnitPrice() : BigDecimal.ZERO;
+                            return price.multiply(BigDecimal.valueOf(s.getQuantity() != null ? s.getQuantity() : 1));
+                        })
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                int totalSaleQty = monthSales.stream().mapToInt(s -> s.getQuantity() != null ? s.getQuantity() : 1).sum();
+                avgPrice = totalSaleQty > 0 ? totalPriceSum.divide(BigDecimal.valueOf(totalSaleQty), 2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+            } else if (!monthlyData.isEmpty()) {
+                avgPrice = monthlyData.get(monthlyData.size() - 1).getAvgPrice();
+            } else {
+                avgPrice = product.getPrice() != null ? product.getPrice() : BigDecimal.ZERO;
+            }
+
+            // Always include all 6 months so the chart timeline is continuous.
+            // Empty months inherit values from the previous month (calculated above via fallback logic).
+            monthlyData.add(new com.nugar.payload.response.ProductHistoryResponse.MonthlyData(monthKey, label, avgCost, avgPrice));
+        }
+
+        com.nugar.payload.response.ProductHistoryResponse response = new com.nugar.payload.response.ProductHistoryResponse();
+        response.setMonthlyData(monthlyData);
+        return ResponseEntity.ok(response);
     }
 }

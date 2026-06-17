@@ -99,7 +99,6 @@ const CheckoutModal = ({
                                     type="tel"
                                     value={customerData.phone}
                                     onChange={(e) => setCustomerData({ ...customerData, phone: e.target.value })}
-                                    disabled={isLoggedIn && !!customerData.phone}
                                     required
                                 />
                             </Col>
@@ -109,7 +108,6 @@ const CheckoutModal = ({
                                     placeholder="Cédula / ID Fiscal *"
                                     value={customerData.cedula}
                                     onChange={(e) => setCustomerData({ ...customerData, cedula: e.target.value })}
-                                    disabled={isLoggedIn && !!customerData.cedula}
                                     required
                                 />
                             </Col>

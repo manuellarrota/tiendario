@@ -28,7 +28,13 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
     @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "items", "items.product",
             "items.product.company",
             "items.product.catalogProduct", "company", "customer", "customer.company" })
-    List<Sale> findByCustomer_EmailOrderByDateDesc(String email);
+    List<Sale> findByCustomerEmailIgnoreCaseOrderByDateDesc(String email);
+
+    @Query("SELECT s FROM Sale s WHERE LOWER(s.customerEmail) = LOWER(:email) OR (s.customer IS NOT NULL AND s.customer.userId = :userId) ORDER BY s.date DESC")
+    @org.springframework.data.jpa.repository.EntityGraph(attributePaths = { "items", "items.product",
+            "items.product.company",
+            "items.product.catalogProduct", "company", "customer", "customer.company" })
+    List<Sale> findByCustomerEmailOrUserId(@Param("email") String email, @Param("userId") Long userId);
 
     List<Sale> findByCompanyIdAndStatusOrderByDateDesc(Long companyId, com.nugar.domain.SaleStatus status);
 

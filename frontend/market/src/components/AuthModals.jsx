@@ -6,9 +6,9 @@ import { Modal, Form, Button, Alert } from 'react-bootstrap';
  */
 export const LoginModal = ({
     show, onHide, loginData, setLoginData, loginError,
-    loginLoading, onLogin, onSwitchToRegister
+    loginLoading, onLogin, onSwitchToRegister, onForgotPassword
 }) => (
-    <Modal show={show} onHide={onHide} centered scrollable className="rounded-4 overflow-hidden">
+    <Modal show={show} onHide={onHide} centered scrollable className="rounded-4">
         <Modal.Header closeButton className="border-0 pb-0">
             <Modal.Title className="fw-bold">Ingresar al Marketplace</Modal.Title>
         </Modal.Header>
@@ -45,7 +45,7 @@ export const LoginModal = ({
             <div className="text-center mt-3">
                 <small className="text-secondary">¿No tienes cuenta? <span className="fw-bold text-primary" onClick={onSwitchToRegister} style={{ cursor: 'pointer' }}>Regístrate gratis</span></small>
                 <br />
-                <small><span className="text-muted" style={{ cursor: 'default' }}>¿Olvidaste tu contraseña? Contáctanos.</span></small>
+                <small><span className="text-primary fw-bold" onClick={onForgotPassword} style={{ cursor: 'pointer' }}>¿Olvidaste tu contraseña? Recupérala aquí.</span></small>
             </div>
         </Modal.Body>
     </Modal>
@@ -55,7 +55,7 @@ export const RegisterModal = ({
     show, onHide, registerData, setRegisterData,
     registerMessage, registerSuccess, registerLoading, onRegister, onSwitchToLogin
 }) => (
-    <Modal show={show} onHide={onHide} centered scrollable className="rounded-4 overflow-hidden">
+    <Modal show={show} onHide={onHide} centered scrollable className="rounded-4">
         <Modal.Header closeButton className="border-0 pb-0">
             <Modal.Title className="fw-bold">Crear Cuenta</Modal.Title>
         </Modal.Header>
@@ -89,7 +89,8 @@ export const RegisterModal = ({
                     <Form.Label className="small fw-bold">Teléfono / WhatsApp</Form.Label>
                     <Form.Control
                         type="tel"
-                        placeholder="+58 412 1234567"
+                        inputMode="tel"
+                        placeholder="Ej: 04141234567"
                         className="py-2 rounded-3"
                         value={registerData.phone}
                         onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
@@ -100,7 +101,8 @@ export const RegisterModal = ({
                     <Form.Label className="small fw-bold">Cédula / RIF</Form.Label>
                     <Form.Control
                         type="text"
-                        placeholder="V-12345678"
+                        inputMode="numeric"
+                        placeholder="Ej: 12345678"
                         className="py-2 rounded-3"
                         value={registerData.cedula}
                         onChange={(e) => setRegisterData({ ...registerData, cedula: e.target.value })}
@@ -132,6 +134,43 @@ export const RegisterModal = ({
             <div className="text-center mt-3">
                 <small className="text-secondary">¿Ya tienes cuenta? <span className="fw-bold text-primary" onClick={onSwitchToLogin} style={{ cursor: 'pointer' }}>Inicia Sesión</span></small>
             </div>
+        </Modal.Body>
+    </Modal>
+);
+
+export const ForgotPasswordModal = ({
+    show, onHide, forgotEmail, setForgotEmail,
+    forgotMessage, forgotSuccess, forgotLoading, onForgotPassword
+}) => (
+    <Modal show={show} onHide={onHide} centered scrollable className="rounded-4">
+        <Modal.Header closeButton className="border-0 pb-0">
+            <Modal.Title className="fw-bold">Recuperar Contraseña</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="p-4">
+            <p className="text-secondary small mb-4">Ingresa tu correo y te enviaremos instrucciones para restablecer tu contraseña.</p>
+            {forgotMessage && <Alert variant={forgotSuccess ? "success" : "danger"} className="py-2 small">{forgotMessage}</Alert>}
+            <Form onSubmit={onForgotPassword}>
+                <Form.Group className="mb-4">
+                    <Form.Label className="small fw-bold">Correo Electrónico</Form.Label>
+                    <Form.Control
+                        type="email"
+                        placeholder="tu@email.com"
+                        className="py-2 rounded-3"
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        required
+                    />
+                </Form.Group>
+                {!forgotSuccess ? (
+                    <Button variant="primary" type="submit" className="w-100 py-2 fw-bold shadow-sm" disabled={forgotLoading}>
+                        {forgotLoading ? "Enviando..." : "Recuperar Contraseña"}
+                    </Button>
+                ) : (
+                    <Button variant="secondary" className="w-100 py-2 fw-bold shadow-sm" onClick={onHide}>
+                        Cerrar
+                    </Button>
+                )}
+            </Form>
         </Modal.Body>
     </Modal>
 );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Table, Badge, Button, Card, Spinner, Form, Modal, Alert } from 'react-bootstrap';
+import { Container, Table, Badge, Button, Card, Spinner, Form, Modal, Alert, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaBox, FaEdit, FaTrash, FaImage } from 'react-icons/fa';
 import AdminService from '../services/admin.service';
 import Sidebar from '../components/Sidebar';
@@ -78,6 +78,7 @@ const AdminCatalogPage = () => {
         setShowDeleteModal(true);
     };
 
+
     const handleDelete = () => {
         if (!itemToDelete) return;
         AdminService.deleteCatalogProduct(itemToDelete.id).then(
@@ -87,7 +88,7 @@ const AdminCatalogPage = () => {
                 setItemToDelete(null);
                 toast.showSuccess("Producto eliminado del catálogo global.");
             },
-            (error) => {
+            () => {
                 toast.showError("❌ No se pudo eliminar el registro del catálogo.");
                 setShowDeleteModal(false);
                 setItemToDelete(null);
@@ -127,7 +128,7 @@ const AdminCatalogPage = () => {
                         <div style={{ width: '100%', maxWidth: '350px' }}>
                             <Form.Control
                                 type="text"
-                                placeholder="Buscar pos nombre, SKU o categoría..."
+                                placeholder="Buscar por nombre, SKU o categoría..."
                                 value={searchTerm}
                                 onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
                                 className="rounded-pill shadow-sm bg-white"
@@ -162,12 +163,16 @@ const AdminCatalogPage = () => {
                                             <td><div className="fw-bold">{item.name}</div></td>
                                             <td>{item.category?.name || <span className="text-muted">Sin categoría</span>}</td>
                                             <td>
-                                                <Button variant="outline-primary" size="sm" className="rounded-pill me-2" onClick={() => handleEdit(item)}>
-                                                    <FaEdit /> Editar
-                                                </Button>
-                                                <Button variant="outline-danger" size="sm" className="rounded-pill" onClick={() => confirmDelete(item)}>
-                                                    <FaTrash />
-                                                </Button>
+                                                <OverlayTrigger overlay={<Tooltip>Editar Producto</Tooltip>}>
+                                                    <Button variant="outline-primary" size="sm" className="rounded-pill me-2" onClick={() => handleEdit(item)}>
+                                                        <FaEdit />
+                                                    </Button>
+                                                </OverlayTrigger>
+                                                <OverlayTrigger overlay={<Tooltip>Eliminar Producto</Tooltip>}>
+                                                    <Button variant="outline-danger" size="sm" className="rounded-pill" onClick={() => confirmDelete(item)}>
+                                                        <FaTrash />
+                                                    </Button>
+                                                </OverlayTrigger>
                                             </td>
                                         </tr>
                                     ))}
@@ -184,8 +189,19 @@ const AdminCatalogPage = () => {
                                 </div>
                             )}
                             {filteredCatalog.length === 0 && (
-                                <div className="text-center py-5">
-                                    <p className="text-muted mb-0">No se encontraron productos que coincidan con tu búsqueda.</p>
+                                <div className="text-center py-5 px-4">
+                                    <FaBox size={40} className="text-muted mb-3 opacity-50" />
+                                    {searchTerm ? (
+                                        <p className="text-muted mb-0">No se encontraron productos que coincidan con <strong>"{searchTerm}"</strong>.</p>
+                                    ) : (
+                                        <>
+                                            <h6 className="text-muted fw-bold">El catálogo global está vacío</h6>
+                                            <p className="text-muted small mb-0" style={{ maxWidth: '420px', margin: '0 auto' }}>
+                                                Los registros maestros se crean automáticamente cuando las tiendas agregan productos con <strong>SKU</strong> a su inventario.
+                                                También se añaden cuando aprueban sugerencias de catálogo.
+                                            </p>
+                                        </>
+                                    )}
                                 </div>
                             )}
                         </Card.Body>

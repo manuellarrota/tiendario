@@ -70,6 +70,10 @@ const findByBarcode = (barcode) => {
     });
 };
 
+const getHistory = (id) => {
+    return axios.get(API_URL + `/${id}/history`, { headers: getAuthHeader() });
+};
+
 const ProductService = {
     getAll,
     getCompanyProducts: getAll,
@@ -80,7 +84,8 @@ const ProductService = {
     searchCatalog,
     uploadImage,
     getPOSProducts,
-    findByBarcode
+    findByBarcode,
+    getHistory
 };
 
 export default ProductService;

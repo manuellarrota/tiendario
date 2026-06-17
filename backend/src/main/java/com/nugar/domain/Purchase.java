@@ -23,9 +23,20 @@ public class Purchase {
     private String currencyCode = "USD";
     private BigDecimal exchangeRate = BigDecimal.ONE;
     private BigDecimal totalInBaseCurrency;
+
+    // Discount fields
+    private BigDecimal globalDiscountAmount;
+    
+    @Enumerated(EnumType.STRING)
+    private DiscountType globalDiscountType;
+    
+    private BigDecimal totalDiscount;
     
     @Enumerated(EnumType.STRING)
     private PaymentMethod paymentMethod = PaymentMethod.CASH;
+
+    @Enumerated(EnumType.STRING)
+    private PurchaseStatus status = PurchaseStatus.COMPLETED;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "supplier_id")
@@ -40,4 +51,27 @@ public class Purchase {
     @OneToMany(mappedBy = "purchase", cascade = CascadeType.ALL, orphanRemoval = true)
     @com.fasterxml.jackson.annotation.JsonIgnoreProperties({ "purchase" })
     private List<PurchaseItem> items = new ArrayList<>();
+
+    @OneToMany(mappedBy = "purchase", cascade = CascadeType.ALL, orphanRemoval = true)
+    @com.fasterxml.jackson.annotation.JsonIgnoreProperties({ "purchase" })
+    private List<PurchaseAdjustment> adjustments = new ArrayList<>();
+
+    // Transitorio para obtener el total final
+    @Transient
+    public BigDecimal getAdjustedTotal() {
+        if (total == null) return BigDecimal.ZERO;
+        BigDecimal adjusted = total;
+        if (adjustments != null) {
+            for (PurchaseAdjustment adj : adjustments) {
+                if (adj.getAmount() != null) {
+                    if (adj.getType() == AdjustmentType.DEBIT_NOTE) {
+                        adjusted = adjusted.add(adj.getAmount());
+                    } else if (adj.getType() == AdjustmentType.CREDIT_NOTE) {
+                        adjusted = adjusted.subtract(adj.getAmount());
+                    }
+                }
+            }
+        }
+        return adjusted;
+    }
 }

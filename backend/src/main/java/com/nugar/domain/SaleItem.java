@@ -24,5 +24,11 @@ public class SaleItem {
 
     private Integer quantity;
     private BigDecimal unitPrice;
+    
+    private BigDecimal discountAmount;
+    
+    @Enumerated(EnumType.STRING)
+    private DiscountType discountType;
+    
     private BigDecimal subtotal;
 }

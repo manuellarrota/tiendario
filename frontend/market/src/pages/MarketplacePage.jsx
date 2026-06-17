@@ -7,7 +7,7 @@ import MarketplaceNavbar from '../components/Navbar';
 import ProductDetailModal from '../components/ProductDetailModal';
 import CartModal from '../components/CartModal';
 import CheckoutModal from '../components/CheckoutModal';
-import { LoginModal, RegisterModal } from '../components/AuthModals';
+import { LoginModal, RegisterModal, ForgotPasswordModal } from '../components/AuthModals';
 import { getCategoryEmoji, getCategoryPlaceholder } from '../utils/categoryEmoji';
 
 const MarketplacePage = () => {
@@ -15,6 +15,12 @@ const MarketplacePage = () => {
     const [showLoginModal, setShowLoginModal] = useState(false);
     const [loginError, setLoginError] = useState('');
     const [loginLoading, setLoginLoading] = useState(false);
+    
+    const [showForgotModal, setShowForgotModal] = useState(false);
+    const [forgotEmail, setForgotEmail] = useState('');
+    const [forgotMessage, setForgotMessage] = useState('');
+    const [forgotSuccess, setForgotSuccess] = useState(false);
+    const [forgotLoading, setForgotLoading] = useState(false);
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [filteredProducts, setFilteredProducts] = useState([]);
@@ -481,6 +487,25 @@ const MarketplacePage = () => {
         );
     };
 
+    const handleForgotPassword = (e) => {
+        e.preventDefault();
+        setForgotLoading(true);
+        setForgotMessage("");
+
+        AuthService.forgotPassword(forgotEmail).then(
+            (response) => {
+                setForgotMessage(response.data?.message || "Correo de recuperación enviado.");
+                setForgotSuccess(true);
+                setForgotLoading(false);
+            },
+            (error) => {
+                setForgotMessage(error.response?.data?.message || error.translatedMessage || "Error al procesar la solicitud.");
+                setForgotSuccess(false);
+                setForgotLoading(false);
+            }
+        );
+    };
+
     const openRegister = () => {
         setShowLoginModal(false);
         setShowRegisterModal(true);
@@ -934,7 +959,7 @@ const MarketplacePage = () => {
 
             {/* Store Detail Modal (Map & Reviews) */}
             <Modal scrollable show={showStoreModal} onHide={() => setShowStoreModal(false)} size="lg" centered className="modal-premium">
-                <Modal.Body className="p-0 overflow-hidden rounded-4">
+                <Modal.Body className="p-0 rounded-4">
                     <div className="position-relative">
                         <Button variant="light" className="position-absolute top-0 end-0 m-3 rounded-circle shadow-sm"
                             style={{ zIndex: 10, width: '40px', height: '40px', lineHeight: 1 }}
@@ -1144,7 +1169,7 @@ const MarketplacePage = () => {
 
             {/* Order Confirmation Modal (Click & Collect) */}
             <Modal scrollable show={showOrderConfirmation} onHide={() => setShowOrderConfirmation(false)} size="lg" centered className="modal-premium">
-                <Modal.Body className="p-0 overflow-hidden rounded-4">
+                <Modal.Body className="p-0 rounded-4">
                     <div className="bg-success text-white p-4 text-center">
                         <div className="display-4 mb-2">✅</div>
                         <h3 className="fw-bold mb-1">Tu orden se ha enviado con éxito</h3>
@@ -1251,6 +1276,10 @@ const MarketplacePage = () => {
                 loginLoading={loginLoading}
                 onLogin={handleLogin}
                 onSwitchToRegister={openRegister}
+                onForgotPassword={() => {
+                    setShowLoginModal(false);
+                    setShowForgotModal(true);
+                }}
             />
 
             <RegisterModal
@@ -1263,6 +1292,17 @@ const MarketplacePage = () => {
                 registerLoading={registerLoading}
                 onRegister={handleRegister}
                 onSwitchToLogin={openLogin}
+            />
+
+            <ForgotPasswordModal
+                show={showForgotModal}
+                onHide={() => setShowForgotModal(false)}
+                forgotEmail={forgotEmail}
+                setForgotEmail={setForgotEmail}
+                forgotMessage={forgotMessage}
+                forgotSuccess={forgotSuccess}
+                forgotLoading={forgotLoading}
+                onForgotPassword={handleForgotPassword}
             />
 
             {/* Footer */}

@@ -42,6 +42,9 @@ public class MyDataInitializer implements CommandLineRunner {
     private GlobalConfigRepository globalConfigRepository;
 
     @Autowired
+    private CatalogProductRepository catalogProductRepository;
+
+    @Autowired
     private com.nugar.service.ExchangeRateService exchangeRateService;
 
     @Autowired
@@ -83,12 +86,39 @@ public class MyDataInitializer implements CommandLineRunner {
             // 5. Seed detailed data for manager_pro
             seedManagerProData();
 
-            System.err.println("✓ Initialization complete. Base categories, Demo Products and Super Admin ready.");
+            // 6. Automatically synchronize products to Global Catalog
+            syncGlobalCatalog();
+
+            System.err.println("✓ Initialization complete. Base categories, Demo Products, Global Catalog and Super Admin ready.");
 
         } catch (Exception e) {
             System.err.println("ERROR during DataInitializer execution:");
             e.printStackTrace();
         }
+    }
+
+    private void syncGlobalCatalog() {
+        System.err.println("Synchronizing Global Catalog...");
+        List<Product> allProducts = productRepository.findAll();
+        int created = 0;
+        int skipped = 0;
+        for (Product p : allProducts) {
+            if (p.getSku() == null || p.getSku().trim().isEmpty()) { skipped++; continue; }
+            String sku = p.getSku().trim();
+            if (catalogProductRepository.findBySku(sku).isPresent()) { skipped++; continue; }
+            CatalogProduct cp = new CatalogProduct();
+            cp.setSku(sku);
+            cp.setName(p.getName());
+            cp.setDescription(p.getDescription());
+            cp.setImageUrl(p.getImageUrl());
+            if (p.getCategory() != null) {
+                Category cat = categoryRepository.findFirstByNameIgnoreCase(p.getCategory().trim()).orElse(null);
+                cp.setCategory(cat);
+            }
+            catalogProductRepository.save(cp);
+            created++;
+        }
+        System.err.println("✓ Global Catalog Synchronized: " + created + " created, " + skipped + " skipped.");
     }
 
     private void seedManagerProData() {
@@ -123,43 +153,69 @@ public class MyDataInitializer implements CommandLineRunner {
                 Product p5 = createProduct(company, "Set de Destornilladores (x6)", "Ferretería", "ST-005", 15.0, 8.0, 25, "Punta Imantada", "Truper");
                 Product p6 = createProduct(company, "Cerradura de Pomo Bronce", "Ferretería", "ST-006", 22.0, 12.0, 18, "Dormitorio/Baño", "Cisa");
 
+                List<Product> allCompanyProducts = new java.util.ArrayList<>(List.of(p1, p2, p3, p4, p5, p6));
+
+                // 2.1 Generate 1000 additional products for Ferretería Central
+                System.err.println("Seeding 1000 additional products for Ferretería Central...");
+                String[] prefixes = {"Llave", "Tornillo", "Tuerca", "Martillo", "Destornillador", "Alicate", "Cinta", "Broca", "Pintura", "Clavo", "Sierra", "Tubo", "Codo", "Lija", "Pegamento"};
+                String[] brands = {"Truper", "Stanley", "Bosch", "DeWalt", "Makita", "Cisa", "3M", "Sika", "Pretul"};
+                for (int i = 1; i <= 1000; i++) {
+                    String prefix = prefixes[i % prefixes.length];
+                    String brand = brands[i % brands.length];
+                    double cost = 1.0 + (i % 50);
+                    double price = cost * 1.5;
+                    Product gp = createProduct(company, prefix + " Industrial " + i, "Ferretería", "ST-1" + String.format("%04d", i), price, cost, 50, "Standard", brand);
+                    allCompanyProducts.add(gp);
+                }
+
                 // 3. Create Purchases (Stock entry - More variety for reports)
-                System.err.println("Generating historical multi-currency purchases for " + manager.getUsername() + "...");
-                createPurchase(company, sup1, List.of(p1, p2, p3), java.time.LocalDateTime.now().minusDays(25), "INV-B001", "USD", 1.0, PaymentMethod.TRANSFER);
-                createPurchase(company, sup2, List.of(p4, p5), java.time.LocalDateTime.now().minusDays(20), "INV-B002", "VES", 36.5, PaymentMethod.MOBILE_PAYMENT);
-                createPurchase(company, sup1, List.of(p1, p6), java.time.LocalDateTime.now().minusDays(15), "INV-B003", "USD", 1.0, PaymentMethod.CASH);
-                createPurchase(company, sup2, List.of(p2, p3, p4), java.time.LocalDateTime.now().minusDays(10), "INV-B004", "VES", 36.8, PaymentMethod.TRANSFER);
-                createPurchase(company, sup1, List.of(p5, p6), java.time.LocalDateTime.now().minusDays(5), "INV-B005", "USD", 1.0, PaymentMethod.CARD);
+                System.err.println("Generating historical multi-currency purchases (180 days) for " + manager.getUsername() + "...");
+                java.util.Random rnd = new java.util.Random();
+                for (int i = 1; i <= 40; i++) {
+                    java.time.LocalDateTime purchDate = java.time.LocalDateTime.now().minusDays(rnd.nextInt(180)).minusHours(rnd.nextInt(24));
+                    Supplier randomSup = rnd.nextBoolean() ? sup1 : sup2;
+                    String currency = rnd.nextBoolean() ? "USD" : "VES";
+                    double rate = currency.equals("USD") ? 1.0 : 36.0 + (rnd.nextDouble() * 1.5);
+                    PaymentMethod[] methods = {PaymentMethod.CASH, PaymentMethod.MOBILE_PAYMENT, PaymentMethod.TRANSFER, PaymentMethod.CARD};
+                    PaymentMethod randomMethod = methods[rnd.nextInt(methods.length)];
+
+                    List<Product> purchProducts = new java.util.ArrayList<>();
+                    int itemsCount = 2 + rnd.nextInt(8);
+                    for (int j = 0; j < itemsCount; j++) {
+                        purchProducts.add(allCompanyProducts.get(rnd.nextInt(allCompanyProducts.size())));
+                    }
+                    createPurchase(company, randomSup, purchProducts, purchDate, "INV-HIST-" + i, currency, rate, randomMethod);
+                }
 
                 // 4. Create Sales (Diverse states and history)
                 System.err.println("Generating historical sales for charting (Mixed Currencies)...");
-                java.util.Random rnd = new java.util.Random();
+                // 4. Create Sales (Diverse states and history)
+                System.err.println("Generating 300 historical sales for charting (180 days span)...");
                 PaymentMethod[] methods = {PaymentMethod.CASH, PaymentMethod.MOBILE_PAYMENT, PaymentMethod.TRANSFER, PaymentMethod.CARD};
-                SaleStatus[] statuses = {SaleStatus.PAID, SaleStatus.PAID, SaleStatus.PAID, SaleStatus.PENDING}; // Mostly paid
-                String[] names = {"Juan Pérez", "María García", "Luis Rodríguez", "Ana Martínez", "Carlos Ruiz", "Elena Blanco", "Pedro Sánchez", "Santi Castro"};
+                SaleStatus[] statuses = {SaleStatus.PAID, SaleStatus.PAID, SaleStatus.PAID, SaleStatus.PAID, SaleStatus.PAID, SaleStatus.PENDING, SaleStatus.PARTIAL_REFUND}; // Mostly paid
+                String[] names = {"Juan Pérez", "María García", "Luis Rodríguez", "Ana Martínez", "Carlos Ruiz", "Elena Blanco", "Pedro Sánchez", "Santi Castro", "Cliente Especial"};
 
-                for (int i = 1; i <= 60; i++) {
-                    java.time.LocalDateTime saleDate = java.time.LocalDateTime.now().minusDays(rnd.nextInt(30)).minusHours(rnd.nextInt(24));
+                for (int i = 1; i <= 300; i++) {
+                    // Skew sales more towards recent days for realistic growth curves
+                    int daysAgo = (int) (Math.pow(rnd.nextDouble(), 1.5) * 180);
+                    java.time.LocalDateTime saleDate = java.time.LocalDateTime.now().minusDays(daysAgo).minusHours(rnd.nextInt(24));
                     SaleStatus randomStatus = statuses[rnd.nextInt(statuses.length)];
                     PaymentMethod randomMethod = methods[rnd.nextInt(methods.length)];
                     String randomName = names[rnd.nextInt(names.length)];
                     
-                    // Determine currency for this sale
                     String currency = (rnd.nextBoolean()) ? "USD" : "VES";
                     double rate = currency.equals("USD") ? 1.0 : 36.0 + (rnd.nextDouble() * 1.5);
 
-                    // Pick 1-3 random products
-                    List<Product> allSpecialized = List.of(p1, p2, p3, p4, p5, p6);
                     List<Product> saleProducts = new java.util.ArrayList<>();
-                    int itemsCount = 1 + rnd.nextInt(3);
+                    int itemsCount = 1 + rnd.nextInt(5);
                     for (int j = 0; j < itemsCount; j++) {
-                        saleProducts.add(allSpecialized.get(rnd.nextInt(allSpecialized.size())));
+                        saleProducts.add(allCompanyProducts.get(rnd.nextInt(allCompanyProducts.size())));
                     }
 
                     createSale(company, manager, randomName, saleProducts, randomStatus, randomMethod, saleDate, currency, rate);
                 }
                 
-                System.err.println("✓ Manager Pro data seeded successfully with 60 historical sales and 5 purchases.");
+                System.err.println("✓ Manager Pro data seeded successfully with 300 historical sales and 40 purchases spanning 6 months.");
             }
         }
     }

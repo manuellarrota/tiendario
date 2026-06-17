@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Table, Badge, Button, Card, Spinner, Dropdown, Alert, Form, Nav, Tab } from 'react-bootstrap';
-import { FaBuilding, FaUsers, FaEdit, FaCheck, FaTimes, FaEye, FaInfoCircle, FaMapMarkerAlt, FaPhone, FaCalendarAlt, FaShoppingCart, FaMoneyBillWave, FaBox, FaCashRegister, FaChartLine, FaBan, FaHistory, FaWrench } from 'react-icons/fa';
+import { Container, Table, Badge, Button, Card, Spinner, Dropdown, Alert, Form, Nav, Tab, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { FaBuilding, FaUsers, FaEdit, FaCheck, FaTimes, FaEye, FaInfoCircle, FaMapMarkerAlt, FaPhone, FaCalendarAlt, FaShoppingCart, FaMoneyBillWave, FaBox, FaCashRegister, FaChartLine, FaBan, FaHistory, FaWrench, FaKey } from 'react-icons/fa';
 import AdminService from '../services/admin.service';
 import Sidebar from '../components/Sidebar';
 import Layout from '../components/Layout';
@@ -10,6 +10,7 @@ import { useToast } from '../components/ToastContext';
 
 const AdminCompaniesPage = () => {
     const [companies, setCompanies] = useState([]);
+    const [globalCategories, setGlobalCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [updating, setUpdating] = useState(null);
@@ -58,6 +59,9 @@ const AdminCompaniesPage = () => {
     const [productsPage, setProductsPage] = useState(0);
     const [productsTotalPages, setProductsTotalPages] = useState(0);
     const [productsLoading, setProductsLoading] = useState(false);
+    // Usuarios
+    const [companyUsers, setCompanyUsers] = useState([]);
+    const [usersLoading, setUsersLoading] = useState(false);
     // Historial
     const [auditLog, setAuditLog] = useState([]);
     const [auditLoading, setAuditLoading] = useState(false);
@@ -93,7 +97,17 @@ const AdminCompaniesPage = () => {
 
     useEffect(() => {
         loadCompanies();
+        loadGlobalCategories();
     }, []);
+
+    const loadGlobalCategories = () => {
+        AdminService.getGlobalCategories().then(
+            (response) => {
+                setGlobalCategories(response.data);
+            },
+            (error) => console.error("Error loading global categories", error)
+        );
+    };
 
     const handleStatusChange = (companyId, newStatus) => {
         setUpdating(companyId);
@@ -137,6 +151,7 @@ const AdminCompaniesPage = () => {
         setCompanySales([]); setSalesPage(0);
         setCompanyPurchases([]); setPurchasesPage(0);
         setCompanyProducts([]); setProductsPage(0);
+        setCompanyUsers([]);
         setAuditLog([]);
         AdminService.getCompanyKpis(company.id).then(
             res => { setCompanyKpis(res.data); setLoadingKpis(false); },
@@ -227,19 +242,30 @@ const AdminCompaniesPage = () => {
         );
     };
 
+    const loadUsers = () => {
+        if (!viewCompany) return;
+        setUsersLoading(true);
+        AdminService.getCompanyUsers(viewCompany.id).then(
+            res => { setCompanyUsers(res.data || []); setUsersLoading(false); },
+            () => setUsersLoading(false)
+        );
+    };
+
     const handleAssistTabSelect = (tab) => {
         setAssistTab(tab);
         if (tab === 'sales' && companySales.length === 0) loadSales(0);
         if (tab === 'purchases' && companyPurchases.length === 0) loadPurchases(0);
         if (tab === 'products' && companyProducts.length === 0) loadProducts(0);
+        if (tab === 'users' && companyUsers.length === 0) loadUsers();
         if (tab === 'history') loadAuditLog();
     };
 
     const openEditRecord = (type, record) => {
         setEditRecord({ type, data: record });
-        if (type === 'sale') setEditRecordForm({ totalAmount: record.totalAmount, paymentMethod: record.paymentMethod, customerName: record.customerName, customerPhone: record.customerPhone, customerCedula: record.customerCedula });
-        if (type === 'purchase') setEditRecordForm({ total: record.total, invoiceNumber: record.invoiceNumber || '', paymentMethod: record.paymentMethod });
+        if (type === 'sale') setEditRecordForm({ totalAmount: record.totalAmount, paymentMethod: record.paymentMethod, customerName: record.customerName, customerPhone: record.customerPhone, customerCedula: record.customerCedula, currencyCode: record.paymentCurrency || 'USD', exchangeRate: record.exchangeRateUsed || '' });
+        if (type === 'purchase') setEditRecordForm({ total: record.total, invoiceNumber: record.invoiceNumber || '', paymentMethod: record.paymentMethod, currencyCode: record.currencyCode || 'USD', exchangeRate: record.exchangeRate || '' });
         if (type === 'product') setEditRecordForm({ name: record.name, category: record.category || '', price: record.price, description: record.description || '' });
+        if (type === 'user') setEditRecordForm({ fullName: record.fullName || '', username: record.username, email: record.email, phone: record.phone || '', roles: record.roles || [] });
         setEditRecordReason('');
         setEditRecordError('');
         setShowEditRecordModal(true);
@@ -253,7 +279,9 @@ const AdminCompaniesPage = () => {
         let promise;
         if (type === 'sale') promise = AdminService.patchCompanySale(viewCompany.id, data.id, payload);
         else if (type === 'purchase') promise = AdminService.patchCompanyPurchase(viewCompany.id, data.id, payload);
-        else promise = AdminService.patchCompanyProduct(viewCompany.id, data.id, payload);
+        else if (type === 'product') promise = AdminService.patchCompanyProduct(viewCompany.id, data.id, payload);
+        else promise = AdminService.patchCompanyUser(viewCompany.id, data.id, payload);
+        
         promise.then(
             () => {
                 setEditRecordLoading(false);
@@ -262,11 +290,44 @@ const AdminCompaniesPage = () => {
                 if (type === 'sale') loadSales(salesPage);
                 if (type === 'purchase') loadPurchases(purchasesPage);
                 if (type === 'product') loadProducts(productsPage);
+                if (type === 'user') loadUsers();
                 loadAuditLog();
             },
             err => {
                 setEditRecordLoading(false);
                 setEditRecordError(err.response?.data?.message || 'Error al actualizar.');
+            }
+        );
+    };
+
+    const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
+    const [resetPasswordUser, setResetPasswordUser] = useState(null);
+    const [newPassword, setNewPassword] = useState('');
+    const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+    const [resetPasswordError, setResetPasswordError] = useState('');
+
+    const openResetPassword = (user) => {
+        setResetPasswordUser(user);
+        setNewPassword('');
+        setEditRecordReason('');
+        setResetPasswordError('');
+        setShowResetPasswordModal(true);
+    };
+
+    const handleResetPassword = () => {
+        if (newPassword.length < 6) { setResetPasswordError('La contraseña debe tener al menos 6 caracteres.'); return; }
+        setResetPasswordLoading(true);
+        setResetPasswordError('');
+        AdminService.resetCompanyUserPassword(viewCompany.id, resetPasswordUser.id, newPassword, editRecordReason).then(
+            () => {
+                setResetPasswordLoading(false);
+                setShowResetPasswordModal(false);
+                toast.showSuccess('Contraseña restablecida correctamente.');
+                loadAuditLog();
+            },
+            err => {
+                setResetPasswordLoading(false);
+                setResetPasswordError(err.response?.data?.message || 'Error al restablecer contraseña.');
             }
         );
     };
@@ -410,12 +471,16 @@ const AdminCompaniesPage = () => {
                                             </td>
                                             <td>
                                                 <div className="d-flex gap-2">
-                                                    <Button variant="outline-info" size="sm" className="rounded-pill" onClick={() => handleViewClick(company)}>
-                                                        <FaEye className="me-1" /> Detalle
-                                                    </Button>
-                                                    <Button variant="outline-primary" size="sm" className="rounded-pill" onClick={() => handleEditClick(company)}>
-                                                        <FaEdit className="me-1" /> Editar
-                                                    </Button>
+                                                    <OverlayTrigger overlay={<Tooltip>Ver Detalle de Empresa</Tooltip>}>
+                                                        <Button variant="outline-info" size="sm" className="rounded-pill" onClick={() => handleViewClick(company)}>
+                                                            <FaEye />
+                                                        </Button>
+                                                    </OverlayTrigger>
+                                                    <OverlayTrigger overlay={<Tooltip>Editar / Asistencia Técnica</Tooltip>}>
+                                                        <Button variant="outline-primary" size="sm" className="rounded-pill" onClick={() => handleEditClick(company)}>
+                                                            <FaEdit />
+                                                        </Button>
+                                                    </OverlayTrigger>
                                                 </div>
                                         </td>
                                     </tr>
@@ -651,6 +716,7 @@ const AdminCompaniesPage = () => {
                                         <Nav.Item><Nav.Link eventKey="sales" className="small px-3 py-1"><FaShoppingCart className="me-1" />Ventas</Nav.Link></Nav.Item>
                                         <Nav.Item><Nav.Link eventKey="purchases" className="small px-3 py-1"><FaBox className="me-1" />Compras</Nav.Link></Nav.Item>
                                         <Nav.Item><Nav.Link eventKey="products" className="small px-3 py-1"><FaMoneyBillWave className="me-1" />Productos</Nav.Link></Nav.Item>
+                                        <Nav.Item><Nav.Link eventKey="users" className="small px-3 py-1"><FaUsers className="me-1" />Usuarios</Nav.Link></Nav.Item>
                                         <Nav.Item><Nav.Link eventKey="history" className="small px-3 py-1"><FaHistory className="me-1" />Historial</Nav.Link></Nav.Item>
                                     </Nav>
 
@@ -670,8 +736,16 @@ const AdminCompaniesPage = () => {
                                                                 <td className="fw-bold text-muted">#{s.id}</td>
                                                                 <td>{s.date ? new Date(s.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</td>
                                                                 <td>{s.customerName || s.customerEmail || '-'}</td>
-                                                                <td><Badge bg="secondary" className="rounded-pill">{s.paymentMethod || '-'}</Badge></td>
-                                                                <td className="fw-bold">${Number(s.totalAmount || 0).toFixed(2)}</td>
+                                                                <td>
+                                                                    <Badge bg="secondary" className="rounded-pill me-1">
+                                                                        {s.paymentMethod === 'CASH' ? '💵 Efectivo' : s.paymentMethod === 'CARD' ? '💳 Tarjeta' : s.paymentMethod === 'TRANSFER' ? '🏦 Transf.' : s.paymentMethod === 'MOBILE_PAYMENT' ? '📱 Pago Móvil' : s.paymentMethod || '-'}
+                                                                    </Badge>
+                                                                    <Badge bg="info" className="rounded-pill">{s.paymentCurrency || 'USD'}</Badge>
+                                                                </td>
+                                                                <td className="fw-bold">
+                                                                    ${Number(s.totalAmount || 0).toFixed(2)}
+                                                                    {(s.exchangeRateUsed && s.paymentCurrency !== 'USD') && <div className="text-muted" style={{ fontSize: '0.7em' }}>Tasa: {Number(s.exchangeRateUsed).toFixed(2)}</div>}
+                                                                </td>
                                                                 <td><Badge bg={s.status === 'PAID' ? 'success' : s.status === 'CANCELLED' ? 'danger' : 'warning'} className="rounded-pill">{s.status}</Badge></td>
                                                                 <td>
                                                                     <div className="d-flex gap-1">
@@ -703,7 +777,7 @@ const AdminCompaniesPage = () => {
                                             </div>
                                             {purchasesLoading ? <div className="text-center py-3"><Spinner size="sm" /></div> : (
                                                 <Table hover size="sm" responsive className="mb-2 align-middle small">
-                                                    <thead className="table-light"><tr><th>#ID</th><th>Fecha</th><th>Proveedor</th><th>Factura</th><th>Moneda</th><th>Total</th><th>Acciones</th></tr></thead>
+                                                    <thead className="table-light"><tr><th>#ID</th><th>Fecha</th><th>Proveedor</th><th>Factura</th><th>Moneda</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead>
                                                     <tbody>
                                                         {companyPurchases.length === 0 ? <tr><td colSpan={7} className="text-center text-muted py-3">Sin compras registradas</td></tr> : companyPurchases.map(p => (
                                                             <tr key={p.id}>
@@ -711,13 +785,28 @@ const AdminCompaniesPage = () => {
                                                                 <td>{p.date ? new Date(p.date).toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
                                                                 <td>{p.supplier?.name || '-'}</td>
                                                                 <td><small className="text-muted">{p.invoiceNumber || '—'}</small></td>
-                                                                <td><Badge bg="info" className="rounded-pill">{p.currencyCode || 'USD'}</Badge></td>
-                                                                <td className="fw-bold">${Number(p.total || 0).toFixed(2)}</td>
                                                                 <td>
-                                                                    <div className="d-flex gap-1">
-                                                                        <Button size="sm" variant="outline-primary" className="rounded-pill py-0" onClick={() => openEditRecord('purchase', p)}><FaEdit /></Button>
-                                                                        <Button size="sm" variant="outline-danger" className="rounded-pill py-0" onClick={() => openVoidRecord('purchase', p)}><FaBan /></Button>
-                                                                    </div>
+                                                                    <Badge bg="info" className="rounded-pill d-block mb-1">{p.currencyCode || 'USD'}</Badge>
+                                                                    <Badge bg="secondary" className="rounded-pill" style={{ fontSize: '0.7em' }}>
+                                                                        {p.paymentMethod === 'CASH' ? '💵 Efectivo' : p.paymentMethod === 'CARD' ? '💳 Tarjeta' : p.paymentMethod === 'TRANSFER' ? '🏦 Transf.' : p.paymentMethod === 'MOBILE_PAYMENT' ? '📱 Pago Móvil' : p.paymentMethod || '-'}
+                                                                    </Badge>
+                                                                </td>
+                                                                <td className="fw-bold">
+                                                                    ${Number(p.total || 0).toFixed(2)}
+                                                                    {(p.exchangeRate && p.currencyCode !== 'USD') && <div className="text-muted" style={{ fontSize: '0.7em' }}>Tasa: {Number(p.exchangeRate).toFixed(2)}</div>}
+                                                                </td>
+                                                                <td>
+                                                                    <Badge bg={p.status === 'CANCELLED' ? 'danger' : 'success'} className="rounded-pill">
+                                                                        {p.status === 'CANCELLED' ? 'ANULADA' : 'COMPLETADA'}
+                                                                    </Badge>
+                                                                </td>
+                                                                <td>
+                                                                    {p.status !== 'CANCELLED' && (
+                                                                        <div className="d-flex gap-1">
+                                                                            <Button size="sm" variant="outline-primary" className="rounded-pill py-0" onClick={() => openEditRecord('purchase', p)}><FaEdit /></Button>
+                                                                            <Button size="sm" variant="outline-danger" className="rounded-pill py-0" onClick={() => openVoidRecord('purchase', p)}><FaBan /></Button>
+                                                                        </div>
+                                                                    )}
                                                                 </td>
                                                             </tr>
                                                         ))}
@@ -767,6 +856,42 @@ const AdminCompaniesPage = () => {
                                                     <span className="small text-muted align-self-center">{productsPage + 1} / {productsTotalPages}</span>
                                                     <Button size="sm" variant="outline-secondary" disabled={productsPage >= productsTotalPages - 1} onClick={() => { setProductsPage(p => p + 1); loadProducts(productsPage + 1); }}>Sig ›</Button>
                                                 </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Sub-tab: Usuarios */}
+                                    {assistTab === 'users' && (
+                                        <div className="p-3">
+                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                <small className="text-muted">Usuarios (Staff) de la empresa</small>
+                                                <Button size="sm" variant="outline-secondary" className="rounded-pill" onClick={loadUsers}>↻ Refrescar</Button>
+                                            </div>
+                                            {usersLoading ? <div className="text-center py-3"><Spinner size="sm" /></div> : (
+                                                <Table hover size="sm" responsive className="mb-2 align-middle small">
+                                                    <thead className="table-light"><tr><th>#ID</th><th>Nombre</th><th>Usuario</th><th>Email</th><th>Rol</th><th>Estado</th><th>Acciones</th></tr></thead>
+                                                    <tbody>
+                                                        {companyUsers.length === 0 ? <tr><td colSpan={7} className="text-center text-muted py-3">Sin usuarios registrados</td></tr> : companyUsers.map(user => (
+                                                            <tr key={user.id}>
+                                                                <td className="fw-bold text-muted">#{user.id}</td>
+                                                                <td className="fw-semibold">{user.fullName || '—'}</td>
+                                                                <td><code>{user.username}</code></td>
+                                                                <td><small>{user.email}</small></td>
+                                                                <td>
+                                                                    {user.roles?.map(r => <Badge key={r} bg="info" className="rounded-pill me-1">{r}</Badge>)}
+                                                                </td>
+                                                                <td><Badge bg={user.enabled ? 'success' : 'danger'} className="rounded-pill">{user.enabled ? 'ACTIVO' : 'INACTIVO'}</Badge></td>
+                                                                <td>
+                                                                    <div className="d-flex gap-1">
+                                                                        <Button size="sm" variant="outline-primary" className="rounded-pill py-0" onClick={() => openEditRecord('user', user)} title="Editar"><FaEdit /></Button>
+                                                                        <Button size="sm" variant="outline-warning" className="rounded-pill py-0" onClick={() => openResetPassword(user)} title="Resetear Contraseña"><FaKey /></Button>
+                                                                        <Button size="sm" variant={user.enabled ? "outline-danger" : "outline-success"} className="rounded-pill py-0" onClick={() => { AdminService.toggleUser(user.id).then(() => loadUsers()); }} title={user.enabled ? "Desactivar" : "Activar"}><FaBan /></Button>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </Table>
                                             )}
                                         </div>
                                     )}
@@ -821,38 +946,151 @@ const AdminCompaniesPage = () => {
                 <Modal.Body>
                     {editRecordError && <Alert variant="danger" className="small py-2 rounded-3">{editRecordError}</Alert>}
                     <Alert variant="info" className="small py-2 rounded-3 mb-3">
-                        ℹ️ Solo puedes corregir errores de tipeo. Para cambiar la moneda o cantidades, utiliza la opción <strong>Anular</strong>.
+                        ℹ️ Puedes corregir moneda, tasa, método de pago y montos. El equivalente base se recalculará automáticamente.
                     </Alert>
                     {editRecord?.type === 'sale' && (
                         <>
-                            <Form.Group className="mb-2"><Form.Label className="small fw-bold">Monto Total</Form.Label><Form.Control size="sm" type="number" step="0.01" value={editRecordForm.totalAmount || ''} onChange={e => setEditRecordForm(f => ({ ...f, totalAmount: e.target.value }))} /></Form.Group>
-                            <Form.Group className="mb-2"><Form.Label className="small fw-bold">Método de Pago</Form.Label>
-                                <Form.Select size="sm" value={editRecordForm.paymentMethod || ''} onChange={e => setEditRecordForm(f => ({ ...f, paymentMethod: e.target.value }))}>
-                                    <option value="CASH">CASH</option><option value="CARD">CARD</option><option value="TRANSFER">TRANSFER</option><option value="MOBILE_PAYMENT">MOBILE_PAYMENT</option><option value="MIXED">MIXED</option>
-                                </Form.Select>
-                            </Form.Group>
+                            <Row>
+                                <Col md={6}>
+                                    <Form.Group className="mb-2"><Form.Label className="small fw-bold">Monto Total Base (USD)</Form.Label><Form.Control size="sm" type="number" step="0.01" value={editRecordForm.totalAmount || ''} onChange={e => setEditRecordForm(f => ({ ...f, totalAmount: e.target.value }))} /></Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group className="mb-2"><Form.Label className="small fw-bold">Método de Pago</Form.Label>
+                                        <Form.Select size="sm" value={editRecordForm.paymentMethod || ''} onChange={e => setEditRecordForm(f => ({ ...f, paymentMethod: e.target.value }))}>
+                                            <option value="CASH">💵 Efectivo</option>
+                                            <option value="CARD">💳 Tarjeta</option>
+                                            <option value="TRANSFER">🏦 Transferencia</option>
+                                            <option value="MOBILE_PAYMENT">📱 Pago Móvil</option>
+                                            <option value="MIXED">🔀 Mixto</option>
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                            <Row>
+                                <Col md={6}>
+                                    <Form.Group className="mb-2"><Form.Label className="small fw-bold">Moneda</Form.Label>
+                                        <Form.Select size="sm" value={editRecordForm.currencyCode || editRecordForm.paymentCurrency || ''} onChange={e => setEditRecordForm(f => ({ ...f, currencyCode: e.target.value }))}>
+                                            <option value="USD">USD</option>
+                                            <option value="VES">VES</option>
+                                            <option value="COP">COP</option>
+                                            <option value="EUR">EUR</option>
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group className="mb-2"><Form.Label className="small fw-bold">Tasa de Cambio</Form.Label><Form.Control size="sm" type="number" step="0.01" value={editRecordForm.exchangeRate || editRecordForm.exchangeRateUsed || ''} onChange={e => setEditRecordForm(f => ({ ...f, exchangeRate: e.target.value }))} disabled={editRecordForm.currencyCode === 'USD' || editRecordForm.paymentCurrency === 'USD'} /></Form.Group>
+                                </Col>
+                            </Row>
+                            <hr className="my-2" />
+                            <Row>
+                                <Col md={4}>
+                                    <Form.Group className="mb-2"><Form.Label className="small fw-bold">Desc. Global</Form.Label><Form.Control size="sm" type="number" step="0.01" value={editRecordForm.globalDiscountAmount || ''} onChange={e => setEditRecordForm(f => ({ ...f, globalDiscountAmount: e.target.value }))} placeholder="0" /></Form.Group>
+                                </Col>
+                                <Col md={4}>
+                                    <Form.Group className="mb-2"><Form.Label className="small fw-bold">Tipo Desc.</Form.Label>
+                                        <Form.Select size="sm" value={editRecordForm.globalDiscountType || 'PERCENTAGE'} onChange={e => setEditRecordForm(f => ({ ...f, globalDiscountType: e.target.value }))}>
+                                            <option value="PERCENTAGE">% Porcentaje</option>
+                                            <option value="FIXED">$ Monto Fijo</option>
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
+                                <Col md={4}>
+                                    <Form.Group className="mb-2"><Form.Label className="small fw-bold">Desc. Total</Form.Label><Form.Control size="sm" type="number" step="0.01" value={editRecordForm.totalDiscount || ''} onChange={e => setEditRecordForm(f => ({ ...f, totalDiscount: e.target.value }))} disabled className="bg-light" /></Form.Group>
+                                </Col>
+                            </Row>
+                            <hr className="my-2" />
                             <Form.Group className="mb-2"><Form.Label className="small fw-bold">Nombre Cliente</Form.Label><Form.Control size="sm" value={editRecordForm.customerName || ''} onChange={e => setEditRecordForm(f => ({ ...f, customerName: e.target.value }))} /></Form.Group>
-                            <Form.Group className="mb-2"><Form.Label className="small fw-bold">Teléfono Cliente</Form.Label><Form.Control size="sm" value={editRecordForm.customerPhone || ''} onChange={e => setEditRecordForm(f => ({ ...f, customerPhone: e.target.value }))} /></Form.Group>
-                            <Form.Group className="mb-3"><Form.Label className="small fw-bold">Cédula Cliente</Form.Label><Form.Control size="sm" value={editRecordForm.customerCedula || ''} onChange={e => setEditRecordForm(f => ({ ...f, customerCedula: e.target.value }))} /></Form.Group>
+                            <Row>
+                                <Col md={6}>
+                                    <Form.Group className="mb-2"><Form.Label className="small fw-bold">Teléfono Cliente</Form.Label><Form.Control size="sm" value={editRecordForm.customerPhone || ''} onChange={e => setEditRecordForm(f => ({ ...f, customerPhone: e.target.value }))} /></Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group className="mb-3"><Form.Label className="small fw-bold">Cédula Cliente</Form.Label><Form.Control size="sm" value={editRecordForm.customerCedula || ''} onChange={e => setEditRecordForm(f => ({ ...f, customerCedula: e.target.value }))} /></Form.Group>
+                                </Col>
+                            </Row>
                         </>
                     )}
                     {editRecord?.type === 'purchase' && (
                         <>
-                            <Form.Group className="mb-2"><Form.Label className="small fw-bold">Total</Form.Label><Form.Control size="sm" type="number" step="0.01" value={editRecordForm.total || ''} onChange={e => setEditRecordForm(f => ({ ...f, total: e.target.value }))} /></Form.Group>
-                            <Form.Group className="mb-2"><Form.Label className="small fw-bold">Nº Factura</Form.Label><Form.Control size="sm" value={editRecordForm.invoiceNumber || ''} onChange={e => setEditRecordForm(f => ({ ...f, invoiceNumber: e.target.value }))} /></Form.Group>
-                            <Form.Group className="mb-3"><Form.Label className="small fw-bold">Método de Pago</Form.Label>
-                                <Form.Select size="sm" value={editRecordForm.paymentMethod || ''} onChange={e => setEditRecordForm(f => ({ ...f, paymentMethod: e.target.value }))}>
-                                    <option value="CASH">CASH</option><option value="CARD">CARD</option><option value="TRANSFER">TRANSFER</option><option value="MOBILE_PAYMENT">MOBILE_PAYMENT</option>
-                                </Form.Select>
-                            </Form.Group>
+                            <Row>
+                                <Col md={6}>
+                                    <Form.Group className="mb-2"><Form.Label className="small fw-bold">Total Compra Base (USD)</Form.Label><Form.Control size="sm" type="number" step="0.01" value={editRecordForm.total || ''} onChange={e => setEditRecordForm(f => ({ ...f, total: e.target.value }))} /></Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group className="mb-2"><Form.Label className="small fw-bold">Nº Factura</Form.Label><Form.Control size="sm" value={editRecordForm.invoiceNumber || ''} onChange={e => setEditRecordForm(f => ({ ...f, invoiceNumber: e.target.value }))} /></Form.Group>
+                                </Col>
+                            </Row>
+                            <Row>
+                                <Col md={6}>
+                                    <Form.Group className="mb-2"><Form.Label className="small fw-bold">Método de Pago</Form.Label>
+                                        <Form.Select size="sm" value={editRecordForm.paymentMethod || ''} onChange={e => setEditRecordForm(f => ({ ...f, paymentMethod: e.target.value }))}>
+                                            <option value="CASH">💵 Efectivo</option>
+                                            <option value="CARD">💳 Tarjeta</option>
+                                            <option value="TRANSFER">🏦 Transferencia</option>
+                                            <option value="MOBILE_PAYMENT">📱 Pago Móvil</option>
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
+                                <Col md={3}>
+                                    <Form.Group className="mb-2"><Form.Label className="small fw-bold">Moneda</Form.Label>
+                                        <Form.Select size="sm" value={editRecordForm.currencyCode || ''} onChange={e => setEditRecordForm(f => ({ ...f, currencyCode: e.target.value }))}>
+                                            <option value="USD">USD</option>
+                                            <option value="VES">VES</option>
+                                            <option value="COP">COP</option>
+                                            <option value="EUR">EUR</option>
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
+                                <Col md={3}>
+                                    <Form.Group className="mb-2"><Form.Label className="small fw-bold">Tasa</Form.Label>
+                                        <Form.Control size="sm" type="number" step="0.01" value={editRecordForm.exchangeRate || ''} onChange={e => setEditRecordForm(f => ({ ...f, exchangeRate: e.target.value }))} disabled={editRecordForm.currencyCode === 'USD'} />
+                                    </Form.Group>
+                                </Col>
+                            </Row>
+                            <hr className="my-2" />
+                            <Row>
+                                <Col md={4}>
+                                    <Form.Group className="mb-3"><Form.Label className="small fw-bold">Desc. Global</Form.Label><Form.Control size="sm" type="number" step="0.01" value={editRecordForm.globalDiscountAmount || ''} onChange={e => setEditRecordForm(f => ({ ...f, globalDiscountAmount: e.target.value }))} placeholder="0" /></Form.Group>
+                                </Col>
+                                <Col md={4}>
+                                    <Form.Group className="mb-3"><Form.Label className="small fw-bold">Tipo Desc.</Form.Label>
+                                        <Form.Select size="sm" value={editRecordForm.globalDiscountType || 'PERCENTAGE'} onChange={e => setEditRecordForm(f => ({ ...f, globalDiscountType: e.target.value }))}>
+                                            <option value="PERCENTAGE">% Porcentaje</option>
+                                            <option value="FIXED">$ Monto Fijo</option>
+                                        </Form.Select>
+                                    </Form.Group>
+                                </Col>
+                            </Row>
                         </>
                     )}
                     {editRecord?.type === 'product' && (
                         <>
                             <Form.Group className="mb-2"><Form.Label className="small fw-bold">Nombre</Form.Label><Form.Control size="sm" value={editRecordForm.name || ''} onChange={e => setEditRecordForm(f => ({ ...f, name: e.target.value }))} /></Form.Group>
-                            <Form.Group className="mb-2"><Form.Label className="small fw-bold">Categoría</Form.Label><Form.Control size="sm" value={editRecordForm.category || ''} onChange={e => setEditRecordForm(f => ({ ...f, category: e.target.value }))} /></Form.Group>
+                            <Form.Group className="mb-2">
+                                <Form.Label className="small fw-bold">Categoría</Form.Label>
+                                <Form.Select size="sm" value={editRecordForm.category || ''} onChange={e => setEditRecordForm(f => ({ ...f, category: e.target.value }))}>
+                                    <option value="">Sin categoría</option>
+                                    {globalCategories.map((cat, idx) => (
+                                        <option key={idx} value={cat}>{cat}</option>
+                                    ))}
+                                </Form.Select>
+                            </Form.Group>
                             <Form.Group className="mb-2"><Form.Label className="small fw-bold">Precio</Form.Label><Form.Control size="sm" type="number" step="0.01" value={editRecordForm.price || ''} onChange={e => setEditRecordForm(f => ({ ...f, price: e.target.value }))} /></Form.Group>
                             <Form.Group className="mb-3"><Form.Label className="small fw-bold">Descripción</Form.Label><Form.Control size="sm" as="textarea" rows={2} value={editRecordForm.description || ''} onChange={e => setEditRecordForm(f => ({ ...f, description: e.target.value }))} /></Form.Group>
+                        </>
+                    )}
+                    {editRecord?.type === 'user' && (
+                        <>
+                            <Form.Group className="mb-2"><Form.Label className="small fw-bold">Nombre Completo</Form.Label><Form.Control size="sm" value={editRecordForm.fullName || ''} onChange={e => setEditRecordForm(f => ({ ...f, fullName: e.target.value }))} /></Form.Group>
+                            <Form.Group className="mb-2"><Form.Label className="small fw-bold">Nombre de Usuario</Form.Label><Form.Control size="sm" value={editRecordForm.username || ''} onChange={e => setEditRecordForm(f => ({ ...f, username: e.target.value }))} /></Form.Group>
+                            <Form.Group className="mb-2"><Form.Label className="small fw-bold">Email</Form.Label><Form.Control size="sm" type="email" value={editRecordForm.email || ''} onChange={e => setEditRecordForm(f => ({ ...f, email: e.target.value }))} /></Form.Group>
+                            <Form.Group className="mb-2"><Form.Label className="small fw-bold">Teléfono</Form.Label><Form.Control size="sm" value={editRecordForm.phone || ''} onChange={e => setEditRecordForm(f => ({ ...f, phone: e.target.value }))} /></Form.Group>
+                            <Form.Group className="mb-3"><Form.Label className="small fw-bold">Roles (separados por coma)</Form.Label>
+                                <Form.Control size="sm" value={editRecordForm.roles ? editRecordForm.roles.join(', ') : ''} onChange={e => {
+                                    const roles = e.target.value.split(',').map(r => r.trim()).filter(r => r.length > 0);
+                                    setEditRecordForm(f => ({ ...f, roles }));
+                                }} placeholder="Ej: MANAGER, CASHIER" />
+                            </Form.Group>
                         </>
                     )}
                     <Form.Group><Form.Label className="small fw-bold">Motivo del cambio <span className="text-muted">(opcional)</span></Form.Label>
@@ -890,6 +1128,31 @@ const AdminCompaniesPage = () => {
                     <Button variant="light" size="sm" className="rounded-pill" onClick={() => setShowVoidModal(false)}>Cancelar</Button>
                     <Button variant="danger" size="sm" className="rounded-pill" onClick={handleVoidRecord} disabled={voidLoading || voidReason.length < 10 || !voidConfirmCheck}>
                         {voidLoading ? <Spinner size="sm" /> : <><FaBan className="me-1" />Confirmar Anulación</>}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Modal: Reset Password */}
+            <Modal show={showResetPasswordModal} onHide={() => setShowResetPasswordModal(false)} centered>
+                <Modal.Header closeButton className="border-0 bg-warning bg-opacity-10">
+                    <Modal.Title className="fw-bold fs-6 text-dark"><FaKey className="me-2 text-warning" />Resetear Contraseña</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {resetPasswordError && <Alert variant="danger" className="small py-2 rounded-3">{resetPasswordError}</Alert>}
+                    <p className="small mb-3">Ingresa la nueva contraseña para el usuario <strong>{resetPasswordUser?.username}</strong>. Asegúrate de comunicársela de forma segura.</p>
+                    <Form.Group className="mb-3">
+                        <Form.Label className="small fw-bold">Nueva Contraseña <span className="text-danger">*</span></Form.Label>
+                        <Form.Control type="text" placeholder="Ej: 123456" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                        <Form.Label className="small fw-bold">Motivo (opcional)</Form.Label>
+                        <Form.Control size="sm" as="textarea" rows={2} placeholder="Ej: Usuario olvidó su clave..." value={editRecordReason} onChange={e => setEditRecordReason(e.target.value)} />
+                    </Form.Group>
+                </Modal.Body>
+                <Modal.Footer className="border-0">
+                    <Button variant="light" size="sm" className="rounded-pill" onClick={() => setShowResetPasswordModal(false)}>Cancelar</Button>
+                    <Button variant="warning" size="sm" className="rounded-pill" onClick={handleResetPassword} disabled={resetPasswordLoading || newPassword.length < 6}>
+                        {resetPasswordLoading ? <Spinner size="sm" /> : <><FaKey className="me-1" />Confirmar Cambio</>}
                     </Button>
                 </Modal.Footer>
             </Modal>

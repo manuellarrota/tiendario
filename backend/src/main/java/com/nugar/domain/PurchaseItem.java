@@ -16,6 +16,12 @@ public class PurchaseItem {
     private Integer quantity;
     private BigDecimal unitCost;
     private BigDecimal unitCostInBaseCurrency;
+    
+    private BigDecimal discountAmount;
+    
+    @Enumerated(EnumType.STRING)
+    private DiscountType discountType;
+    
     private BigDecimal subtotalInBaseCurrency;
 
     @ManyToOne(fetch = FetchType.LAZY)

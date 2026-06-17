@@ -19,6 +19,13 @@ public class Sale {
 
     private BigDecimal totalAmount;
 
+    private BigDecimal globalDiscountAmount;
+
+    @Enumerated(EnumType.STRING)
+    private DiscountType globalDiscountType;
+
+    private BigDecimal totalDiscount;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")
     @JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })

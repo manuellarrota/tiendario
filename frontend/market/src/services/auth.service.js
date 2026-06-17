@@ -36,11 +36,16 @@ const getCurrentUser = () => {
     return JSON.parse(localStorage.getItem("customer"));
 };
 
+const forgotPassword = (email) => {
+    return axios.post(API_URL + "/forgot-password", { email });
+};
+
 const AuthService = {
     register,
     login,
     logout,
     getCurrentUser,
+    forgotPassword,
 };
 
 export default AuthService;

@@ -13,5 +13,6 @@ public interface CreditNoteRepository extends JpaRepository<CreditNote, Long> {
     List<CreditNote> findByCompanyIdOrderByDateDesc(Long companyId);
     Page<CreditNote> findByCompanyId(Long companyId, Pageable pageable);
     List<CreditNote> findBySaleId(Long saleId);
+    List<CreditNote> findBySaleIdOrderByDateDesc(Long saleId);
     List<CreditNote> findByCustomerId(Long customerId);
 }

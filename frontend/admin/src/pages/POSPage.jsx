@@ -20,6 +20,10 @@ const POSPage = () => {
     const [searchTerm, setSearchTerm] = useState("");
     const [message, setMessage] = useState("");
     
+    // Discount State
+    const [globalDiscountAmount, setGlobalDiscountAmount] = useState("");
+    const [globalDiscountType, setGlobalDiscountType] = useState("PERCENTAGE");
+    
     // Payment State
     const [payments, setPayments] = useState([]);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
@@ -140,9 +144,23 @@ const POSPage = () => {
         return `${curr.symbol}${converted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     };
 
-    const total = useMemo(() => {
+    const preGlobalTotal = useMemo(() => {
         return cart.reduce((acc, item) => acc.plus(new Decimal(item.subtotal || 0)), new Decimal(0)).toDecimalPlaces(2);
     }, [cart]);
+
+    const total = useMemo(() => {
+        let globalDiscCalc = new Decimal(0);
+        const gAmount = parseFloat(globalDiscountAmount);
+        if (gAmount > 0) {
+            if (globalDiscountType === 'PERCENTAGE') {
+                globalDiscCalc = preGlobalTotal.times(gAmount).div(100);
+            } else {
+                globalDiscCalc = new Decimal(gAmount);
+            }
+            if (globalDiscCalc.gt(preGlobalTotal)) globalDiscCalc = preGlobalTotal;
+        }
+        return preGlobalTotal.minus(globalDiscCalc).toDecimalPlaces(2);
+    }, [preGlobalTotal, globalDiscountAmount, globalDiscountType]);
 
     // 4. BUSINESS LOGIC
     const addProductToCartById = useCallback((foundProduct, qty = 1) => {
@@ -158,14 +176,25 @@ const POSPage = () => {
                     triggerToast(`❌ Stock insuficiente (${foundProduct.stock})`, "error");
                     return prev;
                 }
+                const newQty = existing.quantity + qty;
+                const totalRaw = new Decimal(newQty).times(foundProduct.price);
+                let discVal = new Decimal(0);
+                if (existing.discountAmount > 0) {
+                    discVal = existing.discountType === 'PERCENTAGE' 
+                        ? totalRaw.times(existing.discountAmount).div(100) 
+                        : new Decimal(existing.discountAmount);
+                }
+                if (discVal.gt(totalRaw)) discVal = totalRaw;
+                const newSubtotal = totalRaw.minus(discVal).toDecimalPlaces(2).toString();
+
                 return prev.map(item =>
                     item.product.id === foundProduct.id
-                        ? { ...item, quantity: item.quantity + qty, subtotal: new Decimal(item.quantity + qty).times(foundProduct.price).toDecimalPlaces(2).toString() }
+                        ? { ...item, quantity: newQty, subtotal: newSubtotal }
                         : item
                 );
             }
             const subtotal = new Decimal(qty).times(foundProduct.price).toDecimalPlaces(2).toString();
-            return [...prev, { product: foundProduct, quantity: qty, unitPrice: foundProduct.price, subtotal }];
+            return [...prev, { product: foundProduct, quantity: qty, unitPrice: foundProduct.price, subtotal, discountAmount: 0, discountType: 'PERCENTAGE' }];
         });
     }, [triggerToast]);
 
@@ -181,11 +210,25 @@ const POSPage = () => {
     const handleCheckout = useCallback(() => {
         if (cart.length === 0 || totalPaidInBase.lt(total)) return;
         
+        const preGlobalTotalFloat = parseFloat(preGlobalTotal.toString());
+        let globalDiscountAmountCalc = 0;
+        const globalDiscAmt = parseFloat(globalDiscountAmount);
+        if (globalDiscAmt > 0) {
+            if (globalDiscountType === 'PERCENTAGE') {
+                globalDiscountAmountCalc = preGlobalTotalFloat * (globalDiscAmt / 100);
+            } else {
+                globalDiscountAmountCalc = globalDiscAmt;
+            }
+            if (globalDiscountAmountCalc > preGlobalTotalFloat) globalDiscountAmountCalc = preGlobalTotalFloat;
+        }
+
         const saleData = {
             items: cart.map(item => ({
                 product: { id: item.product.id },
                 quantity: item.quantity,
                 unitPrice: item.unitPrice,
+                discountAmount: item.discountAmount > 0 ? item.discountAmount : null,
+                discountType: item.discountType,
                 subtotal: item.subtotal
             })),
             payments: payments.map(p => ({
@@ -201,6 +244,8 @@ const POSPage = () => {
             customerPhone: selectedCustomer ? selectedCustomer.phone : null,
             customerCedula: selectedCustomer ? selectedCustomer.cedula : null,
             status: 'PAID',
+            globalDiscountAmount: globalDiscAmt > 0 ? globalDiscAmt : null,
+            globalDiscountType: globalDiscountType,
             totalAmount: total.toNumber()
         };
 
@@ -370,6 +415,19 @@ const POSPage = () => {
         }
     };
 
+    const recalculateSubtotal = (quantity, unitPrice, discountAmount, discountType) => {
+        if (quantity === "" || quantity < 1) return "0.00";
+        const totalRaw = new Decimal(quantity).times(unitPrice);
+        let discVal = new Decimal(0);
+        if (discountAmount > 0) {
+            discVal = discountType === 'PERCENTAGE' 
+                ? totalRaw.times(discountAmount).div(100) 
+                : new Decimal(discountAmount);
+        }
+        if (discVal.gt(totalRaw)) discVal = totalRaw;
+        return totalRaw.minus(discVal).toDecimalPlaces(2).toString();
+    };
+
     const updateCartQuantity = (productId, newQuantity) => {
         if (newQuantity === "") {
             setCart(cart.map(item =>
@@ -387,7 +445,24 @@ const POSPage = () => {
         }
         setCart(cart.map(item =>
             item.product.id === productId
-                ? { ...item, quantity: newQuantity, subtotal: new Decimal(newQuantity).times(item.unitPrice).toDecimalPlaces(2).toString() }
+                ? { 
+                    ...item, 
+                    quantity: newQuantity, 
+                    subtotal: recalculateSubtotal(newQuantity, item.unitPrice, item.discountAmount, item.discountType)
+                  }
+                : item
+        ));
+    };
+
+    const updateCartDiscount = (productId, amount, type) => {
+        setCart(cart.map(item =>
+            item.product.id === productId
+                ? { 
+                    ...item, 
+                    discountAmount: amount, 
+                    discountType: type,
+                    subtotal: recalculateSubtotal(item.quantity, item.unitPrice, amount, type)
+                  }
                 : item
         ));
     };
@@ -715,8 +790,28 @@ const POSPage = () => {
                                                     />
                                                 </div>
                                             </div>
-                                            <div style={{ width: '20%' }} className="text-end fw-bold text-muted">
-                                                {baseCurrencySymbol}{new Decimal(item.unitPrice || 0).toFixed(2)}
+                                            <div style={{ width: '20%' }} className="text-end text-muted d-flex flex-column align-items-end justify-content-center">
+                                                <div className="fw-bold">{baseCurrencySymbol}{new Decimal(item.unitPrice || 0).toFixed(2)}</div>
+                                                <div className="mt-1 d-flex gap-1" style={{ width: '90px' }}>
+                                                    <Form.Select 
+                                                        size="sm" 
+                                                        className="p-0 text-center" 
+                                                        style={{ width: '35px', fontSize: '0.7rem' }}
+                                                        value={item.discountType || 'PERCENTAGE'}
+                                                        onChange={(e) => updateCartDiscount(item.product.id, item.discountAmount || 0, e.target.value)}
+                                                    >
+                                                        <option value="PERCENTAGE">%</option>
+                                                        <option value="FIXED">$</option>
+                                                    </Form.Select>
+                                                    <Form.Control 
+                                                        size="sm" 
+                                                        type="number" 
+                                                        placeholder="Desc" 
+                                                        style={{ fontSize: '0.7rem', padding: '2px 4px' }}
+                                                        value={item.discountAmount || ""}
+                                                        onChange={(e) => updateCartDiscount(item.product.id, e.target.value, item.discountType || 'PERCENTAGE')}
+                                                    />
+                                                </div>
                                             </div>
                                             <div style={{ width: '20%' }} className="text-end">
                                                 <span className="fw-bold text-primary fs-5">{baseCurrencySymbol}{new Decimal(item.subtotal || 0).toFixed(2)}</span>
@@ -789,6 +884,29 @@ const POSPage = () => {
 
                             {/* Discrete Total Summary */}
                             <div className="mt-4 pt-4 border-top">
+                                {cart.length > 0 && (
+                                    <Row className="mb-3">
+                                        <Col xs={12}>
+                                            <Form.Group className="mb-0 d-flex justify-content-between align-items-center">
+                                                <Form.Label className="fw-bold text-muted small text-uppercase mb-0">Desc. Global</Form.Label>
+                                                <InputGroup size="sm" style={{ width: '150px' }}>
+                                                    <Form.Select style={{ maxWidth: '50px', padding: '0 5px' }} value={globalDiscountType} onChange={e => setGlobalDiscountType(e.target.value)}>
+                                                        <option value="PERCENTAGE">%</option>
+                                                        <option value="FIXED">$</option>
+                                                    </Form.Select>
+                                                    <Form.Control
+                                                        type="number"
+                                                        placeholder="0"
+                                                        value={globalDiscountAmount}
+                                                        onChange={e => setGlobalDiscountAmount(e.target.value)}
+                                                        className="border-primary bg-light"
+                                                        onFocus={(e) => e.target.select()}
+                                                    />
+                                                </InputGroup>
+                                            </Form.Group>
+                                        </Col>
+                                    </Row>
+                                )}
                                 <div className="d-flex justify-content-between align-items-center">
                                     <span className="text-muted fw-bold">TOTAL</span>
                                     <div className="text-end">

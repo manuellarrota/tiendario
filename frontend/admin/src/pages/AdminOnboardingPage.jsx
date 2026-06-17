@@ -19,10 +19,11 @@ const STEPS = [
     { label: 'Listo', icon: FaCheckCircle },
 ];
 
-const PLANS = [
-    { value: 'TRIAL', label: 'Prueba (30 días)', color: 'warning' },
-    { value: 'PAID', label: 'Pro (Activo)', color: 'success' },
-    { value: 'FREE', label: 'Gratis', color: 'secondary' },
+const getPlansConfig = (trialDays) => [
+    { value: 'TRIAL', label: `Prueba (${trialDays} días)`, color: 'warning' },
+    { value: 'BASIC', label: 'Básico', color: 'secondary' },
+    { value: 'MEDIUM', label: 'Medium', color: 'primary' },
+    { value: 'PREMIUM', label: 'Premium', color: 'success' },
 ];
 
 const INITIAL_PRODUCT = { name: '', price: '', stock: '', category: '', costPrice: '', sku: '' };
@@ -40,6 +41,8 @@ export default function AdminOnboardingPage() {
     const [phone, setPhone] = useState('');
     const [description, setDescription] = useState('');
     const [plan, setPlan] = useState('TRIAL');
+    const [trialDays, setTrialDays] = useState(30);
+    const PLANS = getPlansConfig(trialDays);
     const [position, setPosition] = useState(null);
     const [address, setAddress] = useState('');
 
@@ -59,6 +62,10 @@ export default function AdminOnboardingPage() {
             res => setGlobalCategories(res.data || []),
             err => console.error("Error cargando categorías globales", err)
         );
+        AdminService.getPlatformConfig().then(
+            res => setTrialDays(res.data.trialDays || 30),
+            err => console.error("Error cargando configuración", err)
+        );
     }, []);
 
     // Step 3 — Inventario
@@ -76,7 +83,8 @@ export default function AdminOnboardingPage() {
             const res = await AdminService.createStore({
                 companyName, rif, username, email, password,
                 phoneNumber: phone, description,
-                subscriptionStatus: plan,
+                subscriptionPlan: plan === 'TRIAL' ? 'BASIC' : plan,
+                subscriptionStatus: plan === 'TRIAL' ? 'TRIAL' : 'PAID',
                 latitude: position?.lat || 0,
                 longitude: position?.lng || 0,
                 address: address,

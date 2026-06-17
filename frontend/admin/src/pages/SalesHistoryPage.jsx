@@ -5,6 +5,7 @@ import Sidebar from '../components/Sidebar';
 import SaleService from '../services/sale.service';
 import PublicService from '../services/public.service';
 import CashRegisterService from '../services/cash-register.service';
+import CreditNoteService from '../services/credit-note.service';
 import { useToast } from '../components/ToastContext';
 
 const SalesHistoryPage = () => {
@@ -79,6 +80,91 @@ const SalesHistoryPage = () => {
     const [showPaymentModal, setShowPaymentModal] = useState(false);
     const [paymentMethod, setPaymentMethod] = useState('CASH');
     const [saleToPay, setSaleToPay] = useState(null);
+
+    // Refund Modal State
+    const [showRefundModal, setShowRefundModal] = useState(false);
+    const [refundForm, setRefundForm] = useState({ reason: '', type: 'REFUND_TO_CASH', items: [] });
+    const [refundLoading, setRefundLoading] = useState(false);
+    const [priorRefunds, setPriorRefunds] = useState([]);
+
+    const openRefundModal = (sale) => {
+        setRefundLoading(true);
+        CreditNoteService.getCreditNotesBySale(sale.id).then(res => {
+            const previousNotes = res.data || [];
+            setPriorRefunds(previousNotes);
+            
+            // Calculate how many of each item have already been returned
+            const returnedCounts = {};
+            previousNotes.forEach(note => {
+                note.items?.forEach(i => {
+                    if (i.product?.id) {
+                        returnedCounts[i.product.id] = (returnedCounts[i.product.id] || 0) + i.quantityReturned;
+                    }
+                });
+            });
+
+            // Pre-fill form items with available quantities
+            const availableItems = sale.items.map(si => {
+                const alreadyReturned = returnedCounts[si.product?.id] || 0;
+                return {
+                    productId: si.product?.id,
+                    productName: si.product?.name,
+                    maxQuantity: si.quantity - alreadyReturned,
+                    quantityToReturn: 0,
+                    unitPrice: si.unitPrice
+                };
+            }).filter(item => item.maxQuantity > 0 && item.productId);
+
+            setRefundForm({
+                reason: '',
+                type: 'REFUND_TO_CASH',
+                items: availableItems
+            });
+            setSelectedSale(sale);
+            setShowRefundModal(true);
+            setRefundLoading(false);
+        }).catch(err => {
+            console.error(err);
+            toast.showError('Error cargando notas de crédito previas');
+            setRefundLoading(false);
+        });
+    };
+
+    const handleRefundSubmit = () => {
+        const itemsToReturn = refundForm.items
+            .filter(i => i.quantityToReturn > 0)
+            .map(i => ({ productId: i.productId, quantity: i.quantityToReturn }));
+
+        if (itemsToReturn.length === 0) {
+            toast.showError('Debes seleccionar al menos 1 producto para devolver');
+            return;
+        }
+
+        if (!refundForm.reason.trim()) {
+            toast.showError('Por favor ingresa un motivo');
+            return;
+        }
+
+        setRefundLoading(true);
+        const payload = {
+            saleId: selectedSale.id,
+            reason: refundForm.reason,
+            type: refundForm.type,
+            items: itemsToReturn
+        };
+
+        CreditNoteService.createCreditNote(payload).then(() => {
+            toast.showSuccess('Devolución procesada correctamente');
+            setShowRefundModal(false);
+            setRefundLoading(false);
+            if (showDetail) setShowDetail(false);
+            loadSales(true);
+        }).catch(err => {
+            console.error(err);
+            toast.showError(err.response?.data?.message || 'Error al procesar la devolución');
+            setRefundLoading(false);
+        });
+    };
 
     const handleStatusUpdate = (id, status) => {
         if (status === 'PAID') {
@@ -448,6 +534,11 @@ const SalesHistoryPage = () => {
                                 <FaCheckCircle className="me-2" /> Marcar como Compra Finalizada
                             </Button>
                         )}
+                        {['PAID', 'PARTIAL_REFUND'].includes(selectedSale?.status) && (
+                            <Button variant="danger" className="rounded-pill px-4 fw-bold text-white me-auto" onClick={() => openRefundModal(selectedSale)}>
+                                <FaUndo className="me-2" /> Devolución / Reembolso
+                            </Button>
+                        )}
                         <Button variant="light" className="rounded-pill px-4" onClick={() => setShowDetail(false)}>
                             Cerrar
                         </Button>
@@ -477,6 +568,116 @@ const SalesHistoryPage = () => {
                             </Button>
                         </div>
                     </Modal.Body>
+                </Modal>
+
+                {/* Refund / Credit Note Modal */}
+                <Modal scrollable show={showRefundModal} onHide={() => setShowRefundModal(false)} size="lg" centered>
+                    <Modal.Header closeButton>
+                        <Modal.Title className="fw-bold text-danger">
+                            <FaUndo className="me-2" />
+                            Procesar Devolución - Venta #{selectedSale?.id}
+                        </Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body className="p-4">
+                        {priorRefunds.length > 0 && (
+                            <div className="alert alert-warning small py-2 mb-4">
+                                <strong>Atención:</strong> Esta venta ya tiene {priorRefunds.length} nota(s) de crédito previas. Las cantidades mostradas ya excluyen los productos devueltos anteriormente.
+                            </div>
+                        )}
+                        
+                        <p className="text-muted small mb-3">Selecciona la cantidad a devolver de cada producto. El inventario se restaurará automáticamente.</p>
+                        
+                        <div className="table-responsive mb-4 border rounded-3">
+                            <Table hover className="mb-0 align-middle">
+                                <thead className="bg-light">
+                                    <tr>
+                                        <th className="small text-muted">Producto</th>
+                                        <th className="small text-muted text-center">Precio Unit.</th>
+                                        <th className="small text-muted text-center" style={{ width: '150px' }}>Devolver (Cant)</th>
+                                        <th className="small text-muted text-end">Subtotal a Reembolsar</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {refundForm.items.map((item, index) => (
+                                        <tr key={index}>
+                                            <td className="fw-bold">{item.productName} <br/><small className="text-muted fw-normal">Máx: {item.maxQuantity}</small></td>
+                                            <td className="text-center">${item.unitPrice}</td>
+                                            <td className="text-center">
+                                                <Form.Control 
+                                                    type="number" 
+                                                    min="0" 
+                                                    max={item.maxQuantity}
+                                                    size="sm"
+                                                    value={item.quantityToReturn}
+                                                    onChange={(e) => {
+                                                        let val = e.target.value;
+                                                        if (val !== '') {
+                                                            val = Math.min(Math.max(parseInt(val) || 0, 0), item.maxQuantity);
+                                                        }
+                                                        const newItems = [...refundForm.items];
+                                                        newItems[index].quantityToReturn = val;
+                                                        setRefundForm({...refundForm, items: newItems});
+                                                    }}
+                                                />
+                                            </td>
+                                            <td className="text-end fw-bold text-danger">
+                                                ${((Number(item.quantityToReturn) || 0) * item.unitPrice).toFixed(2)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {refundForm.items.length === 0 && (
+                                        <tr>
+                                            <td colSpan="4" className="text-center py-4 text-muted">No hay más productos elegibles para devolución en esta venta.</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                                <tfoot className="bg-light">
+                                    <tr>
+                                        <td colSpan="3" className="text-end fw-bold">Total a Reembolsar:</td>
+                                        <td className="text-end fw-bold text-danger fs-5">
+                                            ${refundForm.items.reduce((acc, curr) => acc + ((Number(curr.quantityToReturn) || 0) * curr.unitPrice), 0).toFixed(2)}
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            </Table>
+                        </div>
+
+                        <Row>
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="small fw-bold">Motivo de la Devolución</Form.Label>
+                                    <Form.Control 
+                                        as="textarea" 
+                                        rows={2} 
+                                        placeholder="Ej: Producto defectuoso, cambio de talla..."
+                                        value={refundForm.reason}
+                                        onChange={e => setRefundForm({...refundForm, reason: e.target.value})}
+                                    />
+                                </Form.Group>
+                            </Col>
+                            <Col md={6}>
+                                <Form.Group className="mb-3">
+                                    <Form.Label className="small fw-bold">Método de Reembolso</Form.Label>
+                                    <Form.Select 
+                                        value={refundForm.type}
+                                        onChange={e => setRefundForm({...refundForm, type: e.target.value})}
+                                    >
+                                        <option value="REFUND_TO_CASH">Reembolso en Efectivo 💵</option>
+                                        <option value="REFUND_TO_CARD">Reembolso a Tarjeta 💳</option>
+                                        <option value="REFUND_TO_TRANSFER">Reembolso por Transferencia 🏦</option>
+                                        <option value="REFUND_TO_MOBILE">Reembolso por Pago Móvil 📱</option>
+                                        <option value="STORE_CREDIT">Saldo a Favor del Cliente 💰</option>
+                                    </Form.Select>
+                                </Form.Group>
+                            </Col>
+                        </Row>
+                    </Modal.Body>
+                    <Modal.Footer className="border-0">
+                        <Button variant="light" className="rounded-pill" onClick={() => setShowRefundModal(false)}>Cancelar</Button>
+                        <Button variant="danger" className="rounded-pill px-4 fw-bold" onClick={handleRefundSubmit} disabled={refundLoading || refundForm.items.length === 0}>
+                            {refundLoading ? 'Procesando...' : 'Confirmar Devolución'}
+                        </Button>
+                    </Modal.Footer>
                 </Modal>
             </div>
         </div>

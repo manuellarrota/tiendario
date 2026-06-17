@@ -48,6 +48,10 @@ public class InventoryService {
     private final ProductRepository productRepository;
     private final CompanyRepository companyRepository;
     private final ProductIndexService productIndexService;
+    private final com.nugar.repository.CategoryRepository categoryRepository;
+    private final com.nugar.repository.CategorySuggestionRepository categorySuggestionRepository;
+    private final com.nugar.repository.CategoryMappingRepository categoryMappingRepository;
+    private final com.nugar.repository.CatalogProductRepository catalogProductRepository;
 
     public ByteArrayInputStream exportToExcel(Long companyId) throws IOException {
         List<Product> products = productRepository.findByCompanyId(companyId);
@@ -174,6 +178,7 @@ public class InventoryService {
 
                     String name = getCsvValueAsString(currentRow, 1);
                     String category = getCsvValueAsString(currentRow, 2);
+                    processCategorySuggestion(category, companyId);
                     String variant = getCsvValueAsString(currentRow, 3);
                     BigDecimal price = getCsvValueAsBigDecimal(currentRow, 4);
                     BigDecimal costPrice = getCsvValueAsBigDecimal(currentRow, 5);
@@ -316,7 +321,11 @@ public class InventoryService {
                     
                     if (!soloStock) {
                         if (map.containsKey("name")) product.setName(getCsvValueAsString(row, map.get("name")));
-                        if (map.containsKey("category")) product.setCategory(getCsvValueAsString(row, map.get("category")));
+                        if (map.containsKey("category")) {
+                            String cat = getCsvValueAsString(row, map.get("category"));
+                            product.setCategory(cat);
+                            processCategorySuggestion(cat, companyId);
+                        }
                         if (map.containsKey("price")) product.setPrice(getCsvValueAsBigDecimal(row, map.get("price")));
                         if (map.containsKey("costPrice")) product.setCostPrice(getCsvValueAsBigDecimal(row, map.get("costPrice")));
                         if (map.containsKey("variant")) product.setVariant(getCsvValueAsString(row, map.get("variant")));
@@ -337,6 +346,7 @@ public class InventoryService {
 
                     Product saved = productRepository.save(product);
                     productIndexService.indexProduct(saved);
+                    syncToCatalog(saved);
                     count++;
                 } catch (Exception ignored) { }
             }
@@ -435,5 +445,43 @@ public class InventoryService {
             }
         }
         return sanitized.isEmpty() ? null : sanitized;
+    }
+
+    private void processCategorySuggestion(String categoryName, Long companyId) {
+        if (categoryName == null || categoryName.trim().isEmpty()) return;
+        String name = categoryName.trim();
+        
+        // Check if it exists globally
+        if (categoryRepository.findFirstByNameIgnoreCase(name).isPresent()) return;
+        
+        // Check if mapped
+        if (categoryMappingRepository.findByLocalCategoryNameIgnoreCase(name).isPresent()) return;
+        
+        // Check if suggestion already exists
+        if (categorySuggestionRepository.findByStoreId(companyId).stream()
+                .anyMatch(s -> s.getName().equalsIgnoreCase(name))) return;
+                
+        com.nugar.domain.CategorySuggestion suggestion = new com.nugar.domain.CategorySuggestion();
+        suggestion.setStoreId(companyId);
+        suggestion.setName(name);
+        suggestion.setStatus(com.nugar.domain.SuggestionStatus.PENDING);
+        categorySuggestionRepository.save(suggestion);
+    }
+
+    private void syncToCatalog(Product product) {
+        if (product.getSku() == null || product.getSku().trim().isEmpty()) return;
+        String sku = product.getSku().trim();
+        if (catalogProductRepository.findBySku(sku).isPresent()) return;
+        com.nugar.domain.CatalogProduct cp = new com.nugar.domain.CatalogProduct();
+        cp.setSku(sku);
+        cp.setName(product.getName());
+        cp.setDescription(product.getDescription());
+        cp.setImageUrl(product.getImageUrl());
+        cp.setBrand(product.getBrand());
+        if (product.getCategory() != null && !product.getCategory().isEmpty()) {
+            categoryRepository.findFirstByNameIgnoreCase(product.getCategory().trim())
+                    .ifPresent(cp::setCategory);
+        }
+        catalogProductRepository.save(cp);
     }
 }

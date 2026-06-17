@@ -34,6 +34,11 @@ const NewPurchasePage = () => {
     const [selectedProduct, setSelectedProduct] = useState("");
     const [quantity, setQuantity] = useState(1);
     const [unitCost, setUnitCost] = useState("");
+    const [itemDiscountAmount, setItemDiscountAmount] = useState("");
+    const [itemDiscountType, setItemDiscountType] = useState("PERCENTAGE");
+    
+    const [globalDiscountAmount, setGlobalDiscountAmount] = useState("");
+    const [globalDiscountType, setGlobalDiscountType] = useState("PERCENTAGE");
 
     // Product Search State
     const [searchTerm, setSearchTerm] = useState("");
@@ -64,6 +69,14 @@ const NewPurchasePage = () => {
     const [isGeneratingSku, setIsGeneratingSku] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+    // Price Alert Modal
+    const [showPriceAlertModal, setShowPriceAlertModal] = useState(false);
+    const [pendingCartItem, setPendingCartItem] = useState(null);
+
+    // Success Summary Modal
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+    const [lastPurchaseSummary, setLastPurchaseSummary] = useState(null);
 
     // Helper to get full image URL
     const getFullImageUrl = (path) => {
@@ -156,17 +169,71 @@ const NewPurchasePage = () => {
         if (!selectedProduct || !quantity || !unitCost) return;
         const product = products.find(p => p.id === parseInt(selectedProduct));
         const unitCostDec = new Decimal(unitCost);
-        const unitCostInBase = convertToBase(unitCostDec);
         const qty = parseInt(quantity);
+        const totalRaw = unitCostDec.times(qty).toNumber();
+        
+        let discountVal = 0;
+        const discAmt = parseFloat(itemDiscountAmount);
+        if (discAmt > 0) {
+            if (itemDiscountType === 'PERCENTAGE') {
+                discountVal = totalRaw * (discAmt / 100);
+            } else {
+                discountVal = discAmt;
+            }
+        }
+        
+        if (discountVal > totalRaw) discountVal = totalRaw;
+        const totalAfterLineDiscount = totalRaw - discountVal;
 
-        const existingItemIndex = cart.findIndex(item => item.product.id === product.id && item.currencyCode === purchaseCurrency);
+        const unitCostInBase = convertToBase(totalAfterLineDiscount / qty);
+        const subtotalInBase = convertToBase(totalAfterLineDiscount);
+
+        const newItemData = {
+            product: product,
+            quantity: qty,
+            unitCost: unitCostDec.toNumber(),
+            discountAmount: discAmt > 0 ? discAmt : null,
+            discountType: itemDiscountType,
+            unitCostInBaseCurrency: Number(unitCostInBase),
+            subtotalInBaseCurrency: Number(subtotalInBase),
+            total: totalAfterLineDiscount,
+            currencyCode: purchaseCurrency,
+            exchangeRate: exchangeRate
+        };
+
+        // Price Alert Logic
+        if (product.costPrice && product.costPrice > 0) {
+            // Check if new cost is greater than recorded cost
+            if (unitCostInBase.toNumber() > product.costPrice) {
+                setPendingCartItem(newItemData);
+                setShowPriceAlertModal(true);
+                return; // Stop execution, wait for modal confirmation
+            }
+        }
+
+        executeAddToCart(newItemData);
+    };
+
+    const confirmAddToCart = () => {
+        if (pendingCartItem) {
+            executeAddToCart(pendingCartItem);
+        }
+        setShowPriceAlertModal(false);
+        setPendingCartItem(null);
+    };
+
+    const executeAddToCart = (newItemData) => {
+        const existingItemIndex = cart.findIndex(item => item.product.id === newItemData.product.id && item.currencyCode === newItemData.currencyCode);
 
         if (existingItemIndex > -1) {
             // Unify: Update existing item with new quantity and latest cost
             const newCart = [...cart];
             const existingItem = newCart.splice(existingItemIndex, 1)[0];
-            const newQty = existingItem.quantity + qty;
+            const newQty = existingItem.quantity + newItemData.quantity;
             
+            const unitCostDec = new Decimal(newItemData.unitCost);
+            const unitCostInBase = new Decimal(newItemData.unitCostInBaseCurrency);
+
             existingItem.quantity = newQty;
             existingItem.unitCost = unitCostDec.toNumber();
             existingItem.unitCostInBaseCurrency = unitCostInBase.toNumber();
@@ -175,24 +242,14 @@ const NewPurchasePage = () => {
             
             setCart([existingItem, ...newCart]);
         } else {
-            const subtotalInBase = unitCostInBase.times(qty).toDecimalPlaces(2);
-            const newItem = {
-                product: product,
-                quantity: qty,
-                unitCost: unitCostDec.toNumber(),
-                unitCostInBaseCurrency: unitCostInBase.toNumber(),
-                subtotalInBaseCurrency: subtotalInBase.toNumber(),
-                total: unitCostDec.times(qty).toDecimalPlaces(2).toNumber(),
-                currencyCode: purchaseCurrency,
-                exchangeRate: exchangeRate
-            };
-            setCart([newItem, ...cart]);
+            setCart([newItemData, ...cart]);
         }
 
         setSelectedProduct("");
         setSearchTerm("");
         setQuantity(1);
         setUnitCost("");
+        setItemDiscountAmount("");
     };
 
     const removeFromCart = (index) => {
@@ -306,30 +363,65 @@ const NewPurchasePage = () => {
     };
 
     const handleSavePurchase = () => {
-        const totalInCurrency = cart.reduce((acc, item) => acc.plus(new Decimal(item.total)), new Decimal(0)).toDecimalPlaces(2);
-        const totalInBase = cart.reduce((acc, item) => acc.plus(new Decimal(item.subtotalInBaseCurrency || item.total)), new Decimal(0)).toDecimalPlaces(2);
+        if (!selectedSupplier || cart.length === 0) return;
+
+        const preGlobalTotal = cart.reduce((acc, item) => acc + item.total, 0);
+        let globalDiscountAmountCalc = 0;
+        const globalDiscAmt = parseFloat(globalDiscountAmount);
+        if (globalDiscAmt > 0) {
+            if (globalDiscountType === 'PERCENTAGE') {
+                globalDiscountAmountCalc = preGlobalTotal * (globalDiscAmt / 100);
+            } else {
+                globalDiscountAmountCalc = globalDiscAmt;
+            }
+            if (globalDiscountAmountCalc > preGlobalTotal) globalDiscountAmountCalc = preGlobalTotal;
+        }
+        
+        const finalTotal = preGlobalTotal - globalDiscountAmountCalc;
+        const discountRatio = preGlobalTotal > 0 ? finalTotal / preGlobalTotal : 1;
 
         const purchaseData = {
-            supplierId: parseInt(selectedSupplier),
+            supplierId: selectedSupplier,
             invoiceNumber: invoiceNumber.trim() || null,
+            total: finalTotal,
+            totalInBaseCurrency: Number(convertToBase(finalTotal)),
             currencyCode: purchaseCurrency,
             exchangeRate: exchangeRate,
-            total: totalInCurrency.toNumber(),
-            totalInBaseCurrency: totalInBase.toNumber(),
             paymentMethod: paymentMethod,
-            items: cart.map(item => ({
-                productId: item.product.id,
-                quantity: item.quantity,
-                unitCost: item.unitCost,
-                unitCostInBaseCurrency: item.unitCostInBaseCurrency,
-                subtotalInBaseCurrency: item.subtotalInBaseCurrency
-            }))
+            globalDiscountAmount: globalDiscAmt > 0 ? globalDiscAmt : null,
+            globalDiscountType: globalDiscountType,
+            items: cart.map(item => {
+                const itemFinalTotal = item.total * discountRatio;
+                const finalUnitCostInBase = Number(convertToBase(itemFinalTotal / item.quantity));
+                
+                return {
+                    productId: item.product.id,
+                    quantity: item.quantity,
+                    unitCost: item.unitCost,
+                    discountAmount: item.discountAmount,
+                    discountType: item.discountType,
+                    unitCostInBaseCurrency: finalUnitCostInBase,
+                    subtotalInBaseCurrency: Number(convertToBase(itemFinalTotal))
+                };
+            })
         };
 
         PurchaseService.create(purchaseData).then(
             () => {
-                setMessage("✅ ¡Compra registrada y Stock actualizado!");
+                setLastPurchaseSummary({
+                    invoiceNumber: purchaseData.invoiceNumber,
+                    total: purchaseData.total,
+                    totalInBaseCurrency: purchaseData.totalInBaseCurrency,
+                    currencyCode: purchaseData.currencyCode,
+                    paymentMethod: purchaseData.paymentMethod,
+                    itemsCount: purchaseData.items.length,
+                    supplierName: getSupplierName(),
+                    globalDiscountAmountCalc: globalDiscountAmountCalc
+                });
+                setShowSuccessModal(true);
+
                 setCart([]); setSelectedSupplier(""); setInvoiceNumber(""); setStep(1);
+                setGlobalDiscountAmount("");
                 loadData();
             },
             (error) => {
@@ -385,6 +477,21 @@ const NewPurchasePage = () => {
         return s ? s.name : '';
     };
 
+    // Calculate totals for render
+    const preGlobalTotal = cart.reduce((acc, item) => acc + item.total, 0);
+    const globalDiscAmtNum = parseFloat(globalDiscountAmount) || 0;
+    let globalDiscountCalcRender = 0;
+    if (globalDiscAmtNum > 0) {
+        if (globalDiscountType === 'PERCENTAGE') {
+            globalDiscountCalcRender = preGlobalTotal * (globalDiscAmtNum / 100);
+        } else {
+            globalDiscountCalcRender = globalDiscAmtNum;
+        }
+        if (globalDiscountCalcRender > preGlobalTotal) globalDiscountCalcRender = preGlobalTotal;
+    }
+    const finalTotalRender = preGlobalTotal - globalDiscountCalcRender;
+    const finalTotalBaseRender = Number(convertToBase(finalTotalRender));
+
     return (
         <Layout>
             <Container fluid className="py-4">
@@ -437,7 +544,7 @@ const NewPurchasePage = () => {
                             >
                                 <option value={baseCurrencyCode}>{baseCurrencyCode} (Moneda Base)</option>
                                 {availableCurrencies.filter(c => c.code !== baseCurrencyCode).map(c => (
-                                    <option key={c.code} value={c.code}>{c.code} – {c.name} (Tasa: {c.rate})</option>
+                                    <option key={c.code} value={c.code}>{c.code} – {c.name} (Tasa: {Number(c.rate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})</option>
                                 ))}
                             </Form.Select>
                         </Form.Group>
@@ -530,7 +637,14 @@ const NewPurchasePage = () => {
                                                     <td className="text-start pt-3" style={{ width: '165px' }}>
                                                         <span className="fw-bold">{itemSymbol}{item.unitCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                                     </td>
-                                                    <td className="text-end fw-bold pt-3">{itemSymbol}{item.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                                                    <td className="text-end pt-3">
+                                                        <div className="fw-bold">{itemSymbol}{item.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                                                        {item.discountAmount > 0 && (
+                                                            <div className="text-warning small fw-bold" style={{ fontSize: '0.7rem' }}>
+                                                                Desc: -{item.discountType === 'PERCENTAGE' ? `${item.discountAmount}%` : `${itemSymbol}${item.discountAmount}`}
+                                                            </div>
+                                                        )}
+                                                    </td>
                                                     <td className="text-end text-success small fw-bold pt-3">
                                                         {baseCurrencySymbol}{(item.subtotalInBaseCurrency || item.total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </td>
@@ -546,22 +660,56 @@ const NewPurchasePage = () => {
                                     </Table>
                                     {cart.length === 0 && <p className="text-center text-muted my-3">Agrega productos a la orden</p>}
 
-                                    <div className="text-end mt-3">
-                                        <div className="text-muted small mb-1">
+                                    <div className="text-end mt-3 border-top pt-3">
+                                        <div className="text-muted small mb-2">
                                             {cart.length} producto(s) en la orden
                                         </div>
-                                        <h4 className="mb-0 mt-1 text-success">
-                                            Total Base: {baseCurrencySymbol}{cart.reduce((acc, item) => acc.plus(new Decimal(item.subtotalInBaseCurrency || item.total)), new Decimal(0)).toNumber().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}
+                                        <div className="d-flex justify-content-end mb-1">
+                                            <span className="me-3 text-muted">Subtotal:</span>
+                                            <span className="fw-bold">{selectedCurrencyData?.symbol}{preGlobalTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                        </div>
+                                        {globalDiscountCalcRender > 0 && (
+                                            <div className="d-flex justify-content-end mb-1 text-warning">
+                                                <span className="me-3 fw-bold">Descuento Global:</span>
+                                                <span className="fw-bold">-{selectedCurrencyData?.symbol}{globalDiscountCalcRender.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                            </div>
+                                        )}
+                                        <h4 className="mb-0 mt-2 text-success fw-black">
+                                            Total a Pagar: {selectedCurrencyData?.symbol}{finalTotalRender.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {purchaseCurrency}
                                         </h4>
+                                        {purchaseCurrency !== baseCurrencyCode && (
+                                            <div className="text-muted small mt-1 fw-bold">
+                                                Equivalente Base: {baseCurrencySymbol}{finalTotalBaseRender.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}
+                                            </div>
+                                        )}
                                     </div>
 
                                     {cart.length > 0 && (
                                         <>
                                             <hr className="my-4" />
-                                            <Row className="justify-content-end">
-                                                <Col md={6}>
+                                            <Row className="justify-content-end g-3">
+                                                <Col md={4}>
                                                     <Form.Group className="mb-0">
-                                                        <Form.Label className="fw-bold text-muted small text-uppercase">Nro de Factura del Proveedor <span className="fw-normal text-lowercase">(opcional)</span></Form.Label>
+                                                        <Form.Label className="fw-bold text-muted small text-uppercase">Descuento Global</Form.Label>
+                                                        <InputGroup>
+                                                            <Form.Select style={{ maxWidth: '80px' }} value={globalDiscountType} onChange={e => setGlobalDiscountType(e.target.value)}>
+                                                                <option value="PERCENTAGE">%</option>
+                                                                <option value="FIXED">{selectedCurrencyData?.symbol || purchaseCurrency}</option>
+                                                            </Form.Select>
+                                                            <Form.Control
+                                                                type="number"
+                                                                placeholder="0"
+                                                                value={globalDiscountAmount}
+                                                                onChange={e => setGlobalDiscountAmount(e.target.value)}
+                                                                className="border-primary bg-light"
+                                                                onFocus={(e) => e.target.select()}
+                                                            />
+                                                        </InputGroup>
+                                                    </Form.Group>
+                                                </Col>
+                                                <Col md={5}>
+                                                    <Form.Group className="mb-0">
+                                                        <Form.Label className="fw-bold text-muted small text-uppercase">Nro de Factura <span className="fw-normal text-lowercase">(opcional)</span></Form.Label>
                                                         <Form.Control
                                                             type="text"
                                                             placeholder="Ej: FAC-00123"
@@ -628,15 +776,27 @@ const NewPurchasePage = () => {
                                     </Form.Group>
 
                                     <Row className="align-items-end g-2">
-                                        <Col xs={12}>
+                                        <Col xs={6}>
                                             <Form.Group className="mb-2">
-                                                <Form.Label>Cantidad</Form.Label>
+                                                <Form.Label className="small fw-bold">Cantidad</Form.Label>
                                                 <Form.Control type="number" onFocus={(e) => e.target.select()} min="1" value={quantity} onChange={e => setQuantity(e.target.value)} />
+                                            </Form.Group>
+                                        </Col>
+                                        <Col xs={6}>
+                                            <Form.Group className="mb-2">
+                                                <Form.Label className="small fw-bold">Descuento <span className="text-muted fw-normal">(opcional)</span></Form.Label>
+                                                <InputGroup size="sm">
+                                                    <Form.Select style={{ maxWidth: '60px', padding: '0 5px' }} value={itemDiscountType} onChange={e => setItemDiscountType(e.target.value)}>
+                                                        <option value="PERCENTAGE">%</option>
+                                                        <option value="FIXED">{selectedCurrencyData?.symbol || purchaseCurrency}</option>
+                                                    </Form.Select>
+                                                    <Form.Control type="number" onFocus={(e) => e.target.select()} placeholder="0" value={itemDiscountAmount} onChange={e => setItemDiscountAmount(e.target.value)} />
+                                                </InputGroup>
                                             </Form.Group>
                                         </Col>
                                         <Col xs={12}>
                                             <Form.Group className="mb-3">
-                                                <Form.Label>Costo por Unidad ({purchaseCurrency})</Form.Label>
+                                                <Form.Label className="small fw-bold">Costo Unitario ({purchaseCurrency})</Form.Label>
                                                 <InputGroup>
                                                     <InputGroup.Text>{selectedCurrencyData.symbol}</InputGroup.Text>
                                                     <Form.Control type="number" onFocus={(e) => e.target.select()} value={unitCost} onChange={e => setUnitCost(e.target.value)} placeholder="0.00" />
@@ -665,7 +825,7 @@ const NewPurchasePage = () => {
                             onClick={handleSavePurchase}
                         >
                             <FaSave className="me-2" /> 
-                            GUARDAR COMPRA: {selectedCurrencyData.symbol}{cart.reduce((acc, item) => acc.plus(new Decimal(item.total)), new Decimal(0)).toNumber().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {purchaseCurrency} 
+                            GUARDAR COMPRA: {selectedCurrencyData.symbol}{finalTotalRender.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {purchaseCurrency} 
                             ({paymentMethod === 'CASH' ? 'Efectivo' : paymentMethod === 'TRANSFER' ? 'Transferencia' : paymentMethod === 'MOBILE_PAYMENT' ? 'Pago Móvil' : 'Tarjeta'})
                         </Button>
                      </div>
@@ -943,6 +1103,110 @@ const NewPurchasePage = () => {
                             </Button>
                         </div>
                     </Form>
+                </Modal.Body>
+            </Modal>
+
+            {/* Price Alert Modal */}
+            <Modal show={showPriceAlertModal} onHide={() => { setShowPriceAlertModal(false); setPendingCartItem(null); }} centered backdrop="static">
+                <Modal.Header closeButton className="border-0 bg-warning bg-opacity-25">
+                    <Modal.Title className="fw-bold text-dark d-flex align-items-center">
+                        ⚠️ Alerta de Sobreprecio
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="p-4">
+                    <p className="mb-4">
+                        El costo ingresado es <strong>mayor</strong> al último costo de adquisición registrado para este producto.
+                    </p>
+                    {pendingCartItem && (
+                        <div className="bg-light p-3 rounded border mb-4">
+                            <div className="d-flex justify-content-between mb-2">
+                                <span className="text-muted">Producto:</span>
+                                <span className="fw-bold">{pendingCartItem.product.name}</span>
+                            </div>
+                            <div className="d-flex justify-content-between mb-2">
+                                <span className="text-muted">Costo Anterior:</span>
+                                <span className="fw-bold text-success">
+                                    {baseCurrencySymbol}{pendingCartItem.product.costPrice?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}
+                                </span>
+                            </div>
+                            <div className="d-flex justify-content-between">
+                                <span className="text-muted">Nuevo Costo:</span>
+                                <span className="fw-bold text-danger">
+                                    {baseCurrencySymbol}{pendingCartItem.unitCostInBaseCurrency?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}
+                                </span>
+                            </div>
+                        </div>
+                    )}
+                    <p className="text-muted small mb-0">
+                        Si esto es un error tipográfico, por favor cancela. Si es un aumento real por parte del proveedor, confirma para continuar.
+                    </p>
+                </Modal.Body>
+                <Modal.Footer className="border-0 bg-light">
+                    <Button variant="outline-secondary" className="rounded-pill px-4" onClick={() => { setShowPriceAlertModal(false); setPendingCartItem(null); }}>
+                        Cancelar
+                    </Button>
+                    <Button variant="warning" className="rounded-pill px-4 fw-bold shadow-sm" onClick={confirmAddToCart}>
+                        Sí, agregar de todas formas
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Success Modal */}
+            <Modal show={showSuccessModal} onHide={() => setShowSuccessModal(false)} centered backdrop="static" className="modal-premium">
+                <Modal.Body className="p-5 text-center">
+                    <div className="mb-4 d-inline-block p-4 rounded-circle bg-success bg-opacity-10 text-success">
+                        <FaBoxOpen size={50} />
+                    </div>
+                    <h2 className="fw-black mb-3 text-success">¡Compra Exitosa!</h2>
+                    <p className="text-muted mb-4 lead">
+                        La mercancía ha sido ingresada al inventario correctamente.
+                    </p>
+
+                    {lastPurchaseSummary && (
+                        <Card className="border-0 bg-light rounded-4 p-4 text-start mb-4 shadow-sm">
+                            <Row className="g-3">
+                                <Col xs={6}>
+                                    <small className="text-muted d-block text-uppercase fw-bold" style={{ fontSize: '0.7rem' }}>Proveedor</small>
+                                    <div className="fw-bold text-dark">{lastPurchaseSummary.supplierName}</div>
+                                </Col>
+                                <Col xs={6}>
+                                    <small className="text-muted d-block text-uppercase fw-bold" style={{ fontSize: '0.7rem' }}>Método de Pago</small>
+                                    <div className="fw-bold text-dark">
+                                        {lastPurchaseSummary.paymentMethod === 'CASH' ? 'Efectivo' : 
+                                         lastPurchaseSummary.paymentMethod === 'TRANSFER' ? 'Transferencia' : 
+                                         lastPurchaseSummary.paymentMethod === 'MOBILE_PAYMENT' ? 'Pago Móvil' : 'Tarjeta'}
+                                    </div>
+                                </Col>
+                                {lastPurchaseSummary.invoiceNumber && (
+                                    <Col xs={12}>
+                                        <small className="text-muted d-block text-uppercase fw-bold" style={{ fontSize: '0.7rem' }}>Nro. Factura</small>
+                                        <div className="fw-bold text-dark">{lastPurchaseSummary.invoiceNumber}</div>
+                                    </Col>
+                                )}
+                                <Col xs={12}>
+                                    <hr className="my-2 border-secondary opacity-25" />
+                                </Col>
+                                <Col xs={6}>
+                                    <small className="text-muted d-block text-uppercase fw-bold" style={{ fontSize: '0.7rem' }}>Cant. Productos</small>
+                                    <div className="fw-bold text-dark">{lastPurchaseSummary.itemsCount}</div>
+                                </Col>
+                                <Col xs={6} className="text-end">
+                                    <small className="text-muted d-block text-uppercase fw-bold" style={{ fontSize: '0.7rem' }}>Total a Pagar</small>
+                                    <h4 className="fw-bold text-success mb-0">
+                                        {lastPurchaseSummary.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {lastPurchaseSummary.currencyCode}
+                                    </h4>
+                                    {lastPurchaseSummary.currencyCode !== baseCurrencyCode && (
+                                        <small className="text-muted fw-bold">
+                                            Equiv: {baseCurrencySymbol}{lastPurchaseSummary.totalInBaseCurrency.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {baseCurrencyCode}
+                                        </small>
+                                    )}
+                                </Col>
+                            </Row>
+                        </Card>
+                    )}
+                    <Button variant="primary" size="lg" className="rounded-pill px-5 fw-bold shadow-sm" onClick={() => setShowSuccessModal(false)}>
+                        Continuar
+                    </Button>
                 </Modal.Body>
             </Modal>
         </Layout>

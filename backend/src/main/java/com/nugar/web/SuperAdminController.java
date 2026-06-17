@@ -653,11 +653,34 @@ public class SuperAdminController {
                 return ResponseEntity.notFound().build();
 
             // Campos editables directamente
+            boolean recalculateBase = false;
             if (body.containsKey("totalAmount")) {
                 String old = sale.getTotalAmount() != null ? sale.getTotalAmount().toPlainString() : "null";
                 sale.setTotalAmount(new BigDecimal(body.get("totalAmount").toString()));
                 audit(companyId, "SALE", saleId, "EDIT", "totalAmount", old, body.get("totalAmount").toString(), (String) body.get("reason"));
+                recalculateBase = true;
             }
+            if (body.containsKey("currencyCode")) {
+                String old = sale.getPaymentCurrency();
+                sale.setPaymentCurrency((String) body.get("currencyCode"));
+                audit(companyId, "SALE", saleId, "EDIT", "currencyCode", old, sale.getPaymentCurrency(), (String) body.get("reason"));
+                recalculateBase = true;
+            }
+            if (body.containsKey("exchangeRate")) {
+                String old = sale.getExchangeRateUsed() != null ? sale.getExchangeRateUsed().toPlainString() : "null";
+                sale.setExchangeRateUsed(new BigDecimal(body.get("exchangeRate").toString()));
+                audit(companyId, "SALE", saleId, "EDIT", "exchangeRate", old, sale.getExchangeRateUsed().toString(), (String) body.get("reason"));
+                recalculateBase = true;
+            }
+            
+            if (recalculateBase) {
+                if ("USD".equalsIgnoreCase(sale.getPaymentCurrency())) {
+                    sale.setPaymentAmountInCurrency(sale.getTotalAmount());
+                } else if (sale.getExchangeRateUsed() != null && sale.getExchangeRateUsed().compareTo(BigDecimal.ZERO) > 0) {
+                    sale.setPaymentAmountInCurrency(sale.getTotalAmount().multiply(sale.getExchangeRateUsed()));
+                }
+            }
+
             if (body.containsKey("paymentMethod")) {
                 String old = sale.getPaymentMethod() != null ? sale.getPaymentMethod().name() : "null";
                 try { sale.setPaymentMethod(PaymentMethod.valueOf((String) body.get("paymentMethod"))); } catch (Exception ignored) {}
@@ -762,11 +785,33 @@ public class SuperAdminController {
             if (purchase == null || !purchase.getCompany().getId().equals(companyId))
                 return ResponseEntity.notFound().build();
 
+            boolean recalculateBase = false;
             if (body.containsKey("total")) {
                 String old = purchase.getTotal() != null ? purchase.getTotal().toPlainString() : "null";
                 purchase.setTotal(new BigDecimal(body.get("total").toString()));
                 audit(companyId, "PURCHASE", purchaseId, "EDIT", "total", old, body.get("total").toString(), (String) body.get("reason"));
+                recalculateBase = true;
             }
+            if (body.containsKey("currencyCode")) {
+                String old = purchase.getCurrencyCode();
+                purchase.setCurrencyCode((String) body.get("currencyCode"));
+                audit(companyId, "PURCHASE", purchaseId, "EDIT", "currencyCode", old, purchase.getCurrencyCode(), (String) body.get("reason"));
+                recalculateBase = true;
+            }
+            if (body.containsKey("exchangeRate")) {
+                String old = purchase.getExchangeRate() != null ? purchase.getExchangeRate().toPlainString() : "null";
+                purchase.setExchangeRate(new BigDecimal(body.get("exchangeRate").toString()));
+                audit(companyId, "PURCHASE", purchaseId, "EDIT", "exchangeRate", old, purchase.getExchangeRate().toString(), (String) body.get("reason"));
+                recalculateBase = true;
+            }
+            if (recalculateBase) {
+                if ("USD".equalsIgnoreCase(purchase.getCurrencyCode())) {
+                    purchase.setTotalInBaseCurrency(purchase.getTotal());
+                } else if (purchase.getExchangeRate() != null && purchase.getExchangeRate().compareTo(BigDecimal.ZERO) > 0) {
+                    purchase.setTotalInBaseCurrency(purchase.getTotal().divide(purchase.getExchangeRate(), 4, java.math.RoundingMode.HALF_UP));
+                }
+            }
+
             if (body.containsKey("invoiceNumber")) {
                 String old = purchase.getInvoiceNumber();
                 purchase.setInvoiceNumber((String) body.get("invoiceNumber"));
@@ -833,6 +878,9 @@ public class SuperAdminController {
                 inventoryBatchRepository.save(batch);
             }
 
+            purchase.setStatus(PurchaseStatus.CANCELLED);
+            purchaseRepository.save(purchase);
+
             audit(companyId, "PURCHASE", purchaseId, "VOID", "ALL", "ACTIVE", "VOIDED", reason);
             log.warn("[ASISTENCIA] VOID COMPRA #{} empresa #{} por {} — Motivo: {}", purchaseId, companyId, getAdminUsername(), reason);
             return ResponseEntity.ok(new MessageResponse("Compra anulada. Stock descontado correctamente."));
@@ -889,6 +937,90 @@ public class SuperAdminController {
             productRepository.save(product);
             log.info("[ASISTENCIA] PATCH PRODUCTO #{} empresa #{} por {}", productId, companyId, getAdminUsername());
             return ResponseEntity.ok(new MessageResponse("Producto actualizado correctamente."));
+        }
+
+        // ══════════════════════════════════════════════════════════════════════════
+        //  MÓDULO ASISTENCIA TÉCNICA — Usuarios
+        // ══════════════════════════════════════════════════════════════════════════
+
+        @GetMapping("/companies/{companyId}/users")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<?> getCompanyUsers(@PathVariable Long companyId) {
+            List<User> users = userRepository.findByCompanyIdOrderByIdAsc(companyId);
+            return ResponseEntity.ok(users);
+        }
+
+        @PatchMapping("/companies/{companyId}/users/{userId}")
+        @PreAuthorize("hasRole('ADMIN')")
+        @Transactional
+        public ResponseEntity<?> patchCompanyUser(
+                @PathVariable Long companyId,
+                @PathVariable Long userId,
+                @RequestBody Map<String, Object> body) {
+            User user = userRepository.findById(userId).orElse(null);
+            if (user == null || user.getCompany() == null || !user.getCompany().getId().equals(companyId)) {
+                return ResponseEntity.notFound().build();
+            }
+
+            if (body.containsKey("fullName")) {
+                String old = user.getFullName();
+                user.setFullName((String) body.get("fullName"));
+                audit(companyId, "USER", userId, "EDIT", "fullName", old, user.getFullName(), (String) body.get("reason"));
+            }
+            if (body.containsKey("username")) {
+                String old = user.getUsername();
+                user.setUsername((String) body.get("username"));
+                audit(companyId, "USER", userId, "EDIT", "username", old, user.getUsername(), (String) body.get("reason"));
+            }
+            if (body.containsKey("email")) {
+                String old = user.getEmail();
+                user.setEmail((String) body.get("email"));
+                audit(companyId, "USER", userId, "EDIT", "email", old, user.getEmail(), (String) body.get("reason"));
+            }
+            if (body.containsKey("phone")) {
+                String old = user.getPhone();
+                user.setPhone((String) body.get("phone"));
+                audit(companyId, "USER", userId, "EDIT", "phone", old, user.getPhone(), (String) body.get("reason"));
+            }
+            if (body.containsKey("roles")) {
+                String old = user.getRoles().toString();
+                List<String> roleStrs = (List<String>) body.get("roles");
+                user.getRoles().clear();
+                for (String r : roleStrs) {
+                    try { user.getRoles().add(Role.valueOf(r.startsWith("ROLE_") ? r : "ROLE_" + r)); } catch (Exception ignored) {}
+                }
+                audit(companyId, "USER", userId, "EDIT", "roles", old, user.getRoles().toString(), (String) body.get("reason"));
+            }
+
+            userRepository.save(user);
+            log.info("[ASISTENCIA] PATCH USUARIO #{} empresa #{} por {}", userId, companyId, getAdminUsername());
+            return ResponseEntity.ok(new MessageResponse("Usuario actualizado correctamente."));
+        }
+
+        @PostMapping("/companies/{companyId}/users/{userId}/reset-password")
+        @PreAuthorize("hasRole('ADMIN')")
+        @Transactional
+        public ResponseEntity<?> resetCompanyUserPassword(
+                @PathVariable Long companyId,
+                @PathVariable Long userId,
+                @RequestBody Map<String, String> body) {
+            User user = userRepository.findById(userId).orElse(null);
+            if (user == null || user.getCompany() == null || !user.getCompany().getId().equals(companyId)) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            String newPassword = body.get("newPassword");
+            String reason = body.get("reason");
+            if (newPassword == null || newPassword.length() < 6) {
+                return ResponseEntity.badRequest().body(new MessageResponse("La nueva contraseña debe tener al menos 6 caracteres."));
+            }
+
+            user.setPassword(passwordEncoder.encode(newPassword));
+            userRepository.save(user);
+
+            audit(companyId, "USER", userId, "RESET_PASSWORD", "password", "***", "***", reason);
+            log.warn("[ASISTENCIA] RESET PASSWORD USUARIO #{} empresa #{} por {}", userId, companyId, getAdminUsername());
+            return ResponseEntity.ok(new MessageResponse("Contraseña reseteada correctamente."));
         }
 
         // ══════════════════════════════════════════════════════════════════════════

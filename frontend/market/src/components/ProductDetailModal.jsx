@@ -70,7 +70,7 @@ const ProductDetailModal = ({
 
     return (
         <Modal show={show} onHide={onHide} size="lg" centered scrollable className="modal-premium">
-            <Modal.Body className="p-0 overflow-hidden rounded-4">
+            <Modal.Body className="p-0 rounded-4">
                 <Row className="g-0">
                     <Col md={5} className="bg-light d-flex align-items-center justify-content-center p-0 overflow-hidden" style={{ minHeight: '350px' }}>
                         <img

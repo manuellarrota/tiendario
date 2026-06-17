@@ -193,6 +193,7 @@ public class SaleService {
         }
 
         java.math.BigDecimal computedTotal = java.math.BigDecimal.ZERO;
+        java.math.BigDecimal totalLineDiscounts = java.math.BigDecimal.ZERO;
 
         for (SaleItem item : sale.getItems()) {
             item.setSale(sale);
@@ -238,11 +239,52 @@ public class SaleService {
             // Force server-side calculation of pricing (Zero-Trust to frontend)
             item.setProduct(product);
             item.setUnitPrice(product.getPrice());
-            java.math.BigDecimal subtotal = product.getPrice().multiply(new java.math.BigDecimal(item.getQuantity()));
-            item.setSubtotal(subtotal);
+            
+            java.math.BigDecimal rawSubtotal = product.getPrice().multiply(new java.math.BigDecimal(item.getQuantity()));
+            java.math.BigDecimal lineDiscountAmount = java.math.BigDecimal.ZERO;
+            
+            if (item.getDiscountAmount() != null && item.getDiscountAmount().compareTo(java.math.BigDecimal.ZERO) > 0) {
+                if (com.nugar.domain.DiscountType.PERCENTAGE.equals(item.getDiscountType())) {
+                    if (item.getDiscountAmount().compareTo(new java.math.BigDecimal("100")) > 0) {
+                        throw new RuntimeException("Error: El descuento porcentual del producto " + product.getName() + " no puede exceder el 100%.");
+                    }
+                    lineDiscountAmount = rawSubtotal.multiply(item.getDiscountAmount()).divide(new java.math.BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+                } else {
+                    lineDiscountAmount = item.getDiscountAmount();
+                }
+                // Reject discount exceeding the line subtotal (Zero-Trust)
+                if (lineDiscountAmount.compareTo(rawSubtotal) > 0) {
+                    throw new RuntimeException("Error: El descuento del producto " + product.getName() + " ($" + lineDiscountAmount + ") excede su subtotal ($" + rawSubtotal + ").");
+                }
+            }
+            
+            java.math.BigDecimal finalSubtotal = rawSubtotal.subtract(lineDiscountAmount);
+            item.setSubtotal(finalSubtotal);
 
-            computedTotal = computedTotal.add(subtotal);
+            computedTotal = computedTotal.add(finalSubtotal);
+            totalLineDiscounts = totalLineDiscounts.add(lineDiscountAmount);
         }
+
+        // Handle Global Discount
+        java.math.BigDecimal globalDiscountVal = java.math.BigDecimal.ZERO;
+        if (sale.getGlobalDiscountAmount() != null && sale.getGlobalDiscountAmount().compareTo(java.math.BigDecimal.ZERO) > 0) {
+            if (com.nugar.domain.DiscountType.PERCENTAGE.equals(sale.getGlobalDiscountType())) {
+                if (sale.getGlobalDiscountAmount().compareTo(new java.math.BigDecimal("100")) > 0) {
+                    throw new RuntimeException("Error: El descuento global porcentual no puede exceder el 100%.");
+                }
+                globalDiscountVal = computedTotal.multiply(sale.getGlobalDiscountAmount()).divide(new java.math.BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+            } else {
+                globalDiscountVal = sale.getGlobalDiscountAmount();
+            }
+            
+            // Reject global discount exceeding the pre-global total (Zero-Trust)
+            if (globalDiscountVal.compareTo(computedTotal) > 0) {
+                throw new RuntimeException("Error: El descuento global ($" + globalDiscountVal + ") excede el subtotal de la venta ($" + computedTotal + ").");
+            }
+        }
+        
+        computedTotal = computedTotal.subtract(globalDiscountVal);
+        sale.setTotalDiscount(totalLineDiscounts.add(globalDiscountVal));
 
         // Ignore whatever the frontend said the total was
         sale.setTotalAmount(computedTotal);
@@ -288,6 +330,9 @@ public class SaleService {
             data.put("cliente", sale.getCustomerName() != null ? sale.getCustomerName() : "Publico General");
             data.put("estado", sale.getStatus());
             data.put("totalUSD", sale.getTotalAmount());
+            if (sale.getTotalDiscount() != null && sale.getTotalDiscount().compareTo(java.math.BigDecimal.ZERO) > 0) {
+                data.put("totalDescuento", sale.getTotalDiscount());
+            }
 
             // Pagos detallados
             if (sale.getPayments() != null && !sale.getPayments().isEmpty()) {

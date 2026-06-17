@@ -139,10 +139,9 @@ const Sidebar = () => {
                 />
             )}
 
-            {/* Sidebar Container Wrapper */}
             <div
                 className={`sidebar-container ${collapsed ? 'collapsed-mode' : ''}`}
-                style={{ flexShrink: 0, position: 'relative', transition: 'all 0.3s ease' }}
+                style={{ flexShrink: 0, transition: 'all 0.3s ease' }}
             >
                 {/* Desktop Toggle Button */}
                 <button

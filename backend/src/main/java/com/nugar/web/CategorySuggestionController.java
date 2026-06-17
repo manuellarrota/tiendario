@@ -8,8 +8,10 @@ import com.nugar.domain.Product;
 import com.nugar.payload.response.MessageResponse;
 import com.nugar.repository.CategoryRepository;
 import com.nugar.repository.CategorySuggestionRepository;
+import com.nugar.repository.CategoryMappingRepository;
 import com.nugar.repository.ProductRepository;
 import com.nugar.repository.UserRepository;
+import com.nugar.domain.CategoryMapping;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +27,9 @@ public class CategorySuggestionController {
 
     @Autowired
     private CategorySuggestionRepository suggestionRepository;
+
+    @Autowired
+    private CategoryMappingRepository categoryMappingRepository;
 
     @Autowired
     private CategoryRepository categoryRepository;
@@ -145,25 +150,20 @@ public class CategorySuggestionController {
             return ResponseEntity.badRequest().body(new MessageResponse("Error: Categoría destino no encontrada."));
         }
 
-        // Update all products in this company that use the suggestion name to the
-        // target category name
-        List<Product> productsToUpdate = productRepository.findByCompanyId(suggestion.getStoreId());
-        // To be safe, update only products of that store having the suggested category
-        // name
-        for (Product product : productsToUpdate) {
-            if (suggestion.getName().equalsIgnoreCase(product.getCategory())) {
-                product.setCategory(targetCategory.getName());
-                productRepository.save(product);
-            }
+        // Create mapping instead of renaming products
+        if (!categoryMappingRepository.findByLocalCategoryNameIgnoreCase(suggestion.getName()).isPresent()) {
+            CategoryMapping mapping = new CategoryMapping();
+            mapping.setLocalCategoryName(suggestion.getName());
+            mapping.setGlobalCategory(targetCategory);
+            categoryMappingRepository.save(mapping);
         }
 
-        // Mark suggestion as approved (meaning it was handled) or add a new MIX state,
-        // but let's just mark it APPROVED or a new MERGED status
+        // Mark suggestion as approved (meaning it was mapped)
         suggestion.setStatus(SuggestionStatus.APPROVED);
         suggestion.setName(suggestion.getName() + " -> " + targetCategory.getName()); // Just for UI clarity if needed
         suggestionRepository.save(suggestion);
 
         return ResponseEntity.ok(new MessageResponse(
-                "Sugerencia fusionada exitosamente. Se actualizaron los productos correspondientes."));
+                "Sugerencia mapeada exitosamente a la categoría global seleccionada."));
     }
 }

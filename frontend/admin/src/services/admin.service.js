@@ -255,6 +255,28 @@ const patchCompanyProduct = (companyId, productId, data) => {
     });
 };
 
+// ── Asistencia Técnica: Usuarios ───────────────────────────────────────────
+const getCompanyUsers = (companyId) => {
+    const user = AuthService.getCurrentUser();
+    return axios.get(API_URL + `/companies/${companyId}/users`, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+const patchCompanyUser = (companyId, userId, data) => {
+    const user = AuthService.getCurrentUser();
+    return axios.patch(API_URL + `/companies/${companyId}/users/${userId}`, data, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+const resetCompanyUserPassword = (companyId, userId, newPassword, reason) => {
+    const user = AuthService.getCurrentUser();
+    return axios.post(API_URL + `/companies/${companyId}/users/${userId}/reset-password`, { newPassword, reason }, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
 // ── Asistencia Técnica: Historial de Cambios ───────────────────────────────
 const getCompanyAuditLog = (companyId, page = 0, size = 20) => {
     const user = AuthService.getCurrentUser();
@@ -300,6 +322,9 @@ const AdminService = {
     voidCompanyPurchase,
     getCompanyProducts,
     patchCompanyProduct,
+    getCompanyUsers,
+    patchCompanyUser,
+    resetCompanyUserPassword,
     getCompanyAuditLog,
 };
 

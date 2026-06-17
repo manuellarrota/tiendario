@@ -1,4 +1,5 @@
 import axios from 'axios';
+import authHeader from './auth-header';
 
 const API_URL = import.meta.env.VITE_API_URL + '/public';
 
@@ -15,7 +16,7 @@ const getProductDetail = (id) => {
 };
 
 const createOrder = (orderData) => {
-    return axios.post(API_URL + '/order', orderData);
+    return axios.post(API_URL + '/order', orderData, { headers: authHeader() });
 };
 
 const getPlatformConfig = () => {

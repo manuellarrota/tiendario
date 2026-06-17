@@ -32,13 +32,15 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String name, String description);
 
     @Query("SELECT p FROM Product p WHERE p.company.id = :companyId AND " +
-            "(:onlyLowStock = false OR p.stock <= p.minStock) AND (" +
+            "(:onlyLowStock = false OR p.stock <= p.minStock) AND " +
+            "(:onlyLowMargin = false OR (p.costPrice IS NOT NULL AND p.price IS NOT NULL AND p.price > 0 AND p.costPrice >= (p.price * 0.85))) AND (" +
             "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(LOWER(p.name), 'á', 'a'), 'é', 'e'), 'í', 'i'), 'ó', 'o'), 'ú', 'u') LIKE CONCAT('%', :q, '%') OR " +
             "LOWER(p.sku) LIKE CONCAT('%', :q, '%') OR " +
             "REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(LOWER(p.brand), 'á', 'a'), 'é', 'e'), 'í', 'i'), 'ó', 'o'), 'ú', 'u') LIKE CONCAT('%', :q, '%'))")
     Page<Product> findByCompanyIdAndSearch(@Param("companyId") Long companyId, 
                                           @Param("q") String q, 
                                           @Param("onlyLowStock") boolean onlyLowStock, 
+                                          @Param("onlyLowMargin") boolean onlyLowMargin, 
                                           Pageable pageable);
 
     long countByCategory(String category);

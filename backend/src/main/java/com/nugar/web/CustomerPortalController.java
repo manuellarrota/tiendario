@@ -23,13 +23,25 @@ public class CustomerPortalController {
     SaleRepository saleRepository;
 
     @GetMapping("/orders")
-    @PreAuthorize("hasRole('CLIENT')")
+    @PreAuthorize("isAuthenticated()")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
     public ResponseEntity<List<Map<String, Object>>> getMyOrders() {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        List<Sale> sales = saleRepository.findByCustomer_EmailOrderByDateDesc(userDetails.getUsername());
+        String searchEmail = userDetails.getEmail() != null ? userDetails.getEmail() : userDetails.getUsername();
+        List<Sale> sales = saleRepository.findByCustomerEmailOrUserId(searchEmail, userDetails.getId());
+        
+        System.out.println("====== DEBUG CUSTOMER ORDERS ======");
+        System.out.println("User searching for email: " + searchEmail);
+        System.out.println("Sales found by query: " + sales.size());
+        
+        List<Sale> allSales = saleRepository.findAll();
+        System.out.println("Total sales in database: " + allSales.size());
+        for (Sale s : allSales) {
+            System.out.println("Sale ID: " + s.getId() + " | CustomerEmail: '" + s.getCustomerEmail() + "' | Date: " + s.getDate());
+        }
+        System.out.println("===================================");
 
         List<Map<String, Object>> result = sales.stream().map(sale -> {
             Map<String, Object> map = new HashMap<>();
@@ -76,12 +88,13 @@ public class CustomerPortalController {
     }
 
     @GetMapping("/dashboard")
-    @PreAuthorize("hasRole('CLIENT')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> getDashboardStats() {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
 
-        List<Sale> sales = saleRepository.findByCustomer_EmailOrderByDateDesc(userDetails.getUsername());
+        String searchEmail = userDetails.getEmail() != null ? userDetails.getEmail() : userDetails.getUsername();
+        List<Sale> sales = saleRepository.findByCustomerEmailOrUserId(searchEmail, userDetails.getId());
 
         BigDecimal totalSpent = sales.stream()
                 .map(Sale::getTotalAmount)

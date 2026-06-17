@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Container, Table, Button, Modal, Form, Alert, Badge, Image, OverlayTrigger, Tooltip, Pagination } from "react-bootstrap";
+import { Container, Table, Button, Modal, Form, Alert, Badge, Image, OverlayTrigger, Tooltip, Pagination, Dropdown } from "react-bootstrap";
 import Sidebar from "../components/Sidebar";
 import Layout from "../components/Layout";
 import ProductService from "../services/product.service";
@@ -7,7 +7,7 @@ import CategoryService from "../services/category.service";
 import CategorySuggestionService from "../services/category-suggestion.service";
 import AuthService from "../services/auth.service";
 import InventoryService from "../services/inventory.service";
-import { FaPlus, FaTrash, FaBoxOpen, FaExclamationTriangle, FaLock, FaImage, FaFileExcel, FaFilePdf, FaUpload, FaSort, FaSortUp, FaSortDown, FaBarcode } from "react-icons/fa";
+import { FaPlus, FaTrash, FaEdit, FaBoxOpen, FaExclamationTriangle, FaLock, FaImage, FaFileExcel, FaFilePdf, FaUpload, FaSort, FaSortUp, FaSortDown, FaBarcode, FaChartLine, FaCogs } from "react-icons/fa";
 import InventoryImportWizard from "../components/InventoryImportWizard";
 import { useToast } from "../components/ToastContext";
 
@@ -50,6 +50,12 @@ const InventoryPage = () => {
     const [suggestedCategoryName, setSuggestedCategoryName] = useState("");
     const [isSuggesting, setIsSuggesting] = useState(false);
 
+    // History Modal
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [selectedHistoryProduct, setSelectedHistoryProduct] = useState(null);
+    const [historyData, setHistoryData] = useState([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+
     // Helper to get full image URL
     const getFullImageUrl = (path) => {
         if (!path) return null;
@@ -73,6 +79,7 @@ const InventoryPage = () => {
     const [searchQuery, setSearchQuery] = useState("");
     const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
     const [onlyLowStock, setOnlyLowStock] = useState(false);
+    const [onlyLowMargin, setOnlyLowMargin] = useState(false);
 
     // Debounce search query
     useEffect(() => {
@@ -100,7 +107,8 @@ const InventoryPage = () => {
             size: pageSize,
             sort: `${sortBy},${sortDir}`,
             q: debouncedSearchQuery || undefined,
-            lowStock: onlyLowStock
+            lowStock: onlyLowStock,
+            lowMargin: onlyLowMargin
         };
 
         ProductService.getAll(params).then(
@@ -118,11 +126,27 @@ const InventoryPage = () => {
 
     useEffect(() => {
         loadProducts();
-    }, [currentPage, pageSize, sortBy, sortDir, debouncedSearchQuery, onlyLowStock]);
+    }, [currentPage, pageSize, sortBy, sortDir, debouncedSearchQuery, onlyLowStock, onlyLowMargin]);
 
     useEffect(() => {
         loadCategories();
     }, []);
+
+    const handleViewHistory = (product) => {
+        setSelectedHistoryProduct(product);
+        setShowHistoryModal(true);
+        setHistoryLoading(true);
+        ProductService.getHistory(product.id).then(
+            (res) => {
+                setHistoryData(res.data.monthlyData || []);
+                setHistoryLoading(false);
+            },
+            (err) => {
+                console.error("Error loading product history", err);
+                setHistoryLoading(false);
+            }
+        );
+    };
 
     // Suggest SKU when name changes (and category if available)
     useEffect(() => {
@@ -383,33 +407,56 @@ const InventoryPage = () => {
                     <div className="d-flex flex-wrap gap-2">
                         {(user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
                             <>
-                                <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Descarga toda tu lista de productos en formato Excel")}>
-                                    <Button variant="outline-success" className="px-3 shadow-sm d-flex align-items-center gap-2" onClick={handleExportExcel}>
-                                        <FaFileExcel /> Descargar en Excel
-                                    </Button>
-                                </OverlayTrigger>
-
-                                <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Descarga el formato Excel para llenarlo con tus productos e importarlos masivamente")}>
-                                    <Button variant="outline-success" className="px-3 shadow-sm d-flex align-items-center gap-2" onClick={handleDownloadTemplate}>
-                                        <FaFileExcel /> Descargar formato Excel
-                                    </Button>
-                                </OverlayTrigger>
-
-                                <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Genera un reporte PDF de tu inventario actual")}>
-                                    <Button variant="outline-danger" className="px-3 shadow-sm d-flex align-items-center gap-2" onClick={handleExportPdf}>
-                                        <FaFilePdf /> Descargar en PDF
-                                    </Button>
-                                </OverlayTrigger>
-
-                                <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Sube un archivo CSV para cargar productos masivamente")}>
-                                    <Button variant="outline-primary" className="px-3 shadow-sm d-flex align-items-center gap-2" onClick={() => setShowImportWizard(true)}>
-                                        <FaUpload /> Importar Wizard
-                                    </Button>
-                                </OverlayTrigger>
+                                <Dropdown>
+                                    <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Importa o exporta tus productos masivamente")}>
+                                        <Dropdown.Toggle variant="outline-secondary" className="px-3 py-2 shadow-sm d-flex align-items-center gap-2 rounded-pill bg-white">
+                                            <FaCogs /> Opciones
+                                        </Dropdown.Toggle>
+                                    </OverlayTrigger>
+                                    <Dropdown.Menu className="shadow-lg border-0 rounded-4 mt-2" style={{ minWidth: '280px' }}>
+                                        <div className="px-3 py-2 text-muted small fw-bold text-uppercase" style={{ letterSpacing: '1px', fontSize: '0.7rem' }}>
+                                            Exportar
+                                        </div>
+                                        <Dropdown.Item onClick={handleExportExcel} className="d-flex align-items-center gap-3 py-2">
+                                            <div className="bg-success bg-opacity-10 p-2 rounded text-success d-flex"><FaFileExcel size={18} /></div>
+                                            <div>
+                                                <div className="fw-bold text-dark">Descargar Excel</div>
+                                                <small className="text-muted d-block" style={{ fontSize: '0.75rem', whiteSpace: 'normal' }}>Obtén todo tu inventario actual en una tabla .xlsx</small>
+                                            </div>
+                                        </Dropdown.Item>
+                                        <Dropdown.Item onClick={handleExportPdf} className="d-flex align-items-center gap-3 py-2">
+                                            <div className="bg-danger bg-opacity-10 p-2 rounded text-danger d-flex"><FaFilePdf size={18} /></div>
+                                            <div>
+                                                <div className="fw-bold text-dark">Generar Reporte PDF</div>
+                                                <small className="text-muted d-block" style={{ fontSize: '0.75rem', whiteSpace: 'normal' }}>Descarga un documento PDF listo para imprimir</small>
+                                            </div>
+                                        </Dropdown.Item>
+                                        
+                                        <Dropdown.Divider className="my-2" />
+                                        
+                                        <div className="px-3 py-2 text-muted small fw-bold text-uppercase" style={{ letterSpacing: '1px', fontSize: '0.7rem' }}>
+                                            Importar Masivo
+                                        </div>
+                                        <Dropdown.Item onClick={handleDownloadTemplate} className="d-flex align-items-center gap-3 py-2">
+                                            <div className="bg-success bg-opacity-10 p-2 rounded text-success d-flex"><FaFileExcel size={18} /></div>
+                                            <div>
+                                                <div className="fw-bold text-dark">Bajar Plantilla Vacía</div>
+                                                <small className="text-muted d-block" style={{ fontSize: '0.75rem', whiteSpace: 'normal' }}>Formato base para llenar con tus productos nuevos</small>
+                                            </div>
+                                        </Dropdown.Item>
+                                        <Dropdown.Item onClick={() => setShowImportWizard(true)} className="d-flex align-items-center gap-3 py-2">
+                                            <div className="bg-primary bg-opacity-10 p-2 rounded text-primary d-flex"><FaUpload size={18} /></div>
+                                            <div>
+                                                <div className="fw-bold text-dark">Subir Archivo (.csv)</div>
+                                                <small className="text-muted d-block" style={{ fontSize: '0.75rem', whiteSpace: 'normal' }}>Carga múltiples productos de una sola vez</small>
+                                            </div>
+                                        </Dropdown.Item>
+                                    </Dropdown.Menu>
+                                </Dropdown>
 
                                 <OverlayTrigger placement="top" overlay={(props) => renderTooltip(props, "Añadir un nuevo producto a tu catálogo")}>
                                     <Button
-                                        className="btn-primary px-4 py-2 shadow-lg w-auto"
+                                        className="btn-primary px-4 py-2 shadow-sm rounded-pill w-auto d-flex align-items-center"
                                         onClick={() => { resetForm(); setShowModal(true); }}
                                         disabled={isBlocked || (!isPremium && products.length >= 10)}
                                     >
@@ -474,6 +521,16 @@ const InventoryPage = () => {
                         <FaExclamationTriangle className={onlyLowStock ? "text-white" : "text-danger"} />
                         {onlyLowStock ? "Mostrando Stock Bajo" : "Filtrar Stock Bajo"}
                     </Button>
+                    
+                    <Button 
+                        variant={onlyLowMargin ? "warning" : "outline-secondary"}
+                        className={`px-4 shadow-sm fw-bold d-flex align-items-center gap-2 rounded-4 ${onlyLowMargin ? 'text-dark' : ''}`}
+                        onClick={() => { setOnlyLowMargin(!onlyLowMargin); setCurrentPage(0); }}
+                        style={{ height: '70px', minWidth: '180px' }}
+                    >
+                        <FaChartLine className={onlyLowMargin ? "text-dark" : "text-warning"} />
+                        {onlyLowMargin ? "Mostrando Margen Bajo" : "Filtrar Margen Bajo"}
+                    </Button>
                 </div>
 
                 <div className="glass-card-admin p-0 overflow-hidden border-0 shadow-sm">
@@ -511,7 +568,7 @@ const InventoryPage = () => {
                                 </thead>
                                 <tbody>
                                     {products.map((product) => (
-                                        <tr key={product.id}>
+                                        <tr key={product.id} onClick={() => handleViewHistory(product)} style={{ cursor: 'pointer' }} className="table-row-hover">
                                             <td className="ps-4">
                                                 <div className="d-flex align-items-center">
                                                     <div className="me-3 rounded bg-light d-flex align-items-center justify-content-center" style={{ width: 44, height: 44, overflow: 'hidden', border: '1px solid #eee' }}>
@@ -534,7 +591,12 @@ const InventoryPage = () => {
                                             <td>
                                                 <Badge bg="light" className="text-dark border shadow-sm fw-normal px-2 py-1" style={{ fontSize: '0.75rem' }}>{product.category || 'Sin Cat.'}</Badge>
                                             </td>
-                                            <td className="text-end fw-bold text-dark" style={{ fontSize: '0.9rem' }}>${product.price}</td>
+                                            <td className="text-end align-middle">
+                                                <div className="fw-bold text-dark" style={{ fontSize: '0.9rem' }}>${product.price}</div>
+                                                {product.price > 0 && product.costPrice >= product.price * 0.85 && (
+                                                    <Badge bg="warning" text="dark" className="mt-1 shadow-sm opacity-75" style={{ fontSize: '0.65rem' }}>📉 Margen Bajo</Badge>
+                                                )}
+                                            </td>
                                             <td className="text-center">
                                                 <div className="d-inline-block px-2 py-1 rounded bg-light border fw-bold small">
                                                     {product.stock}
@@ -548,13 +610,17 @@ const InventoryPage = () => {
                                                 )}
                                             </td>
                                             {(user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
-                                                <td className="text-end pe-4">
-                                                    <Button variant="link" className="text-primary me-2 p-0 text-decoration-none fw-bold small" onClick={() => handleEditClick(product)}>
-                                                        Editar
-                                                    </Button>
-                                                    <Button variant="link" className="text-danger p-0 text-decoration-none fw-bold small" onClick={() => confirmDelete(product)}>
-                                                        Borrar
-                                                    </Button>
+                                                <td className="text-end pe-4" onClick={(e) => e.stopPropagation()}>
+                                                    <OverlayTrigger overlay={<Tooltip>Editar</Tooltip>}>
+                                                        <Button variant="link" className="text-primary me-2 p-0 text-decoration-none fw-bold small" onClick={() => handleEditClick(product)}>
+                                                            <FaEdit size={16} />
+                                                        </Button>
+                                                    </OverlayTrigger>
+                                                    <OverlayTrigger overlay={<Tooltip>Borrar</Tooltip>}>
+                                                        <Button variant="link" className="text-danger p-0 text-decoration-none fw-bold small" onClick={() => confirmDelete(product)}>
+                                                            <FaTrash size={16} />
+                                                        </Button>
+                                                    </OverlayTrigger>
                                                 </td>
                                             )}
                                         </tr>
@@ -925,6 +991,175 @@ const InventoryPage = () => {
                         </Button>
                     </div>
                 </Modal.Body>
+            </Modal>
+
+            {/* Product History Modal */}
+            <Modal show={showHistoryModal} onHide={() => setShowHistoryModal(false)} centered size="lg">
+                <Modal.Header closeButton className="border-0 bg-light">
+                    <Modal.Title className="fw-bold text-dark d-flex align-items-center gap-2">
+                        <FaChartLine className="text-primary" />
+                        Historial: {selectedHistoryProduct?.name}
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="p-4">
+                    {historyLoading ? (
+                        <div className="d-flex justify-content-center py-5">
+                            <div className="spinner-border text-primary" role="status"></div>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="d-flex flex-wrap gap-3 mb-4">
+                                <div className="p-3 bg-light rounded-4 flex-grow-1 border">
+                                    <small className="text-muted text-uppercase fw-bold">Costo Promedio (Último)</small>
+                                    <h4 className="fw-bold mb-0 text-dark">${selectedHistoryProduct?.costPrice || 0}</h4>
+                                </div>
+                                <div className="p-3 bg-light rounded-4 flex-grow-1 border">
+                                    <small className="text-muted text-uppercase fw-bold">Precio Actual</small>
+                                    <h4 className="fw-bold mb-0 text-primary">${selectedHistoryProduct?.price || 0}</h4>
+                                </div>
+                                <div className="p-3 bg-light rounded-4 flex-grow-1 border">
+                                    <small className="text-muted text-uppercase fw-bold">Stock</small>
+                                    <h4 className="fw-bold mb-0 text-dark">{selectedHistoryProduct?.stock || 0}</h4>
+                                </div>
+                            </div>
+                            
+                            <h6 className="fw-bold mb-3 text-secondary text-uppercase" style={{ fontSize: '0.85rem', letterSpacing: '0.5px' }}>Historial de Margen de Ganancia</h6>
+                            {(() => {
+                                if (historyData.length === 0) {
+                                    return (
+                                        <div className="text-center py-5 opacity-50">
+                                            <FaChartLine size={40} className="mb-2 text-secondary" />
+                                            <p className="small mb-0 text-secondary fw-bold">No hay datos históricos registrados.</p>
+                                        </div>
+                                    );
+                                }
+
+                                const svgW = 560, svgH = 260;
+                                const padL = 55, padR = 20, padT = 25, padB = 45;
+                                const chartW = svgW - padL - padR;
+                                const chartH = svgH - padT - padB;
+
+                                const allValues = historyData.flatMap(d => [d.avgPrice, d.avgCost]);
+                                const maxVal = Math.max(...allValues, 1) * 1.15;
+                                const minVal = 0;
+
+                                const xStep = historyData.length > 1 ? chartW / (historyData.length - 1) : chartW;
+                                const toX = (i) => padL + (historyData.length > 1 ? i * xStep : chartW / 2);
+                                const toY = (v) => padT + chartH - ((v - minVal) / (maxVal - minVal)) * chartH;
+
+                                // Build smooth line paths (monotone cubic interpolation)
+                                const buildPath = (points) => {
+                                    if (points.length < 2) return `M ${points[0][0]} ${points[0][1]}`;
+                                    let d = `M ${points[0][0]} ${points[0][1]}`;
+                                    for (let i = 0; i < points.length - 1; i++) {
+                                        const cx = (points[i][0] + points[i + 1][0]) / 2;
+                                        d += ` C ${cx} ${points[i][1]}, ${cx} ${points[i + 1][1]}, ${points[i + 1][0]} ${points[i + 1][1]}`;
+                                    }
+                                    return d;
+                                };
+
+                                const pricePoints = historyData.map((d, i) => [toX(i), toY(d.avgPrice)]);
+                                const costPoints = historyData.map((d, i) => [toX(i), toY(d.avgCost)]);
+                                const pricePath = buildPath(pricePoints);
+                                const costPath = buildPath(costPoints);
+
+                                // Area fill under the price line
+                                const priceAreaPath = pricePath + ` L ${pricePoints[pricePoints.length - 1][0]} ${padT + chartH} L ${pricePoints[0][0]} ${padT + chartH} Z`;
+
+                                // Y-axis gridlines
+                                const gridLines = 5;
+                                const gridYs = Array.from({ length: gridLines + 1 }, (_, i) => ({
+                                    y: padT + (chartH / gridLines) * i,
+                                    val: maxVal - (maxVal / gridLines) * i
+                                }));
+
+                                return (
+                                    <div className="position-relative" style={{ overflowX: 'auto' }}>
+                                        <svg viewBox={`0 0 ${svgW} ${svgH}`} style={{ width: '100%', maxHeight: '280px' }} className="d-block">
+                                            <defs>
+                                                <linearGradient id="priceGrad" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
+                                                    <stop offset="100%" stopColor="#10b981" stopOpacity="0.02" />
+                                                </linearGradient>
+                                            </defs>
+
+                                            {/* Gridlines + Y-axis labels */}
+                                            {gridYs.map((g, i) => (
+                                                <g key={i}>
+                                                    <line x1={padL} y1={g.y} x2={svgW - padR} y2={g.y} stroke="#e2e8f0" strokeWidth="1" strokeDasharray={i === gridLines ? "0" : "4 3"} />
+                                                    <text x={padL - 8} y={g.y + 4} textAnchor="end" fontSize="10" fill="#94a3b8" fontWeight="600">
+                                                        ${Math.round(g.val)}
+                                                    </text>
+                                                </g>
+                                            ))}
+
+                                            {/* X-axis labels */}
+                                            {historyData.map((d, i) => (
+                                                <text key={i} x={toX(i)} y={svgH - 8} textAnchor="middle" fontSize="10" fill="#64748b" fontWeight="700">
+                                                    {d.label}
+                                                </text>
+                                            ))}
+
+                                            {/* Filled area under price line */}
+                                            <path d={priceAreaPath} fill="url(#priceGrad)" />
+
+                                            {/* Price line (green) */}
+                                            <path d={pricePath} fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" />
+
+                                            {/* Cost line (red) */}
+                                            <path d={costPath} fill="none" stroke="#ef4444" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="6 3" />
+
+                                            {/* Data points + hover targets */}
+                                            {historyData.map((d, i) => (
+                                                <g key={`pts-${i}`}>
+                                                    {/* Price dot */}
+                                                    <OverlayTrigger placement="top" overlay={<Tooltip><strong>Precio Venta</strong><br/>${Number(d.avgPrice).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</Tooltip>}>
+                                                        <circle cx={toX(i)} cy={toY(d.avgPrice)} r="5" fill="#10b981" stroke="#fff" strokeWidth="2" style={{ cursor: 'pointer' }} />
+                                                    </OverlayTrigger>
+                                                    {/* Cost dot */}
+                                                    <OverlayTrigger placement="top" overlay={<Tooltip><strong>Costo Prom.</strong><br/>${Number(d.avgCost).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</Tooltip>}>
+                                                        <circle cx={toX(i)} cy={toY(d.avgCost)} r="5" fill="#ef4444" stroke="#fff" strokeWidth="2" style={{ cursor: 'pointer' }} />
+                                                    </OverlayTrigger>
+                                                    {/* Margin label between the two dots */}
+                                                    {d.avgPrice > 0 && d.avgCost > 0 && (
+                                                        <text
+                                                            x={toX(i)}
+                                                            y={(toY(d.avgPrice) + toY(d.avgCost)) / 2}
+                                                            textAnchor="middle"
+                                                            fontSize="9"
+                                                            fill={((d.avgPrice - d.avgCost) / d.avgPrice * 100) < 15 ? '#ef4444' : '#10b981'}
+                                                            fontWeight="700"
+                                                        >
+                                                            {Math.round((d.avgPrice - d.avgCost) / d.avgPrice * 100)}%
+                                                        </text>
+                                                    )}
+                                                </g>
+                                            ))}
+                                        </svg>
+                                    </div>
+                                );
+                            })()}
+                            
+                            <div className="d-flex justify-content-center gap-4 mt-3 pt-3 border-top">
+                                <div className="d-flex align-items-center gap-2">
+                                    <div style={{ width: 20, height: 3, background: '#ef4444', borderRadius: 2 }}></div>
+                                    <span className="text-muted fw-bold small">Costo Promedio</span>
+                                </div>
+                                <div className="d-flex align-items-center gap-2">
+                                    <div style={{ width: 20, height: 3, background: '#10b981', borderRadius: 2 }}></div>
+                                    <span className="text-muted fw-bold small">Precio de Venta</span>
+                                </div>
+                                <div className="d-flex align-items-center gap-2">
+                                    <span className="text-success fw-bold small">%</span>
+                                    <span className="text-muted fw-bold small">Margen</span>
+                                </div>
+                            </div>
+                        </>
+                    )}
+                </Modal.Body>
+                <Modal.Footer className="border-0">
+                    <Button variant="light" size="sm" className="rounded-pill px-3" onClick={() => setShowHistoryModal(false)}>Cerrar</Button>
+                </Modal.Footer>
             </Modal>
         </Layout>
     );

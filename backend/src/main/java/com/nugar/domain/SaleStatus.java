@@ -7,5 +7,7 @@ public enum SaleStatus {
     PAID,
     SHIPPED,
     DELIVERED,
-    CANCELLED
+    CANCELLED,
+    PARTIAL_REFUND,
+    FULL_REFUND
 }

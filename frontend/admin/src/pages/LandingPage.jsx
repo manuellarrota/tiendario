@@ -247,19 +247,28 @@ const LandingPage = () => {
             <div className="bg-mesh"></div>
 
             {/* Navbar */}
-            <nav className="d-flex justify-content-between align-items-center p-4 container" style={{ maxWidth: '1200px' }}>
-                <div className="d-flex align-items-center gap-3">
-                    <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white" style={{ width: '40px', height: '40px', boxShadow: '0 4px 12px rgba(0, 123, 255, 0.3)' }}>
-                        <FaStore size={20} />
+            <nav className="sticky-top glass-navbar w-100">
+                <div className="d-flex justify-content-between align-items-center p-3 container" style={{ maxWidth: '1200px' }}>
+                    <div className="d-flex align-items-center gap-3">
+                        <div className="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white" style={{ width: '40px', height: '40px', boxShadow: '0 4px 12px rgba(0, 123, 255, 0.3)' }}>
+                            <FaStore size={20} />
+                        </div>
+                        <h4 className="m-0 fw-bold text-dark" style={{ letterSpacing: '-0.5px' }}>Nugar</h4>
+                        <Badge pill bg="primary" className="ms-2 px-3 py-2 d-none d-md-block" style={{ backgroundColor: '#007bff !important', fontWeight: '600' }}>
+                            Ventas &bull; Inventario &bull; Tienda Online
+                        </Badge>
                     </div>
-                    <h4 className="m-0 fw-bold text-dark" style={{ letterSpacing: '-0.5px' }}>Nugar</h4>
-                    <Badge pill bg="primary" className="ms-2 px-3 py-2 d-none d-md-block" style={{ backgroundColor: '#007bff !important', fontWeight: '600' }}>
-                        Sistema POS + Marketplace Local
-                    </Badge>
-                </div>
                 <div className="d-flex gap-2 align-items-center">
-                    <Button variant="link" onClick={() => setShowLoginModal(true)} className="text-primary text-decoration-none fw-bold px-2" style={{ fontSize: '0.9rem' }}>Entrar</Button>
-                    <Button onClick={() => document.getElementById('planes').scrollIntoView({ behavior: 'smooth' })} className="btn btn-primary rounded-pill px-3 shadow-sm" style={{ fontSize: '0.9rem' }}>Ver Planes</Button>
+                    <Button
+                        variant="primary"
+                        onClick={() => setShowLoginModal(true)}
+                        className="rounded-pill px-4 fw-bold shadow-sm"
+                        style={{ fontSize: '0.9rem', background: 'linear-gradient(135deg, #007bff, #0056d2)', border: 'none', boxShadow: '0 4px 14px rgba(0, 123, 255, 0.4)' }}
+                    >
+                        🔐 Entrar
+                    </Button>
+                    <Button onClick={() => document.getElementById('planes').scrollIntoView({ behavior: 'smooth' })} variant="outline-primary" className="rounded-pill px-3" style={{ fontSize: '0.9rem' }}>Ver Planes</Button>
+                </div>
                 </div>
             </nav>
 

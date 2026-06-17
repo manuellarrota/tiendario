@@ -13,10 +13,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "credit_notes")
+@Table(name = "debit_notes")
 @Data
 @NoArgsConstructor
-public class CreditNote {
+public class DebitNote {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,14 +28,9 @@ public class CreditNote {
     private Company company;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sale_id", nullable = false)
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "items", "payments"})
-    private Sale sale;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id")
-    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-    private Customer customer;
+    @JoinColumn(name = "purchase_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler", "items"})
+    private Purchase purchase;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -43,27 +38,15 @@ public class CreditNote {
     private User createdBy;
 
     @Column(nullable = false)
-    private BigDecimal amount;
+    private BigDecimal amount; // Total monetary value of the return
 
     @Column(columnDefinition = "TEXT")
     private String reason;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
-    private CreditNoteType type;
-
-    @OneToMany(mappedBy = "creditNote", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CreditNoteItem> items = new ArrayList<>();
+    @OneToMany(mappedBy = "debitNote", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<DebitNoteItem> items = new ArrayList<>();
 
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime date;
-
-    public enum CreditNoteType {
-        REFUND_TO_CASH,
-        REFUND_TO_CARD,
-        REFUND_TO_TRANSFER,
-        REFUND_TO_MOBILE,
-        STORE_CREDIT
-    }
 }
