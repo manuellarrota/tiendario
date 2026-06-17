@@ -692,9 +692,9 @@ const NewPurchasePage = () => {
                                                     <Form.Group className="mb-0">
                                                         <Form.Label className="fw-bold text-muted small text-uppercase">Descuento Global</Form.Label>
                                                         <InputGroup>
-                                                            <Form.Select style={{ maxWidth: '80px' }} value={globalDiscountType} onChange={e => setGlobalDiscountType(e.target.value)}>
+                                                            <Form.Select style={{ maxWidth: '100px' }} value={globalDiscountType} onChange={e => setGlobalDiscountType(e.target.value)}>
                                                                 <option value="PERCENTAGE">%</option>
-                                                                <option value="FIXED">{selectedCurrencyData?.symbol || purchaseCurrency}</option>
+                                                                <option value="FIXED">{selectedCurrencyData?.symbol || ''} ({purchaseCurrency})</option>
                                                             </Form.Select>
                                                             <Form.Control
                                                                 type="number"
@@ -786,9 +786,9 @@ const NewPurchasePage = () => {
                                             <Form.Group className="mb-2">
                                                 <Form.Label className="small fw-bold">Descuento <span className="text-muted fw-normal">(opcional)</span></Form.Label>
                                                 <InputGroup size="sm">
-                                                    <Form.Select style={{ maxWidth: '60px', padding: '0 5px' }} value={itemDiscountType} onChange={e => setItemDiscountType(e.target.value)}>
+                                                    <Form.Select style={{ maxWidth: '100px', padding: '0 5px' }} value={itemDiscountType} onChange={e => setItemDiscountType(e.target.value)}>
                                                         <option value="PERCENTAGE">%</option>
-                                                        <option value="FIXED">{selectedCurrencyData?.symbol || purchaseCurrency}</option>
+                                                        <option value="FIXED">{selectedCurrencyData?.symbol || ''} ({purchaseCurrency})</option>
                                                     </Form.Select>
                                                     <Form.Control type="number" onFocus={(e) => e.target.select()} placeholder="0" value={itemDiscountAmount} onChange={e => setItemDiscountAmount(e.target.value)} />
                                                 </InputGroup>
