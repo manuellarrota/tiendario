@@ -692,7 +692,7 @@ const NewPurchasePage = () => {
                                                     <Form.Group className="mb-0">
                                                         <Form.Label className="fw-bold text-muted small text-uppercase">Descuento Global</Form.Label>
                                                         <InputGroup>
-                                                            <Form.Select style={{ width: '95px' }} value={globalDiscountType} onChange={e => setGlobalDiscountType(e.target.value)}>
+                                                            <Form.Select style={{ flex: '0 0 95px' }} value={globalDiscountType} onChange={e => setGlobalDiscountType(e.target.value)}>
                                                                 <option value="PERCENTAGE">%</option>
                                                                 <option value="FIXED">{purchaseCurrency}</option>
                                                             </Form.Select>
@@ -786,7 +786,7 @@ const NewPurchasePage = () => {
                                             <Form.Group className="mb-2">
                                                 <Form.Label className="small fw-bold">Descuento <span className="text-muted fw-normal">(opcional)</span></Form.Label>
                                                 <InputGroup size="sm">
-                                                    <Form.Select style={{ width: '95px' }} value={itemDiscountType} onChange={e => setItemDiscountType(e.target.value)}>
+                                                    <Form.Select style={{ flex: '0 0 95px' }} value={itemDiscountType} onChange={e => setItemDiscountType(e.target.value)}>
                                                         <option value="PERCENTAGE">%</option>
                                                         <option value="FIXED">{purchaseCurrency}</option>
                                                     </Form.Select>
