@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  backend:
+    image: nugar-backend:latest
+    container_name: nugar-api
+    restart: always
+    ports:
+      - "80:8080"
+    environment:
+      # Configuraciones de Base de Datos (AWS RDS)
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://${DB_HOST}:5432/nugar
+      - SPRING_DATASOURCE_USERNAME=${DB_USER}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      
+      # Configuracion de Elasticsearch (AWS OpenSearch Free Tier)
+      - SPRING_ELASTICSEARCH_URIS=https://${OPENSEARCH_HOST}
+      - SPRING_ELASTICSEARCH_USERNAME=${OPENSEARCH_USER}
+      - SPRING_ELASTICSEARCH_PASSWORD=${OPENSEARCH_PASSWORD}
+      
+      # Seguridad
+      - APP_JWT_SECRET=${JWT_SECRET}
+      
+      # Archivos S3
+      - S3_ENDPOINT=https://s3.amazonaws.com
+      - S3_BUCKET=nugar-images-prod
+      - S3_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_KEY}
+      
+      # Perfil de produccion
+      - SPRING_PROFILES_ACTIVE=prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"

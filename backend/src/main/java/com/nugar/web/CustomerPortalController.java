@@ -22,6 +22,9 @@ public class CustomerPortalController {
     @Autowired
     SaleRepository saleRepository;
 
+    @Autowired
+    com.nugar.service.SaleService saleService;
+
     @GetMapping("/orders")
     @PreAuthorize("isAuthenticated()")
     @org.springframework.transaction.annotation.Transactional(readOnly = true)
@@ -49,6 +52,10 @@ public class CustomerPortalController {
             map.put("date", sale.getDate());
             map.put("totalAmount", sale.getTotalAmount());
             map.put("status", sale.getStatus());
+            map.put("paymentMethod", sale.getPaymentMethod() != null ? sale.getPaymentMethod().name() : null);
+            map.put("paymentCurrency", sale.getPaymentCurrency());
+            map.put("paymentAmountInCurrency", sale.getPaymentAmountInCurrency());
+            map.put("exchangeRateUsed", sale.getExchangeRateUsed());
 
             // Company
             Map<String, Object> companyMap = new HashMap<>();
@@ -85,6 +92,19 @@ public class CustomerPortalController {
         }).collect(Collectors.toList());
 
         return ResponseEntity.ok(result);
+    }
+
+    @PutMapping("/orders/{id}/cancel")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> cancelOrder(@PathVariable Long id) {
+        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
+                .getPrincipal();
+        try {
+            saleService.cancelOrderAsCustomer(id, userDetails);
+            return ResponseEntity.ok(Map.of("message", "Pedido cancelado con éxito"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 
     @GetMapping("/dashboard")

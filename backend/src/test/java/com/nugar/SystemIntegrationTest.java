@@ -3,6 +3,7 @@ package com.nugar;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nugar.domain.*;
 import com.nugar.payload.request.PublicOrderRequest;
+import com.nugar.payload.request.PublicOrderItemRequest;
 import com.nugar.repository.CompanyRepository;
 import com.nugar.repository.CustomerRepository;
 import com.nugar.repository.ProductRepository;
@@ -127,8 +128,10 @@ public class SystemIntegrationTest {
 
         // 2. Try to Buy (Should FAIL)
         PublicOrderRequest order = new PublicOrderRequest();
-        order.setProductId(product.getId());
-        order.setQuantity(1);
+        PublicOrderItemRequest item = new PublicOrderItemRequest();
+        item.setProductId(product.getId());
+        item.setQuantity(1);
+        order.setItems(java.util.List.of(item));
         order.setCustomerEmail("buyer@example.com");
         order.setCustomerName("Buyer");
         order.setCustomerAddress("Address");
@@ -157,8 +160,10 @@ public class SystemIntegrationTest {
 
         // 2. Try to Buy (Should SUCCEED)
         PublicOrderRequest order = new PublicOrderRequest();
-        order.setProductId(product.getId());
-        order.setQuantity(1); // Buy only 1 to avoid stock issues
+        PublicOrderItemRequest item = new PublicOrderItemRequest();
+        item.setProductId(product.getId());
+        item.setQuantity(1); // Buy only 1 to avoid stock issues
+        order.setItems(java.util.List.of(item));
         order.setCustomerEmail("buyer_paid@example.com");
         order.setCustomerName("Buyer Paid");
         order.setCustomerAddress("Address");

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Table, Badge, Button, Card, Spinner, Alert, Modal, Form, Row, Col } from 'react-bootstrap';
+import { Container, Table, Badge, Button, Card, Spinner, Alert, Modal, Form, Row, Col, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaMoneyBillWave, FaCheck, FaTimes, FaEye, FaInfoCircle, FaSearch, FaFilter } from 'react-icons/fa';
 import AdminService from '../services/admin.service';
 import Sidebar from '../components/Sidebar';
@@ -298,30 +298,36 @@ const AdminPaymentsPage = () => {
                                             <td>
                                                 {p.status === 'PENDING' && (
                                                     <div className="d-flex gap-2">
-                                                        <Button
-                                                            variant="outline-success"
-                                                            size="sm"
-                                                            className="rounded-pill px-3"
-                                                            onClick={() => openApproveModal(p)}
-                                                            disabled={processing === p.id}
-                                                        >
-                                                            {processing === p.id ? <Spinner size="sm" animation="border" /> : <><FaCheck /> Aprobar</>}
-                                                        </Button>
-                                                        <Button
-                                                            variant="outline-danger"
-                                                            size="sm"
-                                                            className="rounded-pill px-3"
-                                                            onClick={() => openRejectModal(p)}
-                                                            disabled={processing === p.id}
-                                                        >
-                                                            <FaTimes /> Rechazar
-                                                        </Button>
+                                                        <OverlayTrigger overlay={<Tooltip>Aprobar este pago</Tooltip>}>
+                                                            <Button
+                                                                variant="outline-success"
+                                                                size="sm"
+                                                                className="rounded-pill px-3"
+                                                                onClick={() => openApproveModal(p)}
+                                                                disabled={processing === p.id}
+                                                            >
+                                                                {processing === p.id ? <Spinner size="sm" animation="border" /> : <><FaCheck /> Aprobar</>}
+                                                            </Button>
+                                                        </OverlayTrigger>
+                                                        <OverlayTrigger overlay={<Tooltip>Rechazar este pago</Tooltip>}>
+                                                            <Button
+                                                                variant="outline-danger"
+                                                                size="sm"
+                                                                className="rounded-pill px-3"
+                                                                onClick={() => openRejectModal(p)}
+                                                                disabled={processing === p.id}
+                                                            >
+                                                                <FaTimes /> Rechazar
+                                                            </Button>
+                                                        </OverlayTrigger>
                                                     </div>
                                                 )}
                                                 {p.status !== 'PENDING' && (
-                                                    <Button variant="link" size="sm" className="text-muted text-decoration-none" onClick={() => openDetailsModal(p)}>
-                                                        <FaEye /> Ver detalles
-                                                    </Button>
+                                                    <OverlayTrigger overlay={<Tooltip>Ver detalles completos del pago</Tooltip>}>
+                                                        <Button variant="link" size="sm" className="text-muted text-decoration-none" onClick={() => openDetailsModal(p)}>
+                                                            <FaEye /> Ver detalles
+                                                        </Button>
+                                                    </OverlayTrigger>
                                                 )}
                                             </td>
                                         </tr>

@@ -285,6 +285,28 @@ const getCompanyAuditLog = (companyId, page = 0, size = 20) => {
     });
 };
 
+const getCompanyCustomers = (companyId, page = 0, size = 15) => {
+    const user = AuthService.getCurrentUser();
+    return axios.get(API_URL + `/companies/${companyId}/customers?page=${page}&size=${size}`, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+const patchCompanyCustomer = (companyId, customerId, data) => {
+    const user = AuthService.getCurrentUser();
+    return axios.patch(API_URL + `/companies/${companyId}/customers/${customerId}`, data, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
+const deleteCompanyCustomer = (companyId, customerId, reason) => {
+    const user = AuthService.getCurrentUser();
+    return axios.delete(API_URL + `/companies/${companyId}/customers/${customerId}`, {
+        data: { reason },
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
 const AdminService = {
     getGlobalStats,
     getAllCompanies,
@@ -325,6 +347,9 @@ const AdminService = {
     getCompanyUsers,
     patchCompanyUser,
     resetCompanyUserPassword,
+    getCompanyCustomers,
+    patchCompanyCustomer,
+    deleteCompanyCustomer,
     getCompanyAuditLog,
 };
 

@@ -126,9 +126,11 @@ const ShiftHistoryPage = () => {
                                         <td className="text-center align-middle">{renderDifference(s)}</td>
                                         <td className="text-center align-middle">{getStatusBadge(s)}</td>
                                         <td className="text-end pe-4" onClick={(e) => e.stopPropagation()}>
-                                            <Button variant="light" size="sm" className="rounded-pill px-3" onClick={() => {setSelectedShift(s); setShowModal(true);}}>
-                                                <FaEye className="me-1" /> Ver Detalle
-                                            </Button>
+                                            <OverlayTrigger overlay={<Tooltip>Ver detalle del turno</Tooltip>}>
+                                                <Button variant="light" size="sm" className="rounded-pill px-3" onClick={() => {setSelectedShift(s); setShowModal(true);}}>
+                                                    <FaEye className="me-1" /> Ver Detalle
+                                                </Button>
+                                            </OverlayTrigger>
                                         </td>
                                     </tr>
                                 ))}

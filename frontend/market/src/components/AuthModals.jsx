@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, Form, Button, Alert } from 'react-bootstrap';
+import { FaCheck } from 'react-icons/fa';
 
 /**
  * Auth Modals — Login and Register modals for the marketplace.
@@ -60,80 +61,92 @@ export const RegisterModal = ({
             <Modal.Title className="fw-bold">Crear Cuenta</Modal.Title>
         </Modal.Header>
         <Modal.Body className="p-4">
-            <p className="text-secondary small mb-4">Únete a Nugar y disfruta de una experiencia de compra unificada.</p>
-            {registerMessage && <Alert variant={registerSuccess ? "success" : "danger"} className="py-2 small">{registerMessage}</Alert>}
-            <Form onSubmit={onRegister}>
-                <Form.Group className="mb-3">
-                    <Form.Label className="small fw-bold">Nombre Completo</Form.Label>
-                    <Form.Control
-                        type="text"
-                        placeholder="Juan Perez"
-                        className="py-2 rounded-3"
-                        value={registerData.name}
-                        onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
-                        required
-                    />
-                </Form.Group>
-                <Form.Group className="mb-3">
-                    <Form.Label className="small fw-bold">Correo Electrónico</Form.Label>
-                    <Form.Control
-                        type="email"
-                        placeholder="tu@email.com"
-                        className="py-2 rounded-3"
-                        value={registerData.email}
-                        onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-                        required
-                    />
-                </Form.Group>
-                <Form.Group className="mb-3">
-                    <Form.Label className="small fw-bold">Teléfono / WhatsApp</Form.Label>
-                    <Form.Control
-                        type="tel"
-                        inputMode="tel"
-                        placeholder="Ej: 04141234567"
-                        className="py-2 rounded-3"
-                        value={registerData.phone}
-                        onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
-                        required
-                    />
-                </Form.Group>
-                <Form.Group className="mb-3">
-                    <Form.Label className="small fw-bold">Cédula / RIF</Form.Label>
-                    <Form.Control
-                        type="text"
-                        inputMode="numeric"
-                        placeholder="Ej: 12345678"
-                        className="py-2 rounded-3"
-                        value={registerData.cedula}
-                        onChange={(e) => setRegisterData({ ...registerData, cedula: e.target.value })}
-                        required
-                    />
-                </Form.Group>
-                <Form.Group className="mb-4">
-                    <Form.Label className="small fw-bold">Contraseña</Form.Label>
-                    <Form.Control
-                        type="password"
-                        placeholder="Mínimo 6 caracteres"
-                        className="py-2 rounded-3"
-                        value={registerData.password}
-                        onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                        required
-                    />
-                </Form.Group>
-                {!registerSuccess && (
-                    <Button variant="success" type="submit" className="w-100 py-2 fw-bold shadow-sm" disabled={registerLoading}>
-                        {registerLoading ? "Registrando..." : "Registrarse"}
+            {registerSuccess ? (
+                <div className="text-center py-5 animate-fade-in">
+                    <div className="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-4 shadow" style={{ width: '80px', height: '80px' }}>
+                        <FaCheck size={40} />
+                    </div>
+                    <h3 className="fw-bold mb-3 text-dark">¡Cuenta Creada!</h3>
+                    <p className="text-muted mb-4 px-md-3">
+                        Te hemos enviado un correo a <strong className="text-dark">{registerData.email}</strong> con las instrucciones para activar tu cuenta.
+                        <br/><br/>
+                        <small>Revisa tu bandeja de entrada o carpeta de spam para poder iniciar sesión.</small>
+                    </p>
+                    <Button variant="primary" size="lg" className="rounded-pill px-5 fw-bold shadow-sm w-100" onClick={onSwitchToLogin}>
+                        Entendido, Iniciar Sesión
                     </Button>
-                )}
-                {registerSuccess && (
-                    <Button variant="primary" className="w-100 py-2 fw-bold shadow-sm" onClick={onSwitchToLogin}>
-                        Iniciar Sesión Ahora
-                    </Button>
-                )}
-            </Form>
-            <div className="text-center mt-3">
-                <small className="text-secondary">¿Ya tienes cuenta? <span className="fw-bold text-primary" onClick={onSwitchToLogin} style={{ cursor: 'pointer' }}>Inicia Sesión</span></small>
-            </div>
+                </div>
+            ) : (
+                <>
+                    <p className="text-secondary small mb-4">Únete a Nugar y disfruta de una experiencia de compra unificada.</p>
+                    {registerMessage && <Alert variant="danger" className="py-2 small">{registerMessage}</Alert>}
+                    <Form onSubmit={onRegister}>
+                        <Form.Group className="mb-3">
+                            <Form.Label className="small fw-bold">Nombre Completo</Form.Label>
+                            <Form.Control
+                                type="text"
+                                placeholder="Juan Perez"
+                                className="py-2 rounded-3"
+                                value={registerData.name}
+                                onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
+                                required
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label className="small fw-bold">Correo Electrónico</Form.Label>
+                            <Form.Control
+                                type="email"
+                                placeholder="tu@email.com"
+                                className="py-2 rounded-3"
+                                value={registerData.email}
+                                onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                                required
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label className="small fw-bold">Teléfono / WhatsApp</Form.Label>
+                            <Form.Control
+                                type="tel"
+                                inputMode="tel"
+                                placeholder="Ej: 04141234567"
+                                className="py-2 rounded-3"
+                                value={registerData.phone}
+                                onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
+                                required
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label className="small fw-bold">Cédula / RIF</Form.Label>
+                            <Form.Control
+                                type="text"
+                                inputMode="numeric"
+                                placeholder="Ej: 12345678"
+                                className="py-2 rounded-3"
+                                value={registerData.cedula}
+                                onChange={(e) => setRegisterData({ ...registerData, cedula: e.target.value })}
+                                required
+                            />
+                        </Form.Group>
+                        <Form.Group className="mb-4">
+                            <Form.Label className="small fw-bold">Contraseña</Form.Label>
+                            <Form.Control
+                                type="password"
+                                placeholder="Mínimo 6 caracteres"
+                                className="py-2 rounded-3"
+                                value={registerData.password}
+                                onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
+                                required
+                            />
+                        </Form.Group>
+                        <Button variant="success" type="submit" className="w-100 py-2 fw-bold shadow-sm" disabled={registerLoading}>
+                            {registerLoading ? "Registrando..." : "Registrarse"}
+                        </Button>
+                    </Form>
+                    <div className="text-center mt-3">
+                        <small className="text-secondary">¿Ya tienes cuenta? <span className="fw-bold text-primary" onClick={onSwitchToLogin} style={{ cursor: 'pointer' }}>Inicia Sesión</span></small>
+                    </div>
+                </>
+            )}
         </Modal.Body>
     </Modal>
 );

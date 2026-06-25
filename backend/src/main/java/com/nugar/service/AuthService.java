@@ -126,7 +126,7 @@ public class AuthService {
         } else {
             // Default to Client
             user.getRoles().add(Role.ROLE_CLIENT);
-            user.setEnabled(true);
+            // user.setEnabled(true); // Enforce email verification for clients
         }
 
         userRepository.save(user);

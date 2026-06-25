@@ -47,8 +47,11 @@ public class AuthController {
         private final EmailService emailService;
         private final PasswordEncoder passwordEncoder;
 
-        @org.springframework.beans.factory.annotation.Value("${app.frontend.url:http://localhost:8081}")
+        @org.springframework.beans.factory.annotation.Value("${app.frontend.url:http://192.168.100.15:8081}")
         private String frontendUrl;
+
+        @org.springframework.beans.factory.annotation.Value("${app.market.url:http://192.168.100.15:8082}")
+        private String marketUrl;
 
         @Autowired
         public AuthController(AuthenticationManager authenticationManager,
@@ -189,6 +192,13 @@ public class AuthController {
                                                         + "/?verified=error&message=Invalid+verification+code"))
                                         .build();
                 }
+
+                // Determine target URL based on role BEFORE we clear the verification state
+                boolean isClientOnly = user.getRoles().stream()
+                                .anyMatch(role -> role == com.nugar.domain.Role.ROLE_CLIENT) && 
+                               user.getRoles().stream()
+                                .noneMatch(role -> role == com.nugar.domain.Role.ROLE_MANAGER);
+                String targetBaseUrl = isClientOnly ? marketUrl : frontendUrl;
         
                 BusinessLogger.log(logger, "CUENTA_VERIFICADA", data -> {
                         data.put("usuario", user.getUsername());
@@ -220,11 +230,12 @@ public class AuthController {
                     catch (Exception e) { return ""; }
                 };
                 return ResponseEntity.status(org.springframework.http.HttpStatus.FOUND)
-                                .location(java.net.URI.create(frontendUrl + "/?verified=true&token=" + enc.apply(jwt) +
+                                .location(java.net.URI.create(targetBaseUrl + "/?verified=true&token=" + enc.apply(jwt) +
                                                 "&username=" + enc.apply(user.getUsername()) +
                                                 "&roles=" + enc.apply(roles) +
                                                 "&id=" + user.getId() +
                                                 "&name=" + enc.apply(user.getFullName()) +
+                                                "&email=" + enc.apply(user.getEmail() != null ? user.getEmail() : user.getUsername()) +
                                                 "&phone=" + enc.apply(user.getPhone()) +
                                                 "&cedula=" + enc.apply(user.getCedula()) +
                                                 "&address=" + enc.apply(user.getAddress()) +

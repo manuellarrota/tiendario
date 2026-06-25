@@ -9,7 +9,7 @@ import PaymentService from '../services/payment.service';
 import AdminService from '../services/admin.service';
 import PublicService from '../services/public.service';
 import { Link, useNavigate } from 'react-router-dom';
-import { FaRocket, FaGem, FaUsers, FaStore, FaChartLine, FaGlobe, FaReceipt, FaMoneyBillWave, FaClock, FaCheckCircle, FaTimesCircle, FaCog, FaBox, FaCashRegister, FaChevronRight } from 'react-icons/fa';
+import { FaRocket, FaGem, FaUsers, FaStore, FaChartLine, FaGlobe, FaReceipt, FaMoneyBillWave, FaClock, FaCheckCircle, FaTimesCircle, FaCog, FaBox, FaCashRegister, FaChevronRight, FaInfoCircle } from 'react-icons/fa';
 
 const DashboardHome = () => {
     const navigate = useNavigate();
@@ -822,6 +822,24 @@ const DashboardHome = () => {
                             <Form onSubmit={handleManualPaymentSubmit}>
                                 <p className="text-secondary small mb-4">Ingresa los detalles de tu transferencia o pago móvil para activar tu plan Pro de forma permanente.</p>
 
+                                <Alert variant="info" className="border-0 shadow-sm rounded-3">
+                                    <h6 className="fw-bold"><FaInfoCircle className="me-2" /> Datos de Pago:</h6>
+                                    <ul className="mb-0 small">
+                                        {platformConfig?.paymentZelleEnabled !== false && platformConfig?.paymentInfoZelle && (
+                                            <li><strong>Zelle:</strong> {platformConfig.paymentInfoZelle}</li>
+                                        )}
+                                        {platformConfig?.paymentBinanceEnabled !== false && platformConfig?.paymentInfoBinance && (
+                                            <li><strong>Binance:</strong> {platformConfig.paymentInfoBinance}</li>
+                                        )}
+                                        {platformConfig?.paymentPagoMovilEnabled !== false && platformConfig?.paymentInfoPagoMovil && (
+                                            <li><strong>Pago Móvil:</strong> {platformConfig.paymentInfoPagoMovil}</li>
+                                        )}
+                                        {platformConfig?.paymentTransferenciaEnabled !== false && platformConfig?.paymentInfoTransferencia && (
+                                            <li><strong>Transferencia:</strong> {platformConfig.paymentInfoTransferencia}</li>
+                                        )}
+                                    </ul>
+                                </Alert>
+
                                 {paymentStatus.error && <Alert variant="danger" className="py-2 small">{paymentStatus.error}</Alert>}
 
                                 <Form.Group className="mb-3">
@@ -897,11 +915,11 @@ const DashboardHome = () => {
                                         onChange={(e) => setPaymentForm({ ...paymentForm, paymentMethod: e.target.value, reference: '', banco: '', cedula: '', nombreTitular: '', correoTelefono: '', ordenId: '' })}
                                     >
                                         <option value="">-- Seleccione método de pago --</option>
-                                        <option value="PAGO_MOVIL">📱 Pago Móvil</option>
-                                        <option value="ZELLE">💵 Zelle</option>
-                                        <option value="BINANCE">🪙 Binance / Crypto</option>
-                                        <option value="TRANSFERENCIA">🏦 Transferencia Bancaria</option>
-                                        <option value="EFECTIVO">💰 Efectivo (Local)</option>
+                                        {platformConfig?.paymentPagoMovilEnabled !== false && <option value="PAGO_MOVIL">📱 Pago Móvil</option>}
+                                        {platformConfig?.paymentZelleEnabled !== false && <option value="ZELLE">💵 Zelle</option>}
+                                        {platformConfig?.paymentBinanceEnabled !== false && <option value="BINANCE">🪙 Binance / Crypto</option>}
+                                        {platformConfig?.paymentTransferenciaEnabled !== false && <option value="TRANSFERENCIA">🏦 Transferencia Bancaria</option>}
+                                        {platformConfig?.paymentEfectivoEnabled !== false && <option value="EFECTIVO">💰 Efectivo (Local)</option>}
                                     </Form.Select>
                                 </Form.Group>
                                         {(paymentForm.paymentMethod === 'PAGO_MOVIL' || paymentForm.paymentMethod === 'TRANSFERENCIA') && (
@@ -1065,6 +1083,24 @@ const DashboardHome = () => {
                                     <strong>Importante:</strong> Cada nueva caja tiene un costo de <strong>{(platformConfig?.extraRegisterMonthlyPrice || 5.00).toFixed(2)} {baseCurrencyCode} mensuales</strong>. Al aprobarse tu pago, estas cajas se sumarán a las que ya tienes habilitadas.
                                 </Alert>
 
+                                <Alert variant="info" className="border-0 shadow-sm rounded-3">
+                                    <h6 className="fw-bold"><FaInfoCircle className="me-2" /> Datos de Pago:</h6>
+                                    <ul className="mb-0 small">
+                                        {platformConfig?.paymentZelleEnabled !== false && platformConfig?.paymentInfoZelle && (
+                                            <li><strong>Zelle:</strong> {platformConfig.paymentInfoZelle}</li>
+                                        )}
+                                        {platformConfig?.paymentBinanceEnabled !== false && platformConfig?.paymentInfoBinance && (
+                                            <li><strong>Binance:</strong> {platformConfig.paymentInfoBinance}</li>
+                                        )}
+                                        {platformConfig?.paymentPagoMovilEnabled !== false && platformConfig?.paymentInfoPagoMovil && (
+                                            <li><strong>Pago Móvil:</strong> {platformConfig.paymentInfoPagoMovil}</li>
+                                        )}
+                                        {platformConfig?.paymentTransferenciaEnabled !== false && platformConfig?.paymentInfoTransferencia && (
+                                            <li><strong>Transferencia:</strong> {platformConfig.paymentInfoTransferencia}</li>
+                                        )}
+                                    </ul>
+                                </Alert>
+
                                 {extraStatus.error && <Alert variant="danger" className="py-2 small">{extraStatus.error}</Alert>}
 
                                 <Form.Group className="mb-3">
@@ -1101,11 +1137,11 @@ const DashboardHome = () => {
                                                 onChange={(e) => setExtraForm({ ...extraForm, paymentMethod: e.target.value, reference: '', banco: '', cedula: '', nombreTitular: '', correoTelefono: '', ordenId: '' })}
                                             >
                                                 <option value="">-- Seleccione método de pago --</option>
-                                                <option value="PAGO_MOVIL">📱 Pago Móvil</option>
-                                                <option value="ZELLE">💵 Zelle</option>
-                                                <option value="BINANCE">🪙 Binance / Crypto</option>
-                                                <option value="TRANSFERENCIA">🏦 Transferencia Bancaria</option>
-                                                <option value="EFECTIVO">💰 Efectivo (Local)</option>
+                                                {platformConfig?.paymentPagoMovilEnabled !== false && <option value="PAGO_MOVIL">📱 Pago Móvil</option>}
+                                                {platformConfig?.paymentZelleEnabled !== false && <option value="ZELLE">💵 Zelle</option>}
+                                                {platformConfig?.paymentBinanceEnabled !== false && <option value="BINANCE">🪙 Binance / Crypto</option>}
+                                                {platformConfig?.paymentTransferenciaEnabled !== false && <option value="TRANSFERENCIA">🏦 Transferencia Bancaria</option>}
+                                                {platformConfig?.paymentEfectivoEnabled !== false && <option value="EFECTIVO">💰 Efectivo (Local)</option>}
                                             </Form.Select>
                                         </Form.Group>
 

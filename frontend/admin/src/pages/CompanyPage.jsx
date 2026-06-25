@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Card, Row, Col, Badge, Button, Form, Modal, Table, Alert, Spinner, Tabs, Tab } from 'react-bootstrap';
-import { FaBuilding, FaCrown, FaCheckCircle, FaExclamationTriangle, FaHistory, FaFileUpload, FaInfoCircle, FaEdit, FaSave, FaTimes, FaPhone, FaMapMarkerAlt, FaImage, FaMoneyBillWave, FaClock, FaSearch, FaFilter } from 'react-icons/fa';
+import { FaBuilding, FaCrown, FaCheckCircle, FaExclamationTriangle, FaHistory, FaFileUpload, FaInfoCircle, FaEdit, FaSave, FaTimes, FaPhone, FaMapMarkerAlt, FaImage, FaMoneyBillWave, FaClock, FaSearch, FaFilter, FaUpload } from 'react-icons/fa';
 import CompanyService from '../services/company.service';
 import PaymentService from '../services/payment.service';
 import PublicService from '../services/public.service';
@@ -24,6 +24,8 @@ const CompanyPage = () => {
     const [removingRegisters, setRemovingRegisters] = useState(false);
     const [registersToCancel, setRegistersToCancel] = useState(1);
     const [platformConfig, setPlatformConfig] = useState(null);
+    const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+    const [isUploadingProof, setIsUploadingProof] = useState(false);
 
     // Pagination and Filters for Payments
     const [searchTerm, setSearchTerm] = useState('');
@@ -79,7 +81,8 @@ const CompanyPage = () => {
         ordenId: '',
         notes: '',
         targetPlan: 'BASIC',
-        billingCycle: 'MONTHLY'
+        billingCycle: 'MONTHLY',
+        proofImageUrl: ''
     });
 
     useEffect(() => {
@@ -174,6 +177,36 @@ const CompanyPage = () => {
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setPaymentForm(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleUploadLogo = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setIsUploadingLogo(true);
+        try {
+            const res = await ProductService.uploadImage(file);
+            setEditForm(prev => ({ ...prev, imageUrl: res.data.message }));
+        } catch (err) {
+            console.error("Error al subir logo", err);
+            setError("No se pudo subir la imagen del logo.");
+        } finally {
+            setIsUploadingLogo(false);
+        }
+    };
+
+    const handleUploadProof = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setIsUploadingProof(true);
+        try {
+            const res = await ProductService.uploadImage(file);
+            setPaymentForm(prev => ({ ...prev, proofImageUrl: res.data.message }));
+        } catch (err) {
+            console.error("Error al subir comprobante", err);
+            setError("No se pudo subir el comprobante de pago.");
+        } finally {
+            setIsUploadingProof(false);
+        }
     };
 
     const canRenewOrPay = () => {
@@ -398,16 +431,28 @@ const CompanyPage = () => {
                                             </Form.Group>
                                             <Form.Group className="mb-3">
                                                 <Form.Label className="text-muted small d-block">
-                                                    <FaImage className="me-1" /> IMAGEN (URL)
+                                                    <FaImage className="me-1" /> LOGO DE EMPRESA
                                                 </Form.Label>
-                                                <Form.Control
-                                                    type="url"
-                                                    name="imageUrl"
-                                                    value={editForm.imageUrl}
-                                                    onChange={handleEditChange}
-                                                    placeholder="https://ejemplo.com/logo.png"
-                                                    className="py-2"
-                                                />
+                                                <div className="d-flex gap-2">
+                                                    <Form.Control
+                                                        type="url"
+                                                        name="imageUrl"
+                                                        value={editForm.imageUrl}
+                                                        onChange={handleEditChange}
+                                                        placeholder="URL de tu logo o súbelo directamente..."
+                                                        className="py-2"
+                                                    />
+                                                    <label className={`btn ${isUploadingLogo ? 'btn-secondary' : 'btn-outline-primary'} mb-0 d-flex align-items-center`} style={{ minWidth: '130px', justifyContent: 'center' }}>
+                                                        {isUploadingLogo ? <Spinner size="sm" animation="border" className="me-2" /> : <FaUpload className="me-2" />}
+                                                        {isUploadingLogo ? 'Subiendo...' : 'Subir'}
+                                                        <input type="file" hidden accept="image/*" onChange={handleUploadLogo} disabled={isUploadingLogo} />
+                                                    </label>
+                                                </div>
+                                                {editForm.imageUrl && (
+                                                    <div className="mt-2 text-center bg-light p-2 rounded" style={{ width: '80px', height: '80px', overflow: 'hidden' }}>
+                                                        <img src={editForm.imageUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                                    </div>
+                                                )}
                                             </Form.Group>
                                             <Row>
                                                 <Col>
@@ -865,11 +910,20 @@ const CompanyPage = () => {
                                     })()}
 
                                     <Alert variant="info" className="border-0 shadow-sm rounded-3">
-                                        <h6 className="fw-bold"><FaInfoCircle className="me-2" /> Datos de Transferencia:</h6>
+                                        <h6 className="fw-bold"><FaInfoCircle className="me-2" /> Datos de Pago:</h6>
                                         <ul className="mb-0 small">
-                                            <li><strong>Zelle:</strong> pagos@nugar.com (Antigravity Inc)</li>
-                                            <li><strong>Binance Pay ID:</strong> 12345678</li>
-                                            <li><strong>Pago Móvil:</strong> 0102 - 0412-0000000 - V-12345678</li>
+                                            {platformConfig?.paymentZelleEnabled !== false && platformConfig?.paymentInfoZelle && (
+                                                <li><strong>Zelle:</strong> {platformConfig.paymentInfoZelle}</li>
+                                            )}
+                                            {platformConfig?.paymentBinanceEnabled !== false && platformConfig?.paymentInfoBinance && (
+                                                <li><strong>Binance:</strong> {platformConfig.paymentInfoBinance}</li>
+                                            )}
+                                            {platformConfig?.paymentPagoMovilEnabled !== false && platformConfig?.paymentInfoPagoMovil && (
+                                                <li><strong>Pago Móvil:</strong> {platformConfig.paymentInfoPagoMovil}</li>
+                                            )}
+                                            {platformConfig?.paymentTransferenciaEnabled !== false && platformConfig?.paymentInfoTransferencia && (
+                                                <li><strong>Transferencia:</strong> {platformConfig.paymentInfoTransferencia}</li>
+                                            )}
                                         </ul>
                                     </Alert>
 
@@ -897,11 +951,11 @@ const CompanyPage = () => {
                                                         onChange={(e) => setPaymentForm(prev => ({ ...prev, paymentMethod: e.target.value, reference: '', banco: '', cedula: '', nombreTitular: '', correoTelefono: '', ordenId: '' }))}
                                                         className="py-2"
                                                     >
-                                                        <option value="PAGO_MOVIL">📱 Pago Móvil</option>
-                                                        <option value="ZELLE">💵 Zelle</option>
-                                                        <option value="BINANCE">🪙 Binance / Crypto</option>
-                                                        <option value="TRANSFERENCIA">🏦 Transferencia Bancaria</option>
-                                                        <option value="EFECTIVO">💰 Efectivo (Local)</option>
+                                                        {platformConfig?.paymentPagoMovilEnabled !== false && <option value="PAGO_MOVIL">📱 Pago Móvil</option>}
+                                                        {platformConfig?.paymentZelleEnabled !== false && <option value="ZELLE">💵 Zelle</option>}
+                                                        {platformConfig?.paymentBinanceEnabled !== false && <option value="BINANCE">🪙 Binance / Crypto</option>}
+                                                        {platformConfig?.paymentTransferenciaEnabled !== false && <option value="TRANSFERENCIA">🏦 Transferencia Bancaria</option>}
+                                                        {platformConfig?.paymentEfectivoEnabled !== false && <option value="EFECTIVO">💰 Efectivo (Local)</option>}
                                                     </Form.Select>
                                                 </Form.Group>
                                             </Col>
@@ -1033,6 +1087,23 @@ const CompanyPage = () => {
                                                 📍 Coordina la entrega del efectivo con el administrador de la plataforma.
                                             </Alert>
                                         )}
+                                        <Form.Group className="mb-3">
+                                            <Form.Label className="small fw-bold text-muted">COMPROBANTE DE PAGO (OPCIONAL)</Form.Label>
+                                            <div className="d-flex align-items-center gap-3">
+                                                <label className={`btn ${isUploadingProof ? 'btn-secondary' : 'btn-outline-primary'} mb-0 d-flex align-items-center flex-shrink-0`}>
+                                                    {isUploadingProof ? <Spinner size="sm" animation="border" className="me-2" /> : <FaUpload className="me-2" />}
+                                                    {isUploadingProof ? 'Subiendo...' : 'Subir Comprobante'}
+                                                    <input type="file" hidden accept="image/*" onChange={handleUploadProof} disabled={isUploadingProof} />
+                                                </label>
+                                                {paymentForm.proofImageUrl ? (
+                                                    <a href={paymentForm.proofImageUrl} target="_blank" rel="noreferrer" className="text-success small fw-bold">
+                                                        ✓ Comprobante cargado
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-muted small">No se ha subido archivo</span>
+                                                )}
+                                            </div>
+                                        </Form.Group>
                                         <Form.Group className="mb-3">
                                             <Form.Label className="small fw-bold text-muted">NOTAS ADICIONALES (OPCIONAL)</Form.Label>
                                             <Form.Control

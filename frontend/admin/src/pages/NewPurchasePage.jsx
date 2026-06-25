@@ -81,8 +81,24 @@ const NewPurchasePage = () => {
     // Helper to get full image URL
     const getFullImageUrl = (path) => {
         if (!path) return null;
+        
+        const publicHost = import.meta.env.VITE_PUBLIC_HOST;
+        if (publicHost && path.includes('http://localhost')) {
+            path = path.replace('http://localhost', publicHost);
+        }
+
         if (path.startsWith('http')) return path;
-        return (import.meta.env.VITE_API_URL || '') + path;
+        
+        const apiUrl = import.meta.env.VITE_API_URL || '';
+        if (path.startsWith('/')) {
+             if (apiUrl === '/api' && path.startsWith('/api')) {
+                 return path;
+             }
+             if (apiUrl.endsWith('/api') && path.startsWith('/api')) {
+                 return apiUrl.slice(0, -4) + path;
+             }
+        }
+        return apiUrl + path;
     };
 
     // Predefined global categories
@@ -656,9 +672,11 @@ const NewPurchasePage = () => {
                                                         {(item.subtotalInBaseCurrency || item.total).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </td>
                                                     <td className="text-center pt-2">
-                                                        <Button variant="link" className="text-danger p-0" onClick={() => removeFromCart(idx)}>
-                                                            <FaTrash size={14} />
-                                                        </Button>
+                                                        <OverlayTrigger overlay={<Tooltip>Eliminar del pedido</Tooltip>}>
+                                                            <Button variant="link" className="text-danger p-0" onClick={() => removeFromCart(idx)}>
+                                                                <FaTrash size={14} />
+                                                            </Button>
+                                                        </OverlayTrigger>
                                                     </td>
                                                 </tr>
                                             );

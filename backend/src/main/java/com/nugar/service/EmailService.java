@@ -34,6 +34,9 @@ public class EmailService {
     @Value("${app.frontend.url:http://localhost:8081}")
     private String frontendUrl;
 
+    @Value("${app.market.url:http://localhost:8082}")
+    private String marketUrl;
+
     @Value("${app.backend.url:http://localhost:8080}")
     private String backendUrl;
 
@@ -120,6 +123,8 @@ public class EmailService {
         context.setVariable("customerName", customerName);
         context.setVariable("orderSummary", orderSummary);
         context.setVariable("total", total != null ? total.setScale(2, java.math.RoundingMode.HALF_UP).toString() : "0.00");
+        String orderUrl = frontendUrl + "/sales/history";
+        context.setVariable("orderUrl", orderUrl);
         String html = templateEngine.process("emails/new-order", context);
 
         sendHtmlMessage(storeEmail, subject, html);
@@ -159,6 +164,8 @@ public class EmailService {
         context.setVariable("statusText", statusText);
         context.setVariable("emoji", emoji);
         context.setVariable("orderId", orderId);
+        String orderUrl = marketUrl + "/dashboard";
+        context.setVariable("orderUrl", orderUrl);
         String html = templateEngine.process("emails/order-status", context);
 
         sendHtmlMessage(customerEmail, subject, html);
@@ -173,6 +180,9 @@ public class EmailService {
         Context context = new Context();
         context.setVariable("storeName", storeName);
         context.setVariable("expirationDate", expirationDate);
+
+        String billingUrl = frontendUrl + "/company";
+        context.setVariable("billingUrl", billingUrl);
 
         String html = templateEngine.process("emails/subscription-warning", context);
         sendHtmlMessage(to, subject, html);

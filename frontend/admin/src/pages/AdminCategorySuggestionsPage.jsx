@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Table, Badge, Button, Card, Spinner, Alert, Modal, Form, Row, Col, InputGroup } from 'react-bootstrap';
+import { Container, Table, Badge, Button, Card, Spinner, Alert, Modal, Form, Row, Col, InputGroup, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaTags, FaCheck, FaTimes, FaRandom, FaInfoCircle, FaStore, FaLayerGroup, FaPlus, FaTrash, FaSearch, FaEdit } from 'react-icons/fa';
 import AdminService from '../services/admin.service';
 import Layout from '../components/Layout';
@@ -277,34 +277,39 @@ const AdminCategorySuggestionsPage = () => {
                                                     <td className="text-end pe-4">
                                                         {s.status === 'PENDING' && (
                                                             <div className="d-flex gap-2 justify-content-end">
-                                                                <Button 
-                                                                    variant="success" 
-                                                                    size="sm" 
-                                                                    className="rounded-pill px-3 fw-bold shadow-sm"
-                                                                    onClick={() => handleApprove(s.id)}
-                                                                    disabled={processing === s.id}
-                                                                >
-                                                                    {processing === s.id ? <Spinner size="sm" animation="border" /> : <FaCheck />}
-                                                                </Button>
-                                                                <Button 
-                                                                    variant="outline-primary" 
-                                                                    size="sm" 
-                                                                    className="rounded-pill px-3 fw-bold"
-                                                                    onClick={() => openMergeModal(s)}
-                                                                    disabled={processing === s.id}
-                                                                    title="Fusionar con existente"
-                                                                >
-                                                                    <FaRandom />
-                                                                </Button>
-                                                                <Button 
-                                                                    variant="outline-danger" 
-                                                                    size="sm" 
-                                                                    className="rounded-pill px-3 fw-bold"
-                                                                    onClick={() => handleReject(s.id)}
-                                                                    disabled={processing === s.id}
-                                                                >
-                                                                    <FaTimes />
-                                                                </Button>
+                                                                <OverlayTrigger overlay={<Tooltip>Aprobar y Crear Categoría</Tooltip>}>
+                                                                    <Button 
+                                                                        variant="success" 
+                                                                        size="sm" 
+                                                                        className="rounded-pill px-3 fw-bold shadow-sm"
+                                                                        onClick={() => handleApprove(s.id)}
+                                                                        disabled={processing === s.id}
+                                                                    >
+                                                                        {processing === s.id ? <Spinner size="sm" animation="border" /> : <FaCheck />}
+                                                                    </Button>
+                                                                </OverlayTrigger>
+                                                                <OverlayTrigger overlay={<Tooltip>Fusionar con categoría existente</Tooltip>}>
+                                                                    <Button 
+                                                                        variant="outline-primary" 
+                                                                        size="sm" 
+                                                                        className="rounded-pill px-3 fw-bold"
+                                                                        onClick={() => openMergeModal(s)}
+                                                                        disabled={processing === s.id}
+                                                                    >
+                                                                        <FaRandom />
+                                                                    </Button>
+                                                                </OverlayTrigger>
+                                                                <OverlayTrigger overlay={<Tooltip>Rechazar Sugerencia</Tooltip>}>
+                                                                    <Button 
+                                                                        variant="outline-danger" 
+                                                                        size="sm" 
+                                                                        className="rounded-pill px-3 fw-bold"
+                                                                        onClick={() => handleReject(s.id)}
+                                                                        disabled={processing === s.id}
+                                                                    >
+                                                                        <FaTimes />
+                                                                    </Button>
+                                                                </OverlayTrigger>
                                                             </div>
                                                         )}
                                                     </td>
@@ -346,24 +351,28 @@ const AdminCategorySuggestionsPage = () => {
                                                                 {c.name}
                                                             </div>
                                                             <div className="d-flex gap-2">
-                                                                <Button 
-                                                                    variant="link" 
-                                                                    className="text-primary p-0" 
-                                                                    size="sm"
-                                                                    onClick={() => { setEditingCat({...c}); setShowEditModal(true); }}
-                                                                    disabled={processing === c.id}
-                                                                >
-                                                                    <FaEdit size={12} />
-                                                                </Button>
-                                                                <Button 
-                                                                    variant="link" 
-                                                                    className="text-danger p-0" 
-                                                                    size="sm"
-                                                                    onClick={() => confirmDeleteDirect(c)}
-                                                                    disabled={processing === c.id}
-                                                                >
-                                                                    {processing === c.id ? <Spinner size="sm" animation="border" /> : <FaTrash size={12} />}
-                                                                </Button>
+                                                                <OverlayTrigger overlay={<Tooltip>Editar Categoría</Tooltip>}>
+                                                                    <Button 
+                                                                        variant="link" 
+                                                                        className="text-primary p-0" 
+                                                                        size="sm"
+                                                                        onClick={() => { setEditingCat({...c}); setShowEditModal(true); }}
+                                                                        disabled={processing === c.id}
+                                                                    >
+                                                                        <FaEdit size={12} />
+                                                                    </Button>
+                                                                </OverlayTrigger>
+                                                                <OverlayTrigger overlay={<Tooltip>Eliminar Categoría</Tooltip>}>
+                                                                    <Button 
+                                                                        variant="link" 
+                                                                        className="text-danger p-0" 
+                                                                        size="sm"
+                                                                        onClick={() => confirmDeleteDirect(c)}
+                                                                        disabled={processing === c.id}
+                                                                    >
+                                                                        {processing === c.id ? <Spinner size="sm" animation="border" /> : <FaTrash size={12} />}
+                                                                    </Button>
+                                                                </OverlayTrigger>
                                                             </div>
                                                         </div>
                                                     </td>

@@ -171,26 +171,30 @@ const StaffPage = () => {
                                                 </Badge>
                                             </td>
                                             <td className="text-center">
-                                                <Button 
-                                                    variant={u.enabled ? "outline-danger" : "outline-success"}
-                                                    size="sm"
-                                                    className="rounded-pill px-3 me-2"
-                                                    onClick={() => handleToggleStatus(u.id)}
-                                                    disabled={processing === u.id}
-                                                >
-                                                    {processing === u.id ? <Spinner size="sm" animation="border" /> : (
-                                                        u.enabled ? <><FaToggleOff className="me-1"/> Suspender</> : <><FaToggleOn className="me-1"/> Reactivar</>
-                                                    )}
-                                                </Button>
-                                                <Button 
-                                                    variant="outline-danger"
-                                                    size="sm"
-                                                    className="rounded-pill px-3"
-                                                    onClick={() => confirmDelete(u)}
-                                                    disabled={processing === u.id}
-                                                >
-                                                    <FaTrash />
-                                                </Button>
+                                                <OverlayTrigger overlay={<Tooltip>{u.enabled ? 'Suspender' : 'Reactivar'}</Tooltip>}>
+                                                    <Button 
+                                                        variant={u.enabled ? "outline-danger" : "outline-success"}
+                                                        size="sm"
+                                                        className="rounded-pill px-3 me-2"
+                                                        onClick={() => handleToggleStatus(u.id)}
+                                                        disabled={processing === u.id}
+                                                    >
+                                                        {processing === u.id ? <Spinner size="sm" animation="border" /> : (
+                                                            u.enabled ? <><FaToggleOff className="me-1"/> Suspender</> : <><FaToggleOn className="me-1"/> Reactivar</>
+                                                        )}
+                                                    </Button>
+                                                </OverlayTrigger>
+                                                <OverlayTrigger overlay={<Tooltip>Eliminar</Tooltip>}>
+                                                    <Button 
+                                                        variant="outline-danger"
+                                                        size="sm"
+                                                        className="rounded-pill px-3"
+                                                        onClick={() => confirmDelete(u)}
+                                                        disabled={processing === u.id}
+                                                    >
+                                                        <FaTrash />
+                                                    </Button>
+                                                </OverlayTrigger>
                                             </td>
                                         </tr>
                                     )) : (

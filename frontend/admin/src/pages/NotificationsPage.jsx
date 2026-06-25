@@ -4,6 +4,7 @@ import { FaBell, FaCheck, FaEye, FaUser, FaPhoneAlt, FaMapMarkerAlt, FaClock, Fa
 import Sidebar from '../components/Sidebar';
 import NotificationService from '../services/notification.service';
 import SaleService from '../services/sale.service';
+import { useNavigate } from 'react-router-dom';
 import { useToast } from '../components/ToastContext';
 
 const NotificationsPage = () => {
@@ -11,10 +12,8 @@ const NotificationsPage = () => {
     const [loading, setLoading] = useState(true);
     const [selectedSale, setSelectedSale] = useState(null);
     const [showSaleModal, setShowSaleModal] = useState(false);
-    const [showPaymentModal, setShowPaymentModal] = useState(false);
-    const [paymentMethod, setPaymentMethod] = useState('CASH');
-    const [saleToPay, setSaleToPay] = useState(null);
     const toast = useToast();
+    const navigate = useNavigate();
 
     const loadNotifications = () => {
         NotificationService.getNotifications().then(
@@ -60,22 +59,7 @@ const NotificationsPage = () => {
     };
 
     const handleStatusUpdate = (id, status) => {
-        if (status === 'PAID') {
-            setSaleToPay(id);
-            setPaymentMethod('CASH');
-            setShowPaymentModal(true);
-            return;
-        }
-
         performStatusUpdate(id, status);
-    };
-
-    const confirmPayment = () => {
-        if (saleToPay) {
-            performStatusUpdate(saleToPay, 'PAID', paymentMethod);
-            setShowPaymentModal(false);
-            setSaleToPay(null);
-        }
     };
 
     const performStatusUpdate = (id, status, method = null) => {
@@ -140,13 +124,33 @@ const NotificationsPage = () => {
                                                     <small className="text-muted">
                                                         {new Date(notif.createdAt).toLocaleString('es-ES', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
                                                     </small>
-                                                    {notif.type === 'SALE' && <Badge bg="info" size="sm">Pedido</Badge>}
+                                                    {notif.type === 'SALE' && (
+                                                        <div className="d-flex align-items-center gap-1">
+                                                            <Badge bg="info" size="sm">Pedido</Badge>
+                                                            {notif.relatedEntityStatus && (
+                                                                <Badge bg={
+                                                                    notif.relatedEntityStatus === 'PAID' ? 'success' :
+                                                                    notif.relatedEntityStatus === 'CANCELLED' ? 'danger' :
+                                                                    notif.relatedEntityStatus === 'READY_FOR_PICKUP' ? 'primary' :
+                                                                    'warning'
+                                                                } size="sm">
+                                                                    {notif.relatedEntityStatus === 'PAID' ? 'PAGADO' :
+                                                                     notif.relatedEntityStatus === 'CANCELLED' ? 'CANCELADO' :
+                                                                     notif.relatedEntityStatus === 'READY_FOR_PICKUP' ? 'LISTO PARA RETIRO' :
+                                                                     notif.relatedEntityStatus === 'PREPARING' ? 'EN PREPARACIÓN' :
+                                                                     'PENDIENTE'}
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
                                             {notif.type === 'SALE' ? (
-                                                <Button variant="outline-primary" size="sm" className="rounded-pill px-3">
-                                                    <FaEye className="me-1" /> Gestionar
-                                                </Button>
+                                                <OverlayTrigger overlay={<Tooltip>Ver y gestionar pedido</Tooltip>}>
+                                                    <Button variant="outline-primary" size="sm" className="rounded-pill px-3">
+                                                        <FaEye className="me-1" /> Gestionar
+                                                    </Button>
+                                                </OverlayTrigger>
                                             ) : (
                                                 !notif.readStatus && (
                                                     <OverlayTrigger overlay={<Tooltip>Marcar como leída</Tooltip>}>
@@ -212,24 +216,39 @@ const NotificationsPage = () => {
                                     <h6 className="fw-bold mb-3">Flujo de Seguimiento:</h6>
                                     <div className="d-flex flex-wrap gap-2">
                                         {selectedSale.status === 'PENDING' && (
-                                            <Button variant="primary" className="rounded-pill px-3" onClick={() => handleStatusUpdate(selectedSale.id, 'PREPARING')}>
-                                                1. En Preparación
-                                            </Button>
+                                            <OverlayTrigger overlay={<Tooltip>Marcar pedido en preparación</Tooltip>}>
+                                                <Button variant="primary" className="rounded-pill px-3" onClick={() => handleStatusUpdate(selectedSale.id, 'PREPARING')}>
+                                                    1. En Preparación
+                                                </Button>
+                                            </OverlayTrigger>
                                         )}
                                         {(selectedSale.status === 'PENDING' || selectedSale.status === 'PREPARING') && (
-                                            <Button variant="info" className="rounded-pill px-3 text-white" onClick={() => handleStatusUpdate(selectedSale.id, 'READY_FOR_PICKUP')}>
-                                                2. Listo para Retiro
-                                            </Button>
+                                            <OverlayTrigger overlay={<Tooltip>Ir al POS para cobrar este pedido</Tooltip>}>
+                                                <Button variant="success" className="rounded-pill px-4 fw-bold shadow-sm" onClick={() => navigate(`/pos?pendingSaleId=${selectedSale.id}`)}>
+                                                    Cobrar en Punto de Venta
+                                                </Button>
+                                            </OverlayTrigger>
+                                        )}
+                                        {selectedSale.status === 'PAID' && (
+                                            <OverlayTrigger overlay={<Tooltip>Marcar pedido como listo para retirar</Tooltip>}>
+                                                <Button variant="info" className="rounded-pill px-3 text-white" onClick={() => handleStatusUpdate(selectedSale.id, 'READY_FOR_PICKUP')}>
+                                                    Listo para Retirar
+                                                </Button>
+                                            </OverlayTrigger>
                                         )}
                                         {selectedSale.status === 'READY_FOR_PICKUP' && (
-                                            <Button variant="success" className="rounded-pill px-3" onClick={() => handleStatusUpdate(selectedSale.id, 'PAID')}>
-                                                3. Entregado y Pagado
-                                            </Button>
+                                            <OverlayTrigger overlay={<Tooltip>Marcar pedido como entregado al cliente</Tooltip>}>
+                                                <Button variant="secondary" className="rounded-pill px-3 text-white" onClick={() => handleStatusUpdate(selectedSale.id, 'DELIVERED')}>
+                                                    Entregado
+                                                </Button>
+                                            </OverlayTrigger>
                                         )}
-                                        {selectedSale.status !== 'PAID' && selectedSale.status !== 'CANCELLED' && (
-                                            <Button variant="outline-danger" className="rounded-pill px-3" onClick={() => handleStatusUpdate(selectedSale.id, 'CANCELLED')}>
-                                                Cancelar Pedido
-                                            </Button>
+                                        {selectedSale.status !== 'PAID' && selectedSale.status !== 'CANCELLED' && selectedSale.status !== 'DELIVERED' && selectedSale.status !== 'READY_FOR_PICKUP' && (
+                                            <OverlayTrigger overlay={<Tooltip>Cancelar este pedido</Tooltip>}>
+                                                <Button variant="outline-danger" className="rounded-pill px-3 ms-auto" onClick={() => handleStatusUpdate(selectedSale.id, 'CANCELLED')}>
+                                                    Cancelar Pedido
+                                                </Button>
+                                            </OverlayTrigger>
                                         )}
                                     </div>
                                 </div>
@@ -242,31 +261,6 @@ const NotificationsPage = () => {
                         Cerrar
                     </Button>
                 </Modal.Footer>
-            </Modal>
-
-            {/* Confirm Payment Modal */}
-            <Modal scrollable show={showPaymentModal} onHide={() => setShowPaymentModal(false)} centered>
-                <Modal.Header closeButton>
-                    <Modal.Title className="fw-bold">Confirmar Pago</Modal.Title>
-                </Modal.Header>
-                <Modal.Body className="p-4">
-                    <p className="mb-3">Selecciona el método de pago con el que el cliente ha cancelado la orden:</p>
-                    <Form.Select
-                        value={paymentMethod}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="mb-3 py-3 rounded-3 shadow-sm"
-                    >
-                        <option value="CASH">Efectivo 💵</option>
-                        <option value="CARD">Tarjeta de Débito/Crédito 💳</option>
-                        <option value="TRANSFER">Transferencia Bancaria 🏦</option>
-                        <option value="MOBILE_PAYMENT">Pago Móvil 📱</option>
-                    </Form.Select>
-                    <div className="d-grid gap-2">
-                        <Button variant="primary" size="lg" className="rounded-pill fw-bold" onClick={confirmPayment}>
-                            Confirmar Pago
-                        </Button>
-                    </div>
-                </Modal.Body>
             </Modal>
         </div>
     );

@@ -22,4 +22,7 @@ public class Notification {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")
     private Company company;
+
+    @Transient
+    private String relatedEntityStatus;
 }

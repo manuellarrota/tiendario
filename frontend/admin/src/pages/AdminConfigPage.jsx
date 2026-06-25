@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Form, Button, Alert, Spinner, InputGroup, Table } from 'react-bootstrap';
+import { Container, Row, Col, Card, Form, Button, Alert, Spinner, InputGroup, Table, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaCogs, FaSave, FaExclamationTriangle, FaEnvelope, FaPhone, FaBullhorn, FaCreditCard, FaMoneyBillWave, FaPlus, FaTrash, FaExchangeAlt } from 'react-icons/fa';
 import AdminService from '../services/admin.service';
 import Sidebar from '../components/Sidebar';
@@ -19,7 +19,16 @@ const AdminConfigPage = () => {
         exchangeRate: 36.50,
         enableSecondaryCurrency: true,
         secondaryCurrencyLabel: "VES",
-        secondaryCurrencySymbol: "Bs."
+        secondaryCurrencySymbol: "Bs.",
+        paymentInfoZelle: "pagos@nugar.com (Antigravity Inc)",
+        paymentZelleEnabled: true,
+        paymentInfoBinance: "Pay ID: 12345678 | Alias: NugarApp",
+        paymentBinanceEnabled: true,
+        paymentInfoPagoMovil: "0102 - 0412-0000000 - V-12345678",
+        paymentPagoMovilEnabled: true,
+        paymentInfoTransferencia: "Banco Banesco, Cuenta Corriente 0134-..., Antigravity Inc, J-123456789",
+        paymentTransferenciaEnabled: true,
+        paymentEfectivoEnabled: true
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -267,6 +276,56 @@ const AdminConfigPage = () => {
                                 </Card.Body>
                             </Card>
 
+                            {/* Información de Pagos */}
+                            <Card className="border-0 shadow-sm rounded-4 mb-4">
+                                <Card.Body className="p-4">
+                                    <h5 className="fw-bold mb-4 d-flex align-items-center">
+                                        <FaMoneyBillWave className="me-2 text-success" /> Información de Pagos (Membresías)
+                                    </h5>
+                                    
+                                    <div className="mb-4">
+                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                            <Form.Label className="small fw-bold text-muted mb-0">ZELLE</Form.Label>
+                                            <Form.Check type="switch" id="zelle-switch" name="paymentZelleEnabled" checked={config.paymentZelleEnabled} onChange={handleChange} label="Habilitar" />
+                                        </div>
+                                        <Form.Control as="textarea" rows={2} name="paymentInfoZelle" value={config.paymentInfoZelle} onChange={handleChange} placeholder="Ej: pagos@nugar.com (Antigravity Inc)" disabled={!config.paymentZelleEnabled} />
+                                    </div>
+
+                                    <div className="mb-4">
+                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                            <Form.Label className="small fw-bold text-muted mb-0">BINANCE / CRYPTO</Form.Label>
+                                            <Form.Check type="switch" id="binance-switch" name="paymentBinanceEnabled" checked={config.paymentBinanceEnabled} onChange={handleChange} label="Habilitar" />
+                                        </div>
+                                        <Form.Control as="textarea" rows={2} name="paymentInfoBinance" value={config.paymentInfoBinance} onChange={handleChange} placeholder="Ej: Pay ID: 12345678 | Alias: NugarApp" disabled={!config.paymentBinanceEnabled} />
+                                    </div>
+
+                                    <div className="mb-4">
+                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                            <Form.Label className="small fw-bold text-muted mb-0">PAGO MÓVIL</Form.Label>
+                                            <Form.Check type="switch" id="pagomovil-switch" name="paymentPagoMovilEnabled" checked={config.paymentPagoMovilEnabled} onChange={handleChange} label="Habilitar" />
+                                        </div>
+                                        <Form.Control as="textarea" rows={2} name="paymentInfoPagoMovil" value={config.paymentInfoPagoMovil} onChange={handleChange} placeholder="Ej: 0102 - 0412-0000000 - V-12345678" disabled={!config.paymentPagoMovilEnabled} />
+                                    </div>
+
+                                    <div className="mb-4">
+                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                            <Form.Label className="small fw-bold text-muted mb-0">TRANSFERENCIA BANCARIA</Form.Label>
+                                            <Form.Check type="switch" id="transferencia-switch" name="paymentTransferenciaEnabled" checked={config.paymentTransferenciaEnabled} onChange={handleChange} label="Habilitar" />
+                                        </div>
+                                        <Form.Control as="textarea" rows={2} name="paymentInfoTransferencia" value={config.paymentInfoTransferencia} onChange={handleChange} placeholder="Ej: Banco Banesco, Cuenta Corriente..." disabled={!config.paymentTransferenciaEnabled} />
+                                    </div>
+                                    
+                                    <div className="mb-2 p-3 bg-light rounded-3 d-flex justify-content-between align-items-center border">
+                                        <div>
+                                            <Form.Label className="small fw-bold text-muted mb-0 d-block">EFECTIVO (LOCAL)</Form.Label>
+                                            <small className="text-muted">Permite registrar pagos en efectivo en persona.</small>
+                                        </div>
+                                        <Form.Check type="switch" id="efectivo-switch" name="paymentEfectivoEnabled" checked={config.paymentEfectivoEnabled} onChange={handleChange} />
+                                    </div>
+                                </Card.Body>
+                            </Card>
+
+
                             {/* Configuración de Monedas */}
                             <Card className="border-0 shadow-sm rounded-4 mb-4">
                                 <Card.Body className="p-4">
@@ -373,14 +432,15 @@ const AdminConfigPage = () => {
                                                             />
                                                         </td>
                                                         <td>
-                                                            <Button
-                                                                variant="outline-danger"
-                                                                size="sm"
-                                                                onClick={() => removeCurrency(idx)}
-                                                                title="Eliminar moneda"
-                                                            >
-                                                                <FaTrash />
-                                                            </Button>
+                                                            <OverlayTrigger overlay={<Tooltip>Eliminar Moneda</Tooltip>}>
+                                                                <Button
+                                                                    variant="outline-danger"
+                                                                    size="sm"
+                                                                    onClick={() => removeCurrency(idx)}
+                                                                >
+                                                                    <FaTrash />
+                                                                </Button>
+                                                            </OverlayTrigger>
                                                         </td>
                                                     </tr>
                                                 ))}

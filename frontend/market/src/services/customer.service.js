@@ -11,9 +11,14 @@ const getMyOrders = () => {
     return axios.get(API_URL + '/orders', { headers: authHeader() });
 };
 
+const cancelOrder = (id) => {
+    return axios.put(API_URL + `/orders/${id}/cancel`, {}, { headers: authHeader() });
+};
+
 const CustomerService = {
     getDashboardStats,
     getMyOrders,
+    cancelOrder,
 };
 
 export default CustomerService;

@@ -1,4 +1,4 @@
-import { Modal, Row, Col, Badge, Button, Card } from 'react-bootstrap';
+import { Modal, Row, Col, Badge, Button, Card, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaStore, FaStar, FaShoppingCart, FaInfoCircle } from 'react-icons/fa';
 import { useEffect } from 'react';
 
@@ -9,21 +9,21 @@ const ProductDetailModal = ({
     show, onHide, selectedProduct, sellers,
     sellerSortOrder, onSortSellers, onBuyFromSeller,
     onStoreClick, platformConfig, formatSecondary,
-    getCategoryEmoji, getCategoryPlaceholder
+    getCategoryEmoji, getCategoryPlaceholder,
+    getFullImageUrl
 }) => {
     if (!selectedProduct) return null;
+
+    const renderTooltip = (props, text) => (
+        <Tooltip id="button-tooltip" {...props}>
+            {text}
+        </Tooltip>
+    );
 
     const mainSeller = sellers.find(s => s.companyId === selectedProduct.companyId);
     const showDetails = mainSeller
         ? ['PAID', 'TRIAL'].includes(mainSeller.subscriptionStatus)
         : ['PAID', 'TRIAL'].includes(selectedProduct.subscriptionStatus);
-
-    // Helper for full image URL with category placeholders
-    const getFullImageUrl = (path, category, name) => {
-        if (!path) return getCategoryPlaceholder(category, name);
-        if (path.startsWith('http')) return path;
-        return (import.meta.env.VITE_API_URL || '') + path;
-    };
 
     // SEO: JSON-LD for Search Engines
     useEffect(() => {
@@ -38,7 +38,7 @@ const ProductDetailModal = ({
             "@type": "Product",
             "name": selectedProduct.name,
             "description": selectedProduct.description || `Comprar ${selectedProduct.name} en tiendas locales con Nugar.`,
-            "image": [getFullImageUrl(selectedProduct.imageUrl, selectedProduct.category, selectedProduct.name)],
+            "image": [getFullImageUrl(selectedProduct)],
             "brand": {
                 "@type": "Brand",
                 "name": selectedProduct.companyName
@@ -72,12 +72,18 @@ const ProductDetailModal = ({
         <Modal show={show} onHide={onHide} size="lg" centered scrollable className="modal-premium">
             <Modal.Body className="p-0 rounded-4">
                 <Row className="g-0">
-                    <Col md={5} className="bg-light d-flex align-items-center justify-content-center p-0 overflow-hidden" style={{ minHeight: '350px' }}>
+                    <Col md={5} className="bg-light d-flex align-items-center justify-content-center p-4 position-relative" style={{ height: '100%', minHeight: '300px' }}>
                         <img
-                            src={getFullImageUrl(selectedProduct.imageUrl, selectedProduct.category, selectedProduct.name)}
+                            src={getFullImageUrl(selectedProduct)}
                             alt={selectedProduct.name}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            className="img-fluid rounded shadow-sm"
+                            style={{ maxHeight: '400px', objectFit: 'contain' }}
                         />
+                        {selectedProduct.stock === 0 && (
+                            <div className="position-absolute bg-dark text-white px-3 py-1 rounded small shadow-sm" style={{ top: '10px', left: '10px' }}>
+                                Agotado
+                            </div>
+                        )}
                     </Col>
                     <Col md={7} className="p-5">
                         <div className="d-flex justify-content-between align-items-start mb-2">
@@ -95,7 +101,7 @@ const ProductDetailModal = ({
                                 <div className="d-flex justify-content-between align-items-center">
                                     <span className="text-muted">Precio Unitario</span>
                                     <div className="text-end">
-                                        <h3 className="fw-bold text-success mb-0">${selectedProduct.price}</h3>
+                                        <h3 className="fw-bold text-primary mb-0">${selectedProduct.price}</h3>
                                         {platformConfig?.enableSecondaryCurrency && (
                                             <h6 className="text-muted mb-0">{formatSecondary(selectedProduct.price)}</h6>
                                         )}
@@ -118,19 +124,19 @@ const ProductDetailModal = ({
                         )}
 
                         {/* Main Seller Card */}
-                        <div className="d-flex align-items-center justify-content-between p-3 border rounded-4 mb-4 bg-gradient shadow-sm"
+                        <div className="d-flex flex-column flex-md-row align-items-md-center justify-content-between p-3 border rounded-4 mb-4 bg-gradient shadow-sm gap-3"
                             style={{ background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)' }}>
                             <div className="d-flex align-items-center"
                                 style={{ cursor: mainSeller ? 'pointer' : 'default' }}
                                 onClick={() => mainSeller && onStoreClick(mainSeller)}>
-                                <div className="bg-primary text-white p-3 rounded-circle me-3 shadow-sm">
+                                <div className="bg-primary text-white p-3 rounded-circle me-3 shadow-sm flex-shrink-0">
                                     <FaStore size={24} />
                                 </div>
                                 <div>
                                     <h6 className="fw-bold mb-0 text-primary" style={{ textDecoration: 'underline' }}>
                                         {['PAID', 'TRIAL'].includes(mainSeller?.subscriptionStatus) ? selectedProduct.companyName : 'Tienda con Membresía Vencida'}
                                     </h6>
-                                    <div className="d-flex align-items-center gap-2">
+                                    <div className="d-flex flex-wrap align-items-center gap-2 mt-1">
                                         <small className="text-muted">🏆 Mejor Precio del Marketplace</small>
                                         {['PAID', 'TRIAL'].includes(mainSeller?.subscriptionStatus) && mainSeller?.latitude && mainSeller?.longitude && mainSeller.latitude !== 0.0 && (
                                             <a href={`https://www.google.com/maps/dir/?api=1&destination=${mainSeller.latitude},${mainSeller.longitude}`}
@@ -141,23 +147,29 @@ const ProductDetailModal = ({
                                             </a>
                                         )}
                                         {mainSeller?.distance != null && (
-                                            <Badge bg="white" className="text-primary border shadow-sm small">
-                                               🚀 {mainSeller.distance < 1 ? `${(mainSeller.distance * 1000).toFixed(0)}m` : `${mainSeller.distance.toFixed(1)}km`}
-                                            </Badge>
+                                            <OverlayTrigger placement="top" overlay={(p) => renderTooltip(p, "Distancia aproximada desde tu ubicación")}>
+                                                <Badge bg="white" className="text-primary border shadow-sm small" style={{ cursor: 'help' }}>
+                                                   🚀 {mainSeller.distance < 1 ? `${(mainSeller.distance * 1000).toFixed(0)}m` : `${mainSeller.distance.toFixed(1)}km`}
+                                                </Badge>
+                                            </OverlayTrigger>
                                         )}
                                     </div>
                                 </div>
                             </div>
                             {['PAID', 'TRIAL'].includes(mainSeller?.subscriptionStatus) ? (
-                                <Button variant="success" className="rounded-pill px-4 py-2 fw-bold shadow-sm"
-                                    onClick={(e) => { e.stopPropagation(); onBuyFromSeller(mainSeller); }}>
-                                    <FaShoppingCart className="me-2" /> Añadir a mi Pedido
-                                </Button>
+                                <OverlayTrigger placement="top" overlay={(p) => renderTooltip(p, "Agregar producto al carrito")}>
+                                    <Button variant="primary" className="rounded-pill px-4 py-2 fw-bold shadow-sm w-100 w-md-auto"
+                                        onClick={(e) => { e.stopPropagation(); onBuyFromSeller(mainSeller); }}>
+                                        <FaShoppingCart className="me-2" /> Añadir a mi Pedido
+                                    </Button>
+                                </OverlayTrigger>
                             ) : (
-                                <Button variant="outline-primary" className="rounded-pill px-4 py-2 fw-bold"
-                                    onClick={(e) => { e.stopPropagation(); onBuyFromSeller(mainSeller); }}>
-                                    <FaInfoCircle className="me-2" /> Ver detalles Tienda
-                                </Button>
+                                <OverlayTrigger placement="top" overlay={(p) => renderTooltip(p, "Ver información de contacto de la tienda")}>
+                                    <Button variant="outline-primary" className="rounded-pill px-4 py-2 fw-bold w-100 w-md-auto"
+                                        onClick={(e) => { e.stopPropagation(); onBuyFromSeller(mainSeller); }}>
+                                        <FaInfoCircle className="me-2" /> Ver detalles Tienda
+                                    </Button>
+                                </OverlayTrigger>
                             )}
                         </div>
 
@@ -173,8 +185,8 @@ const ProductDetailModal = ({
                             </div>
                             <div className="sellers-list" style={{ maxHeight: '300px', overflowY: 'auto' }}>
                                 {sellers.filter(s => s.companyId !== selectedProduct.companyId).map((seller, idx) => (
-                                    <div key={idx} className="d-flex justify-content-between align-items-center p-3 border rounded-4 mb-2 bg-white shadow-sm hover-elevate">
-                                        <div>
+                                    <div key={idx} className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center p-3 border rounded-4 mb-2 bg-white shadow-sm hover-elevate gap-3">
+                                        <div className="w-100">
                                             <div className="d-flex align-items-center gap-2">
                                                 <h6 className="fw-bold mb-0 small text-primary"
                                                     style={{ cursor: 'pointer', textDecoration: 'underline' }}
@@ -186,8 +198,8 @@ const ProductDetailModal = ({
                                                 }
                                             </div>
                                             {['PAID', 'TRIAL'].includes(seller.subscriptionStatus) ? (
-                                                <div className="d-flex align-items-center gap-2 mt-1">
-                                                    <span className={seller.stock > 0 ? 'text-success small fw-bold' : 'text-danger small fw-bold'}>
+                                                <div className="d-flex flex-wrap align-items-center gap-2 mt-1">
+                                                    <span className={seller.stock > 0 ? 'text-primary small fw-bold' : 'text-danger small fw-bold'}>
                                                         {seller.stock > 0 ? 'Disponible' : 'Agotado'}
                                                     </span>
                                                     <span className="text-muted small">•</span>
@@ -196,32 +208,38 @@ const ProductDetailModal = ({
                                             ) : (
                                                 <small className="text-muted mt-1 d-block">Consultar Precio</small>
                                             )}
-                                            {['PAID', 'TRIAL'].includes(seller.subscriptionStatus) && seller.latitude && seller.longitude && seller.latitude !== 0.0 && (
-                                                <a href={`https://www.google.com/maps/dir/?api=1&destination=${seller.latitude},${seller.longitude}`}
-                                                    target="_blank" rel="noreferrer"
-                                                    className="small text-decoration-none mt-1 d-inline-block"
-                                                    onClick={(e) => e.stopPropagation()}>
-                                                    📍 Ver Ubicación en Mapa
-                                                </a>
-                                            )}
-                                            {seller.distance != null && (
-                                                <Badge bg="light" className="text-primary border-0 x-small px-2 py-1 ms-2" style={{ fontSize: '0.65rem' }}>
-                                                    📍 {seller.distance < 1 ? `${(seller.distance * 1000).toFixed(0)}m` : `${seller.distance.toFixed(1)}km`}
-                                                </Badge>
-                                            )}
+                                            <div className="d-flex flex-wrap align-items-center gap-2 mt-1">
+                                                {['PAID', 'TRIAL'].includes(seller.subscriptionStatus) && seller.latitude && seller.longitude && seller.latitude !== 0.0 && (
+                                                    <a href={`https://www.google.com/maps/dir/?api=1&destination=${seller.latitude},${seller.longitude}`}
+                                                        target="_blank" rel="noreferrer"
+                                                        className="small text-decoration-none d-inline-block"
+                                                        onClick={(e) => e.stopPropagation()}>
+                                                        📍 Ver Ubicación en Mapa
+                                                    </a>
+                                                )}
+                                                {seller.distance != null && (
+                                                    <OverlayTrigger placement="top" overlay={(p) => renderTooltip(p, "Distancia aproximada desde tu ubicación")}>
+                                                        <Badge bg="light" className="text-primary border-0 x-small px-2 py-1" style={{ fontSize: '0.65rem', cursor: 'help' }}>
+                                                            📍 {seller.distance < 1 ? `${(seller.distance * 1000).toFixed(0)}m` : `${seller.distance.toFixed(1)}km`}
+                                                        </Badge>
+                                                    </OverlayTrigger>
+                                                )}
+                                            </div>
                                         </div>
-                                        <Button
-                                            variant={['PAID', 'TRIAL'].includes(seller.subscriptionStatus) ? "primary" : "outline-primary"}
-                                            size="sm"
-                                            className="rounded-pill px-3 fw-bold"
-                                            disabled={seller.stock === 0}
-                                            onClick={() => onBuyFromSeller(seller)}>
-                                            {['PAID', 'TRIAL'].includes(seller.subscriptionStatus) ? (
-                                                <><FaShoppingCart className="me-1" /> Añadir</>
-                                            ) : (
-                                                <><FaInfoCircle className="me-1" /> Ver Tienda</>
-                                            )}
-                                        </Button>
+                                        <OverlayTrigger placement="left" overlay={(p) => renderTooltip(p, "Comprar en esta tienda alternativa")}>
+                                            <Button
+                                                variant={['PAID', 'TRIAL'].includes(seller.subscriptionStatus) ? "primary" : "outline-primary"}
+                                                size="sm"
+                                                className="rounded-pill px-3 fw-bold w-100 w-sm-auto flex-shrink-0"
+                                                disabled={seller.stock === 0}
+                                                onClick={() => onBuyFromSeller(seller)}>
+                                                {['PAID', 'TRIAL'].includes(seller.subscriptionStatus) ? (
+                                                    <><FaShoppingCart className="me-1" /> Añadir</>
+                                                ) : (
+                                                    <><FaInfoCircle className="me-1" /> Ver Tienda</>
+                                                )}
+                                            </Button>
+                                        </OverlayTrigger>
                                     </div>
                                 ))}
                                 {sellers.length === 0 && <div className="text-center py-4 text-muted small">Buscando las mejores ofertas...</div>}

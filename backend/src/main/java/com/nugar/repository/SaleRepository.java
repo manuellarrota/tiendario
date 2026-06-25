@@ -80,4 +80,5 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
     @Query("SELECT DISTINCT s.company.id FROM Sale s WHERE s.date >= :sinceDate")
     List<Long> findUniqueCompanyIdsSince(LocalDateTime sinceDate);
     boolean existsByUserId(Long userId);
+    boolean existsByCustomerId(Long customerId);
 }

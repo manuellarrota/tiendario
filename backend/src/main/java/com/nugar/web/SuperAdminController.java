@@ -44,6 +44,9 @@ public class SuperAdminController {
         ProductRepository productRepository;
 
         @Autowired
+        CustomerRepository customerRepository;
+
+        @Autowired
         SaleRepository saleRepository;
 
         @Autowired
@@ -347,6 +350,17 @@ public class SuperAdminController {
                 current.setBaseCurrencyCode(newConfig.getBaseCurrencyCode());
                 current.setBaseCurrencySymbol(newConfig.getBaseCurrencySymbol());
                 current.setCurrencies(newConfig.getCurrencies());
+                
+                // Payment Fields
+                current.setPaymentZelleEnabled(newConfig.getPaymentZelleEnabled());
+                current.setPaymentInfoZelle(newConfig.getPaymentInfoZelle());
+                current.setPaymentBinanceEnabled(newConfig.getPaymentBinanceEnabled());
+                current.setPaymentInfoBinance(newConfig.getPaymentInfoBinance());
+                current.setPaymentPagoMovilEnabled(newConfig.getPaymentPagoMovilEnabled());
+                current.setPaymentInfoPagoMovil(newConfig.getPaymentInfoPagoMovil());
+                current.setPaymentTransferenciaEnabled(newConfig.getPaymentTransferenciaEnabled());
+                current.setPaymentInfoTransferencia(newConfig.getPaymentInfoTransferencia());
+                current.setPaymentEfectivoEnabled(newConfig.getPaymentEfectivoEnabled());
 
                 configRepository.save(current);
                 return ResponseEntity.ok(new MessageResponse("Configuration updated successfully"));
@@ -1036,5 +1050,95 @@ public class SuperAdminController {
             Pageable pageable = PageRequest.of(page, size, Sort.by("timestamp").descending());
             Page<AdminAuditLog> log2 = auditLogRepository.findByCompanyIdOrderByTimestampDesc(companyId, pageable);
             return ResponseEntity.ok(log2);
+        }
+
+        // ══════════════════════════════════════════════════════════════════════════
+        //  MÓDULO ASISTENCIA TÉCNICA — Clientes
+        // ══════════════════════════════════════════════════════════════════════════
+
+        @GetMapping("/companies/{companyId}/customers")
+        @PreAuthorize("hasRole('ADMIN')")
+        public ResponseEntity<?> getCompanyCustomers(
+                @PathVariable Long companyId,
+                @RequestParam(defaultValue = "0") int page,
+                @RequestParam(defaultValue = "15") int size) {
+            Pageable pageable = PageRequest.of(page, size, Sort.by("name").ascending());
+            Page<Customer> customers = customerRepository.findByCompanyId(companyId, pageable);
+            return ResponseEntity.ok(customers);
+        }
+
+        @PatchMapping("/companies/{companyId}/customers/{customerId}")
+        @PreAuthorize("hasRole('ADMIN')")
+        @Transactional
+        public ResponseEntity<?> patchCustomer(
+                @PathVariable Long companyId,
+                @PathVariable Long customerId,
+                @RequestBody Map<String, Object> body) {
+            Customer customer = customerRepository.findById(customerId).orElse(null);
+            if (customer == null || !customer.getCompany().getId().equals(companyId))
+                return ResponseEntity.notFound().build();
+
+            if (body.containsKey("name")) {
+                String old = customer.getName();
+                customer.setName((String) body.get("name"));
+                audit(companyId, "CUSTOMER", customerId, "EDIT", "name", old, customer.getName(), (String) body.get("reason"));
+            }
+            if (body.containsKey("email")) {
+                String old = customer.getEmail();
+                customer.setEmail((String) body.get("email"));
+                audit(companyId, "CUSTOMER", customerId, "EDIT", "email", old, customer.getEmail(), (String) body.get("reason"));
+            }
+            if (body.containsKey("phone")) {
+                String old = customer.getPhone();
+                customer.setPhone((String) body.get("phone"));
+                audit(companyId, "CUSTOMER", customerId, "EDIT", "phone", old, customer.getPhone(), (String) body.get("reason"));
+            }
+            if (body.containsKey("cedula")) {
+                String old = customer.getCedula();
+                customer.setCedula((String) body.get("cedula"));
+                audit(companyId, "CUSTOMER", customerId, "EDIT", "cedula", old, customer.getCedula(), (String) body.get("reason"));
+            }
+            if (body.containsKey("address")) {
+                String old = customer.getAddress();
+                customer.setAddress((String) body.get("address"));
+                audit(companyId, "CUSTOMER", customerId, "EDIT", "address", old, customer.getAddress(), (String) body.get("reason"));
+            }
+            if (body.containsKey("loyaltyPoints")) {
+                String old = customer.getLoyaltyPoints() != null ? customer.getLoyaltyPoints().toString() : "0";
+                try {
+                    customer.setLoyaltyPoints(Integer.parseInt(body.get("loyaltyPoints").toString()));
+                } catch (NumberFormatException ignored) {}
+                audit(companyId, "CUSTOMER", customerId, "EDIT", "loyaltyPoints", old, String.valueOf(customer.getLoyaltyPoints()), (String) body.get("reason"));
+            }
+
+            customerRepository.save(customer);
+            log.info("[ASISTENCIA] PATCH CLIENTE #{} empresa #{} por {}", customerId, companyId, getAdminUsername());
+            return ResponseEntity.ok(new MessageResponse("Cliente actualizado correctamente."));
+        }
+
+        @DeleteMapping("/companies/{companyId}/customers/{customerId}")
+        @PreAuthorize("hasRole('ADMIN')")
+        @Transactional
+        public ResponseEntity<?> deleteCustomer(
+                @PathVariable Long companyId,
+                @PathVariable Long customerId,
+                @RequestBody Map<String, String> body) {
+            String reason = body.get("reason");
+            if (reason == null || reason.trim().length() < 10)
+                return ResponseEntity.badRequest().body(new MessageResponse("El motivo de eliminación debe tener al menos 10 caracteres."));
+
+            Customer customer = customerRepository.findById(customerId).orElse(null);
+            if (customer == null || !customer.getCompany().getId().equals(companyId))
+                return ResponseEntity.notFound().build();
+
+            // Validate if customer has sales
+            if (saleRepository.existsByCustomerId(customerId)) {
+                return ResponseEntity.badRequest().body(new MessageResponse("No se puede eliminar el cliente porque tiene ventas asociadas."));
+            }
+
+            customerRepository.delete(customer);
+            audit(companyId, "CUSTOMER", customerId, "DELETE", "ALL", customer.getName(), "DELETED", reason);
+            log.warn("[ASISTENCIA] DELETE CLIENTE #{} empresa #{} por {} — Motivo: {}", customerId, companyId, getAdminUsername(), reason);
+            return ResponseEntity.ok(new MessageResponse("Cliente eliminado exitosamente."));
         }
 }

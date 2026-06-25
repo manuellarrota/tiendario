@@ -1,7 +1,7 @@
 package com.nugar.web;
 
 import com.nugar.domain.*;
-import com.nugar.payload.request.PublicOrderRequest;
+import com.nugar.payload.request.*;
 import com.nugar.payload.response.MessageResponse;
 import com.nugar.payload.response.PublicProductDTO;
 import com.nugar.payload.response.SellerOfferDTO;
@@ -274,20 +274,18 @@ public class PublicController {
                     .body(new MessageResponse("Error: Nombre, cédula y teléfono son obligatorios para procesar el pedido."));
         }
 
-        if (request.getQuantity() == null || request.getQuantity() <= 0) {
+        if (request.getItems() == null || request.getItems().isEmpty()) {
             return ResponseEntity.badRequest()
-                    .body(new MessageResponse("Error: Cantidad de productos inválida. Debe ser mayor a cero."));
+                    .body(new MessageResponse("Error: El pedido debe contener al menos un producto."));
         }
 
-        Product product = productRepository.findById(request.getProductId())
+        // Use the first item to find the store (Company)
+        PublicOrderItemRequest firstItem = request.getItems().get(0);
+        Product firstProduct = productRepository.findById(firstItem.getProductId())
                 .orElseThrow(() -> new RuntimeException("Product not found"));
+        
+        Company company = firstProduct.getCompany();
 
-        if (product.getStock() < request.getQuantity()) {
-            return ResponseEntity.badRequest()
-                    .body(new MessageResponse("Insufficient stock"));
-        }
-
-        Company company = product.getCompany();
         if (company.getSubscriptionStatus() != SubscriptionStatus.PAID
                 && company.getSubscriptionStatus() != SubscriptionStatus.TRIAL) {
             return ResponseEntity.badRequest().body(
@@ -342,36 +340,62 @@ public class PublicController {
         sale.setDate(LocalDateTime.now());
         sale.setStatus(SaleStatus.PENDING);
 
-        SaleItem item = new SaleItem();
-        item.setProduct(product);
-        item.setQuantity(request.getQuantity());
-        item.setUnitPrice(product.getPrice());
-        item.setSubtotal(product.getPrice().multiply(new BigDecimal(request.getQuantity())));
-        item.setSale(sale);
+        List<SaleItem> saleItems = new java.util.ArrayList<>();
+        java.math.BigDecimal totalAmount = java.math.BigDecimal.ZERO;
 
-        sale.setItems(List.of(item));
-        sale.setTotalAmount(item.getSubtotal());
-
-        product.setStock(product.getStock() - request.getQuantity());
-        productRepository.save(product);
-
-        // FIFO Batch Reduction
-        int quantityToReduce = request.getQuantity();
-        List<com.nugar.domain.InventoryBatch> batches = inventoryBatchRepository
-                .findByProductIdAndCurrentQuantityGreaterThanOrderByCreatedAtAsc(product.getId(), 0);
-        for (com.nugar.domain.InventoryBatch batch : batches) {
-            if (quantityToReduce <= 0) break;
-            
-            int batchQty = batch.getCurrentQuantity();
-            if (batchQty <= quantityToReduce) {
-                batch.setCurrentQuantity(0);
-                quantityToReduce -= batchQty;
-            } else {
-                batch.setCurrentQuantity(batchQty - quantityToReduce);
-                quantityToReduce = 0;
+        for (PublicOrderItemRequest itemReq : request.getItems()) {
+            if (itemReq.getQuantity() == null || itemReq.getQuantity() <= 0) {
+                return ResponseEntity.badRequest()
+                        .body(new MessageResponse("Error: Cantidad de productos inválida. Debe ser mayor a cero."));
             }
-            inventoryBatchRepository.save(batch);
+
+            Product product = productRepository.findById(itemReq.getProductId())
+                    .orElseThrow(() -> new RuntimeException("Product not found"));
+
+            if (!product.getCompany().getId().equals(company.getId())) {
+                return ResponseEntity.badRequest()
+                        .body(new MessageResponse("Error: Todos los productos deben pertenecer a la misma tienda."));
+            }
+
+            if (product.getStock() < itemReq.getQuantity()) {
+                return ResponseEntity.badRequest()
+                        .body(new MessageResponse("Stock insuficiente para: " + product.getName()));
+            }
+
+            SaleItem item = new SaleItem();
+            item.setProduct(product);
+            item.setQuantity(itemReq.getQuantity());
+            item.setUnitPrice(product.getPrice());
+            item.setSubtotal(product.getPrice().multiply(new java.math.BigDecimal(itemReq.getQuantity())));
+            item.setSale(sale);
+
+            saleItems.add(item);
+            totalAmount = totalAmount.add(item.getSubtotal());
+
+            product.setStock(product.getStock() - itemReq.getQuantity());
+            productRepository.save(product);
+
+            // FIFO Batch Reduction
+            int quantityToReduce = itemReq.getQuantity();
+            List<com.nugar.domain.InventoryBatch> batches = inventoryBatchRepository
+                    .findByProductIdAndCurrentQuantityGreaterThanOrderByCreatedAtAsc(product.getId(), 0);
+            for (com.nugar.domain.InventoryBatch batch : batches) {
+                if (quantityToReduce <= 0) break;
+                
+                int batchQty = batch.getCurrentQuantity();
+                if (batchQty <= quantityToReduce) {
+                    batch.setCurrentQuantity(0);
+                    quantityToReduce -= batchQty;
+                } else {
+                    batch.setCurrentQuantity(batchQty - quantityToReduce);
+                    quantityToReduce = 0;
+                }
+                inventoryBatchRepository.save(batch);
+            }
         }
+
+        sale.setItems(saleItems);
+        sale.setTotalAmount(totalAmount);
 
         saleRepository.save(sale);
 
@@ -383,8 +407,7 @@ public class PublicController {
             data.put("cedula", request.getCustomerCedula());
             if (request.getCustomerEmail() != null) data.put("email", request.getCustomerEmail());
             data.put("telefono", request.getCustomerPhone());
-            data.put("producto", product.getName());
-            data.put("cantidad", request.getQuantity());
+            data.put("cantidadItems", request.getItems().size());
             data.put("totalUSD", finalSale.getTotalAmount());
         });
 
@@ -403,7 +426,9 @@ public class PublicController {
         try {
             List<User> managers = userRepository.findByCompanyIdAndRolesContaining(
                     company.getId(), Role.ROLE_MANAGER);
-            String orderSummary = request.getQuantity() + "x " + product.getName();
+            String orderSummary = sale.getItems().stream()
+                    .map(i -> i.getQuantity() + "x " + i.getProduct().getName())
+                    .collect(java.util.stream.Collectors.joining(", "));
             for (User mgr : managers) {
                 if (mgr.getEmail() != null) {
                     emailService.sendNewOrderNotification(
@@ -451,6 +476,18 @@ public class PublicController {
                     map.put("basicPlanMonthlyPrice", config.getBasicPlanMonthlyPrice() != null ? config.getBasicPlanMonthlyPrice() : new BigDecimal("19.99"));
                     map.put("mediumPlanMonthlyPrice", config.getMediumPlanMonthlyPrice() != null ? config.getMediumPlanMonthlyPrice() : new BigDecimal("29.99"));
                     map.put("premiumPlanMonthlyPrice", config.getPremiumPlanMonthlyPrice() != null ? config.getPremiumPlanMonthlyPrice() : new BigDecimal("49.99"));
+                    
+                    // Payment Info
+                    map.put("paymentZelleEnabled", config.getPaymentZelleEnabled());
+                    map.put("paymentInfoZelle", config.getPaymentInfoZelle());
+                    map.put("paymentBinanceEnabled", config.getPaymentBinanceEnabled());
+                    map.put("paymentInfoBinance", config.getPaymentInfoBinance());
+                    map.put("paymentPagoMovilEnabled", config.getPaymentPagoMovilEnabled());
+                    map.put("paymentInfoPagoMovil", config.getPaymentInfoPagoMovil());
+                    map.put("paymentTransferenciaEnabled", config.getPaymentTransferenciaEnabled());
+                    map.put("paymentInfoTransferencia", config.getPaymentInfoTransferencia());
+                    map.put("paymentEfectivoEnabled", config.getPaymentEfectivoEnabled());
+                    
                     return map;
                 })
                 .orElseGet(() -> {
@@ -530,8 +567,15 @@ public class PublicController {
         }
         if (product.getCategory() != null) {
             dto.setCategory(product.getCategory());
+            categoryMappingRepository.findByLocalCategoryNameIgnoreCase(product.getCategory().trim())
+                .ifPresent(mapping -> {
+                    if (mapping.getGlobalCategory() != null) {
+                        dto.setGlobalCategory(mapping.getGlobalCategory().getName());
+                    }
+                });
         } else if (product.getCatalogProduct() != null && product.getCatalogProduct().getCategory() != null) {
             dto.setCategory(product.getCatalogProduct().getCategory().getName());
+            dto.setGlobalCategory(product.getCatalogProduct().getCategory().getName());
         }
         return dto;
     }

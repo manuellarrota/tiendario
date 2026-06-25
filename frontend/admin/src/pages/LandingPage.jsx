@@ -260,6 +260,15 @@ const LandingPage = () => {
                     </div>
                 <div className="d-flex gap-2 align-items-center">
                     <Button
+                        variant="outline-dark"
+                        onClick={() => window.location.href = import.meta.env.VITE_MARKET_URL || 'http://localhost:8082'}
+                        className="rounded-pill px-3 fw-bold d-none d-md-block"
+                        style={{ fontSize: '0.9rem' }}
+                    >
+                        🛒 Ir al Market
+                    </Button>
+                    <Button onClick={() => document.getElementById('planes').scrollIntoView({ behavior: 'smooth' })} variant="outline-primary" className="rounded-pill px-3" style={{ fontSize: '0.9rem' }}>Ver Planes</Button>
+                    <Button
                         variant="primary"
                         onClick={() => setShowLoginModal(true)}
                         className="rounded-pill px-4 fw-bold shadow-sm"
@@ -267,7 +276,6 @@ const LandingPage = () => {
                     >
                         🔐 Entrar
                     </Button>
-                    <Button onClick={() => document.getElementById('planes').scrollIntoView({ behavior: 'smooth' })} variant="outline-primary" className="rounded-pill px-3" style={{ fontSize: '0.9rem' }}>Ver Planes</Button>
                 </div>
                 </div>
             </nav>
@@ -472,96 +480,105 @@ const LandingPage = () => {
                             <button type="button" className="btn-close" onClick={closeRegisterModal}></button>
                         </div>
                         <div className="modal-body p-4">
-                            <Form onSubmit={handleRegister}>
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Nombre de tu Empresa</Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        placeholder="Ej. Tienda de Pedro"
-                                        value={regCompanyName}
-                                        onChange={(e) => setRegCompanyName(e.target.value)}
-                                        required
-                                        className="rounded-3"
-                                    />
-                                </Form.Group>
+                            {regSuccessful ? (
+                                <div className="text-center py-5 animate-fade-in">
+                                    <div className="bg-success text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-4 shadow" style={{ width: '80px', height: '80px' }}>
+                                        <FaCheck size={40} />
+                                    </div>
+                                    <h3 className="fw-bold mb-3 text-dark">¡Tienda Registrada!</h3>
+                                    <p className="text-muted mb-4 px-md-3">
+                                        Hemos enviado un correo a <strong className="text-dark">{regEmail}</strong> con las instrucciones para activar tu cuenta.
+                                        <br/><br/>
+                                        <small>Por favor revisa tu bandeja de entrada o carpeta de spam para poder iniciar sesión.</small>
+                                    </p>
+                                    <Button variant="primary" size="lg" className="rounded-pill px-5 fw-bold shadow-sm" onClick={closeRegisterModal}>
+                                        Entendido
+                                    </Button>
+                                </div>
+                            ) : (
+                                <Form onSubmit={handleRegister}>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Nombre de tu Empresa</Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="Ej. Tienda de Pedro"
+                                            value={regCompanyName}
+                                            onChange={(e) => setRegCompanyName(e.target.value)}
+                                            required
+                                            className="rounded-3"
+                                        />
+                                    </Form.Group>
 
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Email</Form.Label>
+                                        <Form.Control
+                                            type="email"
+                                            placeholder="tu@email.com"
+                                            value={regEmail}
+                                            onChange={(e) => setRegEmail(e.target.value)}
+                                            required
+                                            className="rounded-3"
+                                        />
+                                    </Form.Group>
 
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Teléfono</Form.Label>
+                                        <Form.Control
+                                            type="tel"
+                                            placeholder="+58 412 1234567"
+                                            value={regPhone}
+                                            onChange={(e) => setRegPhone(e.target.value)}
+                                            required
+                                            className="rounded-3"
+                                        />
+                                    </Form.Group>
 
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Email</Form.Label>
-                                    <Form.Control
-                                        type="email"
-                                        placeholder="tu@email.com"
-                                        value={regEmail}
-                                        onChange={(e) => setRegEmail(e.target.value)}
-                                        required
-                                        className="rounded-3"
-                                    />
-                                </Form.Group>
+                                    <Form.Group className="mb-3">
+                                        <Form.Label>Contraseña</Form.Label>
+                                        <Form.Control
+                                            type="password"
+                                            placeholder="Mínimo 6 caracteres"
+                                            value={regPassword}
+                                            onChange={(e) => setRegPassword(e.target.value)}
+                                            required
+                                            className="rounded-3"
+                                        />
+                                    </Form.Group>
 
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Teléfono</Form.Label>
-                                    <Form.Control
-                                        type="tel"
-                                        placeholder="+58 412 1234567"
-                                        value={regPhone}
-                                        onChange={(e) => setRegPhone(e.target.value)}
-                                        required
-                                        className="rounded-3"
-                                    />
-                                </Form.Group>
+                                    <Form.Group className="mb-4">
+                                        <Form.Label>Dirección Física de la Tienda</Form.Label>
+                                        <Form.Control
+                                            type="text"
+                                            placeholder="Ej: Calle 5 con Av. Principal, Local 2"
+                                            value={regAddress}
+                                            onChange={(e) => setRegAddress(e.target.value)}
+                                            required
+                                            className="rounded-3"
+                                        />
+                                        <small className="text-secondary mt-1 d-block">
+                                            Escribe la dirección exacta de tu local.
+                                        </small>
+                                    </Form.Group>
 
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Contraseña</Form.Label>
-                                    <Form.Control
-                                        type="password"
-                                        placeholder="Mínimo 6 caracteres"
-                                        value={regPassword}
-                                        onChange={(e) => setRegPassword(e.target.value)}
-                                        required
-                                        className="rounded-3"
-                                    />
-                                </Form.Group>
+                                    <Form.Group className="mb-4">
+                                        <Form.Label>Punto en el Mapa (Ubicación GPS)</Form.Label>
+                                        <StoreLocationMap
+                                            address={regAddress}
+                                            onLocationDetected={setRegPosition}
+                                        />
+                                    </Form.Group>
 
-                                <Form.Group className="mb-4">
-                                    <Form.Label>Dirección Física de la Tienda</Form.Label>
-                                    <Form.Control
-                                        type="text"
-                                        placeholder="Ej: Calle 5 con Av. Principal, Local 2"
-                                        value={regAddress}
-                                        onChange={(e) => setRegAddress(e.target.value)}
-                                        required
-                                        className="rounded-3"
-                                    />
-                                    <small className="text-secondary mt-1 d-block">
-                                        Escribe la dirección exacta de tu local.
-                                    </small>
-                                </Form.Group>
+                                    {regMessage && !regSuccessful && (
+                                        <Alert variant="danger">
+                                            {regMessage}
+                                        </Alert>
+                                    )}
 
-                                <Form.Group className="mb-4">
-                                    <Form.Label>Punto en el Mapa (Ubicación GPS)</Form.Label>
-                                    <StoreLocationMap
-                                        address={regAddress}
-                                        onLocationDetected={setRegPosition}
-                                    />
-                                </Form.Group>
-
-                                {regMessage && (
-                                    <Alert variant={regSuccessful ? "success" : "danger"}>
-                                        {regMessage}
-                                    </Alert>
-                                )}
-
-                                {!regSuccessful ? (
                                     <Button variant="primary" type="submit" className="w-100 rounded-pill fw-bold" disabled={regLoading}>
                                         {regLoading ? <Spinner size="sm" animation="border" className="me-2" /> : "Registrar y Comenzar"}
                                     </Button>
-                                ) : (
-                                    <Button variant="secondary" className="w-100 rounded-pill fw-bold" onClick={closeRegisterModal}>
-                                        Cerrar
-                                    </Button>
-                                )}
-                            </Form>
+                                </Form>
+                            )}
                         </div>
                     </div>
                 </div>

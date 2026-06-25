@@ -1,5 +1,5 @@
 import React from 'react';
-import { Navbar, Container, Button, Nav, Dropdown } from 'react-bootstrap';
+import { Navbar, Container, Button, Nav, Dropdown, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaStore, FaUserCircle } from 'react-icons/fa';
 import AuthService from '../services/auth.service';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
@@ -44,28 +44,32 @@ const MarketplaceNavbar = ({ onLoginClick, onRegisterClick }) => {
                     <div className="d-flex align-items-center gap-4 mt-3 mt-lg-0">
                         {user ? (
                             <div className="d-flex align-items-center gap-3">
-                                <Button 
-                                    as={Link} 
-                                    to={isDashboard ? "/" : "/dashboard"} 
-                                    variant="white" 
-                                    className="glass-panel-sm rounded-pill px-3 py-2 border-0 shadow-sm d-none d-md-flex align-items-center gap-2 fw-bold text-dark"
-                                    style={{ fontSize: '0.85rem' }}
-                                >
-                                    {isDashboard ? (
-                                        <>🛒 <span className="d-none d-xl-inline">Seguir Comprando</span></>
-                                    ) : (
-                                        <>📦 <span className="d-none d-xl-inline">Mis Pedidos</span></>
-                                    )}
-                                </Button>
+                                <OverlayTrigger placement="bottom" overlay={<Tooltip>{isDashboard ? "Explorar más tiendas" : "Revisar el estado de tus compras"}</Tooltip>}>
+                                    <Button 
+                                        as={Link} 
+                                        to={isDashboard ? "/" : "/dashboard"} 
+                                        variant="white" 
+                                        className="glass-panel-sm rounded-pill px-3 py-2 border-0 shadow-sm d-none d-md-flex align-items-center gap-2 fw-bold text-dark"
+                                        style={{ fontSize: '0.85rem' }}
+                                    >
+                                        {isDashboard ? (
+                                            <>🛒 <span className="d-none d-xl-inline">Seguir Comprando</span></>
+                                        ) : (
+                                            <>📦 <span className="d-none d-xl-inline">Mis Pedidos</span></>
+                                        )}
+                                    </Button>
+                                </OverlayTrigger>
 
                                 <Dropdown align="end">
-                                    <Dropdown.Toggle variant="white" className="glass-panel-sm rounded-pill px-3 py-2 border-0 shadow-sm d-flex align-items-center gap-2">
-                                        <FaUserCircle size={20} className="text-primary" />
-                                        <div className="text-start d-none d-sm-block">
-                                            <div className="fw-bold small lh-1">{displayName}</div>
-                                            <small className="text-muted" style={{ fontSize: '0.65rem' }}>Cliente Pro</small>
-                                        </div>
-                                    </Dropdown.Toggle>
+                                    <OverlayTrigger placement="bottom" overlay={<Tooltip>Gestionar mi cuenta y ver perfil</Tooltip>}>
+                                        <Dropdown.Toggle variant="white" className="glass-panel-sm rounded-pill px-3 py-2 border-0 shadow-sm d-flex align-items-center gap-2">
+                                            <FaUserCircle size={20} className="text-primary" />
+                                            <div className="text-start d-none d-sm-block">
+                                                <div className="fw-bold small lh-1">{displayName}</div>
+                                                <small className="text-muted" style={{ fontSize: '0.65rem' }}>Cliente Pro</small>
+                                            </div>
+                                        </Dropdown.Toggle>
+                                    </OverlayTrigger>
 
                                     <Dropdown.Menu className="border-0 shadow-lg rounded-4 p-2 mt-2" style={{ minWidth: '220px' }}>
                                         <div className="px-3 py-2 mb-2 bg-light rounded-3 text-center">
@@ -95,8 +99,12 @@ const MarketplaceNavbar = ({ onLoginClick, onRegisterClick }) => {
                             </div>
                         ) : (
                             <Nav className="gap-2 align-items-center">
-                                <Button variant="link" className="text-decoration-none fw-bold text-dark p-0 px-2" onClick={onLoginClick}>Entrar</Button>
-                                <Button variant="primary" className="rounded-pill px-4 fw-bold shadow-sm" style={{ padding: '0.6rem 1.5rem' }} onClick={onRegisterClick}>Registrarme</Button>
+                                <OverlayTrigger placement="bottom" overlay={<Tooltip>Ingresar a tu cuenta existente</Tooltip>}>
+                                    <Button variant="link" className="text-decoration-none fw-bold text-dark p-0 px-2" onClick={onLoginClick}>Entrar</Button>
+                                </OverlayTrigger>
+                                <OverlayTrigger placement="bottom" overlay={<Tooltip>Crear una cuenta nueva gratis</Tooltip>}>
+                                    <Button variant="primary" className="rounded-pill px-4 fw-bold shadow-sm" style={{ padding: '0.6rem 1.5rem' }} onClick={onRegisterClick}>Registrarme</Button>
+                                </OverlayTrigger>
                             </Nav>
                         )}
                         <div className="vr d-none d-lg-block mx-1 opacity-25"></div>

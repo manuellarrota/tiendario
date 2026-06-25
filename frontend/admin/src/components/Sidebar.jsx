@@ -117,6 +117,17 @@ const Sidebar = () => {
 
     const toggleSidebar = () => setIsOpen(!isOpen);
 
+    const getMarketUrl = () => {
+        if (import.meta.env.VITE_MARKET_URL) {
+            return import.meta.env.VITE_MARKET_URL;
+        }
+        const hostname = window.location.hostname;
+        const port = window.location.port;
+        if (port === '5174') return `http://${hostname}:5173`;
+        if (port === '3001') return `http://${hostname}:3000`;
+        return `https://${hostname.replace('admin.', '')}`;
+    };
+
     const toggleDesktop = () => {
         const newState = !collapsed;
         setCollapsed(newState);
@@ -214,56 +225,45 @@ const Sidebar = () => {
                             </>
                         ) : (
                             <>
-                                {/* Dashboard — acceso rápido */}
-                                <NavItem to="/dashboard" icon={FaHome} label="Inicio" description="Resumen rápido de tus ventas y actividad reciente." collapsed={collapsed} setIsOpen={setIsOpen} />
-
-                                {/* ── OPERACIÓN ───────────── */}
-                                <NavGroup label="🟢 Operación" collapsed={collapsed} />
+                                {/* ── 1. OPERACIÓN DIARIA ───────────── */}
+                                <NavGroup label="🟢 Operación Diaria" collapsed={collapsed} />
+                                <NavItem to="/dashboard" icon={FaHome} label="Inicio / Dashboard" description="Resumen rápido de tus ventas y actividad reciente." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 <NavItem to="/pos" icon={FaShoppingBag} label="Punto de Venta" description="Realiza ventas rápidas en mostrador y genera tickets." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/notifications" icon={FaBell} label="Notificaciones" badge={unreadCount} description="Novedades, pedidos nuevos y alertas de sistema." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                <NavItem to="/sales/history" icon={FaHistory} label="Historial de Ventas" description="Monitorea el estado de tus ventas y pedidos pendientes." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 {(user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
                                     <>
                                         <NavItem to="/daily-closing" icon={FaCashRegister} label="Control de Caja" description="Arqueo diario y balance de ingresos en efectivo/digital." collapsed={collapsed} setIsOpen={setIsOpen} />
                                         <NavItem to="/shifts/history" icon={FaHistory} label="Auditoría de Cajas" description="Revisa y verifica los reportes de turno de tus cajeros." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                    </>
+                                )}
+
+                                {/* ── 2. CATÁLOGO E INVENTARIO ───────────── */}
+                                {(user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
+                                    <>
+                                        <NavGroup label="📦 Inventario y Compras" collapsed={collapsed} />
                                         <NavItem to="/inventory" icon={FaBox} label="Inventario" description="Controla stocks, precios, imágenes y exportación." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                    </>
-                                )}
-                                <NavItem to="/notifications" icon={FaBell} label="Notificaciones" badge={unreadCount} description="Novedades, pedidos nuevos y alertas de sistema." collapsed={collapsed} setIsOpen={setIsOpen} />
-
-                                {/* ── COMERCIAL ───────────── */}
-                                {(user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
-                                    <>
-                                        <NavGroup label="📦 Comercial" collapsed={collapsed} />
-                                        <NavItem to="/purchases/new" icon={FaTruck} label="Comprar Mercancía" description="Registra compras a proveedores y suma al stock." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                        <NavItem to="/suppliers" icon={FaUsers} label="Proveedores" description="Guarda los datos de contacto de quienes te surten." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                    </>
-                                )}
-                                <NavItem to="/customers" icon={FaUsers} label="Clientes" description="Directorio y base de datos de tus clientes." collapsed={collapsed} setIsOpen={setIsOpen} />
-
-                                {/* ── SEGUIMIENTO ─────────── */}
-                                <NavGroup label="📊 Seguimiento" collapsed={collapsed} />
-                                <NavItem to="/sales/history" icon={FaHistory} label="Historial de Ventas" description="Monitorea el estado de tus ventas y pedidos pendientes." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                {(user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
-                                    <NavItem to="/purchases/history" icon={FaHistory} label="Historial de Compras" description="Revisa cuándo y a cuánto compraste tus productos." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                )}
-
-                                {/* ── ANÁLISIS ────────────── */}
-                                {(user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
-                                    <>
-                                        <NavGroup label="📈 Análisis" collapsed={collapsed} />
-                                        <NavItem to="/reports" icon={FaChartLine} label="Reportes" description="Analítica avanzada, productos más vendidos y ganancias." collapsed={collapsed} setIsOpen={setIsOpen} />
-                                    </>
-                                )}
-
-                                {/* ── CONFIGURACIÓN ───────── */}
-                                {(user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
-                                    <>
-                                        <NavGroup label="⚙️ Configuración" collapsed={collapsed} />
                                         <NavItem to="/categories" icon={FaTags} label="Categorías" description="Mira las categorías globales y sugiere nuevas para el catálogo." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                        <NavItem to="/purchases/new" icon={FaTruck} label="Comprar Mercancía" description="Registra compras a proveedores y suma al stock." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                        <NavItem to="/purchases/history" icon={FaHistory} label="Historial de Compras" description="Revisa cuándo y a cuánto compraste tus productos." collapsed={collapsed} setIsOpen={setIsOpen} />
                                     </>
                                 )}
+
+                                {/* ── 3. CONTACTOS ───────────── */}
+                                <NavGroup label="👥 Contactos" collapsed={collapsed} />
+                                <NavItem to="/customers" icon={FaUsers} label="Clientes" description="Directorio y base de datos de tus clientes." collapsed={collapsed} setIsOpen={setIsOpen} />
                                 {(user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
                                     <>
+                                        <NavItem to="/suppliers" icon={FaUsers} label="Proveedores" description="Guarda los datos de contacto de quienes te surten." collapsed={collapsed} setIsOpen={setIsOpen} />
                                         <NavItem to="/staff" icon={FaUserTie} label="Mis Empleados" description="Administra cajeros y accesos de personal." collapsed={collapsed} setIsOpen={setIsOpen} />
+                                    </>
+                                )}
+
+                                {/* ── 4. ADMINISTRACIÓN Y ANÁLISIS ───────────── */}
+                                <NavGroup label="⚙️ Administración" collapsed={collapsed} />
+                                {(user?.roles?.includes('ROLE_MANAGER') || user?.roles?.includes('ROLE_ADMIN')) && (
+                                    <>
+                                        <NavItem to="/reports" icon={FaChartLine} label="Reportes" description="Analítica avanzada, productos más vendidos y ganancias." collapsed={collapsed} setIsOpen={setIsOpen} />
                                         <NavItem to="/company" icon={FaCog} label="Ajustes de Tienda" description="Configura los detalles de tu negocio." collapsed={collapsed} setIsOpen={setIsOpen} />
                                     </>
                                 )}
@@ -272,24 +272,37 @@ const Sidebar = () => {
                     </div>
 
                     <div className="sidebar-footer d-flex flex-column gap-2" style={{ padding: collapsed ? '20px 0' : '20px' }}>
-                        <button
-                            className={`btn-logout-sidebar ${collapsed ? 'justify-content-center' : ''}`}
-                            style={{ background: 'transparent', color: '#6c757d', border: '1px solid #dee2e6' }}
-                            onClick={() => setShowPasswordModal(true)}
-                            title={collapsed ? 'Cambiar Contraseña' : ''}
-                        >
-                            <FaKey />
-                            {!collapsed && <span>Cambiar Contraseña</span>}
-                        </button>
+                        <OverlayTrigger placement="right" overlay={collapsed ? <BsTooltip>Visitar Marketplace</BsTooltip> : <></>}>
+                            <button
+                                className={`btn-logout-sidebar ${collapsed ? 'justify-content-center' : ''}`}
+                                style={{ background: 'transparent', color: '#6c757d', border: '1px solid #dee2e6' }}
+                                onClick={() => window.open(getMarketUrl(), '_blank')}
+                            >
+                                <FaStore />
+                                {!collapsed && <span>Ir al Market</span>}
+                            </button>
+                        </OverlayTrigger>
 
-                        <button
-                            className={`btn-logout-sidebar ${collapsed ? 'justify-content-center' : ''}`}
-                            onClick={handleLogout}
-                            title={collapsed ? 'Cerrar Sesión' : ''}
-                        >
-                            <FaSignOutAlt />
-                            {!collapsed && <span>Cerrar Sesión</span>}
-                        </button>
+                        <OverlayTrigger placement="right" overlay={collapsed ? <BsTooltip>Cambiar Contraseña</BsTooltip> : <></>}>
+                            <button
+                                className={`btn-logout-sidebar ${collapsed ? 'justify-content-center' : ''}`}
+                                style={{ background: 'transparent', color: '#6c757d', border: '1px solid #dee2e6' }}
+                                onClick={() => setShowPasswordModal(true)}
+                            >
+                                <FaKey />
+                                {!collapsed && <span>Cambiar Contraseña</span>}
+                            </button>
+                        </OverlayTrigger>
+
+                        <OverlayTrigger placement="right" overlay={collapsed ? <BsTooltip>Cerrar Sesión</BsTooltip> : <></>}>
+                            <button
+                                className={`btn-logout-sidebar ${collapsed ? 'justify-content-center' : ''}`}
+                                onClick={handleLogout}
+                            >
+                                <FaSignOutAlt />
+                                {!collapsed && <span>Cerrar Sesión</span>}
+                            </button>
+                        </OverlayTrigger>
                     </div>
                 </div>
             </div>
@@ -417,6 +430,7 @@ const NavItem = ({ to, icon: Icon, label, badge, breakdown, description, collaps
                 className={({ isActive }) =>
                     `sidebar-nav-link ${isActive ? 'active' : ''} ${collapsed ? 'justify-content-center px-0' : ''}`
                 }
+                title={!collapsed ? description : undefined}
                 onClick={() => { setIsOpen(false); hideTooltip(); }}
                 onMouseEnter={collapsed ? showTooltip : null}
                 onMouseLeave={collapsed ? hideTooltip : null}

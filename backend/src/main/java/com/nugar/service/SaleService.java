@@ -480,6 +480,168 @@ public class SaleService {
         }
     }
 
+    @Transactional
+    public void cancelOrderAsCustomer(Long id, UserDetailsImpl userDetails) {
+        Sale sale = saleRepository.findById(id).orElse(null);
+        if (sale == null) {
+            throw new RuntimeException("Error: Pedido no encontrado.");
+        }
+
+        String userEmail = userDetails.getEmail() != null ? userDetails.getEmail() : userDetails.getUsername();
+        
+        // Verify ownership (either by user ID or email)
+        boolean isOwner = (sale.getCustomer() != null && sale.getCustomer().getUserId() != null && sale.getCustomer().getUserId().equals(userDetails.getId())) ||
+                          (sale.getCustomerEmail() != null && sale.getCustomerEmail().equalsIgnoreCase(userEmail)) ||
+                          (sale.getUser() != null && sale.getUser().getId().equals(userDetails.getId()));
+                          
+        if (!isOwner) {
+            throw new RuntimeException("Error: Acceso denegado a este pedido.");
+        }
+
+        if (!com.nugar.domain.SaleStatus.PENDING.equals(sale.getStatus()) && !com.nugar.domain.SaleStatus.PREPARING.equals(sale.getStatus())) {
+            throw new RuntimeException("Error: Este pedido ya no puede ser cancelado por el cliente.");
+        }
+
+        // Restore stock
+        StringBuilder stockRestored = new StringBuilder();
+        if (sale.getItems() != null) {
+            for (SaleItem item : sale.getItems()) {
+                Product product = item.getProduct();
+                if (product != null) {
+                    product.setStock(product.getStock() + item.getQuantity());
+                    productRepository.save(product);
+                    stockRestored.append("+").append(item.getQuantity()).append(" ").append(product.getName()).append(", ");
+                }
+            }
+        }
+
+        sale.setStatus(com.nugar.domain.SaleStatus.CANCELLED);
+        saleRepository.save(sale);
+
+        BusinessLogger.warn(log, "PEDIDO_CANCELADO_CLIENTE", data -> {
+            data.put("canceladoPor", userEmail);
+            data.put("empresa", sale.getCompany().getName());
+            data.put("facturaId", sale.getId());
+            data.put("montoOriginalUSD", sale.getTotalAmount());
+        });
+    }
+
+    @Transactional
+    public void completePendingSale(Long id, List<SalePayment> payments, UserDetailsImpl userDetails) {
+        Sale sale = saleRepository.findById(id).orElse(null);
+        if (sale == null || !sale.getCompany().getId().equals(userDetails.getCompanyId())) {
+            throw new RuntimeException("Error: Venta no encontrada o acceso denegado.");
+        }
+
+        if (com.nugar.domain.SaleStatus.PAID.equals(sale.getStatus())) {
+            throw new RuntimeException("Error: Este pedido ya ha sido pagado.");
+        }
+
+        if (payments == null || payments.isEmpty()) {
+            throw new RuntimeException("Error: Debe registrar al menos un método de pago.");
+        }
+
+        // Validate Shift and Cash Register
+        Shift activeShift = shiftRepository.findByUserIdAndStatus(userDetails.getId(), ShiftStatus.OPEN)
+                .orElseThrow(() -> new RuntimeException("Error: Debes tener una caja abierta para procesar cobros."));
+
+        sale.setShift(activeShift);
+        if (activeShift.getCashRegister() != null) {
+            sale.setCashRegister(activeShift.getCashRegister());
+        }
+
+        // Set User (Cashier) to whoever is completing the sale
+        com.nugar.domain.User cashier = userRepository.findById(userDetails.getId()).orElse(null);
+        sale.setUser(cashier);
+
+        // Process payments (very similar to createSale)
+        java.math.BigDecimal totalPaidBase = java.math.BigDecimal.ZERO;
+        if (sale.getPayments() == null) {
+            sale.setPayments(new java.util.ArrayList<>());
+        } else {
+            // Clear previous payments if they were somehow recorded before
+            sale.getPayments().clear();
+        }
+
+        for (SalePayment payment : payments) {
+            payment.setSale(sale);
+            if (payment.getAmountInBaseCurrency() == null && payment.getExchangeRate() != null && payment.getExchangeRate().compareTo(java.math.BigDecimal.ZERO) > 0) {
+                 payment.setAmountInBaseCurrency(payment.getAmount().divide(payment.getExchangeRate(), 2, java.math.RoundingMode.HALF_UP));
+            }
+            totalPaidBase = totalPaidBase.add(payment.getAmountInBaseCurrency() != null ? payment.getAmountInBaseCurrency() : payment.getAmount());
+            sale.getPayments().add(payment);
+        }
+
+        // Calculate change
+        java.math.BigDecimal computedTotal = sale.getTotalAmount();
+        java.math.BigDecimal change = totalPaidBase.subtract(computedTotal);
+        if (change.compareTo(java.math.BigDecimal.ZERO) > 0) {
+            SalePayment changePayment = new SalePayment();
+            changePayment.setSale(sale);
+            changePayment.setMethod(com.nugar.domain.PaymentMethod.CASH);
+            changePayment.setAmount(change.negate());
+            changePayment.setAmountInBaseCurrency(change.negate());
+            changePayment.setExchangeRate(java.math.BigDecimal.ONE);
+            String baseCurrency = sale.getPayments().get(0).getCurrencyCode();
+            changePayment.setCurrencyCode(baseCurrency != null ? baseCurrency : "USD"); 
+            sale.getPayments().add(changePayment);
+        }
+
+        // Determine dominant payment method for the Sale status
+        long distinctMethods = sale.getPayments().stream()
+                .filter(p -> p.getMethod() != null && p.getAmountInBaseCurrency() != null && p.getAmountInBaseCurrency().compareTo(java.math.BigDecimal.ZERO) > 0)
+                .map(p -> p.getMethod())
+                .distinct()
+                .count();
+
+        if (distinctMethods > 1) {
+            sale.setPaymentMethod(com.nugar.domain.PaymentMethod.MIXED);
+        } else {
+            com.nugar.domain.PaymentMethod dominant = sale.getPayments().stream()
+                    .filter(p -> p.getMethod() != null && p.getAmountInBaseCurrency() != null && p.getAmountInBaseCurrency().compareTo(java.math.BigDecimal.ZERO) > 0)
+                    .map(p -> p.getMethod())
+                    .findFirst()
+                    .orElse(com.nugar.domain.PaymentMethod.CASH);
+            sale.setPaymentMethod(dominant);
+        }
+
+        sale.setStatus(com.nugar.domain.SaleStatus.PAID);
+        saleRepository.save(sale);
+
+        // Logging
+        BusinessLogger.log(log, "PEDIDO_COBRADO_POS", data -> {
+            data.put("cajero", cashier != null ? cashier.getUsername() : "Sistema");
+            data.put("empresa", sale.getCompany().getName());
+            data.put("facturaId", sale.getId());
+            data.put("cliente", sale.getCustomerName() != null ? sale.getCustomerName() : "Publico General");
+            data.put("totalUSD", sale.getTotalAmount());
+            java.util.List<java.util.Map<String, Object>> pagosLog = new java.util.ArrayList<>();
+            for (SalePayment p : sale.getPayments()) {
+                java.util.Map<String, Object> pago = new java.util.LinkedHashMap<>();
+                pago.put("metodo", p.getMethod() != null ? p.getMethod().name() : "CASH");
+                pago.put("moneda", p.getCurrencyCode() != null ? p.getCurrencyCode() : "USD");
+                pago.put("monto", p.getAmount());
+                pagosLog.add(pago);
+            }
+            data.put("pagos", pagosLog);
+        });
+
+        // Notify customer
+        try {
+            String customerEmail = sale.getCustomerEmail();
+            if (customerEmail != null && !customerEmail.isBlank()) {
+                emailService.sendOrderStatusUpdateEmail(
+                        customerEmail,
+                        sale.getCustomerName() != null ? sale.getCustomerName() : "Cliente",
+                        sale.getCompany().getName(),
+                        "PAID",
+                        String.valueOf(sale.getId()));
+            }
+        } catch (Exception e) {
+            log.warn("Could not send order status update notification: {}", e.getMessage());
+        }
+    }
+
     public List<DailySalesSummary> getDailySalesSummaryList(UserDetailsImpl userDetails) {
         LocalDateTime startOfDay = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0).withNano(0);
         LocalDateTime endOfDay = LocalDateTime.now().withHour(23).withMinute(59).withSecond(59).withNano(999999999);

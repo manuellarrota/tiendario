@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Card, Button, Badge, Row, Col, Spinner, Alert } from 'react-bootstrap';
+import { Container, Card, Button, Badge, Row, Col, Spinner, Alert, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import AdminService from '../services/admin.service';
 import Sidebar from '../components/Sidebar';
 import Layout from '../components/Layout';
@@ -160,22 +160,26 @@ const AdminCatalogSuggestionsPage = () => {
                                         </Row>
                                     </Card.Body>
                                     <Card.Footer className="bg-white border-0 py-3 px-4 d-flex justify-content-end gap-2">
-                                        <Button 
-                                            variant="outline-danger" 
-                                            className="rounded-pill px-4" 
-                                            onClick={() => handleReject(sug.id)}
-                                            disabled={actionId === sug.id}
-                                        >
-                                            {actionId === sug.id ? <Spinner size="sm" animation="border" /> : <><FaTimes className="me-2" /> Rechazar</>}
-                                        </Button>
-                                        <Button 
-                                            variant="primary" 
-                                            className="rounded-pill px-4 shadow-sm fw-bold" 
-                                            onClick={() => handleApprove(sug.id)}
-                                            disabled={actionId === sug.id}
-                                        >
-                                            {actionId === sug.id ? <Spinner size="sm" animation="border" /> : <><FaCheck className="me-2" /> Aprobar y Actualizar Catálogo</>}
-                                        </Button>
+                                        <OverlayTrigger overlay={<Tooltip>Rechazar Sugerencia</Tooltip>}>
+                                            <Button 
+                                                variant="outline-danger" 
+                                                className="rounded-pill px-4" 
+                                                onClick={() => handleReject(sug.id)}
+                                                disabled={actionId === sug.id}
+                                            >
+                                                {actionId === sug.id ? <Spinner size="sm" animation="border" /> : <><FaTimes className="me-2" /> Rechazar</>}
+                                            </Button>
+                                        </OverlayTrigger>
+                                        <OverlayTrigger overlay={<Tooltip>Aprobar y Actualizar Catálogo Global</Tooltip>}>
+                                            <Button 
+                                                variant="primary" 
+                                                className="rounded-pill px-4 shadow-sm fw-bold" 
+                                                onClick={() => handleApprove(sug.id)}
+                                                disabled={actionId === sug.id}
+                                            >
+                                                {actionId === sug.id ? <Spinner size="sm" animation="border" /> : <><FaCheck className="me-2" /> Aprobar y Actualizar Catálogo</>}
+                                            </Button>
+                                        </OverlayTrigger>
                                     </Card.Footer>
                                 </Card>
                             </div>

@@ -455,34 +455,38 @@ const PurchaseHistoryPage = () => {
                                                         </td>
                                                         <td className="px-4 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                                                             <div className="d-flex justify-content-center gap-1">
-                                                                <Button
-                                                                    variant="outline-primary"
-                                                                    size="sm"
-                                                                    className="rounded-pill px-3"
-                                                                    onClick={() => openDetail(purchase)}
-                                                                >
-                                                                    <FaEye className="me-1" /> Ver
-                                                                </Button>
+                                                                <OverlayTrigger overlay={<Tooltip>Ver Detalle</Tooltip>}>
+                                                                    <Button
+                                                                        variant="outline-primary"
+                                                                        size="sm"
+                                                                        className="rounded-pill px-3"
+                                                                        onClick={() => openDetail(purchase)}
+                                                                    >
+                                                                        <FaEye className="me-1" /> Ver
+                                                                    </Button>
+                                                                </OverlayTrigger>
                                                                 {purchase.status !== 'CANCELLED' && (
                                                                     <>
-                                                                    <Button
-                                                                        variant="outline-warning"
-                                                                        size="sm"
-                                                                        className="rounded-pill px-2 me-1"
-                                                                        title="Corregir Costos"
-                                                                        onClick={() => openEditCostsModal(purchase)}
-                                                                    >
-                                                                        <FaPen />
-                                                                    </Button>
-                                                                    <Button
-                                                                        variant="outline-danger"
-                                                                        size="sm"
-                                                                        className="rounded-pill px-2"
-                                                                        title="Anular Compra"
-                                                                        onClick={() => openVoidModal(purchase)}
-                                                                    >
-                                                                        <FaBan />
-                                                                    </Button>
+                                                                    <OverlayTrigger overlay={<Tooltip>Corregir Costos</Tooltip>}>
+                                                                        <Button
+                                                                            variant="outline-warning"
+                                                                            size="sm"
+                                                                            className="rounded-pill px-2 me-1"
+                                                                            onClick={() => openEditCostsModal(purchase)}
+                                                                        >
+                                                                            <FaPen />
+                                                                        </Button>
+                                                                    </OverlayTrigger>
+                                                                    <OverlayTrigger overlay={<Tooltip>Anular Compra</Tooltip>}>
+                                                                        <Button
+                                                                            variant="outline-danger"
+                                                                            size="sm"
+                                                                            className="rounded-pill px-2"
+                                                                            onClick={() => openVoidModal(purchase)}
+                                                                        >
+                                                                            <FaBan />
+                                                                        </Button>
+                                                                    </OverlayTrigger>
                                                                     </>
                                                                 )}
                                                             </div>

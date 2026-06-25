@@ -1,0 +1,15 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Toldo Naranja (Awning) -->
+  <!-- Diseñado con simetría matemática perfecta y esquinas redondeadas -->
+  <polygon points="160,100 352,100 400,180 350,180 318,150 286,180 226,180 194,150 162,180 112,180" 
+           fill="#FD7E14" stroke="#FD7E14" stroke-width="24" stroke-linejoin="round" />
+
+  <!-- Estructura de la N Azul -->
+  <!-- Usando stroke-linejoin="round" logramos ese aspecto "gordito" y amigable de la imagen -->
+  <polygon points="110,430 110,220 170,220 342,340 342,220 402,220 402,430 342,430 170,310 170,430" 
+           fill="#1a73e8" stroke="#1a73e8" stroke-width="24" stroke-linejoin="round" />
+
+  <!-- Elemento Naranja Inferior (Pin/Exclamación) -->
+  <circle cx="256" cy="396" r="14" fill="#FD7E14" />
+  <polygon points="244,404 268,404 256,424" fill="#FD7E14" stroke="#FD7E14" stroke-width="8" stroke-linejoin="round" />
+</svg>

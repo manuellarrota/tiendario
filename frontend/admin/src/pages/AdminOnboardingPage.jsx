@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
-import { Container, Card, Button, Form, Alert, Badge, Spinner, Row, Col, ProgressBar } from 'react-bootstrap';
+import { Container, Card, Button, Form, Alert, Badge, Spinner, Row, Col, ProgressBar, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import Layout from '../components/Layout';
 import AdminService from '../services/admin.service';
 import StoreLocationMap from '../components/StoreLocationMap';
@@ -496,17 +496,21 @@ export default function AdminOnboardingPage() {
                                         Agrega los primeros productos de la tienda.
                                     </p>
                                     <div className="d-flex gap-2">
-                                        <Button variant="outline-success" size="sm" className="rounded-pill px-3 fw-bold" onClick={downloadExcelTemplate}>
-                                            <FaArrowRight className="me-1" /> Descargar Formato
-                                        </Button>
-                                        <div className="position-relative">
-                                            <Button variant="success" size="sm" className="rounded-pill px-3 fw-bold bg-success text-white border-0 shadow-sm" style={{ pointerEvents: 'none' }}>
-                                                <FaBoxOpen className="me-1" /> Importar CSV
+                                        <OverlayTrigger overlay={<Tooltip>Descargar plantilla de Excel para carga masiva</Tooltip>}>
+                                            <Button variant="outline-success" size="sm" className="rounded-pill px-3 fw-bold" onClick={downloadExcelTemplate}>
+                                                <FaArrowRight className="me-1" /> Descargar Formato
                                             </Button>
-                                            <input type="file" accept=".csv" onChange={handleExcelUpload}
-                                                style={{ opacity: 0, position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', cursor: 'pointer' }}
-                                            />
-                                        </div>
+                                        </OverlayTrigger>
+                                        <OverlayTrigger overlay={<Tooltip>Subir archivo CSV o Excel lleno</Tooltip>}>
+                                            <div className="position-relative">
+                                                <Button variant="success" size="sm" className="rounded-pill px-3 fw-bold bg-success text-white border-0 shadow-sm" style={{ pointerEvents: 'none' }}>
+                                                    <FaBoxOpen className="me-1" /> Importar CSV
+                                                </Button>
+                                                <input type="file" accept=".csv, .xlsx" onChange={handleExcelUpload}
+                                                    style={{ opacity: 0, position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', cursor: 'pointer' }}
+                                                />
+                                            </div>
+                                        </OverlayTrigger>
                                     </div>
                                 </div>
 
@@ -556,9 +560,11 @@ export default function AdminOnboardingPage() {
                                                     </td>
                                                     <td style={{ width: 40 }}>
                                                         {products.length > 1 && (
-                                                            <Button variant="link" className="text-danger p-0" onClick={() => removeProductRow(i)}>
-                                                                <FaTrash size={14} />
-                                                            </Button>
+                                                            <OverlayTrigger overlay={<Tooltip>Eliminar producto</Tooltip>}>
+                                                                <Button variant="link" className="text-danger p-0" onClick={() => removeProductRow(i)}>
+                                                                    <FaTrash size={14} />
+                                                                </Button>
+                                                            </OverlayTrigger>
                                                         )}
                                                     </td>
                                                 </tr>
@@ -567,9 +573,11 @@ export default function AdminOnboardingPage() {
                                     </table>
                                 </div>
 
-                                <Button variant="outline-primary" size="sm" className="rounded-pill px-3 mb-4" onClick={addProductRow}>
-                                    <FaPlus className="me-1" /> Agregar fila
-                                </Button>
+                                <OverlayTrigger overlay={<Tooltip>Agregar nueva fila para producto manual</Tooltip>}>
+                                    <Button variant="outline-primary" size="sm" className="rounded-pill px-3 mb-4" onClick={addProductRow}>
+                                        <FaPlus className="me-1" /> Agregar fila
+                                    </Button>
+                                </OverlayTrigger>
 
                                 <div className="d-flex justify-content-between">
                                     <Button variant="outline-secondary" className="rounded-pill px-4" onClick={() => setStep(4)}>

@@ -61,8 +61,24 @@ const InventoryPage = () => {
     // Helper to get full image URL
     const getFullImageUrl = (path) => {
         if (!path) return null;
+        
+        const publicHost = import.meta.env.VITE_PUBLIC_HOST;
+        if (publicHost && path.includes('http://localhost')) {
+            path = path.replace('http://localhost', publicHost);
+        }
+
         if (path.startsWith('http')) return path;
-        return (import.meta.env.VITE_API_URL || '') + path;
+        
+        const apiUrl = import.meta.env.VITE_API_URL || '';
+        if (path.startsWith('/')) {
+             if (apiUrl === '/api' && path.startsWith('/api')) {
+                 return path;
+             }
+             if (apiUrl.endsWith('/api') && path.startsWith('/api')) {
+                 return apiUrl.slice(0, -4) + path;
+             }
+        }
+        return apiUrl + path;
     };
 
     const renderTooltip = (props, text) => (
@@ -816,7 +832,7 @@ const InventoryPage = () => {
                                 <div className="row g-3 align-items-end">
                                     <div className="col-md-4">
                                         <Form.Group>
-                                            <Form.Label className="fw-semibold small">Costo <small className="text-muted fw-normal">({platformConfig?.baseCurrencyCode || 'USD'}) · Privado</small></Form.Label>
+                                            <Form.Label className="fw-semibold small">Precio de Adquisición <small className="text-muted fw-normal">({platformConfig?.baseCurrencyCode || 'USD'})</small></Form.Label>
                                             <Form.Control type="number" onFocus={(e) => e.target.select()} step="0.01" value={costPrice} onChange={(e) => setCostPrice(e.target.value)} min="0" placeholder="0.00" />
                                         </Form.Group>
                                     </div>

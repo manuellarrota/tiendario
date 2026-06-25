@@ -18,10 +18,10 @@ public class S3StorageService {
     @Autowired
     private S3Client s3Client;
 
-    @Value("${aws.s3.bucketName:tiendario-imagenes}")
+    @Value("${aws.s3.bucketName:nugar-imagenes}")
     private String bucketName;
 
-    @Value("${aws.s3.publicUrl:http://localhost:9000/tiendario-imagenes/}")
+    @Value("${aws.s3.publicUrl:http://localhost:9000/nugar-imagenes/}")
     private String publicUrlBase;
 
     public String storeFile(MultipartFile file) {

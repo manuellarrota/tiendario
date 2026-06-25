@@ -62,6 +62,11 @@ const AdminCompaniesPage = () => {
     // Usuarios
     const [companyUsers, setCompanyUsers] = useState([]);
     const [usersLoading, setUsersLoading] = useState(false);
+    // Clientes
+    const [companyCustomers, setCompanyCustomers] = useState([]);
+    const [customersPage, setCustomersPage] = useState(0);
+    const [customersTotalPages, setCustomersTotalPages] = useState(0);
+    const [customersLoading, setCustomersLoading] = useState(false);
     // Historial
     const [auditLog, setAuditLog] = useState([]);
     const [auditLoading, setAuditLoading] = useState(false);
@@ -152,7 +157,8 @@ const AdminCompaniesPage = () => {
         setCompanyPurchases([]); setPurchasesPage(0);
         setCompanyProducts([]); setProductsPage(0);
         setCompanyUsers([]);
-        setAuditLog([]);
+        setCompanyCustomers([]); setCustomersPage(0);
+        setAuditLog([]); setAuditPage(0);
         AdminService.getCompanyKpis(company.id).then(
             res => { setCompanyKpis(res.data); setLoadingKpis(false); },
             err => { console.error('Error loading KPIs', err); setLoadingKpis(false); }
@@ -233,10 +239,10 @@ const AdminCompaniesPage = () => {
         );
     };
 
-    const loadAuditLog = () => {
+    const loadAuditLog = (page = 0) => {
         if (!viewCompany) return;
         setAuditLoading(true);
-        AdminService.getCompanyAuditLog(viewCompany.id).then(
+        AdminService.getCompanyAuditLog(viewCompany.id, page).then(
             res => { setAuditLog(res.data.content || []); setAuditLoading(false); },
             () => setAuditLoading(false)
         );
@@ -251,13 +257,23 @@ const AdminCompaniesPage = () => {
         );
     };
 
+    const loadCustomers = (page = 0) => {
+        if (!viewCompany) return;
+        setCustomersLoading(true);
+        AdminService.getCompanyCustomers(viewCompany.id, page).then(
+            res => { setCompanyCustomers(res.data.content || []); setCustomersTotalPages(res.data.totalPages || 0); setCustomersLoading(false); },
+            () => setCustomersLoading(false)
+        );
+    };
+
     const handleAssistTabSelect = (tab) => {
         setAssistTab(tab);
         if (tab === 'sales' && companySales.length === 0) loadSales(0);
         if (tab === 'purchases' && companyPurchases.length === 0) loadPurchases(0);
         if (tab === 'products' && companyProducts.length === 0) loadProducts(0);
         if (tab === 'users' && companyUsers.length === 0) loadUsers();
-        if (tab === 'history') loadAuditLog();
+        if (tab === 'customers' && companyCustomers.length === 0) loadCustomers(0);
+        if (tab === 'history' && auditLog.length === 0) loadAuditLog(0);
     };
 
     const openEditRecord = (type, record) => {
@@ -266,6 +282,7 @@ const AdminCompaniesPage = () => {
         if (type === 'purchase') setEditRecordForm({ total: record.total, invoiceNumber: record.invoiceNumber || '', paymentMethod: record.paymentMethod, currencyCode: record.currencyCode || 'USD', exchangeRate: record.exchangeRate || '' });
         if (type === 'product') setEditRecordForm({ name: record.name, category: record.category || '', price: record.price, description: record.description || '' });
         if (type === 'user') setEditRecordForm({ fullName: record.fullName || '', username: record.username, email: record.email, phone: record.phone || '', roles: record.roles || [] });
+        if (type === 'customer') setEditRecordForm({ name: record.name || '', email: record.email || '', phone: record.phone || '', cedula: record.cedula || '', address: record.address || '', loyaltyPoints: record.loyaltyPoints || 0 });
         setEditRecordReason('');
         setEditRecordError('');
         setShowEditRecordModal(true);
@@ -280,6 +297,7 @@ const AdminCompaniesPage = () => {
         if (type === 'sale') promise = AdminService.patchCompanySale(viewCompany.id, data.id, payload);
         else if (type === 'purchase') promise = AdminService.patchCompanyPurchase(viewCompany.id, data.id, payload);
         else if (type === 'product') promise = AdminService.patchCompanyProduct(viewCompany.id, data.id, payload);
+        else if (type === 'customer') promise = AdminService.patchCompanyCustomer(viewCompany.id, data.id, payload);
         else promise = AdminService.patchCompanyUser(viewCompany.id, data.id, payload);
         
         promise.then(
@@ -291,6 +309,7 @@ const AdminCompaniesPage = () => {
                 if (type === 'purchase') loadPurchases(purchasesPage);
                 if (type === 'product') loadProducts(productsPage);
                 if (type === 'user') loadUsers();
+                if (type === 'customer') loadCustomers(customersPage);
                 loadAuditLog();
             },
             err => {
@@ -333,7 +352,7 @@ const AdminCompaniesPage = () => {
     };
 
     const openVoidRecord = (type, record) => {
-        setVoidRecord({ type, id: record.id, name: type === 'product' ? record.name : `#${record.id}` });
+        setVoidRecord({ type, id: record.id, name: type === 'product' || type === 'customer' ? record.name : `#${record.id}` });
         setVoidReason('');
         setVoidConfirmCheck(false);
         setVoidError('');
@@ -346,16 +365,19 @@ const AdminCompaniesPage = () => {
         setVoidLoading(true);
         setVoidError('');
         const { type, id } = voidRecord;
-        const promise = type === 'sale'
-            ? AdminService.voidCompanySale(viewCompany.id, id, voidReason)
-            : AdminService.voidCompanyPurchase(viewCompany.id, id, voidReason);
+        let promise;
+        if (type === 'sale') promise = AdminService.voidCompanySale(viewCompany.id, id, voidReason);
+        else if (type === 'purchase') promise = AdminService.voidCompanyPurchase(viewCompany.id, id, voidReason);
+        else if (type === 'customer') promise = AdminService.deleteCompanyCustomer(viewCompany.id, id, voidReason);
+        
         promise.then(
             () => {
                 setVoidLoading(false);
                 setShowVoidModal(false);
-                toast.showSuccess('Registro anulado correctamente. Stock actualizado.');
+                toast.showSuccess(type === 'customer' ? 'Cliente eliminado correctamente.' : 'Registro anulado correctamente. Stock actualizado.');
                 if (type === 'sale') loadSales(salesPage);
                 if (type === 'purchase') loadPurchases(purchasesPage);
+                if (type === 'customer') loadCustomers(customersPage);
                 loadAuditLog();
             },
             err => {
@@ -717,6 +739,7 @@ const AdminCompaniesPage = () => {
                                         <Nav.Item><Nav.Link eventKey="purchases" className="small px-3 py-1"><FaBox className="me-1" />Compras</Nav.Link></Nav.Item>
                                         <Nav.Item><Nav.Link eventKey="products" className="small px-3 py-1"><FaMoneyBillWave className="me-1" />Productos</Nav.Link></Nav.Item>
                                         <Nav.Item><Nav.Link eventKey="users" className="small px-3 py-1"><FaUsers className="me-1" />Usuarios</Nav.Link></Nav.Item>
+                                        <Nav.Item><Nav.Link eventKey="customers" className="small px-3 py-1"><FaUsers className="me-1" />Clientes</Nav.Link></Nav.Item>
                                         <Nav.Item><Nav.Link eventKey="history" className="small px-3 py-1"><FaHistory className="me-1" />Historial</Nav.Link></Nav.Item>
                                     </Nav>
 
@@ -749,8 +772,12 @@ const AdminCompaniesPage = () => {
                                                                 <td><Badge bg={s.status === 'PAID' ? 'success' : s.status === 'CANCELLED' ? 'danger' : 'warning'} className="rounded-pill">{s.status}</Badge></td>
                                                                 <td>
                                                                     <div className="d-flex gap-1">
-                                                                        <Button size="sm" variant="outline-primary" className="rounded-pill py-0" onClick={() => openEditRecord('sale', s)} disabled={s.status === 'CANCELLED'}><FaEdit /></Button>
-                                                                        <Button size="sm" variant="outline-danger" className="rounded-pill py-0" onClick={() => openVoidRecord('sale', s)} disabled={s.status === 'CANCELLED'}><FaBan /></Button>
+                                                                        <OverlayTrigger overlay={<Tooltip>Editar Venta</Tooltip>}>
+                                                                            <Button size="sm" variant="outline-primary" className="rounded-pill py-0" onClick={() => openEditRecord('sale', s)} disabled={s.status === 'CANCELLED'}><FaEdit /></Button>
+                                                                        </OverlayTrigger>
+                                                                        <OverlayTrigger overlay={<Tooltip>Anular Venta</Tooltip>}>
+                                                                            <Button size="sm" variant="outline-danger" className="rounded-pill py-0" onClick={() => openVoidRecord('sale', s)} disabled={s.status === 'CANCELLED'}><FaBan /></Button>
+                                                                        </OverlayTrigger>
                                                                     </div>
                                                                 </td>
                                                             </tr>
@@ -803,8 +830,12 @@ const AdminCompaniesPage = () => {
                                                                 <td>
                                                                     {p.status !== 'CANCELLED' && (
                                                                         <div className="d-flex gap-1">
-                                                                            <Button size="sm" variant="outline-primary" className="rounded-pill py-0" onClick={() => openEditRecord('purchase', p)}><FaEdit /></Button>
-                                                                            <Button size="sm" variant="outline-danger" className="rounded-pill py-0" onClick={() => openVoidRecord('purchase', p)}><FaBan /></Button>
+                                                                            <OverlayTrigger overlay={<Tooltip>Editar Compra</Tooltip>}>
+                                                                                <Button size="sm" variant="outline-primary" className="rounded-pill py-0" onClick={() => openEditRecord('purchase', p)}><FaEdit /></Button>
+                                                                            </OverlayTrigger>
+                                                                            <OverlayTrigger overlay={<Tooltip>Anular Compra</Tooltip>}>
+                                                                                <Button size="sm" variant="outline-danger" className="rounded-pill py-0" onClick={() => openVoidRecord('purchase', p)}><FaBan /></Button>
+                                                                            </OverlayTrigger>
                                                                         </div>
                                                                     )}
                                                                 </td>
@@ -843,7 +874,9 @@ const AdminCompaniesPage = () => {
                                                                 <td>{Number(prod.price || 0).toFixed(2)} {viewCompany?.baseCurrency || 'USD'}</td>
                                                                 <td><Badge bg={prod.stock <= (prod.minStock || 0) ? 'danger' : 'success'} className="rounded-pill">{prod.stock}</Badge></td>
                                                                 <td>
-                                                                    <Button size="sm" variant="outline-primary" className="rounded-pill py-0" onClick={() => openEditRecord('product', prod)}><FaEdit /></Button>
+                                                                    <OverlayTrigger overlay={<Tooltip>Editar Producto</Tooltip>}>
+                                                                        <Button size="sm" variant="outline-primary" className="rounded-pill py-0" onClick={() => openEditRecord('product', prod)}><FaEdit /></Button>
+                                                                    </OverlayTrigger>
                                                                 </td>
                                                             </tr>
                                                         ))}
@@ -896,6 +929,50 @@ const AdminCompaniesPage = () => {
                                         </div>
                                     )}
 
+                                    {/* Sub-tab: Clientes */}
+                                    {assistTab === 'customers' && (
+                                        <div className="p-3">
+                                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                                <small className="text-muted">Directorio de clientes de la empresa</small>
+                                                <Button size="sm" variant="outline-secondary" className="rounded-pill" onClick={() => loadCustomers(customersPage)}>↻ Refrescar</Button>
+                                            </div>
+                                            {customersLoading ? <div className="text-center py-3"><Spinner size="sm" /></div> : (
+                                                <Table hover size="sm" responsive className="mb-2 align-middle small">
+                                                    <thead className="table-light"><tr><th>#ID</th><th>Nombre</th><th>Email</th><th>Teléfono</th><th>Cédula</th><th>Puntos</th><th>Acciones</th></tr></thead>
+                                                    <tbody>
+                                                        {companyCustomers.length === 0 ? <tr><td colSpan={7} className="text-center text-muted py-3">Sin clientes registrados</td></tr> : companyCustomers.map(customer => (
+                                                            <tr key={customer.id}>
+                                                                <td className="fw-bold text-muted">#{customer.id}</td>
+                                                                <td className="fw-semibold">{customer.name}</td>
+                                                                <td><small>{customer.email || '-'}</small></td>
+                                                                <td>{customer.phone || '-'}</td>
+                                                                <td>{customer.cedula || '-'}</td>
+                                                                <td><Badge bg="success" className="rounded-pill">{customer.loyaltyPoints || 0}</Badge></td>
+                                                                <td>
+                                                                    <div className="d-flex gap-1">
+                                                                        <OverlayTrigger overlay={<Tooltip>Editar Cliente</Tooltip>}>
+                                                                            <Button size="sm" variant="outline-primary" className="rounded-pill py-0" onClick={() => openEditRecord('customer', customer)}><FaEdit /></Button>
+                                                                        </OverlayTrigger>
+                                                                        <OverlayTrigger overlay={<Tooltip>Eliminar Cliente</Tooltip>}>
+                                                                            <Button size="sm" variant="outline-danger" className="rounded-pill py-0" onClick={() => openVoidRecord('customer', customer)}><FaBan /></Button>
+                                                                        </OverlayTrigger>
+                                                                    </div>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </Table>
+                                            )}
+                                            {customersTotalPages > 1 && (
+                                                <div className="d-flex justify-content-center gap-2">
+                                                    <Button size="sm" variant="outline-secondary" disabled={customersPage === 0} onClick={() => { setCustomersPage(p => p - 1); loadCustomers(customersPage - 1); }}>{'<'} Ant</Button>
+                                                    <span className="small text-muted align-self-center">{customersPage + 1} / {customersTotalPages}</span>
+                                                    <Button size="sm" variant="outline-secondary" disabled={customersPage >= customersTotalPages - 1} onClick={() => { setCustomersPage(p => p + 1); loadCustomers(customersPage + 1); }}>Sig {'>'}</Button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
                                     {/* Sub-tab: Historial */}
                                     {assistTab === 'history' && (
                                         <div className="p-3">
@@ -940,7 +1017,7 @@ const AdminCompaniesPage = () => {
                 <Modal.Header closeButton className="border-0">
                     <Modal.Title className="fw-bold fs-6">
                         <FaEdit className="me-2 text-primary" />
-                        Editar {editRecord?.type === 'sale' ? 'Venta' : editRecord?.type === 'purchase' ? 'Compra' : 'Producto'} #{editRecord?.data?.id}
+                        Editar {editRecord?.type === 'sale' ? 'Venta' : editRecord?.type === 'purchase' ? 'Compra' : editRecord?.type === 'product' ? 'Producto' : editRecord?.type === 'user' ? 'Usuario' : 'Cliente'} #{editRecord?.data?.id}
                     </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
@@ -1091,6 +1168,16 @@ const AdminCompaniesPage = () => {
                                     setEditRecordForm(f => ({ ...f, roles }));
                                 }} placeholder="Ej: MANAGER, CASHIER" />
                             </Form.Group>
+                        </>
+                    )}
+                    {editRecord?.type === 'customer' && (
+                        <>
+                            <Form.Group className="mb-2"><Form.Label className="small fw-bold">Nombre</Form.Label><Form.Control size="sm" value={editRecordForm.name || ''} onChange={e => setEditRecordForm(f => ({ ...f, name: e.target.value }))} /></Form.Group>
+                            <Form.Group className="mb-2"><Form.Label className="small fw-bold">Email</Form.Label><Form.Control size="sm" type="email" value={editRecordForm.email || ''} onChange={e => setEditRecordForm(f => ({ ...f, email: e.target.value }))} /></Form.Group>
+                            <Form.Group className="mb-2"><Form.Label className="small fw-bold">Teléfono</Form.Label><Form.Control size="sm" value={editRecordForm.phone || ''} onChange={e => setEditRecordForm(f => ({ ...f, phone: e.target.value }))} /></Form.Group>
+                            <Form.Group className="mb-2"><Form.Label className="small fw-bold">Cédula / RIF</Form.Label><Form.Control size="sm" value={editRecordForm.cedula || ''} onChange={e => setEditRecordForm(f => ({ ...f, cedula: e.target.value }))} /></Form.Group>
+                            <Form.Group className="mb-2"><Form.Label className="small fw-bold">Dirección</Form.Label><Form.Control size="sm" as="textarea" rows={2} value={editRecordForm.address || ''} onChange={e => setEditRecordForm(f => ({ ...f, address: e.target.value }))} /></Form.Group>
+                            <Form.Group className="mb-3"><Form.Label className="small fw-bold">Puntos de Fidelidad</Form.Label><Form.Control size="sm" type="number" min="0" value={editRecordForm.loyaltyPoints || 0} onChange={e => setEditRecordForm(f => ({ ...f, loyaltyPoints: parseInt(e.target.value) || 0 }))} /></Form.Group>
                         </>
                     )}
                     <Form.Group><Form.Label className="small fw-bold">Motivo del cambio <span className="text-muted">(opcional)</span></Form.Label>

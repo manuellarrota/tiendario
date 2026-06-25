@@ -30,7 +30,8 @@ const DEFAULT_EMOJI = '📦';
  */
 export const getCategoryEmoji = (category) => {
     if (!category) return DEFAULT_EMOJI;
-    return CATEGORY_EMOJI_MAP[category] || DEFAULT_EMOJI;
+    const key = Object.keys(CATEGORY_EMOJI_MAP).find(k => k.toLowerCase() === category.toLowerCase().trim());
+    return key ? CATEGORY_EMOJI_MAP[key] : DEFAULT_EMOJI;
 };
 
 const CATEGORY_KEYWORDS = {
@@ -52,16 +53,26 @@ const CATEGORY_KEYWORDS = {
     'Panadería': 'bakery,bread,pastry',
 };
 
-/**
- * Returns a placeholder image URL based on the product category.
- * @param {string} category - The product category name
- * @param {string} productName - Optional product name to include in search
- * @returns {string} The placeholder image URL
- */
 export const getCategoryPlaceholder = (category, productName = '') => {
-    const keyword = CATEGORY_KEYWORDS[category] || 'product,package,box';
-    const seed = productName ? encodeURIComponent(productName) : Math.random().toString(36).substring(7);
-    return `https://loremflickr.com/400/400/${keyword.split(',')[0]}?random=${seed}`;
+    const emoji = getCategoryEmoji(category);
+    const catName = category || 'General';
+    const cleanProductName = productName ? productName.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+    
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400">
+        <defs>
+            <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" style="stop-color:#f0f4f8;stop-opacity:1" />
+                <stop offset="100%" style="stop-color:#d9e2ec;stop-opacity:1" />
+            </linearGradient>
+        </defs>
+        <rect width="400" height="400" fill="url(#grad)" />
+        <text x="50%" y="45%" font-size="120" text-anchor="middle" dominant-baseline="middle">${emoji}</text>
+        <text x="50%" y="72%" font-family="system-ui, -apple-system, sans-serif" font-size="28" font-weight="bold" fill="#627d98" text-anchor="middle">${catName}</text>
+        ${cleanProductName ? `<text x="50%" y="85%" font-family="system-ui, -apple-system, sans-serif" font-size="16" fill="#829ab1" text-anchor="middle" opacity="0.9">${cleanProductName.length > 30 ? cleanProductName.substring(0, 30) + '...' : cleanProductName}</text>` : ''}
+    </svg>`;
+    
+    // btoa(unescape(encodeURIComponent())) is necessary for base64 encoding unicode (emojis) correctly
+    return `data:image/svg+xml;base64,${btoa(unescape(encodeURIComponent(svg)))}`;
 };
 
 export default getCategoryEmoji;

@@ -10,7 +10,9 @@ import java.util.Optional;
 @Repository
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
     List<Customer> findByCompanyId(Long companyId);
+    org.springframework.data.domain.Page<Customer> findByCompanyId(Long companyId, org.springframework.data.domain.Pageable pageable);
     List<Customer> findByEmailAndCompanyId(String email, Long companyId);
+    List<Customer> findByPhoneAndCompanyId(String phone, Long companyId);
     List<Customer> findByEmail(String email);
     List<Customer> findByCedula(String cedula);
     boolean existsByCompanyIdAndCedula(Long companyId, String cedula);

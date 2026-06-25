@@ -2,10 +2,11 @@ package com.nugar.payload.request;
 
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class PublicOrderRequest {
-    private Long productId;
-    private Integer quantity;
+    private List<PublicOrderItemRequest> items;
 
     private String customerName;
     private String customerEmail;

@@ -18,13 +18,26 @@ public class NotificationController {
     @Autowired
     NotificationRepository notificationRepository;
 
+    @Autowired
+    com.nugar.repository.SaleRepository saleRepository;
+
     @GetMapping
     @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN') or hasRole('CASHIER')")
     public List<Notification> getNotifications() {
         UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
                 .getPrincipal();
         if (userDetails.getCompanyId() == null) return List.of();
-        return notificationRepository.findByCompanyIdOrderByCreatedAtDesc(userDetails.getCompanyId());
+        
+        List<Notification> notifications = notificationRepository.findByCompanyIdOrderByCreatedAtDesc(userDetails.getCompanyId());
+        
+        for (Notification n : notifications) {
+            if ("SALE".equals(n.getType()) && n.getReferenceId() != null) {
+                saleRepository.findById(n.getReferenceId()).ifPresent(sale -> {
+                    n.setRelatedEntityStatus(sale.getStatus() != null ? sale.getStatus().name() : null);
+                });
+            }
+        }
+        return notifications;
     }
 
     @GetMapping("/unread-count")

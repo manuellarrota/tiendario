@@ -78,6 +78,15 @@ public class SaleController {
         return ResponseEntity.ok(new MessageResponse("Sale status updated to " + status));
     }
 
+    @PutMapping("/{id}/complete")
+    @PreAuthorize("hasRole('MANAGER') or hasRole('CASHIER')")
+    public ResponseEntity<?> completePendingSale(@PathVariable Long id, @RequestBody List<com.nugar.domain.SalePayment> payments) {
+        UserDetailsImpl userDetails = (UserDetailsImpl) SecurityContextHolder.getContext().getAuthentication()
+                .getPrincipal();
+        saleService.completePendingSale(id, payments, userDetails);
+        return ResponseEntity.ok(new MessageResponse("Sale completed successfully!"));
+    }
+
     @GetMapping("/daily-summary")
     @PreAuthorize("hasRole('MANAGER') or hasRole('ADMIN') or hasRole('CASHIER')")
     public List<DailySalesSummary> getDailySalesSummary() {

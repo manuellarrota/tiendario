@@ -9,4 +9,4 @@ Disallow: /inventory
 Disallow: /reports
 Disallow: /settings
 
-Sitemap: https://tiendario.com/sitemap.xml
+Sitemap: https://nugar.com/sitemap.xml

@@ -45,6 +45,13 @@ const updateStatus = (id, status, paymentMethod = null) => {
     });
 };
 
+const completeSale = (id, payments) => {
+    const user = AuthService.getCurrentUser();
+    return axios.put(API_URL + "/" + id + "/complete", payments, {
+        headers: { Authorization: 'Bearer ' + user.token }
+    });
+};
+
 const getDailySummary = () => {
     const user = AuthService.getCurrentUser();
     return axios.get(API_URL + "/daily-summary", {
@@ -57,6 +64,7 @@ const SaleService = {
     getSaleById,
     createSale,
     updateStatus,
+    completeSale,
     getDailySummary
 };
 

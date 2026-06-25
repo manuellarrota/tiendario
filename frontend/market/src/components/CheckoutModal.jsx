@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Form, Row, Col, Button, Alert, Spinner, Badge } from 'react-bootstrap';
+import { Modal, Form, Row, Col, Button, Alert, Spinner, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaUser, FaPhone } from 'react-icons/fa';
 
 /**
@@ -13,6 +13,12 @@ const CheckoutModal = ({
     isLoggedIn
 }) => {
     const cartTotal = cart.reduce((total, item) => total + (item.price * item.quantity), 0);
+
+    const renderTooltip = (props, text) => (
+        <Tooltip id="button-tooltip" {...props}>
+            {text}
+        </Tooltip>
+    );
 
     return (
         <Modal show={show} onHide={onHide} centered scrollable size="md">
@@ -49,9 +55,9 @@ const CheckoutModal = ({
                                 <span className="fw-bold">Total a Pagar</span>
                                 <div className="text-end">
                                     {platformConfig?.enableSecondaryCurrency && (
-                                        <h5 className="text-success mb-1">{formatSecondary(cartTotal)}</h5>
+                                        <h5 className="text-primary mb-1">{formatSecondary(cartTotal)}</h5>
                                     )}
-                                    <h5 className="fw-bold text-success mb-0">${cartTotal.toFixed(2)}</h5>
+                                    <h5 className="fw-bold text-primary mb-0">${cartTotal.toFixed(2)}</h5>
                                 </div>
                             </div>
                         </div>
@@ -64,7 +70,7 @@ const CheckoutModal = ({
                                 <span className="bg-primary bg-opacity-10 text-primary rounded-circle px-2 me-2">1</span> Datos del Cliente
                             </h6>
                             {isLoggedIn && (
-                                <Badge bg="success" pill className="px-3">
+                                <Badge bg="primary" pill className="px-3">
                                     ✓ Datos cargados automáticamente
                                 </Badge>
                             )}
@@ -103,23 +109,27 @@ const CheckoutModal = ({
                                 />
                             </Col>
                             <Col md={12}>
-                                <Form.Control
-                                    className="mb-2 rounded-3 py-2 px-3"
-                                    placeholder="Cédula / ID Fiscal *"
-                                    value={customerData.cedula}
-                                    onChange={(e) => setCustomerData({ ...customerData, cedula: e.target.value })}
-                                    required
-                                />
+                                <OverlayTrigger placement="top" overlay={(p) => renderTooltip(p, "Necesario para la facturación fiscal en la tienda")}>
+                                    <Form.Control
+                                        className="mb-2 rounded-3 py-2 px-3"
+                                        placeholder="Cédula / ID Fiscal *"
+                                        value={customerData.cedula}
+                                        onChange={(e) => setCustomerData({ ...customerData, cedula: e.target.value })}
+                                        required
+                                    />
+                                </OverlayTrigger>
                             </Col>
                             <Col md={12}>
-                                <Form.Control
-                                    className="mb-2 rounded-3 py-2 px-3"
-                                    placeholder="Dirección de Entrega (Opcional)"
-                                    as="textarea"
-                                    rows={2}
-                                    value={customerData.address}
-                                    onChange={(e) => setCustomerData({ ...customerData, address: e.target.value })}
-                                />
+                                <OverlayTrigger placement="top" overlay={(p) => renderTooltip(p, "Opcional, útil si la tienda ofrece envíos a domicilio")}>
+                                    <Form.Control
+                                        className="mb-2 rounded-3 py-2 px-3"
+                                        placeholder="Dirección de Entrega (Opcional)"
+                                        as="textarea"
+                                        rows={2}
+                                        value={customerData.address}
+                                        onChange={(e) => setCustomerData({ ...customerData, address: e.target.value })}
+                                    />
+                                </OverlayTrigger>
                             </Col>
                         </Row>
 

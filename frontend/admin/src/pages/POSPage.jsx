@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Decimal from 'decimal.js';
 import { Container, Row, Col, Card, Form, Button, ListGroup, InputGroup, Table, Modal, Alert, OverlayTrigger, Tooltip, Spinner, Badge, Toast, ToastContainer } from 'react-bootstrap';
 import { FaSearch, FaPlus, FaMinus, FaTrash, FaShoppingCart, FaEdit, FaLock, FaExclamationTriangle, FaExchangeAlt, FaUserPlus, FaUserAlt, FaUserCheck, FaBarcode, FaHome, FaSignOutAlt, FaBell, FaHistory, FaCashRegister, FaTruck, FaBox, FaTags } from 'react-icons/fa';
@@ -14,6 +14,8 @@ import CashRegisterService from '../services/cash-register.service';
 
 const POSPage = () => {
     const navigate = useNavigate();
+    const location = useLocation();
+    const [importedSaleId, setImportedSaleId] = useState(null);
     // 1. STATE
     const [products, setProducts] = useState([]);
     const [cart, setCart] = useState([]);
@@ -162,8 +164,44 @@ const POSPage = () => {
         return preGlobalTotal.minus(globalDiscCalc).toDecimalPlaces(2);
     }, [preGlobalTotal, globalDiscountAmount, globalDiscountType]);
 
+    // Check for Pending Sale to Import
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const pendingId = params.get('pendingSaleId');
+        if (pendingId && currentShift && currentShift.status === 'OPEN' && !importedSaleId) {
+            SaleService.getSaleById(pendingId).then(res => {
+                const sale = res.data;
+                if (sale.status !== 'PAID' && sale.status !== 'CANCELLED') {
+                    setImportedSaleId(sale.id);
+                    setCustomerSearch(sale.customerName || (sale.customer ? sale.customer.name : ''));
+                    setSelectedCustomer(sale.customer || null);
+                    if (sale.globalDiscountAmount) {
+                        setGlobalDiscountAmount(sale.globalDiscountAmount);
+                        setGlobalDiscountType(sale.globalDiscountType);
+                    }
+                    const mappedCart = sale.items.map(i => ({
+                        product: i.product,
+                        quantity: i.quantity,
+                        unitPrice: i.unitPrice,
+                        subtotal: i.subtotal,
+                        discountAmount: i.discountAmount || 0,
+                        discountType: i.discountType || 'PERCENTAGE'
+                    }));
+                    setCart(mappedCart);
+                    triggerToast(`Pedido #${sale.id} cargado en el carrito.`, "info");
+                }
+            }).catch(e => {
+                triggerToast("Error al importar el pedido", "error");
+            });
+        }
+    }, [location.search, currentShift, importedSaleId, triggerToast]);
+
     // 4. BUSINESS LOGIC
     const addProductToCartById = useCallback((foundProduct, qty = 1) => {
+        if (importedSaleId) {
+            triggerToast("No puedes agregar productos a un pedido importado.", "error");
+            return;
+        }
         if (!foundProduct) return;
         if (foundProduct.stock < 1) {
             triggerToast(`❌ "${foundProduct.name}" no tiene stock.`, "error");
@@ -249,18 +287,46 @@ const POSPage = () => {
             totalAmount: total.toNumber()
         };
 
-        SaleService.createSale(saleData).then(() => {
-            triggerToast("¡Venta realizada con éxito!");
-            setCart([]);
-            setPayments([]);
-            setShowPaymentModal(false);
-            setSelectedCustomer(null);
-            setCustomerSearch("");
-            ProductService.getPOSProducts().then(r => setProducts(r.data.products || r.data));
-        }).catch(() => triggerToast("Error al procesar la venta", "error"));
-    }, [cart, total, totalPaidInBase, payments, selectedCustomer, customerSearch, triggerToast]);
+        if (importedSaleId) {
+            // It's a pending order from Notifications
+            const paymentPayload = payments.map(p => ({
+                amount: p.amount,
+                currencyCode: p.currency,
+                exchangeRate: p.exchangeRate,
+                amountInBaseCurrency: p.amountInBaseCurrency,
+                method: p.method
+            }));
+
+            SaleService.completeSale(importedSaleId, paymentPayload).then(() => {
+                triggerToast("¡Pedido cobrado con éxito!");
+                setCart([]);
+                setPayments([]);
+                setShowPaymentModal(false);
+                setSelectedCustomer(null);
+                setCustomerSearch("");
+                setImportedSaleId(null);
+                // navigate back without query params
+                navigate('/pos', { replace: true });
+            }).catch(() => triggerToast("Error al procesar el cobro del pedido", "error"));
+        } else {
+            // Normal Sale
+            SaleService.createSale(saleData).then(() => {
+                triggerToast("¡Venta realizada con éxito!");
+                setCart([]);
+                setPayments([]);
+                setShowPaymentModal(false);
+                setSelectedCustomer(null);
+                setCustomerSearch("");
+                ProductService.getPOSProducts().then(r => setProducts(r.data.products || r.data));
+            }).catch(() => triggerToast("Error al procesar la venta", "error"));
+        }
+    }, [cart, total, totalPaidInBase, payments, selectedCustomer, customerSearch, triggerToast, importedSaleId, navigate]);
 
     const handleParkSale = useCallback(() => {
+        if (importedSaleId) {
+            triggerToast("No puedes aparcar un pedido importado.", "error");
+            return;
+        }
         if (cart.length === 0) return;
         const newParked = {
             id: Date.now(),
@@ -429,6 +495,10 @@ const POSPage = () => {
     };
 
     const updateCartQuantity = (productId, newQuantity) => {
+        if (importedSaleId) {
+            triggerToast("No puedes modificar las cantidades de un pedido importado.", "error");
+            return;
+        }
         if (newQuantity === "") {
             setCart(cart.map(item =>
                 item.product.id === productId
@@ -455,6 +525,10 @@ const POSPage = () => {
     };
 
     const updateCartDiscount = (productId, amount, type) => {
+        if (importedSaleId) {
+            triggerToast("No puedes modificar descuentos en un pedido importado.", "error");
+            return;
+        }
         setCart(cart.map(item =>
             item.product.id === productId
                 ? { 
@@ -479,6 +553,10 @@ const POSPage = () => {
     };
 
     const removeFromCart = (productId) => {
+        if (importedSaleId) {
+            triggerToast("No puedes remover productos de un pedido importado.", "error");
+            return;
+        }
         setCart(prev => prev.filter(item => item.product.id !== productId));
     };
 
@@ -640,7 +718,11 @@ const POSPage = () => {
             else if (e.key === 'F4') { e.preventDefault(); if (cart.length > 0) setShowPaymentModal(true); }
             else if (e.key === 'Escape') {
                 if (showPaymentModal) setShowPaymentModal(false);
-                else if (cart.length > 0) setShowEmptyCartModal(true);
+                else if (importedSaleId) {
+                    triggerToast("Debes cancelar el pedido desde Notificaciones.", "error");
+                } else if (cart.length > 0) {
+                    setShowEmptyCartModal(true);
+                }
                 setCustomerSearch(""); setSearchTerm("");
             }
         };
@@ -686,15 +768,30 @@ const POSPage = () => {
                                 <div className="d-flex justify-content-between align-items-center mb-3">
                                     <h4 className="fw-bold mb-0">Detalle de la Venta</h4>
                                     <div className="d-flex align-items-center gap-2">
-                                        {parkedSales.length > 0 && (
-                                            <Button variant="warning" size="sm" className="rounded-pill fw-bold" onClick={() => setShowParkedModal(true)}>
-                                                ⏸️ Ventas en Espera ({parkedSales.length})
+                                        <OverlayTrigger placement="top" overlay={<Tooltip>Vaciar carrito y cancelar venta (Esc)</Tooltip>}>
+                                            <Button variant="danger" size="sm" className="rounded-pill fw-bold" onClick={() => {
+                                                    if (importedSaleId) {
+                                                        triggerToast("Debes cancelar el pedido desde Notificaciones.", "error");
+                                                    } else if (cart.length > 0) {
+                                                        setShowEmptyCartModal(true);
+                                                    }
+                                                }}>
+                                                    🗑️ Cancelar Venta
                                             </Button>
+                                        </OverlayTrigger>
+                                        {parkedSales.length > 0 && (
+                                            <OverlayTrigger placement="top" overlay={<Tooltip>Ver ventas pausadas</Tooltip>}>
+                                                <Button variant="warning" size="sm" className="rounded-pill fw-bold" onClick={() => setShowParkedModal(true)}>
+                                                    ⏸️ Ventas en Espera ({parkedSales.length})
+                                                </Button>
+                                            </OverlayTrigger>
                                         )}
                                         {cart.length > 0 && (
-                                            <Button variant="outline-secondary" size="sm" className="rounded-pill fw-bold" onClick={handleParkSale}>
-                                                ⏸️ Poner en espera
-                                            </Button>
+                                            <OverlayTrigger placement="top" overlay={<Tooltip>Pausar venta actual</Tooltip>}>
+                                                <Button variant="outline-secondary" size="sm" className="rounded-pill fw-bold" onClick={handleParkSale}>
+                                                    ⏸️ Poner en espera
+                                                </Button>
+                                            </OverlayTrigger>
                                         )}
                                         <Badge bg="primary" className="rounded-pill px-3 py-2">{cart.length} productos</Badge>
                                     </div>
@@ -793,21 +890,22 @@ const POSPage = () => {
                                             <div style={{ width: '35%' }} className="text-center text-muted d-flex align-items-center justify-content-center gap-2">
                                                 <div className="fw-bold text-nowrap">{new Decimal(item.unitPrice || 0).toFixed(2)} {baseCurrencyCode}</div>
                                                 <InputGroup size="sm" className="shadow-sm flex-nowrap" style={{ width: '90px', flexShrink: 0 }}>
-                                                    <Button 
-                                                        variant={item.discountType === 'FIXED' ? 'primary' : 'warning'}
-                                                        className={`p-0 fw-bold border-end-0 ${item.discountType === 'PERCENTAGE' ? 'text-white' : ''}`}
-                                                        style={{ 
-                                                            width: '40px', 
-                                                            fontSize: '0.7rem', 
-                                                            flex: 'none',
-                                                            backgroundColor: item.discountType === 'PERCENTAGE' ? '#fd7e14' : undefined,
-                                                            borderColor: item.discountType === 'PERCENTAGE' ? '#fd7e14' : undefined
-                                                        }}
-                                                        onClick={() => updateCartDiscount(item.product.id, item.discountAmount || 0, item.discountType === 'PERCENTAGE' ? 'FIXED' : 'PERCENTAGE')}
-                                                        title="Click para cambiar a % o Monto"
-                                                    >
-                                                        {item.discountType === 'PERCENTAGE' ? '%' : baseCurrencyCode}
-                                                    </Button>
+                                                    <OverlayTrigger overlay={<Tooltip>Click para cambiar a % o Monto</Tooltip>}>
+                                                        <Button 
+                                                            variant={item.discountType === 'FIXED' ? 'primary' : 'warning'}
+                                                            className={`p-0 fw-bold border-end-0 ${item.discountType === 'PERCENTAGE' ? 'text-white' : ''}`}
+                                                            style={{ 
+                                                                width: '40px', 
+                                                                fontSize: '0.7rem', 
+                                                                flex: 'none',
+                                                                backgroundColor: item.discountType === 'PERCENTAGE' ? '#fd7e14' : undefined,
+                                                                borderColor: item.discountType === 'PERCENTAGE' ? '#fd7e14' : undefined
+                                                            }}
+                                                            onClick={() => updateCartDiscount(item.product.id, item.discountAmount || 0, item.discountType === 'PERCENTAGE' ? 'FIXED' : 'PERCENTAGE')}
+                                                        >
+                                                            {item.discountType === 'PERCENTAGE' ? '%' : baseCurrencyCode}
+                                                        </Button>
+                                                    </OverlayTrigger>
                                                     <Form.Control 
                                                         type="number" 
                                                         placeholder="Desc" 

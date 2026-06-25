@@ -41,4 +41,28 @@ public class GlobalConfig {
     // Format: [{"code":"COP","symbol":"COP$","rate":4200.00,"enabled":true}, ...]
     @Column(columnDefinition = "TEXT")
     private String currencies = "[{\"code\":\"COP\",\"symbol\":\"$\",\"name\":\"Peso Colombiano\",\"rate\":4200.00,\"enabled\":true},{\"code\":\"VES\",\"symbol\":\"Bs.\",\"name\":\"Bolívar\",\"rate\":36.50,\"enabled\":true}]";
+
+    // Payment Info for Memberships
+    private String paymentInfoZelle = "pagos@nugar.com (Antigravity Inc)";
+    
+    @Column(columnDefinition = "boolean default true")
+    private Boolean paymentZelleEnabled = true;
+
+    private String paymentInfoBinance = "Pay ID: 12345678 | Alias: NugarApp";
+    
+    @Column(columnDefinition = "boolean default true")
+    private Boolean paymentBinanceEnabled = true;
+
+    private String paymentInfoPagoMovil = "0102 - 0412-0000000 - V-12345678";
+    
+    @Column(columnDefinition = "boolean default true")
+    private Boolean paymentPagoMovilEnabled = true;
+
+    private String paymentInfoTransferencia = "Banco Banesco, Cuenta Corriente 0134-..., Antigravity Inc, J-123456789";
+    
+    @Column(columnDefinition = "boolean default true")
+    private Boolean paymentTransferenciaEnabled = true;
+
+    @Column(columnDefinition = "boolean default true")
+    private Boolean paymentEfectivoEnabled = true;
 }

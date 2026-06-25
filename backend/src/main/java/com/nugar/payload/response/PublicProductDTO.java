@@ -17,6 +17,7 @@ public class PublicProductDTO {
     private String sku;
     private String brand;
     private String category;
+    private String globalCategory;
     private String subscriptionStatus;
     private Double rating;
     private Integer ratingCount;
